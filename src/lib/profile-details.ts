@@ -2,6 +2,11 @@ import { careTypeOptions, petTypeOptions, sizeOptions } from "@/lib/legacy/searc
 import { formatDateListShort } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import {
+  emergencyContactRelationshipFromDetails,
+  parseEmergencyContact,
+  type EmergencyContact,
+} from "@/lib/trust-safety";
+import {
   formatExperienceLevelLabel,
   formatPetTypesWillingComfort,
   formatPreferredCareLocationLabel,
@@ -69,6 +74,10 @@ export type ProfileAvailabilitySchedule = ProfileAvailabilityDetails & {
 };
 
 export type ProfileDetails = {
+  /** Private — `profiles.details.emergency_contact` (relationship; name/phone also in columns). */
+  emergency_contact?: EmergencyContact;
+  /** When name/phone live only in columns, relationship may still be in details JSON. */
+  emergency_contact_relationship?: string;
   /** Public gallery URLs (`profiles.details.profile_photos`), max 6 */
   profile_photos?: string[];
   pet_care_preferences?: PetCarePreferences;
@@ -226,8 +235,13 @@ export function parseProfileDetails(raw: unknown): ProfileDetails {
   const availability = parseAvailabilityFromRaw(o);
 
   const profile_photos = strArrFrom(o.profile_photos).slice(0, 6);
+  const emergency_contact = parseEmergencyContact(o) ?? undefined;
+  const emergency_contact_relationship =
+    emergency_contact?.relationship ?? emergencyContactRelationshipFromDetails(o) ?? undefined;
 
   return {
+    emergency_contact,
+    emergency_contact_relationship,
     profile_photos: profile_photos.length ? profile_photos : undefined,
     pet_care_preferences,
     availability,
@@ -415,6 +429,19 @@ export function mergeDetailsTrustFlags(
         name: ec.name.trim(),
         phone: ec.phone.trim(),
         relationship: ec.relationship?.trim() || null,
+      };
+    } else if (ec === null) {
+      delete base.emergency_contact;
+    } else if (ec?.relationship?.trim()) {
+      const prev =
+        base.emergency_contact &&
+        typeof base.emergency_contact === "object" &&
+        !Array.isArray(base.emergency_contact)
+          ? { ...(base.emergency_contact as Record<string, unknown>) }
+          : {};
+      base.emergency_contact = {
+        ...prev,
+        relationship: ec.relationship.trim(),
       };
     } else {
       delete base.emergency_contact;

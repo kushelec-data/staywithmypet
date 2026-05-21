@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  BOOKING_BLOCKING_STATUSES,
   applyViewRoleToDayMap,
   bookedDatesSet,
   mergeBookingsByDay,
@@ -29,7 +30,8 @@ type UseCalendarBookingsOptions = {
 type UseCalendarBookingsResult = {
   bookings: CalendarBooking[];
   dayMap: Map<string, DayBookingSlice[]>;
-  bookedDateSet: Set<string>;
+  /** Upcoming/active only — blocks new selection. */
+  blockingBookedDateSet: Set<string>;
   loading: boolean;
   error: string | null;
 };
@@ -109,11 +111,21 @@ export function useCalendarBookings({
       }
       return map;
     }
-    const raw = mergeBookingsByDay(bookings);
+    const raw = mergeBookingsByDay(bookings, {
+      includeStatuses: ["upcoming", "active", "completed"],
+    });
     return applyViewRoleToDayMap(raw, viewRole);
   }, [bookings, publicBookedDates, visibility, viewRole]);
 
-  const bookedDateSet = useMemo(() => bookedDatesSet(dayMap), [dayMap]);
+  const blockingBookedDateSet = useMemo(() => {
+    if (visibility === "public" && publicBookedDates.length) {
+      return new Set(publicBookedDates);
+    }
+    const blocking = mergeBookingsByDay(bookings, {
+      includeStatuses: [...BOOKING_BLOCKING_STATUSES],
+    });
+    return bookedDatesSet(applyViewRoleToDayMap(blocking, viewRole));
+  }, [bookings, publicBookedDates, visibility, viewRole]);
 
-  return { bookings, dayMap, bookedDateSet, loading, error };
+  return { bookings, dayMap, blockingBookedDateSet, loading, error };
 }

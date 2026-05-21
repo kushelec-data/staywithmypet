@@ -20,6 +20,10 @@ export function getSiteUrl(): string {
   return url.replace(/\/$/, "");
 }
 
+/** Base checkout env (secret + site URL). Plan price ids checked per plan in stripe-plans.ts. */
 export function isStripeConfigured(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+  return (
+    Boolean(process.env.STRIPE_SECRET_KEY?.trim()) &&
+    Boolean(process.env.NEXT_PUBLIC_SITE_URL?.trim())
+  );
 }

@@ -78,7 +78,10 @@ const PLAN_BILLING_INTERVAL: Record<string, MembershipPlanDefinition["billing_in
   "1-year-friend": "12_months",
 };
 
-/** Client-safe placeholder; server resolves ids via `resolveStripePriceId` in stripe-plans.ts. */
+/**
+ * Client-safe placeholder; server resolves ids via `resolveStripePriceId` in stripe-plans.ts
+ * (STRIPE_PRICE_PARENT_1M / _3M / _12M and STRIPE_PRICE_FRIEND_1M / _3M / _12M).
+ */
 const FUTURE_STRIPE_PRICE_IDS: Record<string, string | null> = {
   "one-time-owner": null,
   "3-month-owner": null,

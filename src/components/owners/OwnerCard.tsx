@@ -69,7 +69,7 @@ export function OwnerCard({
   profile: SearchProfile;
   compact?: boolean;
 }) {
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
   const profileHref = `/users/${profile.id}`;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(profile.availabilityDates, 3, locale);
@@ -184,7 +184,7 @@ export function OwnerCard({
               }`}
             >
               <CalendarIcon />
-              <span>Check calendar</span>
+              <span>{t.findCare.checkCalendar}</span>
               <ExternalIcon />
             </button>
 
@@ -206,9 +206,13 @@ export function OwnerCard({
         name={profile.displayName}
         petFriendId={profile.id}
         dates={availability.allDates}
-        title={`${profile.displayName}'s availability`}
-        subtitle="Dates when this Pet Friend is available for care."
         onClose={() => setCalendarOpen(false)}
+        careRequestTarget={{
+          kind: "profile",
+          friendId: profile.id,
+          label: profile.displayName,
+          availabilityDates: availability.allDates,
+        }}
       />
     </>
   );

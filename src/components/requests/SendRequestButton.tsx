@@ -6,7 +6,12 @@ import { RequestModal, type RequestFormValues } from "@/components/requests/Requ
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
-import { todayDateInputValue, validateCareRequestForm } from "@/lib/request-validation";
+import {
+  DATE_NOT_AVAILABLE_ERROR,
+  PAST_DATE_REQUEST_ERROR,
+  todayDateInputValue,
+  validateCareRequestForm,
+} from "@/lib/request-validation";
 import {
   createCareRequest,
   fetchRequesterPets,
@@ -17,7 +22,7 @@ import {
 import { formatRequestSubmitErrorForUi } from "@/lib/supabase-errors";
 import { createClient } from "@/lib/supabase";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { UpgradeMembershipModal } from "@/components/membership/UpgradeMembershipModal";
 import { useProfile } from "@/context/ProfileContext";
 import {
@@ -51,6 +56,10 @@ type SendRequestButtonProps = {
   className?: string;
   size?: "sm" | "md";
   variant?: "pet-care" | "profile";
+  /** Hide the default trigger; use with controlled request modal. */
+  showTrigger?: boolean;
+  requestModalOpen?: boolean;
+  onRequestModalOpenChange?: (open: boolean) => void;
 };
 
 export function SendRequestButton({
@@ -58,6 +67,9 @@ export function SendRequestButton({
   className = "",
   size = "sm",
   variant = "profile",
+  showTrigger = true,
+  requestModalOpen,
+  onRequestModalOpenChange,
 }: SendRequestButtonProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -66,7 +78,9 @@ export function SendRequestButton({
   const { user, loading: authLoading } = useAuth();
   const { profile } = useProfile();
   const supabase = useMemo(() => createClient(), []);
-  const [open, setOpen] = useState(false);
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = requestModalOpen ?? openInternal;
+  const setOpen = onRequestModalOpenChange ?? setOpenInternal;
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +117,26 @@ export function SendRequestButton({
         ? t.requests.sendCareRequest
         : t.requests.sendRequest;
 
+  const isControlledModal = requestModalOpen !== undefined;
+
+  useEffect(() => {
+    if (!isControlledModal || !requestModalOpen || !user || blocked || authLoading) return;
+    if (target.kind === "profile" && pets.length === 0 && !noPets && !petsLoading) {
+      void openRequestModal();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openRequestModal is stable enough for this gate
+  }, [
+    isControlledModal,
+    requestModalOpen,
+    user,
+    blocked,
+    authLoading,
+    target.kind,
+    pets.length,
+    noPets,
+    petsLoading,
+  ]);
+
   async function handleOpen() {
     if (authLoading || blocked) return;
     if (!user) {
@@ -114,6 +148,16 @@ export function SendRequestButton({
     setSuccess(false);
     setNoPets(false);
 
+    if (needsUpgrade) {
+      setUpgradeOpen(true);
+      return;
+    }
+
+    await openRequestModal();
+  }
+
+  async function openRequestModal() {
+    if (!user) return;
     if (target.kind === "profile") {
       setPetsLoading(true);
       try {
@@ -130,7 +174,6 @@ export function SendRequestButton({
         setPetsLoading(false);
       }
     }
-
     setOpen(true);
   }
 
@@ -180,7 +223,11 @@ export function SendRequestButton({
       petFriendId,
     });
     if (validationError) {
-      setError(validationError);
+      setError(
+        validationError === PAST_DATE_REQUEST_ERROR
+          ? t.requests.pastDates
+          : validationError,
+      );
       return;
     }
 
@@ -219,7 +266,14 @@ export function SendRequestButton({
         setUpgradeOpen(true);
         setError(null);
       } else {
-        setError(formatRequestSubmitErrorForUi(err));
+        const msg = formatRequestSubmitErrorForUi(err);
+        setError(
+          msg === PAST_DATE_REQUEST_ERROR
+            ? t.requests.pastDates
+            : msg === DATE_NOT_AVAILABLE_ERROR
+              ? t.requests.dateNotAvailable
+              : msg,
+        );
       }
     } finally {
       setSubmitting(false);
@@ -233,16 +287,18 @@ export function SendRequestButton({
 
   return (
     <>
-      <Button
-        type="button"
-        variant="soft"
-        size={size}
-        className={`w-full ${className}`}
-        onClick={handleOpen}
-        disabled={authLoading || blocked || success || petsLoading}
-      >
-        {petsLoading ? t.auth.pleaseWait : buttonLabel}
-      </Button>
+      {showTrigger ? (
+        <Button
+          type="button"
+          variant="soft"
+          size={size}
+          className={`w-full ${className}`}
+          onClick={handleOpen}
+          disabled={authLoading || blocked || success || petsLoading}
+        >
+          {petsLoading ? t.auth.pleaseWait : buttonLabel}
+        </Button>
+      ) : null}
 
       {noPets ? (
         <p className="mt-2 text-center text-xs text-muted">

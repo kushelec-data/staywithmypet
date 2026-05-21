@@ -32,6 +32,16 @@ import {
 } from "@/lib/membership";
 import { resolveActiveMode } from "@/lib/profile-mode";
 
+type StripeCheckoutReadiness = {
+  ready: boolean;
+  message: string | null;
+};
+
+type MembershipPageContentProps = {
+  stripeCheckoutByRole?: Record<MembershipRole, StripeCheckoutReadiness>;
+  stripePlanErrorsByRole?: Record<MembershipRole, Record<string, string | null>>;
+};
+
 function RoleMembershipSummary({
   role,
   membership,
@@ -84,7 +94,10 @@ function RoleMembershipSummary({
   );
 }
 
-export function MembershipPageContent() {
+export function MembershipPageContent({
+  stripeCheckoutByRole,
+  stripePlanErrorsByRole,
+}: MembershipPageContentProps = {}) {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
   const { t } = useLanguage();
@@ -120,6 +133,10 @@ export function MembershipPageContent() {
     if (!profile || !isActive) return null;
     return membershipPlanLabel(memberships[modeRole]);
   }, [profile, isActive, memberships, modeRole]);
+
+  const stripeCheckout = stripeCheckoutByRole?.[modeRole];
+  const stripeCheckoutReady = stripeCheckout?.ready ?? false;
+  const stripeConfigMessage = stripeCheckout?.message ?? null;
 
   const stripePlans = useMemo(() => {
     const parentFeatures = Object.fromEntries(
@@ -232,6 +249,15 @@ export function MembershipPageContent() {
         </p>
       ) : null}
 
+      {stripeConfigMessage ? (
+        <p
+          className="mb-4 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          role="alert"
+        >
+          {stripeConfigMessage}
+        </p>
+      ) : null}
+
       <MembershipPlans
         variant="account"
         activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
@@ -240,7 +266,8 @@ export function MembershipPageContent() {
         plans={stripePlans}
         checkoutUserId={user.id}
         checkoutRole={modeRole}
-        enableCheckout={!isActive}
+        enableCheckout={!isActive && stripeCheckoutReady}
+        planCheckoutErrors={stripePlanErrorsByRole?.[modeRole]}
       />
     </DashboardShell>
   );

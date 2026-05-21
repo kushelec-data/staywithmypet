@@ -17,6 +17,10 @@ type UpgradeMembershipModalProps = {
   /** Role that needs upgrade (defaults from activeMode). */
   role?: MembershipRole;
   activeMode?: ProfileActiveMode;
+  /** Override default body copy. */
+  message?: string;
+  primaryLabel?: string;
+  secondaryLabel?: string;
   onClose: () => void;
 };
 
@@ -24,6 +28,9 @@ export function UpgradeMembershipModal({
   open,
   role,
   activeMode = "pet_parent",
+  message,
+  primaryLabel,
+  secondaryLabel,
   onClose,
 }: UpgradeMembershipModalProps) {
   const { t } = useLanguage();
@@ -49,18 +56,18 @@ export function UpgradeMembershipModal({
           Upgrade {roleLabel} membership
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Messaging, care requests, and bookings in {roleLabel} mode need an active membership for
-          that role. You can still browse profiles, save favourites, and switch modes anytime.
+          {message ??
+            `Messaging, care requests, and bookings in ${roleLabel} mode need an active membership for that role. You can still browse profiles, save favourites, and switch modes anytime.`}
         </p>
-        <p className="mt-2 text-sm text-muted">
-          {t.pricing.subtitle}
-        </p>
+        {!message ? (
+          <p className="mt-2 text-sm text-muted">{t.pricing.subtitle}</p>
+        ) : null}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Close
+            {secondaryLabel ?? "Close"}
           </Button>
           <Button href="/membership" variant="primary" onClick={onClose}>
-            View {membershipPageTitle(activeMode)}
+            {primaryLabel ?? `View ${membershipPageTitle(activeMode)}`}
           </Button>
         </div>
         <p className="mt-3 text-center text-xs text-muted">

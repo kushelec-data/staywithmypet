@@ -228,7 +228,7 @@ export const en = {
     careTypeRequired: "Please choose a care type.",
     datesRequired: "Please select at least one date from the calendar.",
     dateNotAvailable: "One or more selected dates are not available.",
-    pastDates: "Dates cannot be in the past.",
+    pastDates: "Please choose today or a future date.",
     dateRangeInvalid: "End date must be on or after start date.",
     addPetFirst: "Add a pet before sending a care request.",
     addPetLink: "Add a pet",
@@ -343,6 +343,9 @@ export const en = {
     statusActive: "Active",
     statusCompleted: "Completed",
     statusCancelled: "Cancelled",
+    pastUnavailable: "Past date — unavailable",
+    pastCompleted: "Past date — unavailable",
+    legendPastCompleted: "Past / completed",
     legendAvailable: "Available",
     legendBooked: "Booked",
     legendUnavailable: "Unavailable",
@@ -351,6 +354,7 @@ export const en = {
     tapToAdd: "Tap days on the calendar to add availability.",
     selectFromAvailable: "Select one or more available dates from the calendar.",
     clearDates: "Clear dates",
+    viewOnlyHint: "Dates are shown for reference only — select dates when you send a care request.",
   },
   reviews: {
     leaveReview: "Leave review",
@@ -1070,6 +1074,15 @@ export const en = {
     mapNoLocations:
       "No map locations for these Pet Friends yet. Try list view or adjust filters.",
     ctaTitle: "Are you a {role} instead?",
+    availabilityTitle: "{name}'s availability",
+    availabilitySubtitle: "Dates when this Pet Friend is available for care.",
+    noUpcomingDates: "No upcoming dates listed yet.",
+    logInToSendRequest: "Log in to send request",
+    upgradeToRequest:
+      "Upgrade your Pet Parent membership to request care from Pet Friends.",
+    viewMembershipPlans: "View membership plans",
+    maybeLater: "Maybe later",
+    checkCalendar: "Check calendar",
   },
   searchFilters: {
     petSearch: "Pet search",

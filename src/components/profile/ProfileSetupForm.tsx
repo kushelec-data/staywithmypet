@@ -121,7 +121,8 @@ function applyProfileToForm(
     emergencyName: emergency?.name ?? "",
     emergencyDialCode: profile.emergency_contact_phone_country_code?.trim() || ecParts.dialCode,
     emergencyNational: profile.emergency_contact_phone_number?.trim() || ecParts.nationalDigits,
-    emergencyRelationship: emergency?.relationship ?? "",
+    emergencyRelationship:
+      emergency?.relationship ?? profile.details?.emergency_contact_relationship ?? "",
   });
 }
 
@@ -274,6 +275,19 @@ export function ProfileSetupForm({
     }
 
     const hasGoogleCoords = latitude != null && longitude != null;
+    const ecName =
+      trustSafety.emergencyName.trim() || profile?.emergency_contact_name?.trim() || "";
+    const ecNational =
+      trustSafety.emergencyNational.trim() ||
+      profile?.emergency_contact_phone_number?.trim() ||
+      "";
+    const ecDial =
+      trustSafety.emergencyDialCode ||
+      profile?.emergency_contact_phone_country_code?.trim() ||
+      DEFAULT_PHONE_DIAL_CODE;
+    const ecRelationship = trustSafety.emergencyRelationship.trim() || null;
+    const hasEmergency = Boolean(ecName || ecNational || ecRelationship);
+
     const payload: ProfileSetupInput = {
       displayName: trimmedName,
       role,
@@ -282,15 +296,14 @@ export function ProfileSetupForm({
       bio: normalizeBioForSave(bio),
       phoneDialCode: trustSafety.phoneDialCode || DEFAULT_PHONE_DIAL_CODE,
       phoneNational: trustSafety.phoneNational,
-      emergencyContact:
-        trustSafety.emergencyName.trim() || trustSafety.emergencyNational.trim()
-          ? {
-              name: trustSafety.emergencyName.trim(),
-              dialCode: trustSafety.emergencyDialCode,
-              national: trustSafety.emergencyNational,
-              relationship: trustSafety.emergencyRelationship.trim() || null,
-            }
-          : null,
+      emergencyContact: hasEmergency
+        ? {
+            name: ecName,
+            dialCode: ecDial,
+            national: ecNational,
+            relationship: ecRelationship,
+          }
+        : null,
       address: hasGoogleCoords ? finalizeLocationText(address) || locationText : locationText,
       latitude,
       longitude,

@@ -31,6 +31,8 @@ type MembershipPlansProps = {
   checkoutUserId?: string;
   checkoutRole?: MembershipRole;
   enableCheckout?: boolean;
+  /** Server-resolved per-plan config errors, e.g. "Missing STRIPE_PRICE_PARENT_3M". */
+  planCheckoutErrors?: Record<string, string | null>;
 };
 
 function planId(plan: PricingPlan | MembershipPlanDefinition): string {
@@ -74,6 +76,7 @@ function PlanCard({
   checkoutRole,
   checkoutLoadingPlanId,
   checkoutError,
+  planConfigError,
   onChoosePlan,
 }: {
   plan: PricingPlan;
@@ -90,6 +93,7 @@ function PlanCard({
   checkoutRole?: MembershipRole;
   checkoutLoadingPlanId?: string | null;
   checkoutError?: string | null;
+  planConfigError?: string | null;
   onChoosePlan?: (plan: PricingPlan) => void;
 }) {
   const isCurrent =
@@ -102,6 +106,7 @@ function PlanCard({
     variant === "account" &&
     enableCheckout &&
     !isCurrent &&
+    !planConfigError &&
     Boolean(checkoutUserId) &&
     Boolean(checkoutRole) &&
     Boolean(onChoosePlan);
@@ -144,6 +149,11 @@ function PlanCard({
         </Button>
       ) : (
         <>
+          {planConfigError ? (
+            <p className="mt-4 text-center text-sm text-amber-800" role="alert">
+              {planConfigError}
+            </p>
+          ) : null}
           {checkoutError && canCheckout ? (
             <p className="mt-4 text-center text-sm text-red-600" role="alert">
               {checkoutError}
@@ -165,7 +175,7 @@ function PlanCard({
                 ? activePlanLabel
                 : canCheckout
                   ? choosePlanLabel
-                  : checkoutUnavailableLabel}
+                  : planConfigError ?? checkoutUnavailableLabel}
           </Button>
         </>
       )}
@@ -198,6 +208,7 @@ export function MembershipPlans({
   checkoutUserId,
   checkoutRole,
   enableCheckout = false,
+  planCheckoutErrors,
 }: MembershipPlansProps) {
   const { t } = useLanguage();
   const lockedTab = modeFilter ?? initialTab;
@@ -313,6 +324,7 @@ export function MembershipPlans({
             checkoutRole={effectiveCheckoutRole}
             checkoutLoadingPlanId={checkoutLoadingPlanId}
             checkoutError={checkoutError}
+            planConfigError={planCheckoutErrors?.[plan.id] ?? null}
             onChoosePlan={enableCheckout ? handleChoosePlan : undefined}
           />
         ))}

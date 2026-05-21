@@ -8,19 +8,21 @@ export function isMessageLengthValid(text: string): boolean {
   return text.trim().length > 0 && text.length <= REQUEST_MESSAGE_MAX_CHARS;
 }
 
+import { isPastDate, todayISODate } from "@/lib/calendar-date-state";
+
 /** Local calendar date YYYY-MM-DD for today. */
 export function todayDateInputValue(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return todayISODate();
 }
 
 export function isPastDateInput(date: string): boolean {
   if (!date) return false;
-  return date < todayDateInputValue();
+  return isPastDate(date);
 }
+
+export const PAST_DATE_REQUEST_ERROR = "Please choose today or a future date.";
+
+export const DATE_NOT_AVAILABLE_ERROR = "One or more selected dates are not available.";
 
 export function validateCareRequestForm(values: {
   careType: string;
@@ -39,7 +41,7 @@ export function validateCareRequestForm(values: {
     return "Please select at least one date from the calendar.";
   }
   if (values.selectedDates.some((d) => isPastDateInput(d))) {
-    return "Selected dates cannot be in the past.";
+    return PAST_DATE_REQUEST_ERROR;
   }
   if (!isMessageLengthValid(values.message)) {
     if (!values.message.trim()) return "Please add a message.";

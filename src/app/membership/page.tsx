@@ -1,4 +1,8 @@
 import { MembershipPageContent } from "@/components/membership/MembershipPageContent";
+import {
+  stripeCheckoutErrorsForRole,
+  stripeCheckoutReadyForRole,
+} from "@/lib/stripe-plans";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -7,6 +11,15 @@ export const metadata: Metadata = {
 };
 
 export default function MembershipPage() {
+  const stripeCheckoutByRole = {
+    pet_parent: stripeCheckoutReadyForRole("pet_parent"),
+    pet_friend: stripeCheckoutReadyForRole("pet_friend"),
+  };
+  const stripePlanErrorsByRole = {
+    pet_parent: stripeCheckoutErrorsForRole("pet_parent"),
+    pet_friend: stripeCheckoutErrorsForRole("pet_friend"),
+  };
+
   return (
     <Suspense
       fallback={
@@ -15,7 +28,10 @@ export default function MembershipPage() {
         </div>
       }
     >
-      <MembershipPageContent />
+      <MembershipPageContent
+        stripeCheckoutByRole={stripeCheckoutByRole}
+        stripePlanErrorsByRole={stripePlanErrorsByRole}
+      />
     </Suspense>
   );
 }

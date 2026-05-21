@@ -178,7 +178,9 @@ export async function saveUserProfile(
 
   const { data: existingRow, error: detailsLoadError } = await supabase
     .from("profiles")
-    .select("details, phone_e164, phone_verified, avatar_url, bio")
+    .select(
+      "details, phone_e164, phone_verified, avatar_url, bio, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164",
+    )
     .eq("id", userId)
     .maybeSingle();
 
@@ -188,6 +190,10 @@ export async function saveUserProfile(
     phone_verified?: boolean | null;
     avatar_url?: string | null;
     bio?: string | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_phone_country_code?: string | null;
+    emergency_contact_phone_number?: string | null;
+    emergency_contact_phone_e164?: string | null;
   };
 
   let rowForTrust: TrustLoadRow | null = existingRow as TrustLoadRow | null;
@@ -246,23 +252,54 @@ export async function saveUserProfile(
     throw new Error("Please enter a valid phone number (country code + number).");
   }
 
-  const ecName = input.emergencyContact?.name?.trim() ?? "";
-  const ecNat = normalizeNationalDigits(input.emergencyContact?.national ?? "");
-  const ecDial = normalizeDialCode(input.emergencyContact?.dialCode ?? "+372");
+  let ecName = input.emergencyContact?.name?.trim() ?? "";
+  let ecNat = normalizeNationalDigits(input.emergencyContact?.national ?? "");
+  let ecDial = normalizeDialCode(input.emergencyContact?.dialCode ?? "+372");
   const ecRelationship = input.emergencyContact?.relationship?.trim() || null;
 
-  const emergencyPartial = Boolean(ecName || ecNat);
+  if (rowForTrust && typeof rowForTrust === "object") {
+    const prev = rowForTrust as TrustLoadRow;
+    if (!ecName && prev.emergency_contact_name?.trim()) {
+      ecName = prev.emergency_contact_name.trim();
+    }
+    if (!ecNat && prev.emergency_contact_phone_number?.trim()) {
+      ecNat = normalizeNationalDigits(prev.emergency_contact_phone_number);
+    }
+    if (ecDial === "+372" && prev.emergency_contact_phone_country_code?.trim()) {
+      ecDial = normalizeDialCode(prev.emergency_contact_phone_country_code);
+    }
+  }
+
+  const emergencyPartial = Boolean(ecName || ecNat || ecRelationship);
   let emergencyE164 = "";
   if (emergencyPartial) {
     if (!ecName) {
       throw new Error("Please enter your emergency contact's name.");
     }
     if (!ecNat) {
-      throw new Error("Please enter your emergency contact's phone number.");
-    }
-    emergencyE164 = buildPhoneE164(ecDial, ecNat);
-    if (!isValidE164(emergencyE164)) {
-      throw new Error("Please enter a valid emergency contact phone number.");
+      if (ecRelationship && rowForTrust) {
+        const prevE164 = (rowForTrust as TrustLoadRow).emergency_contact_phone_e164?.trim();
+        if (prevE164 && isValidE164(prevE164)) {
+          emergencyE164 = prevE164;
+          ecNat = normalizeNationalDigits(
+            (rowForTrust as TrustLoadRow).emergency_contact_phone_number ?? "",
+          );
+          if ((rowForTrust as TrustLoadRow).emergency_contact_phone_country_code?.trim()) {
+            ecDial = normalizeDialCode(
+              (rowForTrust as TrustLoadRow).emergency_contact_phone_country_code!,
+            );
+          }
+        } else {
+          throw new Error("Please enter your emergency contact's phone number.");
+        }
+      } else {
+        throw new Error("Please enter your emergency contact's phone number.");
+      }
+    } else {
+      emergencyE164 = buildPhoneE164(ecDial, ecNat);
+      if (!isValidE164(emergencyE164)) {
+        throw new Error("Please enter a valid emergency contact phone number.");
+      }
     }
   }
 

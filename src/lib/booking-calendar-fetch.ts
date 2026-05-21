@@ -41,7 +41,8 @@ export async function fetchCalendarBookingsForMonth(
   },
 ): Promise<CalendarBooking[]> {
   const { start, end } = monthBounds(filters.year, filters.month);
-  const statuses = filters.statuses ?? (["upcoming", "active"] as BookingStatus[]);
+  const statuses =
+    filters.statuses ?? (["upcoming", "active", "completed"] as BookingStatus[]);
 
   let query = supabase
     .from("bookings")

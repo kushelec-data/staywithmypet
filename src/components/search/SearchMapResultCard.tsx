@@ -280,9 +280,13 @@ export function SearchMapFriendCard({
         name={profile.displayName}
         petFriendId={profile.id}
         dates={availability.allDates}
-        title={`${profile.displayName}'s availability`}
-        subtitle="Dates when this Pet Friend is available for care."
         onClose={() => setCalendarOpen(false)}
+        careRequestTarget={{
+          kind: "profile",
+          friendId: profile.id,
+          label: profile.displayName,
+          availabilityDates: availability.allDates,
+        }}
       />
     </>
   );

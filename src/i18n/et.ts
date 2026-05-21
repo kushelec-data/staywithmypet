@@ -228,7 +228,7 @@ export const et = {
     careTypeRequired: "Vali hoolduse tüüp.",
     datesRequired: "Palun vali kalendrist vähemalt üks kuupäev.",
     dateNotAvailable: "Mõni valitud kuupäev pole saadaval.",
-    pastDates: "Kuupäevad ei tohi olla minevikus.",
+    pastDates: "Vali tänane või tuleviku kuupäev.",
     dateRangeInvalid: "Lõppkuupäev peab olema algusest hiljem või sama.",
     addPetFirst: "Lisa lemmikloom enne hoolduspäringu saatmist.",
     addPetLink: "Lisa lemmikloom",
@@ -346,6 +346,9 @@ export const et = {
     statusActive: "Aktiivne",
     statusCompleted: "Lõpetatud",
     statusCancelled: "Tühistatud",
+    pastUnavailable: "Minevik — pole saadaval",
+    pastCompleted: "Minevik — pole saadaval",
+    legendPastCompleted: "Minevik / lõpetatud",
     legendAvailable: "Saadaval",
     legendBooked: "Broneeritud",
     legendUnavailable: "Pole saadaval",
@@ -354,6 +357,8 @@ export const et = {
     tapToAdd: "Puuduta kalendris päevi, et lisada saadavust.",
     selectFromAvailable: "Vali üks või mitu saadaolevat kuupäeva kalendrist.",
     clearDates: "Tühjenda kuupäevad",
+    viewOnlyHint:
+      "Kuupäevad on ainult informatiivsed — vali kuupäevad hoolduspäringu saatmisel.",
   },
   reviews: {
     leaveReview: "Jäta arvustus",
@@ -1066,6 +1071,15 @@ export const et = {
     mapNoLocations:
       "Sõpradel pole veel kaardikohti. Proovi nimekirja või muuda filtreid.",
     ctaTitle: "Kas oled hoopis {role}?",
+    availabilityTitle: "{name} saadavus",
+    availabilitySubtitle: "Kuupäevad, mil see lemmikloomasõber on hoolduseks saadaval.",
+    noUpcomingDates: "Tulevasi kuupäevi pole veel kirjas.",
+    logInToSendRequest: "Logi sisse, et päring saata",
+    upgradeToRequest:
+      "Hoolduspäringu saatmiseks lemmikloomasõpradele uuenda Lemmiklooma omaniku liikmelisust.",
+    viewMembershipPlans: "Vaata liikmelisuse pakette",
+    maybeLater: "Võib-olla hiljem",
+    checkCalendar: "Vaata kalendrit",
   },
   searchFilters: {
     petSearch: "Lemmiklooma otsing",

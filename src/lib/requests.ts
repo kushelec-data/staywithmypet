@@ -2,6 +2,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatDateRange as formatIsoDateRange } from "@/lib/date-format";
 import { ensureConversationForAcceptedRequest } from "@/lib/messaging";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
+import {
+  parseProfileDetails,
+  profileCalendarSelectedDates,
+} from "@/lib/profile-details";
+import {
+  DATE_NOT_AVAILABLE_ERROR,
+  isPastDateInput,
+  PAST_DATE_REQUEST_ERROR,
+} from "@/lib/request-validation";
 import { ensureUserProfile } from "@/lib/profile";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { isBookingOverlapError } from "@/lib/bookings";
@@ -354,6 +363,42 @@ export async function resolveRequesterProfileId(supabase: SupabaseClient): Promi
   return profile.id;
 }
 
+async function loadAllowedRequestDates(
+  supabase: SupabaseClient,
+  input: CreateCareRequestInput,
+): Promise<Set<string>> {
+  if (input.senderId === input.petParentId) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("details")
+      .eq("id", input.petFriendId)
+      .maybeSingle();
+    if (error) throw error;
+    const details = parseProfileDetails(data?.details);
+    return new Set(profileCalendarSelectedDates(details));
+  }
+
+  const { data, error } = await supabase
+    .from("pets")
+    .select("availability_dates")
+    .eq("id", input.petId)
+    .maybeSingle();
+  if (error) throw error;
+  return new Set(normalizeAvailabilityDates(data?.availability_dates));
+}
+
+async function assertRequestedDatesAvailable(
+  supabase: SupabaseClient,
+  input: CreateCareRequestInput,
+  requestedDates: string[],
+): Promise<void> {
+  const allowed = await loadAllowedRequestDates(supabase, input);
+  const invalid = requestedDates.find((d) => !allowed.has(d));
+  if (invalid) {
+    throw new Error(DATE_NOT_AVAILABLE_ERROR);
+  }
+}
+
 export async function createCareRequest(
   supabase: SupabaseClient,
   input: CreateCareRequestInput,
@@ -392,6 +437,12 @@ export async function createCareRequest(
   if (!requestedDates.length) {
     throw new Error("Please select at least one date from the calendar.");
   }
+
+  if (requestedDates.some((d) => isPastDateInput(d))) {
+    throw new Error(PAST_DATE_REQUEST_ERROR);
+  }
+
+  await assertRequestedDatesAvailable(supabase, input, requestedDates);
 
   const dateFrom = requestedDates[0];
   const dateTo = requestedDates[requestedDates.length - 1];

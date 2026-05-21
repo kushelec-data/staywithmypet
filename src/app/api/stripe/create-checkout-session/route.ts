@@ -1,10 +1,11 @@
 import {
   billingIntervalFromPlanId,
   resolveStripePriceId,
+  stripeCheckoutConfigError,
   stripeCheckoutMode,
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
-import { getSiteUrl, getStripe, isStripeConfigured } from "@/lib/stripe";
+import { getSiteUrl, getStripe } from "@/lib/stripe";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
@@ -26,10 +27,6 @@ function planExistsForRole(role: MembershipRole, planId: string): boolean {
 }
 
 export async function POST(request: Request) {
-  if (!isStripeConfigured()) {
-    return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
-  }
-
   let body: CheckoutBody;
   try {
     body = (await request.json()) as CheckoutBody;
@@ -48,6 +45,12 @@ export async function POST(request: Request) {
 
   if (!planExistsForRole(role, planId.trim())) {
     return NextResponse.json({ error: "Unknown plan for role." }, { status: 400 });
+  }
+
+  const trimmedPlanId = planId.trim();
+  const configError = stripeCheckoutConfigError(trimmedPlanId);
+  if (configError) {
+    return NextResponse.json({ error: configError }, { status: 503 });
   }
 
   const supabase = await createClient();
@@ -70,10 +73,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "User mismatch." }, { status: 403 });
   }
 
-  const resolvedPriceId = resolveStripePriceId(planId.trim());
+  const resolvedPriceId = resolveStripePriceId(trimmedPlanId);
   if (!resolvedPriceId) {
+    const retryError = stripeCheckoutConfigError(trimmedPlanId);
     return NextResponse.json(
-      { error: "Stripe price is not configured for this plan." },
+      { error: retryError ?? "Stripe price is not configured for this plan." },
       { status: 503 },
     );
   }
@@ -86,7 +90,7 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const billingInterval = billingIntervalFromPlanId(planId.trim());
+  const billingInterval = billingIntervalFromPlanId(trimmedPlanId);
   const mode = stripeCheckoutMode(billingInterval);
   const siteUrl = getSiteUrl();
   const stripe = getStripe();
@@ -107,7 +111,7 @@ export async function POST(request: Request) {
     metadata: {
       user_id: sessionUserId,
       role,
-      plan_id: planId.trim(),
+      plan_id: trimmedPlanId,
     },
     success_url: `${siteUrl}/membership?success=true`,
     cancel_url: `${siteUrl}/membership?cancelled=true`,
@@ -124,7 +128,7 @@ export async function POST(request: Request) {
       metadata: {
         user_id: sessionUserId,
         role,
-        plan_id: planId.trim(),
+        plan_id: trimmedPlanId,
       },
     };
   } else {
@@ -132,7 +136,7 @@ export async function POST(request: Request) {
       metadata: {
         user_id: sessionUserId,
         role,
-        plan_id: planId.trim(),
+        plan_id: trimmedPlanId,
       },
     };
   }

@@ -11,6 +11,11 @@ import {
   type CalendarBooking,
   type CalendarViewRole,
 } from "@/lib/booking-calendar";
+import {
+  filterPastDates,
+  resolveCalendarDay,
+  todayISODate,
+} from "@/lib/calendar-date-state";
 import { formatDate } from "@/lib/date-format";
 import {
   eachISODateInRangeInclusive,
@@ -85,9 +90,9 @@ export function BookingCalendar({
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
   const title = cursor.toLocaleString(undefined, { month: "long", year: "numeric" });
-  const today = localISODate(new Date());
+  const today = todayISODate();
 
-  const { dayMap, bookedDateSet, loading } = useCalendarBookings({
+  const { dayMap, blockingBookedDateSet, loading } = useCalendarBookings({
     petId,
     petFriendId,
     visibility,
@@ -120,7 +125,8 @@ export function BookingCalendar({
 
   function toggle(iso: string, shiftKey = false) {
     if (disabled || !onChange) return;
-    if (bookedDateSet.has(iso)) return;
+    if (blockingBookedDateSet.has(iso)) return;
+    if (iso < today) return;
     if (mode === "request-select" && !availableSet.has(iso)) return;
 
     if (
@@ -129,7 +135,10 @@ export function BookingCalendar({
       lastSelectedRef.current !== iso &&
       mode === "availability-select"
     ) {
-      const range = eachISODateInRangeInclusive(lastSelectedRef.current, iso);
+      const range = filterPastDates(
+        eachISODateInRangeInclusive(lastSelectedRef.current, iso),
+        today,
+      );
       onChange(mergeUniqueSortedDates(sortedSelected, range));
       lastSelectedRef.current = iso;
       return;
@@ -214,70 +223,55 @@ export function BookingCalendar({
               }
               const iso = isoFor(day);
               const slices = dayMap.get(iso) ?? [];
-              const isBooked = bookedDateSet.has(iso);
               const isAvailable = availableSet.has(iso);
               const isSelected = selectedSet.has(iso);
-              const isToday = today === iso;
-              const canSelect =
-                mode !== "availability-readonly" &&
-                !disabled &&
-                !isBooked &&
-                (mode === "availability-select" ||
-                  (mode === "request-select" && isAvailable));
+              const blockingBooked = blockingBookedDateSet.has(iso);
               const primaryBooking = slices[0]?.booking;
-              const tint =
-                isBooked && primaryBooking && visibility === "full"
-                  ? primaryBooking.color.tint
-                  : isBooked && visibility === "public"
-                    ? "rgba(0,0,0,0.08)"
-                    : null;
-
-              const titleParts: string[] = [];
-              if (isBooked && mode === "request-select") titleParts.push(t.bookingCalendar.alreadyBooked);
-              else if (isBooked && visibility === "public") titleParts.push(t.bookingCalendar.booked);
-              else if (!isAvailable && mode === "request-select")
-                titleParts.push(t.bookingCalendar.notAvailable);
-              else titleParts.push(iso);
+              const resolved = resolveCalendarDay(
+                {
+                  iso,
+                  today,
+                  slices,
+                  mode,
+                  isSelected,
+                  isAvailable,
+                  blockingBooked,
+                },
+                {
+                  pastUnavailable: t.bookingCalendar.pastUnavailable,
+                  pastCompleted: t.bookingCalendar.pastCompleted,
+                  booked: t.bookingCalendar.booked,
+                  alreadyBooked: t.bookingCalendar.alreadyBooked,
+                  notAvailable: t.bookingCalendar.notAvailable,
+                  available: t.bookingCalendar.legendAvailable,
+                  selected: t.bookingCalendar.legendSelected,
+                  iso,
+                },
+                {
+                  visibility,
+                  disabled,
+                  primaryTint: primaryBooking?.color.tint ?? null,
+                  primaryColor: primaryBooking?.color,
+                },
+              );
 
               const cellInner = (
                 <BookingDateCell
                   day={day}
                   slices={slices}
-                  booked={isBooked}
-                  showAvatars={visibility === "full" && viewRole !== "public"}
-                  tint={isBooked ? tint : null}
+                  booked={blockingBooked || slices.length > 0}
+                  showAvatars={resolved.showAvatars && viewRole !== "public"}
+                  tint={resolved.tint}
                 />
               );
-
-              const showAsAvailable =
-                mode === "availability-readonly" || mode === "request-select"
-                  ? isAvailable
-                  : isSelected;
-
-              const stateClasses = isSelected && mode !== "availability-readonly"
-                ? "bg-brand-teal text-white shadow-md shadow-brand-teal/25 ring-2 ring-brand-teal ring-offset-1"
-                : isSelected && mode === "availability-readonly"
-                  ? "bg-brand-teal/15 text-brand-teal ring-1 ring-brand-teal/25"
-                  : isBooked
-                    ? visibility === "public"
-                      ? "bg-black/[0.08] text-muted ring-1 ring-black/10"
-                      : `${primaryBooking?.color.bg ?? "bg-black/[0.06]"} ${primaryBooking?.color.text ?? "text-foreground"} ring-1 ${primaryBooking?.color.ring ?? "ring-black/10"}`
-                    : showAsAvailable
-                      ? isToday
-                        ? "bg-emerald-50 text-brand-teal ring-1 ring-brand-teal/30 hover:bg-emerald-100/80"
-                        : "bg-emerald-50/80 text-foreground ring-1 ring-emerald-200/60 hover:bg-emerald-100/70"
-                      : mode === "availability-select"
-                        ? isToday
-                          ? "bg-brand-pink/15 text-brand-pink ring-1 ring-brand-pink/30 hover:bg-mint/50"
-                          : "bg-surface/90 text-foreground hover:bg-mint/50 hover:ring-1 hover:ring-brand-teal/20"
-                        : "bg-black/[0.03] text-muted/40";
 
               if (mode === "availability-readonly") {
                 return (
                   <div
                     key={iso}
-                    title={titleParts.join(" · ")}
-                    className={`relative flex aspect-square items-center justify-center rounded-xl transition-all ${stateClasses}`}
+                    title={resolved.title}
+                    aria-label={resolved.ariaLabel}
+                    className={`relative flex aspect-square items-center justify-center rounded-xl transition-all ${resolved.cellClassName}`}
                   >
                     {cellInner}
                   </div>
@@ -289,33 +283,28 @@ export function BookingCalendar({
                   key={iso}
                   ref={activeBooking?.id === primaryBooking?.id ? activeCellRef : undefined}
                   type="button"
-                  disabled={!canSelect && !(isBooked && visibility === "full")}
-                  title={titleParts.join(" · ")}
+                  disabled={!resolved.canSelect && !resolved.canOpenBooking}
+                  title={resolved.title}
+                  aria-label={resolved.ariaLabel}
                   onClick={(e) => {
-                    if (isBooked && primaryBooking && visibility === "full") {
+                    if (resolved.canOpenBooking && primaryBooking) {
                       openBookingDetail(primaryBooking);
                       return;
                     }
-                    if (canSelect) toggle(iso, e.shiftKey);
+                    if (resolved.canSelect) toggle(iso, e.shiftKey);
                   }}
                   onMouseEnter={() => {
                     if (
                       popoverVariant === "popover" &&
-                      isBooked &&
-                      primaryBooking &&
-                      visibility === "full"
+                      resolved.canOpenBooking &&
+                      primaryBooking
                     ) {
                       setActiveBooking(primaryBooking);
                     }
                   }}
-                  className={`relative flex aspect-square items-center justify-center rounded-xl transition-all ${
-                    canSelect ? "cursor-pointer" : isBooked ? "cursor-pointer" : "cursor-not-allowed"
-                  } ${stateClasses} disabled:opacity-60`}
+                  className={`relative flex aspect-square items-center justify-center rounded-xl transition-all ${resolved.cellClassName}`}
                 >
                   {cellInner}
-                  {isBooked && mode === "request-select" ? (
-                    <span className="sr-only">{t.bookingCalendar.alreadyBooked}</span>
-                  ) : null}
                 </button>
               );
             })}
@@ -337,16 +326,16 @@ export function BookingCalendar({
       {showLegend ? (
         <ul className="flex flex-wrap gap-3 text-xs text-muted">
           <li className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-neutral-200/80 ring-1 ring-neutral-300/50 dark:bg-neutral-700/40" />
+            {t.bookingCalendar.legendPastCompleted}
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-sky-100 ring-1 ring-sky-300/70" />
+            {t.bookingCalendar.legendBooked}
+          </li>
+          <li className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-emerald-100 ring-1 ring-emerald-200/70" />
             {t.bookingCalendar.legendAvailable}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-black/[0.08] ring-1 ring-black/10" />
-            {visibility === "public" ? t.bookingCalendar.booked : t.bookingCalendar.legendBooked}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-black/[0.03] ring-1 ring-black/5" />
-            {t.bookingCalendar.legendUnavailable}
           </li>
           {mode !== "availability-readonly" ? (
             <li className="flex items-center gap-1.5">
@@ -381,6 +370,8 @@ export function BookingCalendar({
             ))}
           </ul>
         </div>
+      ) : mode === "availability-readonly" ? (
+        <p className="text-xs text-muted">{t.bookingCalendar.viewOnlyHint}</p>
       ) : mode === "availability-select" ? (
         <p className="text-xs text-muted">{t.bookingCalendar.tapToAdd}</p>
       ) : mode === "request-select" ? (

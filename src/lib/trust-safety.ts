@@ -28,6 +28,15 @@ export function isProfileVerified(flags: TrustFlags): boolean {
   return flags.emailVerified && flags.phoneVerified;
 }
 
+/** Read `details.emergency_contact.relationship` without requiring name/phone in JSON. */
+export function emergencyContactRelationshipFromDetails(detailsRaw: unknown): string | null {
+  if (!detailsRaw || typeof detailsRaw !== "object" || Array.isArray(detailsRaw)) return null;
+  const raw = (detailsRaw as Record<string, unknown>).emergency_contact;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const rel = (raw as Record<string, unknown>).relationship;
+  return typeof rel === "string" && rel.trim() ? rel.trim() : null;
+}
+
 /** Prefer structured columns; fall back to `details.emergency_contact`. */
 export function parseEmergencyContactFromProfile(profile: {
   emergency_contact_name: string | null;
@@ -36,12 +45,24 @@ export function parseEmergencyContactFromProfile(profile: {
 }): EmergencyContact | null {
   const name = profile.emergency_contact_name?.trim();
   const e164 = profile.emergency_contact_phone_e164?.trim();
+  const details = profile.details;
+  const parsedRelationship =
+    details && typeof details === "object" && !Array.isArray(details)
+      ? (details as Record<string, unknown>).emergency_contact_relationship
+      : null;
+  const relationship =
+    (typeof parsedRelationship === "string" && parsedRelationship.trim()
+      ? parsedRelationship.trim()
+      : null) ??
+    emergencyContactRelationshipFromDetails(details) ??
+    parseEmergencyContact(details)?.relationship ??
+    null;
+
   if (name && e164) {
-    const legacy = parseEmergencyContact(profile.details);
     return {
       name,
       phone: e164,
-      relationship: legacy?.relationship ?? null,
+      relationship,
     };
   }
   return parseEmergencyContact(profile.details);
