@@ -1,0 +1,533 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --background: #fffdf7;
+  --foreground: #333333;
+  --muted: #5c5c5c;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --cream: #faf6f0;
+  --border: rgba(0, 0, 0, 0.05);
+
+  /* Main palette */
+  --pastel-blue: #acc7e7;
+  --mint: #c3e8d2;
+  --lavender: #e6daf0;
+
+  /* Functional */
+  --brand-teal: #265d32;
+  --brand-teal-hover: #1e4a28;
+  --dark-gray: #333333;
+  --soft-orange: #f6c49b;
+  --warning-green: #dde8a7;
+  --success-mint: #a0e480;
+  --error-bg: #fde8eb;
+  --error-text: #c43d4d;
+  --success-bg: #eef8f2;
+  --success-text: #265d32;
+
+  /* Nav active + accents */
+  --brand-pink: #f06a7a;
+  --brand-pink-muted: #fde8eb;
+  --brand-pink-hover: #e85a6a;
+
+  /* Legacy aliases */
+  --brand-pink-dark: var(--brand-pink-hover);
+  --brand-pink-light: var(--brand-pink-muted);
+  --brand-sage: var(--brand-teal);
+  --brand-sage-dark: var(--brand-teal-hover);
+  --brand-sage-light: var(--mint);
+  --brand-sage-muted: #eef8f2;
+  --orange: var(--soft-orange);
+  --success: var(--success-mint);
+  --sand: #faf6f0;
+
+  /* Warm inbox / requests surfaces */
+  --swmp-page-bg: #f8f5ef;
+  --swmp-warm-card: #f4f0e8;
+  --swmp-warm-surface: #fffaf2;
+  --swmp-warm-border: rgba(38, 92, 52, 0.1);
+  --swmp-chat-bg: #f7f5ef;
+}
+
+.dark {
+  --background: #111713;
+  --foreground: #f5f1e8;
+  --muted: #b8b0a3;
+  --surface: #202b23;
+  --card: #18221b;
+  --cream: #1a221c;
+  --border: rgba(140, 190, 150, 0.25);
+
+  --pastel-blue: #2a3540;
+  --mint: #2a3d32;
+  --lavender: #2e2838;
+
+  --brand-teal: #2f6b3f;
+  --brand-teal-hover: #3d8250;
+  --dark-gray: #f5f1e8;
+  --soft-orange: #5c4a38;
+  --warning-green: #3d4228;
+  --success-mint: #3d6b45;
+  --error-bg: #3d2228;
+  --error-text: #f0a0a8;
+  --success-bg: #1e3324;
+  --success-text: #a0e480;
+
+  --brand-pink: #e87a88;
+  --brand-pink-muted: #3d2830;
+  --brand-pink-hover: #f06a7a;
+
+  --brand-sage-muted: #1e2e24;
+  --sand: #1a221c;
+
+  --swmp-page-bg: #121814;
+  --swmp-warm-card: #1c2620;
+  --swmp-warm-surface: #242e26;
+  --swmp-warm-border: rgba(140, 190, 150, 0.18);
+  --swmp-chat-bg: #161d18;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-cream: var(--cream);
+  --color-border: var(--border);
+  --color-error-bg: var(--error-bg);
+  --color-error-text: var(--error-text);
+  --color-success-bg: var(--success-bg);
+  --color-success-text: var(--success-text);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-teal-hover: var(--brand-teal-hover);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-pink-hover: var(--brand-pink-hover);
+  --color-brand-pink-muted: var(--brand-pink-muted);
+  --color-brand-pink-light: var(--brand-pink-muted);
+  --color-brand-pink-dark: var(--brand-pink-hover);
+  --color-pastel-blue: var(--pastel-blue);
+  --color-mint: var(--mint);
+  --color-lavender: var(--lavender);
+  --color-orange: var(--soft-orange);
+  --color-success: var(--success-mint);
+  --color-warning-green: var(--warning-green);
+  --color-brand-sage: var(--brand-teal);
+  --color-brand-sage-dark: var(--brand-teal-hover);
+  --color-brand-sage-light: var(--mint);
+  --color-brand-sage-muted: var(--brand-sage-muted);
+  --color-sand: var(--sand);
+  --color-swmp-page: var(--swmp-page-bg);
+  --color-swmp-warm-card: var(--swmp-warm-card);
+  --color-swmp-warm-surface: var(--swmp-warm-surface);
+  --color-swmp-chat: var(--swmp-chat-bg);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-poppins);
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.font-heading {
+  font-family: var(--font-poppins), system-ui, sans-serif;
+}
+
+/* Pet profile cards — clean marketplace typography (Inter, tight hierarchy) */
+.pet-profile-card {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.pet-profile-card .pet-profile-name {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--foreground);
+}
+
+.pet-profile-card .pet-profile-meta {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--foreground) 55%, transparent);
+}
+
+.pet-profile-card .pet-profile-body {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+}
+
+.bg-mesh {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(172, 199, 231, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 100% 0%, rgba(230, 218, 240, 0.4), transparent 50%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(195, 232, 210, 0.25), transparent 55%);
+}
+
+.card-elevated {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 6px 20px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.dark .card-elevated {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-elevated:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.06),
+      0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .card-elevated:hover {
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.3),
+      0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.swmp-warm-card {
+  border: 1px solid var(--swmp-warm-border);
+  background: var(--swmp-warm-card);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 24px rgba(38, 92, 52, 0.06);
+}
+
+.dark .swmp-warm-card {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28);
+}
+
+.swmp-tab-chip-active {
+  border-radius: 9999px;
+  background: var(--brand-teal);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(38, 92, 52, 0.2);
+}
+
+.swmp-tab-chip-inactive {
+  border-radius: 9999px;
+  border: 1px solid var(--swmp-warm-border);
+  background: var(--swmp-warm-surface);
+  color: var(--brand-teal);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .swmp-tab-chip-inactive:hover {
+    background: color-mix(in srgb, var(--mint) 45%, var(--swmp-warm-surface));
+    border-color: color-mix(in srgb, var(--brand-teal) 25%, var(--swmp-warm-border));
+  }
+}
+
+.btn-interactive {
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.btn-interactive:hover {
+  transform: scale(1.02);
+}
+
+.btn-interactive:active {
+  transform: scale(0.98);
+}
+
+.link-hover {
+  transition: color 0.2s ease;
+}
+
+.link-hover:hover {
+  color: var(--brand-teal);
+}
+
+.section-pad {
+  padding-top: clamp(2.75rem, 7vw, 7.5rem);
+  padding-bottom: clamp(2.75rem, 7vw, 7.5rem);
+}
+
+.section-pad-tight {
+  padding-top: clamp(2rem, 5vw, 4rem);
+  padding-bottom: clamp(2rem, 5vw, 4rem);
+}
+
+.hero-glow {
+  background:
+    radial-gradient(ellipse 90% 70% at 20% -10%, rgba(172, 199, 231, 0.25), transparent 50%),
+    radial-gradient(ellipse 70% 60% at 90% 20%, rgba(230, 218, 240, 0.35), transparent 45%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(195, 232, 210, 0.35), transparent 50%);
+}
+
+.input-field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.625rem 1rem;
+  color: var(--foreground);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--brand-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-teal) 25%, transparent);
+}
+
+.dark .bg-mesh {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 0% 0%, rgba(42, 53, 64, 0.5), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 100% 0%, rgba(46, 40, 56, 0.45), transparent 50%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(42, 61, 50, 0.35), transparent 55%);
+}
+
+.dark .hero-glow {
+  background:
+    radial-gradient(ellipse 90% 70% at 20% -10%, rgba(42, 53, 64, 0.4), transparent 50%),
+    radial-gradient(ellipse 70% 60% at 90% 20%, rgba(46, 40, 56, 0.35), transparent 45%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(42, 61, 50, 0.4), transparent 50%);
+}
+
+@keyframes hero-story-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-story-text-in {
+    animation: hero-story-text-in 450ms ease-out both;
+  }
+}
+
+@keyframes explainer-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes explainer-card-in {
+  from {
+    opacity: 0;
+    transform: translateX(-1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes explainer-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes explainer-cursor-click {
+  0%,
+  70% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: translate(-2px, -2px) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.88);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes message-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .message-fade-in {
+    animation: message-fade-in 280ms ease-out both;
+  }
+
+  .explainer-slide-up {
+    animation: explainer-slide-up 500ms ease-out both;
+  }
+
+  .explainer-card-in {
+    animation: explainer-card-in 550ms ease-out both;
+  }
+
+  .explainer-bubble-in {
+    animation: explainer-bubble-in 450ms ease-out both;
+  }
+
+  .explainer-cursor-click {
+    animation: explainer-cursor-click 2.8s ease-in-out 0.6s both;
+  }
+}
+
+/* Pet search map (Leaflet) */
+.swmp-pet-search-map .leaflet-container {
+  font-family: inherit;
+  background: var(--mint);
+}
+
+.swmp-map-pin {
+  background: transparent !important;
+  border: none !important;
+}
+
+.swmp-map-pin__dot {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--brand-teal);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, width 0.15s ease, height 0.15s ease, background 0.15s ease;
+}
+
+.swmp-map-pin--selected .swmp-map-pin__dot {
+  width: 30px;
+  height: 30px;
+  background: var(--brand-teal-hover);
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 2px var(--brand-teal-hover), 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.swmp-map-popup .leaflet-popup-content-wrapper {
+  border-radius: 1.25rem;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.swmp-map-popup .leaflet-popup-content {
+  margin: 0;
+  min-width: 200px;
+}
+
+.swmp-map-popup__card {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.swmp-map-popup__photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.swmp-map-popup__photo--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mint);
+  font-size: 1.5rem;
+}
+
+.swmp-map-popup__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.swmp-map-popup__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.swmp-map-popup__area {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.swmp-map-popup__rating {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand-teal);
+}
+
+.swmp-map-popup__tags {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.swmp-map-popup__cta {
+  margin-top: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--brand-teal);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.85rem;
+  text-decoration: none;
+}
+
+.swmp-map-popup__cta:hover {
+  background: var(--brand-teal-hover);
+}

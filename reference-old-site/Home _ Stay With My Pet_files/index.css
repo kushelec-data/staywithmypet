@@ -1,0 +1,130 @@
+/* Responsive adjustments for StayWithMyPet Home */
+@media (max-width: 1200px) {
+  .container, .header-container, .footer-container, .hero-container, .about-container {
+    max-width: 98vw;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .hero-content h1, .section-title {
+    font-size: 2.2rem !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .header-container {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 0;
+    position: relative;
+  }
+  .footer-container, .hero-container, .about-container {
+    flex-direction: column !important;
+    gap: 24px;
+    align-items: center;
+  }
+  .main-nav ul {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .hero-container {
+    flex-direction: column;
+    gap: 32px;
+  }
+  .hero-image-wrapper, .about-features {
+    width: 100%;
+    margin-top: 24px;
+  }
+  .about-features {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .about-features .feature-card {
+    width: 48%;
+    min-width: 180px;
+  }
+  .services-grid, .caregivers-grid, .why-choose-us-grid, .testimonials-grid, .pricing-grid, .articles-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  .header-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hero-content h1, .section-title {
+    font-size: 1.3rem !important;
+    line-height: 1.2;
+  }
+  .hero-stats, .about-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hero-image-stack img, .hero-main-img, .hero-pet-1, .hero-pet-2, .hero-pet-3 {
+    max-width: 90vw;
+    height: auto;
+  }
+  .services-grid, .caregivers-grid, .why-choose-us-grid, .testimonials-grid, .pricing-grid, .articles-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .about-features .feature-card {
+    width: 100%;
+  }
+  .about-content h2, .about-content h3 {
+    font-size: 24px !important;
+    text-align: center;
+  }
+  .about-section, .about-container {
+    padding: 16px 0;
+  }
+  .about-content p{
+    font-size: 0.9rem;
+    line-height: 1.5;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .about-content .btn {
+    display: block;
+    margin: 24px auto 0 auto;
+    text-align: center;
+    width: fit-content;
+  }
+  .about-features {
+    flex-direction: column !important;
+    gap: 18px;
+    align-items: center;
+  }
+  .about-features .feature-card {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 400px;
+  }
+  .site-header, .site-footer {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .contact-wrapper {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .contact-form-container, .contact-info-container {
+    width: 100%;
+    min-width: 0;
+  }
+  .footer-col {
+    width: 100%;
+    margin-bottom: 18px;
+  }
+}
+
+@media (max-width: 400px) {
+  .hero-content h1, .section-title {
+    font-size: 27px !important
+  }
+  .btn, .btn-primary, .btn-secondary {
+    font-size: 0.9rem;
+    padding: 8px 16px;
+  }
+}

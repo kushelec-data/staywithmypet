@@ -1,0 +1,292 @@
+.steps-fullscreen {
+  width: 100vw;
+  /* height: 100vh; */
+  position: relative;
+  overflow: hidden;
+}
+.step-slide {
+  width: 100vw;
+  /* height: 100vh; */
+  position: absolute;
+  top: 0; left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s cubic-bezier(.4,0,.2,1);
+  z-index: 1;
+}
+.steps-fullscreen {
+  min-height: 100vh;
+  height: auto;
+}
+
+.step-slide {
+  min-height: 100vh;
+  height: auto;
+  padding: 6rem 0;
+}
+
+.step-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+}
+.slide-bg {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg) no-repeat center center/40% #f7fafc;
+  opacity: 0.08;
+  z-index: 1;
+}
+.slide-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  max-width: 1200px;
+  padding: 0 5vw;
+}
+.slide-left {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+}
+.slide-right {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+.step-number {
+  font-size: 4rem;
+  font-weight: 800;
+  color: var(--primary-green);
+  margin-top: 24px;
+  margin-bottom: 24px;
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+}
+.step-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #22223b;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.step-desc {
+  font-size: 1.3rem;
+  color: #444;
+  max-width: 500px;
+  margin-bottom: 0;
+}
+.step-main-img {
+  width: 420px;
+  max-width: 90vw;
+  height: auto;
+  border-radius: 2.5rem;
+  box-shadow: 0 8px 32px rgba(79,70,229,0.10), 0 1.5px 8px rgba(0,0,0,0.07);
+  background: #fff;
+  object-fit: cover;
+  opacity: 0.98;
+}
+@media (max-width: 900px) {
+  .slide-content { flex-direction: column; padding: 0 2vw; }
+  .slide-left, .slide-right { width: 100%; align-items: center; text-align: center; }
+  .step-main-img { width: 80vw; margin-top: 32px; }
+}
+@media (max-width: 600px) {
+  .step-title { font-size: 1.5rem; }
+  .step-number { font-size: 2.2rem; }
+  .step-desc { font-size: 1rem; }
+  .slide-content { padding: 0 1vw; }
+  .slide-left{margin-top:50px;}
+}
+  /* About StayWithMyPet Section */
+.about-swmypet-section {
+  width: 100vw;
+  background: #f7fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 0 48px 0;
+}
+.about-swmypet-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+.about-swmypet-title {
+  font-size: 45px;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 18px;
+}
+.about-swmypet-desc {
+  font-size: 16px;
+  color: #333;
+  line-height: 1.7;
+}
+  /* How It Works Heading */
+.howitworks-heading-section {
+  width: 100vw;
+  background: #fff;
+  padding: 48px 0 0 0;
+  text-align: center;
+}
+.howitworks-heading {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--primary-green);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+
+
+/* About StayWithMyPet Section (2-column) */
+.about-swmypet-section.twocol {
+  width: 100vw;
+  background: var(--background-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 0 48px 0;
+}
+.twocol-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+  gap: 48px;
+}
+.about-swmypet-left {
+  flex: 1 1 0;
+  text-align: left;
+}
+.about-swmypet-right {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.Tips-right{
+  flex: 1 1 0;
+  /* display: flex; */
+  text-align: left;
+  justify-content: left;
+}
+.about-swmypet-img {
+  width: 380px;
+  max-width: 90vw;
+  border-radius: 2rem;
+  box-shadow: 0 8px 32px rgba(79,70,229,0.10), 0 1.5px 8px rgba(0,0,0,0.07);
+  background: #fff;
+  object-fit: cover;
+}
+.about-list {
+  margin: 16px 0 0 18px;
+  padding: 0;
+  color: var(--primary-green);
+  font-size: 1.1rem;
+  list-style: disc inside;
+}
+@media (max-width: 900px) {
+  .twocol-container { flex-direction: column; gap: 32px; }
+  .about-swmypet-left, .about-swmypet-right { width: 100%; text-align: center; }
+  .Tips-right { text-align: left; width: 100%; }
+  .about-swmypet-img { width: 80vw; }
+}
+
+/* How It Works Video Section */
+.howitworks-video-section {
+  width: 100vw;
+  background: rgba(230, 221, 175, 0.2);
+  padding: 64px 0 64px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.howitworks-video-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #22223b;
+  margin-bottom: 32px;
+}
+.howitworks-video-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.howitworks-video-center iframe {
+  max-width: 90vw;
+}
+
+/* test */
+.steps-fullscreen {
+  position: relative; /* Add this to make buttons position relative to this section */
+}
+
+/* Remove inline styles from buttons and add this to your CSS */
+.step-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  padding: 12px 20px;
+  font-size: 1.1rem;
+  border-radius: 2rem;
+  border: none;
+  background: #fff;
+  color: var(--primary-green);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.step-btn.prev {
+  left: 24px;
+}
+
+.step-btn.next {
+  right: 24px;
+}
+.steps-title {
+  text-align: center;
+  font-size: 45px;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  color: #1f2937; /* Optional: adjust to match your design */
+}
+.tips-swmypet-section.twocol{
+  background: rgba(230, 221, 175, 0.2);
+}
+.tips-swmypet-section-2{
+  background: var(--background-blue);
+}
+.about-swmypet-title {
+  max-width: 100%;
+  line-height: 1.2;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+  .about-swmypet-title {
+    font-size: clamp(1.4rem, 5.5vw, 1.8rem);
+    text-align: center;
+    word-break: normal;
+  }
+}

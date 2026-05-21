@@ -1,0 +1,145 @@
+
+$(document).ready(function () {
+    $('.select2-multi').select2({
+        width: '100%',
+        placeholder: 'Select Option',
+        allowClear: true
+    });
+});
+
+  
+  
+let cropper;
+
+// Preview and initialize cropper
+function previewProfileImage(event) {
+    const input = event.target;
+    const imageToCrop = document.getElementById('imageToCrop');
+
+    if (!input.files || !input.files[0]) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        imageToCrop.src = e.target.result;
+
+        imageToCrop.onload = function () {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+
+            $('#cropModal').modal('show');
+        };
+    };
+
+    reader.readAsDataURL(input.files[0]);
+}
+
+
+  document.getElementById('profileImageInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        document.getElementById('previewImage').src = e.target.result;
+        document.getElementById('previewImage').classList.remove('d-none');
+        document.getElementById('placeholderText').classList.add('d-none');
+      };
+
+      reader.readAsDataURL(file);
+    }
+  });
+// Initialize cropper AFTER modal is visible
+$('#cropModal').on('shown.bs.modal', function () {
+    const imageToCrop = document.getElementById('imageToCrop');
+
+    if (!imageToCrop.src) return;
+
+    cropper = new Cropper(imageToCrop, {
+        aspectRatio: 1,
+        viewMode: 1,
+        movable: false,
+        scalable: false,
+        zoomable: false,
+    });
+});
+
+// Cleanup EVERYTHING when modal closes
+$('#cropModal').on('hidden.bs.modal', function () {
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+
+    document.getElementById('imageToCrop').src = '';
+
+    // CRITICAL FIX
+    document.getElementById('profileImageInput').value = '';
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const cropBtn = document.getElementById("cropAndSave");
+    if (!cropBtn) return;
+    cropBtn.addEventListener("click", function () {
+        if (!cropper) {
+           alert('Image not ready yet.');
+            return;
+        }
+        const canvas = cropper.getCroppedCanvas({
+            width: 300,
+            height: 300,
+        });
+        if (!canvas) {
+            alert('Cropping failed.');
+            return;
+        }
+        const base64Image = canvas.toDataURL('image/jpeg');
+        // preview
+        document.getElementById('previewImage').src = base64Image;
+        document.getElementById('placeholderText').style.display = 'none';
+
+        cropBtn.innerText = "Saving...";
+        cropBtn.disabled = true;
+
+        let formData = new FormData();
+        formData.append('image', base64Image);
+
+        fetch(uploadProfileImageUrl, {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            if (data.success) {
+                document.getElementById('previewImage').src = data.image_url;
+
+                document.activeElement.blur();
+                let modal = bootstrap.Modal.getInstance(document.getElementById('cropModal'));
+                modal.hide();
+
+                cropper.destroy();
+                cropper = null;
+            } else {
+                alert(data.message || "Upload failed");
+            }
+
+        })
+        .catch(err => {
+            console.log(err);
+            alert("Upload error");
+        })
+        .finally(() => {
+            cropBtn.innerText = "Crop & Save";
+            cropBtn.disabled = false;
+        });
+
+    });
+
+});

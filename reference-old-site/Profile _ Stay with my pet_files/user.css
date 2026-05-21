@@ -1,0 +1,121 @@
+img.review_img {
+    border-radius: 50%;
+    max-width: 150px;
+}
+.upload-label {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 0 0 50% 50%;
+}
+.profile-placeholder {
+    width: 150px;
+    height: 150px;
+    background-color: #d6d6d6;
+    color: #555;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.profile-placeholder:hover {
+    background-color: #c0c0c0;
+}
+.profile-placeholder {
+    width: 150px;
+    height: 150px;
+    background-color: #d6d6d6;
+    border-radius: 50%;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    transition: background 0.3s;
+}
+.profile-placeholder:hover {
+    background-color: #c0c0c0;
+}
+.text-inside-circle {
+    color: #666;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+    z-index: 2;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    padding: 0 15px;
+}
+.profile-img-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+.user-sidebar{
+    background:#fff;
+    border-radius:18px;
+    padding:20px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.06);
+}
+
+.sidebar-menu{
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+
+.sidebar-menu li{
+    border-bottom:1px solid #e9e9e9;
+}
+
+.sidebar-menu li:last-child{
+    border-bottom:none;
+}
+
+.sidebar-menu li a{
+    display:block;
+    padding:14px 10px;
+    font-size:18px;
+    font-weight:600;
+    color:#222;
+    text-decoration:none;
+    transition:all 0.3s ease;
+    border-radius:10px;
+}
+
+.sidebar-menu li a:hover{
+    background:#cbf4d4;
+    color:#0d6efd;
+    padding-left:18px;
+}
+
+.sidebar-menu li a.active{
+    background:#0d6efd;
+    color:#fff;
+}
+
+.sidebar-menu button{
+    width:100%;
+    padding:14px;
+    font-size:18px;
+    font-weight:700;
+    border-radius:40px;
+    margin-top:15px;
+}

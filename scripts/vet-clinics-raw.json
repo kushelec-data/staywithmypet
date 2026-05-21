@@ -1,0 +1,302 @@
+{
+  "docLines": [
+    "Nearby Veterinary Clinics in Estonia",
+    "Find trusted animal clinics and emergency care across Estonia",
+    "Trusted Pet Clinics Near You",
+    "At Stay With My Pet, animal wellbeing always comes first.",
+    "That’s why we’ve gathered publicly available information about veterinary clinics across Estonia — to support responsible pet care before, during, and after bookings.",
+    "Explore a curated list of veterinary clinics across Estonia that provides professional and compassionate care for pets.",
+    "Whether you’re preparing for a booking, supporting a pet during care, or simply planning ahead, this list helps Pet Parents and Pet Friends quickly find nearby veterinary support when it matters most.",
+    "Placeholder text instead of “Search for clinics”: Search by clinic name, city, or region…",
+    "This text goes below the clinics table 👇",
+    "Important note about clinic information",
+    "The clinic details shown on this page are compiled from publicly available sources for convenience only.",
+    "Contact details, opening hours, and services may change over time",
+    "We recommend always verifying information directly on the clinic’s official website or by contacting them before visiting",
+    "Stay With My Pet does not guarantee the accuracy or completeness of the listed information and is not responsible for services provided by third-party clinics",
+    "If you notice outdated information or would like to suggest a clinic, feel free to contact us — helping pets stay safe is a shared responsibility."
+  ],
+  "sheetRows": [
+    [
+      "Logo image",
+      "City",
+      "Clinic’s Name",
+      "Address",
+      "Phone",
+      "Links",
+      "Typical Opening Hours"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "Evidensia Fahle Animal Clinic",
+      "Tartu mnt 82",
+      "6827672.0",
+      "https://evidensia.ee/loomakliinik/fahle-loomakliinik/",
+      "Mon–Fri 9–19"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "Evidensia Timmu Animal Clinic",
+      "Mustamäe tee 44/1",
+      "6675676.0",
+      "https://evidensia.ee/loomakliinik/timmu-loomakliinik/",
+      "Mon–Fri 9–19"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "Evidensia Billy Animal Clinic",
+      "Ehitajate tee 103a",
+      "6570310.0",
+      "https://evidensia.ee/loomakliinik/billy-loomakliinik/",
+      "Mon–Fri 9–19"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "Evidensia Västriku Animal Clinic",
+      "Västriku 2a",
+      "6553366.0",
+      "https://evidensia.ee/loomakliinik/vastriku-loomakliinik/",
+      "Mon–Fri 9–19"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "Evidensia Emergency Clinic",
+      "Mustamäe tee 44/2",
+      "5023191.0",
+      "https://evidensia.ee/loomakliinik/loomade-kiirabikliinik/",
+      "24/7"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "PetCity Rannamõisa 24/7 Clinic",
+      "Rannamõisa tee 8",
+      "5153112.0",
+      "https://www.petcity.ee/petcity-rannamoisa",
+      "24/7"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "PetCity Ülemiste Clinic",
+      "Suur-Sõjamäe 4",
+      "5136990.0",
+      "https://www.petcity.ee/ulemiste-loomakliinik",
+      "Mon-Sat 10-21, Sun 10-19"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "PetCity Tähesaju Clinic",
+      "Mustakivi tee 17",
+      "5.3055622E7",
+      "https://www.petcity.ee/tahesaju-loomakliinik",
+      "Mon-Sat 10-20, Sun 10-19"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "NordicVet",
+      "Koskla 16",
+      "5.5545522E7",
+      "https://nordicvet.ee/",
+      "Mon, Wed 9-19, Tue, Thur, Fri 9-17"
+    ],
+    [
+      "8",
+      "",
+      "Miki Animal Clinic",
+      "J. Kunderi 37",
+      "6333398.0",
+      "https://miki.ee",
+      "Mon-Fri 9-18, Sat 9-15, Sun 10-15"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "Haabersti Animal Clinic",
+      "Õismäe tee 115A",
+      "5080660.0",
+      "https://halk.ee",
+      "Mon–Fri 10-18"
+    ],
+    [
+      "ok",
+      "Tallinn",
+      "Univet Animal Clinic",
+      "Kadaka tee 133",
+      "5.8867736E7",
+      "https://univet.ee",
+      "Mon–Fri 9-18, Sat 9-16"
+    ],
+    [
+      "ok",
+      "Viimsi",
+      "Evidensia Viimsi Animal Clinic",
+      "Paadi tee 3, Haabneeme",
+      "6006675.0",
+      "https://evidensia.ee/loomakliinik/viimsi-loomakliinik/",
+      "Mon–Fri 9–19"
+    ],
+    [
+      "ok",
+      "Keila",
+      "Keila Animal Clinic",
+      "Jaama 11e",
+      "6705243.0",
+      "https://loomaravi.ee/",
+      "Mon–Fri 9-19, Sat 10-15"
+    ],
+    [
+      "62",
+      "",
+      "Saue Animal Clinic",
+      "Sooja 1",
+      "6740555.0",
+      "http://www.sauekliinik.ee/",
+      "Mon–Fri 15-19"
+    ],
+    [
+      "ok",
+      "Laagri",
+      "Laagri Animal Clinic",
+      "Vae 2",
+      "5507267.0",
+      "https://www.laagriloomakliinik.ee/",
+      "Mon–Fri 10-18"
+    ],
+    [
+      "ok",
+      "Tartu",
+      "FIK Small Animal Clinic",
+      "Mõisavahe 21",
+      "7333234.0",
+      "https://fik.ee",
+      "Mon–Fri 9:30-19, Sat 10-16"
+    ],
+    [
+      "ok",
+      "Tartu",
+      "Emajõe Animal Clinic",
+      "Emajõe 1a",
+      "5.8540702E7",
+      "https://emajoeloomakliinik.ee/",
+      "Mon–Fri 9–19"
+    ],
+    [
+      "Evidensia",
+      "Tartu",
+      "Tartu Väikeloomakliinik",
+      "Aleksandri 8b",
+      "5258012.0",
+      "https://evidensia.ee/loomakliinik/tartu-vaikeloomakliinik/",
+      "Mon–Fri 9-19, Sat 10-17"
+    ],
+    [
+      "ok",
+      "Tartu",
+      "PetCity Eedeni loomakliinik",
+      "Kalda tee 1c",
+      "5213557.0",
+      "https://www.petcity.ee/eedeni-loomakliinik",
+      "Mon-Sun 10-19"
+    ],
+    [
+      "ok",
+      "Tartu",
+      "PetCity Lõunakeskuse loomakliinik",
+      "Lääne-Ringtee 35",
+      "5.3035388E7",
+      "https://www.petcity.ee/lounakeskuse-loomakliinik",
+      "Mon-Sun 10-19"
+    ],
+    [
+      "ok",
+      "Pärnu",
+      "Pärnu Small Animal Clinic",
+      "Tallinna mnt 77",
+      "4430878.0",
+      "https://www.xn--vikeloomakliinik-vnb.ee/",
+      "Mon–Fri 9–19"
+    ],
+    [
+      "ok",
+      "Pärnu",
+      "PetCity Pärnu Clinic",
+      "Aida 7, Pärnu Keskus",
+      "5.3331006E7",
+      "https://www.petcity.ee/parnu-loomakliinik",
+      "Mon-Fri 9-20, Sat 10-20, Sun 10-18"
+    ],
+    [
+      "ok",
+      "Narva",
+      "Narva Vet Animal Centre",
+      "Kreenholmi 9",
+      "3570466.0",
+      "https://narvavet.ee",
+      "Mon–Fri 9-17"
+    ],
+    [
+      "ok",
+      "Narva",
+      "Pet City Astri Clinic",
+      "Tallinna mnt 41",
+      "5.3440485E7",
+      "https://www.petcity.ee/narva-loomakliinik",
+      "Mon–Fri 10-18"
+    ],
+    [
+      "ok",
+      "Jõhvi",
+      "Jõhvi VetProf Clinic",
+      "Keskväljak 8",
+      "3341350.0",
+      "https://vetdok.eu/et",
+      "Mon–Fri 10- 18, Sat 10-15"
+    ],
+    [
+      "ok",
+      "Kohtla-Järve",
+      "Järve VetProf Clinic",
+      "Järveküla tee 64",
+      "3320140.0",
+      "https://vetdok.eu/et",
+      "Mon–Fri 10- 18, Sat 10-15"
+    ],
+    [
+      "ok",
+      "Rakvere",
+      "Evidensia Rakvere Clinic",
+      "Vabaduse 14",
+      "3227707.0",
+      "https://evidensia.ee/loomakliinik/rakvere-loomakliinik/",
+      "Mon–Fri"
+    ],
+    [
+      "ok",
+      "Rakvere",
+      "PetCity Rakvere Clinic",
+      "Haljala tee 4",
+      "5241485.0",
+      "https://www.petcity.ee/petcity-rakvere-loomakliinik",
+      "Mon-Sat 10-20, Sun 10-19"
+    ],
+    [
+      "ok",
+      "Viljandi",
+      "Viljandi Männimäe Animal Clinic",
+      "Riia mnt 38",
+      "4337653.0",
+      "https://viljandiloomakliinik.ee",
+      "Mon–Fri 9-18, Sat 9-16"
+    ]
+  ],
+  "docLineCount": 15,
+  "sheetRowCount": 31
+}
