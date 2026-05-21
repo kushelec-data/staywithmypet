@@ -1,3 +1,4 @@
+import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import { NextResponse } from "next/server";
 
 /** Temporary debug route — remove after env setup is verified. */
@@ -20,6 +21,8 @@ export async function GET() {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  logStripeEnvPresence("env-check");
 
   const status = Object.fromEntries(
     ENV_VARS.map((name) => [name, isSet(name)])

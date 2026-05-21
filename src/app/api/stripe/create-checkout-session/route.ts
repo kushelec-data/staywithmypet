@@ -1,3 +1,4 @@
+import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import {
   billingIntervalFromPlanId,
   resolveStripePriceId,
@@ -27,6 +28,8 @@ function planExistsForRole(role: MembershipRole, planId: string): boolean {
 }
 
 export async function POST(request: Request) {
+  logStripeEnvPresence("create-checkout-session");
+
   let body: CheckoutBody;
   try {
     body = (await request.json()) as CheckoutBody;

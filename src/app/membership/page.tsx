@@ -1,4 +1,5 @@
 import { MembershipPageContent } from "@/components/membership/MembershipPageContent";
+import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import {
   stripeCheckoutErrorsForRole,
   stripeCheckoutReadyForRole,
@@ -11,6 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default function MembershipPage() {
+  logStripeEnvPresence("membership-page");
+
   const stripeCheckoutByRole = {
     pet_parent: stripeCheckoutReadyForRole("pet_parent"),
     pet_friend: stripeCheckoutReadyForRole("pet_friend"),
