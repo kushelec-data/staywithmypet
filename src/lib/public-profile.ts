@@ -6,6 +6,7 @@ import { fetchOwnerPetIntros, type PetIntroDisplay } from "@/lib/pet-intro";
 export { formatNearbyLocation } from "@/lib/location-public";
 export type { PetIntroDisplay as PublicPetSummary } from "@/lib/pet-intro";
 import { formatSupabaseError, mapProfileRow, type ProfileDbRow } from "@/lib/profile-load";
+import { PUBLIC_PROFILE_COLUMNS } from "@/lib/security/sanitize-public-profile";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { parseProfileDetails } from "@/lib/profile-details";
 import { countCompletedBookingsForUser } from "@/lib/bookings-stats";
@@ -20,8 +21,7 @@ import { isBioCompleteForProfile } from "@/lib/profile-completeness";
 import { computeTrustScorePercent, trustInputFromProfileSnapshot } from "@/lib/trust-score";
 
 /** No raw phone numbers on public fetch. */
-const PUBLIC_PROFILE_SELECT =
-  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude, trust_score, phone_verified";
+const PUBLIC_PROFILE_SELECT = PUBLIC_PROFILE_COLUMNS;
 
 const PUBLIC_PROFILE_SELECT_FALLBACK =
   "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude";

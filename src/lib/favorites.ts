@@ -110,7 +110,7 @@ export async function fetchSavedItems(
       ? supabase
           .from("profiles")
           .select(
-            "id, display_name, location, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",
+            "id, display_name, location, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages",
           )
           .in("id", friendIdList)
       : Promise.resolve({ data: [], error: null }),
@@ -136,7 +136,7 @@ export async function fetchSavedItems(
       rating_count: row.rating_count,
       stay_count: row.stay_count,
       languages: row.languages,
-      details: row.details,
+      details: undefined,
     }),
   );
 

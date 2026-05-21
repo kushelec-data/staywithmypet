@@ -358,6 +358,14 @@ export async function createCareRequest(
   supabase: SupabaseClient,
   input: CreateCareRequestInput,
 ): Promise<{ requestId: string }> {
+  const { assertRateLimit, requireAuthUserId } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertRateLimit("care_request", sessionUserId);
+
+  if (input.senderId !== sessionUserId) {
+    throw new Error("Invalid request participants.");
+  }
+
   if (input.petParentId === input.petFriendId || input.senderId === input.receiverId) {
     throw new Error("You cannot send a request to yourself.");
   }

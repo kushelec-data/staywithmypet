@@ -1,4 +1,5 @@
 import type { PostgrestError } from "@supabase/supabase-js";
+import { logServerError, toFriendlyClientMessage } from "@/lib/security/errors";
 import { formatSupabaseError } from "@/lib/profile-load";
 
 export function isPostgrestError(error: unknown): error is PostgrestError {
@@ -42,26 +43,16 @@ export function isMissingRelationError(error: PostgrestError): boolean {
 
 export function formatRequestSubmitError(error: unknown): string {
   if (isPostgrestError(error)) {
-    return formatSupabaseError(error);
+    logServerError("request", error);
+    return toFriendlyClientMessage(error, "Could not send request. Please try again.");
   }
   if (error instanceof Error && error.message.trim()) {
-    return error.message;
+    return toFriendlyClientMessage(error, "Could not send request. Please try again.");
   }
   return "Could not send request. Please try again.";
 }
 
-export function isDevEnvironment(): boolean {
-  return process.env.NODE_ENV === "development";
-}
-
-/** Dev: full detail; prod: still includes message and code when present. */
+/** Friendly UI copy; raw Postgres details only in development. */
 export function formatRequestSubmitErrorForUi(error: unknown): string {
-  const formatted = formatRequestSubmitError(error);
-  if (isDevEnvironment() && isPostgrestError(error)) {
-    const parts = [formatted];
-    if (error.details) parts.push(`Details: ${error.details}`);
-    if (error.hint) parts.push(`Hint: ${error.hint}`);
-    return parts.join("\n");
-  }
-  return formatted;
+  return formatRequestSubmitError(error);
 }

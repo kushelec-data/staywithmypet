@@ -1,5 +1,6 @@
 import { monthBounds } from "@/lib/booking-calendar";
 import { eachISODateInRangeInclusive } from "@/lib/pet-availability";
+import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -18,6 +19,18 @@ export async function GET(request: Request, context: RouteContext) {
 
   if (!petId || !Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
     return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
+  }
+
+  const clientIp =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "anon";
+  const limit = checkRateLimit("api_default", clientIp);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: rateLimitMessage(limit.retryAfterSec) },
+      { status: 429 },
+    );
   }
 
   const supabase = await createClient();

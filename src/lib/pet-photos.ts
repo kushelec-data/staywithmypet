@@ -3,9 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export const PET_PHOTOS_BUCKET = "pet-photos";
 export const MIN_PET_PHOTOS = 1;
 export const MAX_PET_PHOTOS = 6;
-const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const MAX_FILE_BYTES = 3 * 1024 * 1024;
 
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 
 export function isPetMediaFile(file: File): boolean {
@@ -19,10 +19,10 @@ export function mediaTypeForFile(file: File): "image" | "video" {
 function validateFileSizesAndTypes(files: File[]): void {
   for (const file of files) {
     if (!isPetMediaFile(file)) {
-      throw new Error("Files must be images (JPEG, PNG, WebP, GIF) or videos (MP4, WebM).");
+      throw new Error("Files must be images (JPEG, PNG, WebP) or videos (MP4, WebM).");
     }
     if (file.size > MAX_FILE_BYTES) {
-      throw new Error("Each file must be 25 MB or smaller.");
+      throw new Error("Each file must be 3 MB or smaller.");
     }
   }
 }
@@ -151,6 +151,11 @@ export async function uploadAndAttachPetPhotos(
   options?: UploadPetPhotosOptions,
 ): Promise<void> {
   if (files.length === 0) return;
+
+  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertOwner(ownerId, sessionUserId);
+  assertRateLimit("file_upload", sessionUserId);
 
   const append = options?.append ?? false;
 

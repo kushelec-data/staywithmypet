@@ -5,6 +5,8 @@ import {
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
 import { getSiteUrl, getStripe, isStripeConfigured } from "@/lib/stripe";
+import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
+import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -49,15 +51,22 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  let sessionUserId: string;
+  try {
+    sessionUserId = await requireAuthUserId(supabase);
+  } catch {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  if (user.id !== userId.trim()) {
+  const limit = checkRateLimit("api_default", sessionUserId);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: rateLimitMessage(limit.retryAfterSec) },
+      { status: 429 },
+    );
+  }
+
+  if (sessionUserId !== userId.trim()) {
     return NextResponse.json({ error: "User mismatch." }, { status: 403 });
   }
 
@@ -73,6 +82,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Price id does not match plan." }, { status: 400 });
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const billingInterval = billingIntervalFromPlanId(planId.trim());
   const mode = stripeCheckoutMode(billingInterval);
   const siteUrl = getSiteUrl();
@@ -81,7 +94,7 @@ export async function POST(request: Request) {
   const { data: existingMembership } = await supabase
     .from("user_memberships")
     .select("stripe_customer_id")
-    .eq("user_id", user.id)
+    .eq("user_id", sessionUserId)
     .eq("role", role)
     .maybeSingle();
 
@@ -89,10 +102,10 @@ export async function POST(request: Request) {
     mode,
     line_items: [{ price: resolvedPriceId, quantity: 1 }],
     allow_promotion_codes: true,
-    client_reference_id: user.id,
-    customer_email: user.email ?? undefined,
+    client_reference_id: sessionUserId,
+    customer_email: user?.email ?? undefined,
     metadata: {
-      user_id: user.id,
+      user_id: sessionUserId,
       role,
       plan_id: planId.trim(),
     },
@@ -109,7 +122,7 @@ export async function POST(request: Request) {
   if (mode === "subscription") {
     sessionParams.subscription_data = {
       metadata: {
-        user_id: user.id,
+        user_id: sessionUserId,
         role,
         plan_id: planId.trim(),
       },
@@ -117,7 +130,7 @@ export async function POST(request: Request) {
   } else {
     sessionParams.payment_intent_data = {
       metadata: {
-        user_id: user.id,
+        user_id: sessionUserId,
         role,
         plan_id: planId.trim(),
       },

@@ -1,6 +1,5 @@
 "use server";
 
-import { upsertUserMembership } from "@/lib/membership-activate";
 import {
   activeModeToMembershipRole,
   type MembershipRole,
@@ -34,7 +33,8 @@ export async function activateMembershipAction(
     return { ok: false, error: "Not signed in." };
   }
 
-  return upsertUserMembership(supabase, {
+  const { upsertUserMembershipAsAdmin } = await import("@/lib/membership-activate");
+  return upsertUserMembershipAsAdmin({
     userId: user.id,
     role: input.role,
     planId: input.planId,

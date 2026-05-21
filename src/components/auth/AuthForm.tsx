@@ -13,6 +13,7 @@ import { getAuthCallbackUrl } from "@/lib/auth";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { passwordMeetsPolicy } from "@/lib/password-policy";
 import { createClient } from "@/lib/supabase";
+import { rateLimitMessage, checkRateLimit } from "@/lib/security/rate-limit";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useEffect, useMemo, useState } from "react";
 
@@ -91,6 +92,14 @@ export function AuthForm({ mode }: AuthFormProps) {
     const email = String(form.get("email") ?? "").trim();
     const name = String(form.get("name") ?? "").trim();
     const passwordField = isSignup ? password : String(form.get("password") ?? "");
+
+    const rateAction = isSignup ? "auth_signup" : "auth_login";
+    const limit = checkRateLimit(rateAction, email.toLowerCase() || "anonymous");
+    if (!limit.ok) {
+      setError(rateLimitMessage(limit.retryAfterSec));
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isSignup) {

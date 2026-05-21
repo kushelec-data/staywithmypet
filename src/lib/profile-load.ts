@@ -11,6 +11,7 @@ import { parseProfileDetails } from "@/lib/profile-details";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils";
+import { toFriendlyClientMessage } from "@/lib/security/errors";
 
 export const PROFILE_SELECT =
   "id, display_name, avatar_url, bio, location, address, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score, is_public, rating_avg, rating_count, membership_status, details, created_at";
@@ -60,11 +61,14 @@ export type ProfileDbRow = {
 
 export function formatSupabaseError(error: PostgrestError | Error): string {
   if (!("code" in error)) return error.message;
-  const parts = [error.message];
-  if (error.details) parts.push(error.details);
-  if (error.hint) parts.push(error.hint);
-  if (error.code) parts.push(`Code: ${error.code}`);
-  return parts.join(" — ");
+  if (process.env.NODE_ENV === "development") {
+    const parts = [error.message];
+    if (error.details) parts.push(error.details);
+    if (error.hint) parts.push(error.hint);
+    if (error.code) parts.push(`Code: ${error.code}`);
+    return parts.join(" — ");
+  }
+  return toFriendlyClientMessage(error);
 }
 
 function parseCoord(v: unknown): number | null {

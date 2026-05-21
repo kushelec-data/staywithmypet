@@ -8,7 +8,7 @@ import {
 import type { ProfileRow } from "@/lib/profile-utils";
 
 export const AVATARS_BUCKET = "avatars";
-const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export function validateProfileAvatarFile(file: File): void {
@@ -16,7 +16,7 @@ export function validateProfileAvatarFile(file: File): void {
     throw new Error("Profile photo must be a JPG, PNG, or WebP image.");
   }
   if (file.size > MAX_AVATAR_BYTES) {
-    throw new Error("Profile photo must be 5 MB or smaller.");
+    throw new Error("Profile photo must be 3 MB or smaller.");
   }
 }
 
@@ -54,6 +54,11 @@ export async function uploadProfileAvatar(
   userId: string,
   file: File,
 ): Promise<ProfileRow> {
+  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertOwner(userId, sessionUserId);
+  assertRateLimit("file_upload", sessionUserId);
+
   validateProfileAvatarFile(file);
 
   const ext = avatarFileExtension(file);
