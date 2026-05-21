@@ -146,6 +146,15 @@ export async function POST(request: Request) {
 
   try {
     const session = await stripe.checkout.sessions.create(sessionParams);
+    console.log("[stripe] checkout session created", {
+      sessionId: session.id,
+      mode,
+      role,
+      planId: trimmedPlanId,
+      priceId: resolvedPriceId,
+      userId: sessionUserId,
+      metadataKeys: Object.keys(sessionParams.metadata ?? {}),
+    });
     if (!session.url) {
       return NextResponse.json({ error: "Checkout session missing URL." }, { status: 500 });
     }

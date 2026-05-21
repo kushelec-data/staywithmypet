@@ -18,6 +18,7 @@ const LOGO_CLASS =
   "h-auto max-h-[44px] w-auto max-w-[8.5rem] object-contain object-left sm:max-h-[52px] sm:max-w-[9.5rem]";
 
 const PRICING_PATH = "/pricing";
+const MEMBERSHIP_PATH = "/membership";
 const HOW_IT_WORKS_PATH = "/how-it-works";
 
 function isHowItWorksHref(href: string): boolean {
@@ -25,11 +26,23 @@ function isHowItWorksHref(href: string): boolean {
 }
 
 function isPricingHref(href: string): boolean {
-  return href === PRICING_PATH || href.startsWith(`${PRICING_PATH}/`) || href.startsWith(`${PRICING_PATH}#`);
+  return (
+    href === PRICING_PATH ||
+    href.startsWith(`${PRICING_PATH}/`) ||
+    href.startsWith(`${PRICING_PATH}#`) ||
+    href === MEMBERSHIP_PATH ||
+    href.startsWith(`${MEMBERSHIP_PATH}/`) ||
+    href.startsWith(`${MEMBERSHIP_PATH}#`)
+  );
 }
 
 function isPricingPathActive(pathname: string): boolean {
-  return pathname === PRICING_PATH || pathname.startsWith(`${PRICING_PATH}/`);
+  return (
+    pathname === PRICING_PATH ||
+    pathname.startsWith(`${PRICING_PATH}/`) ||
+    pathname === MEMBERSHIP_PATH ||
+    pathname.startsWith(`${MEMBERSHIP_PATH}/`)
+  );
 }
 
 function isNavLinkActive(pathname: string, href: string): boolean {

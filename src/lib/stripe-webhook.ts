@@ -65,8 +65,20 @@ async function assertMembershipUpsert(
   context: string,
 ): Promise<void> {
   if (!result.ok) {
+    console.error("[stripe] membership upsert failed", {
+      context,
+      error: result.error,
+      code: result.code ?? null,
+    });
     throw new Error(`[stripe] ${context}: ${result.error}`);
   }
+  console.log("[membership] upsert succeeded", {
+    context,
+    userId: result.membership.user_id,
+    role: result.membership.role,
+    planId: result.membership.plan_id,
+    status: result.membership.status,
+  });
 }
 
 async function resolveSubscriptionUserId(
@@ -181,9 +193,21 @@ export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
   const stripe = getStripe();
+  console.log("[stripe] handleCheckoutSessionCompleted start", {
+    sessionId: session.id,
+    paymentStatus: session.payment_status,
+    mode: session.mode,
+  });
+
   const { userId, role, planId, priceId } = await resolveCheckoutActivationContext(session);
 
-  console.log("[stripe] user found for checkout", { sessionId: session.id, userId });
+  console.log("[stripe] activating membership from checkout", {
+    sessionId: session.id,
+    userId,
+    role,
+    planId,
+    priceId,
+  });
 
   const customerId =
     typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;

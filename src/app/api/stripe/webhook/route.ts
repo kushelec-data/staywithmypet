@@ -5,7 +5,11 @@ import {
   handleSubscriptionEvent,
 } from "@/lib/stripe-webhook";
 import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
-import { isMembershipWebhookWritable } from "@/lib/stripe-webhook-config";
+import {
+  getMembershipWebhookHealth,
+  isMembershipWebhookWritable,
+} from "@/lib/stripe-webhook-config";
+import { checkoutSessionEmail } from "@/lib/stripe-webhook-resolve";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
@@ -13,8 +17,16 @@ import type Stripe from "stripe";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Production-safe config probe (booleans only). */
+export async function GET() {
+  return NextResponse.json(getMembershipWebhookHealth());
+}
+
 export async function POST(request: Request) {
   logStripeEnvPresence("webhook");
+
+  const health = getMembershipWebhookHealth();
+  console.log("[stripe] webhook env health", health);
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
   if (!webhookSecret) {
@@ -23,9 +35,7 @@ export async function POST(request: Request) {
   }
 
   if (!isMembershipWebhookWritable()) {
-    console.error(
-      "[stripe] webhook rejected: cannot write memberships (check SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL)",
-    );
+    console.error("[stripe] webhook rejected: cannot write memberships", health);
     return NextResponse.json({ error: "Membership webhook not configured." }, { status: 503 });
   }
 
@@ -53,10 +63,16 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        const customerEmail = await checkoutSessionEmail(session);
         console.log("[stripe] webhook received checkout.session.completed", {
+          eventType: event.type,
+          eventId: event.id,
           sessionId: session.id,
           paymentStatus: session.payment_status,
           mode: session.mode,
+          customerEmail,
+          clientReferenceId: session.client_reference_id ?? null,
+          metadata: session.metadata ?? {},
         });
         await handleCheckoutSessionCompleted(session);
         break;
@@ -92,7 +108,13 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[stripe] webhook handler failed", { eventType: event.type, message });
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[stripe] webhook handler failed", {
+      eventType: event.type,
+      eventId: event.id,
+      message,
+      stack,
+    });
     return NextResponse.json({ error: "Webhook handler failed." }, { status: 500 });
   }
 

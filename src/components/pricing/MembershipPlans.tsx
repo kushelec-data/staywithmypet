@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
+import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 
@@ -144,8 +145,13 @@ function PlanCard({
         ))}
       </ul>
       {variant === "marketing" ? (
-        <Button href="/signup" variant={plan.popular ? "primary" : "secondary"} className="mt-6 w-full sm:mt-8" size="lg">
-          {getStartedLabel}
+        <Button
+          href={`/login?next=${encodeURIComponent(MEMBERSHIP_PATH)}`}
+          variant={plan.popular ? "primary" : "secondary"}
+          className="mt-6 w-full sm:mt-8"
+          size="lg"
+        >
+          {choosePlanLabel}
         </Button>
       ) : (
         <>

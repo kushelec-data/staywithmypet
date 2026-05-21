@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "Membership & Pricing",
 };
 
+/** Read Stripe/Supabase env at request time (not static build) for post-checkout banners. */
+export const dynamic = "force-dynamic";
+
 export default function MembershipPage() {
   logStripeEnvPresence("membership-page");
 

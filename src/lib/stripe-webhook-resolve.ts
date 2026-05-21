@@ -122,11 +122,28 @@ export type CheckoutActivationContext = {
   priceId: string | null;
 };
 
+function logCheckoutResolutionDebug(
+  session: Stripe.Checkout.Session,
+  extra: Record<string, unknown>,
+): void {
+  console.log("[stripe] checkout resolution debug", {
+    sessionId: session.id,
+    mode: session.mode,
+    paymentStatus: session.payment_status,
+    clientReferenceId: session.client_reference_id ?? null,
+    sessionMetadata: session.metadata ?? {},
+    ...extra,
+  });
+}
+
 export async function resolveCheckoutActivationContext(
   session: Stripe.Checkout.Session,
 ): Promise<CheckoutActivationContext> {
   const stripe = getStripe();
   const sessionMeta = session.metadata ?? {};
+  const email = await checkoutSessionEmail(session);
+
+  logCheckoutResolutionDebug(session, { customerEmail: email });
 
   let subscription: Stripe.Subscription | null = null;
   if (session.subscription) {
@@ -143,17 +160,26 @@ export async function resolveCheckoutActivationContext(
     subscription?.metadata,
   );
 
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+  const priceId = lineItems.data[0]?.price?.id ?? null;
+
+  console.log("[stripe] checkout line items", {
+    sessionId: session.id,
+    priceId,
+    lineItemCount: lineItems.data.length,
+    paymentIntentMetadata: piMeta ?? {},
+    subscriptionMetadata: subscription?.metadata ?? {},
+    mergedMetadata: mergedMeta,
+  });
+
   let userId = await resolveSupabaseUserId({
     metadataUserId: mergedMeta.user_id,
     clientReferenceId: session.client_reference_id,
-    email: await checkoutSessionEmail(session),
+    email,
   });
 
   let role = roleFromStripeMetadata(mergedMeta.role);
   let planId: string | undefined = mergedMeta.plan_id?.trim();
-
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-  const priceId = lineItems.data[0]?.price?.id ?? null;
 
   if (!planId && priceId) {
     planId = planIdFromStripePriceId(priceId) ?? undefined;
@@ -191,6 +217,17 @@ export async function resolveCheckoutActivationContext(
       !role ? "role" : null,
       !planId ? "plan_id" : null,
     ].filter(Boolean);
+    console.error("[stripe] checkout context unresolved", {
+      sessionId: session.id,
+      missing,
+      resolvedUserId: userId,
+      resolvedRole: role,
+      resolvedPlanId: planId,
+      priceId,
+      customerEmail: email,
+      clientReferenceId: session.client_reference_id ?? null,
+      mergedMetadata: mergedMeta,
+    });
     throw new Error(
       `[stripe] checkout ${session.id}: missing ${missing.join(", ")} (metadata/price/email resolution failed)`,
     );
@@ -202,6 +239,7 @@ export async function resolveCheckoutActivationContext(
     role,
     planId,
     priceId,
+    customerEmail: email,
     mode: session.mode,
     paymentStatus: session.payment_status,
   });

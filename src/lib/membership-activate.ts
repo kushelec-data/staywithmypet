@@ -34,7 +34,10 @@ export type UpsertMembershipInput = {
 export async function upsertUserMembership(
   supabase: SupabaseClient,
   input: UpsertMembershipInput,
-): Promise<{ ok: true; membership: UserMembership } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; membership: UserMembership }
+  | { ok: false; error: string; code?: string | null }
+> {
   const startDate = input.startDate ?? new Date().toISOString();
   const planName =
     input.planName?.trim() || resolvePlanName(input.role, input.planId.trim());
@@ -74,7 +77,7 @@ export async function upsertUserMembership(
       message: error.message,
       code: error.code,
     });
-    return { ok: false, error: error.message };
+    return { ok: false, error: error.message, code: error.code ?? null };
   }
 
   const membership = data as UserMembership;
@@ -131,11 +134,18 @@ export async function upsertUserMembership(
 /** Webhook and other server-only callers without a user session. */
 export async function upsertUserMembershipAsAdmin(
   input: UpsertMembershipInput,
-): Promise<{ ok: true; membership: UserMembership } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; membership: UserMembership }
+  | { ok: false; error: string; code?: string | null }
+> {
   const admin = createAdminClient();
   if (!admin) {
     console.error("[membership] admin client unavailable: SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL missing");
-    return { ok: false, error: "SUPABASE_SERVICE_ROLE_KEY is not configured." };
+    return {
+      ok: false,
+      error: "SUPABASE_SERVICE_ROLE_KEY is not configured.",
+      code: "missing_service_role",
+    };
   }
   return upsertUserMembership(admin, input);
 }

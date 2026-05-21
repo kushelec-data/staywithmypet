@@ -21,7 +21,7 @@ export type NavbarLabelKey = (typeof primaryNavConfig)[number]["labelKey"];
 export function getPrimaryNavLinks(t: Dictionary["navbar"], loggedIn = false) {
   const config = loggedIn ? loggedInPrimaryNavConfig : primaryNavConfig;
   return config.map((item) => ({
-    href: item.href,
+    href: loggedIn && item.labelKey === "pricing" ? "/membership" : item.href,
     label: t[item.labelKey],
   }));
 }
