@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 /** Temporary debug route — remove after env setup is verified. */
 const ENV_VARS = [
   "STRIPE_SECRET_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "SUPABASE_SERVICE_ROLE_KEY",
   "NEXT_PUBLIC_SITE_URL",
   "STRIPE_PRICE_PARENT_1M",
   "STRIPE_PRICE_PARENT_3M",

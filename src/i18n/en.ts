@@ -631,6 +631,14 @@ export const en = {
       },
     ],
   },
+  membershipCheckout: {
+    paymentSuccess: "Your membership is active. You can use paid features in this mode.",
+    paymentPending:
+      "Payment received — your membership will activate shortly. Refresh this page if it does not update.",
+    paymentWebhookPending:
+      "Payment received. Membership will activate after webhook is connected.",
+    checkoutCancelled: "Checkout was cancelled. You can choose a plan when you are ready.",
+  },
   faq: {
     badge: "FAQ",
     title: "Frequently Asked Questions",

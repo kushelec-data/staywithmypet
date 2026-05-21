@@ -67,14 +67,46 @@ export async function upsertUserMembership(
     .single();
 
   if (error) {
-    console.error("[membership] upsert failed", error.message);
+    console.error("[membership] user_memberships upsert failed", {
+      userId: input.userId,
+      role: input.role,
+      planId: input.planId,
+      message: error.message,
+      code: error.code,
+    });
     return { ok: false, error: error.message };
   }
 
   const membership = data as UserMembership;
 
+  console.log("[membership] database updated", {
+    table: "user_memberships",
+    userId: input.userId,
+    role: input.role,
+    planId: membership.plan_id,
+    status: membership.status,
+    endDate: membership.end_date,
+  });
+
   const planLabel = membershipPlanLabel(membership) ?? membership.plan_id;
-  await supabase.from("profiles").update({ membership_status: planLabel }).eq("id", input.userId);
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ membership_status: planLabel })
+    .eq("id", input.userId);
+
+  if (profileError) {
+    console.error("[membership] profiles.membership_status update failed", {
+      userId: input.userId,
+      message: profileError.message,
+      code: profileError.code,
+    });
+  } else {
+    console.log("[membership] database updated", {
+      table: "profiles",
+      userId: input.userId,
+      membership_status: planLabel,
+    });
+  }
 
   if (input.sendConfirmationEmail !== false) {
     const { data: profileRow } = await supabase
@@ -102,6 +134,7 @@ export async function upsertUserMembershipAsAdmin(
 ): Promise<{ ok: true; membership: UserMembership } | { ok: false; error: string }> {
   const admin = createAdminClient();
   if (!admin) {
+    console.error("[membership] admin client unavailable: SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL missing");
     return { ok: false, error: "SUPABASE_SERVICE_ROLE_KEY is not configured." };
   }
   return upsertUserMembership(admin, input);

@@ -36,6 +36,22 @@ export function resolveStripePriceId(planId: string): string | null {
   return value || null;
 }
 
+/** Reverse lookup: Stripe Price id → catalog plan_id (from STRIPE_PRICE_* env vars). */
+export function planIdFromStripePriceId(priceId: string): string | null {
+  const trimmed = priceId.trim();
+  if (!trimmed) return null;
+  for (const [planId, envName] of Object.entries(STRIPE_PRICE_ENV_BY_PLAN_ID)) {
+    if (process.env[envName]?.trim() === trimmed) return planId;
+  }
+  return null;
+}
+
+export function membershipRoleFromPlanId(planId: string): MembershipRole | null {
+  if (planId.endsWith("-friend")) return "pet_friend";
+  if (planId.endsWith("-owner")) return "pet_parent";
+  return null;
+}
+
 /** First missing env var required for checkout (secret, site URL, plan price). */
 export function missingStripeCheckoutEnv(planId: string): string | null {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {

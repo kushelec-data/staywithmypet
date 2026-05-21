@@ -4,16 +4,18 @@ import type Stripe from "stripe";
 import {
   billingIntervalFromPlanId,
   computeMembershipEndDate,
+  membershipRoleFromPlanId,
+  planIdFromStripePriceId,
   resolveStripePriceId,
 } from "@/lib/stripe-plans";
 import { upsertUserMembershipAsAdmin } from "@/lib/membership-activate";
 import type { MembershipRole, MembershipStatus } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
-
-function roleFromMetadata(value: string | undefined): MembershipRole | null {
-  if (value === "pet_parent" || value === "pet_friend") return value;
-  return null;
-}
+import {
+  findSupabaseUserIdByEmail,
+  resolveCheckoutActivationContext,
+  roleFromStripeMetadata,
+} from "@/lib/stripe-webhook-resolve";
 
 function subscriptionStatusToMembership(status: Stripe.Subscription.Status): MembershipStatus {
   switch (status) {
@@ -58,43 +60,107 @@ function customerMetadata(
   return customer.metadata;
 }
 
-async function syncFromSubscription(
-  subscription: Stripe.Subscription,
-  overrides?: { planId?: string; role?: MembershipRole },
+async function assertMembershipUpsert(
+  result: Awaited<ReturnType<typeof upsertUserMembershipAsAdmin>>,
+  context: string,
 ): Promise<void> {
+  if (!result.ok) {
+    throw new Error(`[stripe] ${context}: ${result.error}`);
+  }
+}
+
+async function resolveSubscriptionUserId(
+  subscription: Stripe.Subscription,
+  customerId: string | null,
+): Promise<string | null> {
   const customerMeta =
     typeof subscription.customer === "string"
       ? undefined
       : customerMetadata(subscription.customer);
 
-  const userId =
-    subscription.metadata.user_id?.trim() || customerMeta?.user_id?.trim();
+  let userId =
+    subscription.metadata.user_id?.trim() || customerMeta?.user_id?.trim() || null;
 
-  const role =
-    overrides?.role ??
-    roleFromMetadata(subscription.metadata.role) ??
-    roleFromMetadata(customerMeta?.role);
+  if (userId) return userId;
 
-  const planId =
-    overrides?.planId?.trim() ||
-    subscription.metadata.plan_id?.trim() ||
-    subscription.items.data[0]?.price.metadata?.plan_id?.trim();
+  if (!customerId) return null;
 
-  if (!userId || !role || !planId) {
-    console.warn("[stripe] subscription missing user_id, role, or plan_id", subscription.id);
-    return;
+  try {
+    const customer = await getStripe().customers.retrieve(customerId);
+    if (!customer.deleted && customer.email?.trim()) {
+      userId = await findSupabaseUserIdByEmail(customer.email);
+      if (userId) {
+        console.log("[stripe] subscription user resolved via customer email", {
+          subscriptionId: subscription.id,
+          userId,
+        });
+      }
+    }
+  } catch (err) {
+    console.error(
+      "[stripe] subscription customer lookup failed",
+      err instanceof Error ? err.message : String(err),
+    );
   }
 
-  const priceId = subscription.items.data[0]?.price.id ?? null;
+  return userId;
+}
+
+async function syncFromSubscription(
+  subscription: Stripe.Subscription,
+  overrides?: { planId?: string; role?: MembershipRole },
+): Promise<void> {
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
       : subscription.customer?.id ?? null;
 
+  const customerMeta =
+    typeof subscription.customer === "string"
+      ? undefined
+      : customerMetadata(subscription.customer);
+
+  const userId = await resolveSubscriptionUserId(subscription, customerId);
+
+  const priceId = subscription.items.data[0]?.price.id ?? null;
+  const planFromPrice = priceId ? planIdFromStripePriceId(priceId) : null;
+
+  const planId =
+    overrides?.planId?.trim() ||
+    subscription.metadata.plan_id?.trim() ||
+    subscription.items.data[0]?.price.metadata?.plan_id?.trim() ||
+    planFromPrice ||
+    undefined;
+
+  const role =
+    overrides?.role ??
+    roleFromStripeMetadata(subscription.metadata.role) ??
+    roleFromStripeMetadata(customerMeta?.role) ??
+    (planId ? membershipRoleFromPlanId(planId) : null);
+
+  if (!userId || !role || !planId) {
+    const missing = [
+      !userId ? "user_id" : null,
+      !role ? "role" : null,
+      !planId ? "plan_id" : null,
+    ].filter(Boolean);
+    throw new Error(
+      `[stripe] subscription ${subscription.id}: missing ${missing.join(", ")}`,
+    );
+  }
+
+  console.log("[stripe] subscription sync", {
+    subscriptionId: subscription.id,
+    userId,
+    role,
+    planId,
+    status: subscription.status,
+  });
+
   const status = subscriptionStatusToMembership(subscription.status);
   const startDate = periodStartIso(subscription) ?? new Date().toISOString();
 
-  await upsertUserMembershipAsAdmin({
+  const result = await upsertUserMembershipAsAdmin({
     userId,
     role,
     planId,
@@ -107,21 +173,18 @@ async function syncFromSubscription(
     stripePriceId: priceId,
     sendConfirmationEmail: status === "active" || status === "trialing",
   });
+
+  await assertMembershipUpsert(result, `subscription ${subscription.id}`);
 }
 
 export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
-  const userId = session.metadata?.user_id?.trim() || session.client_reference_id?.trim();
-  const role = roleFromMetadata(session.metadata?.role);
-  const planId = session.metadata?.plan_id?.trim();
-
-  if (!userId || !role || !planId) {
-    console.warn("[stripe] checkout.session.completed missing metadata", session.id);
-    return;
-  }
-
   const stripe = getStripe();
+  const { userId, role, planId, priceId } = await resolveCheckoutActivationContext(session);
+
+  console.log("[stripe] user found for checkout", { sessionId: session.id, userId });
+
   const customerId =
     typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
 
@@ -132,11 +195,11 @@ export async function handleCheckoutSessionCompleted(
     subscription = await stripe.subscriptions.retrieve(subId);
   }
 
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-  const priceId = lineItems.data[0]?.price?.id ?? resolveStripePriceId(planId);
-
+  const resolvedPriceId = priceId ?? resolveStripePriceId(planId);
   const billingInterval = billingIntervalFromPlanId(planId);
-  const startDate = new Date().toISOString();
+  const startDate = subscription
+    ? periodStartIso(subscription) ?? new Date().toISOString()
+    : new Date().toISOString();
   const endDate = subscription
     ? periodEndIso(subscription)
     : computeMembershipEndDate(billingInterval, new Date(startDate));
@@ -146,7 +209,14 @@ export async function handleCheckoutSessionCompleted(
       ? "active"
       : "inactive";
 
-  await upsertUserMembershipAsAdmin({
+  if (status !== "active") {
+    console.warn("[stripe] checkout completed but payment_status not active", {
+      sessionId: session.id,
+      paymentStatus: session.payment_status,
+    });
+  }
+
+  const result = await upsertUserMembershipAsAdmin({
     userId,
     role,
     planId,
@@ -156,9 +226,11 @@ export async function handleCheckoutSessionCompleted(
     autoRenew: Boolean(subscription) && !subscription?.cancel_at_period_end,
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription?.id ?? null,
-    stripePriceId: priceId,
-    sendConfirmationEmail: true,
+    stripePriceId: resolvedPriceId,
+    sendConfirmationEmail: status === "active",
   });
+
+  await assertMembershipUpsert(result, `checkout ${session.id}`);
 }
 
 export async function handleSubscriptionEvent(subscription: Stripe.Subscription): Promise<void> {
@@ -173,7 +245,10 @@ function subscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
 
 export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
   const subId = subscriptionIdFromInvoice(invoice);
-  if (!subId) return;
+  if (!subId) {
+    console.warn("[stripe] invoice.payment_succeeded without subscription", invoice.id);
+    return;
+  }
   const stripe = getStripe();
   const subscription = await stripe.subscriptions.retrieve(subId);
   await syncFromSubscription(subscription);
@@ -181,7 +256,10 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
 
 export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   const subId = subscriptionIdFromInvoice(invoice);
-  if (!subId) return;
+  if (!subId) {
+    console.warn("[stripe] invoice.payment_failed without subscription", invoice.id);
+    return;
+  }
   const stripe = getStripe();
   const subscription = await stripe.subscriptions.retrieve(subId);
   await syncFromSubscription(subscription);

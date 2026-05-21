@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       role,
       plan_id: trimmedPlanId,
     },
-    success_url: `${siteUrl}/membership?success=true`,
+    success_url: `${siteUrl}/membership?success=true&role=${role}`,
     cancel_url: `${siteUrl}/membership?cancelled=true`,
   };
 

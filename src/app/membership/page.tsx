@@ -4,6 +4,7 @@ import {
   stripeCheckoutErrorsForRole,
   stripeCheckoutReadyForRole,
 } from "@/lib/stripe-plans";
+import { isMembershipWebhookWritable } from "@/lib/stripe-webhook-config";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -34,6 +35,7 @@ export default function MembershipPage() {
       <MembershipPageContent
         stripeCheckoutByRole={stripeCheckoutByRole}
         stripePlanErrorsByRole={stripePlanErrorsByRole}
+        membershipWebhookWritable={isMembershipWebhookWritable()}
       />
     </Suspense>
   );

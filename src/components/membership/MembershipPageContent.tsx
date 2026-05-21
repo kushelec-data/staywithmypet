@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import {
@@ -40,7 +40,14 @@ type StripeCheckoutReadiness = {
 type MembershipPageContentProps = {
   stripeCheckoutByRole?: Record<MembershipRole, StripeCheckoutReadiness>;
   stripePlanErrorsByRole?: Record<MembershipRole, Record<string, string | null>>;
+  /** Server: STRIPE_WEBHOOK_SECRET + SUPABASE_SERVICE_ROLE_KEY configured. */
+  membershipWebhookWritable?: boolean;
 };
+
+function parseCheckoutRole(value: string | null): MembershipRole | null {
+  if (value === "pet_parent" || value === "pet_friend") return value;
+  return null;
+}
 
 function RoleMembershipSummary({
   role,
@@ -97,6 +104,7 @@ function RoleMembershipSummary({
 export function MembershipPageContent({
   stripeCheckoutByRole,
   stripePlanErrorsByRole,
+  membershipWebhookWritable = true,
 }: MembershipPageContentProps = {}) {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
@@ -104,17 +112,85 @@ export function MembershipPageContent({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
+  const handledReturnRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (searchParams.get("success") === "true") {
-      setCheckoutBanner("Payment received — your membership will activate shortly.");
-      void refreshProfile?.();
-      router.replace("/membership", { scroll: false });
-    } else if (searchParams.get("cancelled") === "true") {
-      setCheckoutBanner("Checkout was cancelled. You can choose a plan when you are ready.");
+    const success = searchParams.get("success") === "true";
+    const cancelled = searchParams.get("cancelled") === "true";
+    if (!success && !cancelled) return;
+
+    const returnKey = success
+      ? `success:${searchParams.get("role") ?? ""}`
+      : "cancelled";
+    if (handledReturnRef.current === returnKey) return;
+    handledReturnRef.current = returnKey;
+
+    let cancelledEffect = false;
+
+    async function handleReturn() {
+      if (cancelled) {
+        if (!cancelledEffect) {
+          setCheckoutBanner(t.membershipCheckout.checkoutCancelled);
+        }
+        router.replace("/membership", { scroll: false });
+        return;
+      }
+
+      const checkoutRole =
+        parseCheckoutRole(searchParams.get("role")) ??
+        (profile ? activeModeToMembershipRole(resolveActiveMode(profile.role, profile.active_mode)) : null);
+
+      if (!membershipWebhookWritable) {
+        if (!cancelledEffect) {
+          setCheckoutBanner(t.membershipCheckout.paymentWebhookPending);
+        }
+        router.replace("/membership", { scroll: false });
+        return;
+      }
+
+      const pollDelaysMs = [0, 800, 1600, 3200, 5000];
+      let activated = false;
+
+      for (const delay of pollDelaysMs) {
+        if (cancelledEffect) return;
+        if (delay > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+        if (cancelledEffect) return;
+
+        router.refresh();
+        const row = await refreshProfile?.({ background: true });
+        const memberships = row?.memberships ?? profile?.memberships ?? emptyMembershipsByRole();
+        const roleToCheck = checkoutRole ?? activeModeToMembershipRole("pet_parent");
+        if (hasActiveMembershipForRole(memberships, roleToCheck)) {
+          activated = true;
+          break;
+        }
+      }
+
+      if (cancelledEffect) return;
+
+      setCheckoutBanner(
+        activated
+          ? t.membershipCheckout.paymentSuccess
+          : t.membershipCheckout.paymentPending,
+      );
       router.replace("/membership", { scroll: false });
     }
-  }, [searchParams, router, refreshProfile]);
+
+    void handleReturn();
+
+    return () => {
+      cancelledEffect = true;
+    };
+  }, [
+    searchParams,
+    router,
+    refreshProfile,
+    t.membershipCheckout,
+    membershipWebhookWritable,
+    profile,
+  ]);
 
   const activeMode = profile
     ? resolveActiveMode(profile.role, profile.active_mode)

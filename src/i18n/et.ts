@@ -635,6 +635,15 @@ export const et = {
       },
     ],
   },
+  membershipCheckout: {
+    paymentSuccess:
+      "Sinu liikmelisus on aktiivne. Saad selles režiimis kasutada tasulisi funktsioone.",
+    paymentPending:
+      "Makse laekus — liikmelisus aktiveerub peagi. Kui see ei uuene, värskenda lehte.",
+    paymentWebhookPending:
+      "Makse laekus. Liikmelisus aktiveerub pärast veebikonkside ühendamist.",
+    checkoutCancelled: "Makse katkestati. Saad paketi valida, kui oled valmis.",
+  },
   faq: {
     badge: "KKK",
     title: "Korduma kippuvad küsimused",
