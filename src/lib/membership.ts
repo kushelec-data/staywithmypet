@@ -69,7 +69,8 @@ const PLAN_PRICES: Record<string, string> = {
   "1-year-friend": "€119",
 };
 
-const PLAN_BILLING_INTERVAL: Record<string, MembershipPlanDefinition["billing_interval"]> = {
+/** Catalog plan_id → billing interval (used by stripe-plans checkout). */
+export const PLAN_BILLING_INTERVAL: Record<string, MembershipPlanDefinition["billing_interval"]> = {
   "one-time-owner": "one_time",
   "3-month-owner": "3_months",
   "1-year-owner": "12_months",

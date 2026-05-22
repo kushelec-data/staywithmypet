@@ -68,20 +68,27 @@ export type ResolvedCalendarDay = {
   title: string;
 };
 
+/** Legend swatches — keep in sync with day cell backgrounds. */
+export const LEGEND_PAST_CLASS = "bg-neutral-600";
+export const LEGEND_BOOKED_CLASS = "bg-slate-500";
+export const LEGEND_AVAILABLE_CLASS = "bg-emerald-600";
+export const LEGEND_UNAVAILABLE_CLASS = "bg-neutral-200 ring-1 ring-neutral-300";
+export const LEGEND_SELECTED_CLASS = "bg-brand-teal ring-2 ring-brand-teal/40";
+
 export const PAST_DAY_CELL =
-  "bg-neutral-200/80 text-neutral-400 cursor-not-allowed dark:bg-neutral-700/40 dark:text-neutral-500";
+  "bg-neutral-600 text-neutral-100 cursor-not-allowed dark:bg-neutral-600 dark:text-neutral-100";
 
 export const PAST_COMPLETED_CELL =
-  "bg-neutral-200/80 text-neutral-400 cursor-not-allowed ring-1 ring-neutral-300/50 dark:bg-neutral-700/40 dark:text-neutral-500 dark:ring-neutral-600/50";
+  "bg-neutral-600 text-neutral-200 cursor-not-allowed ring-1 ring-neutral-500 dark:bg-neutral-600 dark:text-neutral-200 dark:ring-neutral-500";
 
 export const PUBLIC_BOOKED_CELL =
-  "bg-sky-100 text-sky-900 ring-1 ring-sky-300/70 cursor-not-allowed";
+  "bg-slate-500 text-white cursor-not-allowed dark:bg-slate-500 dark:text-white";
 
 export const AVAILABLE_CELL =
-  "bg-emerald-50/80 text-foreground ring-1 ring-emerald-200/60 hover:bg-emerald-100/70 cursor-pointer";
+  "bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-700";
 
 export const AVAILABLE_TODAY_CELL =
-  "bg-emerald-50 text-brand-teal ring-1 ring-brand-teal/30 hover:bg-emerald-100/80 cursor-pointer";
+  "bg-emerald-600 text-white ring-2 ring-emerald-400 ring-offset-1 hover:bg-emerald-700 cursor-pointer dark:bg-emerald-600 dark:text-white dark:ring-emerald-400";
 
 export const SELECTED_CELL =
   "bg-brand-teal text-white shadow-md shadow-brand-teal/25 ring-2 ring-brand-teal ring-offset-1 cursor-pointer";
@@ -90,13 +97,13 @@ export const READONLY_SELECTED_CELL =
   "bg-brand-teal/15 text-brand-teal ring-1 ring-brand-teal/25";
 
 export const DEFAULT_SELECT_CELL =
-  "bg-surface/90 text-foreground hover:bg-mint/50 hover:ring-1 hover:ring-brand-teal/20 cursor-pointer";
+  "bg-surface text-foreground ring-1 ring-neutral-200 hover:bg-mint/50 hover:ring-brand-teal/30 cursor-pointer dark:ring-neutral-600";
 
 export const DEFAULT_TODAY_SELECT_CELL =
-  "bg-brand-pink/15 text-brand-pink ring-1 ring-brand-pink/30 hover:bg-mint/50 cursor-pointer";
+  "bg-surface text-foreground ring-2 ring-emerald-500 ring-offset-1 hover:bg-mint/50 cursor-pointer dark:ring-emerald-500";
 
 export const UNAVAILABLE_REQUEST_CELL =
-  "bg-black/[0.03] text-muted/40 cursor-not-allowed";
+  "bg-neutral-200 text-neutral-500 cursor-not-allowed dark:bg-neutral-700/60 dark:text-neutral-400";
 
 export function bookingColorClasses(color: CalendarBookingColor): string {
   return `${color.bg} ${color.text} ring-1 ${color.ring} cursor-not-allowed`;

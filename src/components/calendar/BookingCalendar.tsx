@@ -13,6 +13,11 @@ import {
 } from "@/lib/booking-calendar";
 import {
   filterPastDates,
+  LEGEND_AVAILABLE_CLASS,
+  LEGEND_BOOKED_CLASS,
+  LEGEND_PAST_CLASS,
+  LEGEND_SELECTED_CLASS,
+  LEGEND_UNAVAILABLE_CLASS,
   resolveCalendarDay,
   todayISODate,
 } from "@/lib/calendar-date-state";
@@ -324,22 +329,28 @@ export function BookingCalendar({
       ) : null}
 
       {showLegend ? (
-        <ul className="flex flex-wrap gap-3 text-xs text-muted">
+        <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-foreground">
           <li className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-neutral-200/80 ring-1 ring-neutral-300/50 dark:bg-neutral-700/40" />
-            {t.bookingCalendar.legendPastCompleted}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-sky-100 ring-1 ring-sky-300/70" />
-            {t.bookingCalendar.legendBooked}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-emerald-100 ring-1 ring-emerald-200/70" />
+            <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_AVAILABLE_CLASS}`} />
             {t.bookingCalendar.legendAvailable}
           </li>
+          <li className="flex items-center gap-1.5">
+            <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_PAST_CLASS}`} />
+            {t.bookingCalendar.legendPast}
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_BOOKED_CLASS}`} />
+            {t.bookingCalendar.legendBooked}
+          </li>
+          {mode === "availability-readonly" || mode === "request-select" ? (
+            <li className="flex items-center gap-1.5">
+              <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_UNAVAILABLE_CLASS}`} />
+              {t.bookingCalendar.legendUnavailable}
+            </li>
+          ) : null}
           {mode !== "availability-readonly" ? (
             <li className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-brand-teal ring-2 ring-brand-teal/40" />
+              <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_SELECTED_CLASS}`} />
               {t.bookingCalendar.legendSelected}
             </li>
           ) : null}

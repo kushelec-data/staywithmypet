@@ -2,11 +2,13 @@ import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import {
   billingIntervalFromPlanId,
   logStripeCheckoutPlanResolution,
+  normalizeCatalogPlanId,
   resolveStripePriceId,
   stripeCheckoutConfigError,
   stripeCheckoutMode,
   stripeCheckoutPriceError,
   stripePriceEnvVarForPlanId,
+  stripePriceIdSuffix,
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
@@ -20,6 +22,7 @@ import { NextResponse } from "next/server";
 type CheckoutBody = {
   role?: MembershipRole;
   planId?: string;
+  plan_id?: string;
   priceId?: string;
   userId?: string;
 };
@@ -63,20 +66,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { role, planId, priceId: clientPriceId, userId } = body;
+  const { role, planId: planIdBody, plan_id: planIdSnake, priceId: clientPriceId, userId } = body;
+  const rawPlanId = (planIdBody ?? planIdSnake)?.trim();
 
-  if (!isValidRole(role) || !planId?.trim() || !userId?.trim()) {
+  if (!isValidRole(role) || !rawPlanId || !userId?.trim()) {
     return NextResponse.json(
       { error: "role, planId, and userId are required." },
       { status: 400 },
     );
   }
 
-  if (!planExistsForRole(role, planId.trim())) {
+  const trimmedPlanId = normalizeCatalogPlanId(rawPlanId) ?? rawPlanId;
+
+  if (!planExistsForRole(role, trimmedPlanId)) {
     return NextResponse.json({ error: "Unknown plan for role." }, { status: 400 });
   }
 
-  const trimmedPlanId = planId.trim();
   logStripeCheckoutPlanResolution("create-checkout-session", trimmedPlanId, role);
 
   const configError = stripeCheckoutConfigError(trimmedPlanId);
@@ -123,6 +128,23 @@ export async function POST(request: Request) {
   const siteUrl = getSiteUrl();
   const stripe = getStripe();
 
+  const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId);
+  const priceSuffix =
+    resolvedPriceId && resolvedPriceId.length > 6
+      ? resolvedPriceId.slice(-6)
+      : resolvedPriceId
+        ? stripePriceIdSuffix(resolvedPriceId)
+        : null;
+
+  console.log("[stripe] checkout resolved", {
+    selectedPlan: trimmedPlanId,
+    resolvedEnvVar,
+    priceConfigured: Boolean(resolvedPriceId),
+    priceSuffix,
+    stripeMode: mode,
+    role,
+  });
+
   const priceTypeError = await validateStripePriceForCheckout(
     stripe,
     trimmedPlanId,
@@ -131,10 +153,11 @@ export async function POST(request: Request) {
   );
   if (priceTypeError) {
     console.error("[stripe] checkout price validation failed", {
-      planId: trimmedPlanId,
+      selectedPlan: trimmedPlanId,
       role,
-      mode,
-      envVar: stripePriceEnvVarForPlanId(trimmedPlanId),
+      stripeMode: mode,
+      resolvedEnvVar,
+      priceSuffix,
     });
     return NextResponse.json({ error: priceTypeError }, { status: 400 });
   }

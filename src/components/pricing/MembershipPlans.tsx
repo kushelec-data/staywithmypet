@@ -219,6 +219,7 @@ export function MembershipPlans({
   const { t } = useLanguage();
   const lockedTab = modeFilter ?? initialTab;
   const [tab, setTab] = useState<"owner" | "friend">(lockedTab);
+  const pricingTab = modeFilter ?? tab;
   const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const showRoleTabs = variant === "marketing" && !modeFilter;
@@ -229,7 +230,8 @@ export function MembershipPlans({
 
   const i18nPlans = tab === "owner" ? t.pricing.petParentPlans : t.pricing.petFriendPlans;
   const rolePlans =
-    plansProp?.filter((p) => p.role === (tab === "owner" ? "pet_parent" : "pet_friend")) ?? [];
+    plansProp?.filter((p) => p.role === (pricingTab === "owner" ? "pet_parent" : "pet_friend")) ??
+    [];
   const plans =
     variant === "account" && rolePlans.length > 0
       ? membershipPlansToPricing(rolePlans)
@@ -248,7 +250,7 @@ export function MembershipPlans({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           role: effectiveCheckoutRole,
-          planId: plan.id,
+          planId: planId(plan),
           priceId: plan.stripePriceId ?? undefined,
           userId: checkoutUserId,
         }),

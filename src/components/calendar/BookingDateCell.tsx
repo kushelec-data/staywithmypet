@@ -65,7 +65,7 @@ export function BookingDateCell({
           ) : null}
         </div>
       ) : hasBookings && !showAvatars ? (
-        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" aria-hidden />
+        <span className="h-1.5 w-1.5 rounded-full bg-white/80" aria-hidden />
       ) : null}
     </div>
   );

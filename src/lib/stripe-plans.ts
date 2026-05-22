@@ -3,6 +3,7 @@ import "server-only";
 import type Stripe from "stripe";
 import {
   MEMBERSHIP_PLAN_CATALOG,
+  PLAN_BILLING_INTERVAL,
   type MembershipPlanDefinition,
   type MembershipRole,
 } from "@/lib/membership";
@@ -36,8 +37,39 @@ const LEGACY_STRIPE_PRICE_ENV_BY_PLAN_ID: Record<string, string> = {
   "1-year-friend": "STRIPE_PRICE_1_YEAR_FRIEND",
 };
 
+/** Resolve request/catalog plan id to a known MEMBERSHIP_PLAN_CATALOG id. */
+export function normalizeCatalogPlanId(planId: string): string | null {
+  const trimmed = planId.trim();
+  if (!trimmed) return null;
+  if (STRIPE_PRICE_ENV_BY_PLAN_ID[trimmed]) return trimmed;
+  const lower = trimmed.toLowerCase();
+  for (const role of Object.keys(MEMBERSHIP_PLAN_CATALOG) as MembershipRole[]) {
+    const match = MEMBERSHIP_PLAN_CATALOG[role].find((p) => p.id === trimmed || p.id.toLowerCase() === lower);
+    if (match) return match.id;
+  }
+  return null;
+}
+
+function stripeEnvSuffixForBillingInterval(
+  billingInterval: MembershipPlanDefinition["billing_interval"],
+): "1M" | "3M" | "12M" | null {
+  if (billingInterval === "one_time") return "1M";
+  if (billingInterval === "3_months") return "3M";
+  if (billingInterval === "12_months") return "12M";
+  return null;
+}
+
 export function stripePriceEnvVarForPlanId(planId: string): string | null {
-  return STRIPE_PRICE_ENV_BY_PLAN_ID[planId] ?? null;
+  const catalogPlanId = normalizeCatalogPlanId(planId);
+  if (catalogPlanId) {
+    return STRIPE_PRICE_ENV_BY_PLAN_ID[catalogPlanId] ?? null;
+  }
+  const role = membershipRoleFromPlanId(planId);
+  const interval = billingIntervalFromPlanId(planId);
+  const suffix = stripeEnvSuffixForBillingInterval(interval);
+  if (!role || !suffix) return null;
+  const prefix = role === "pet_friend" ? "FRIEND" : "PARENT";
+  return `STRIPE_PRICE_${prefix}_${suffix}`;
 }
 
 function readEnvPrice(envName: string): string | null {
@@ -46,11 +78,12 @@ function readEnvPrice(envName: string): string | null {
 }
 
 export function resolveStripePriceId(planId: string): string | null {
-  const envName = stripePriceEnvVarForPlanId(planId);
+  const catalogPlanId = normalizeCatalogPlanId(planId) ?? planId.trim();
+  const envName = stripePriceEnvVarForPlanId(catalogPlanId);
   if (!envName) return null;
   const canonical = readEnvPrice(envName);
   if (canonical) return canonical;
-  const legacyEnv = LEGACY_STRIPE_PRICE_ENV_BY_PLAN_ID[planId];
+  const legacyEnv = LEGACY_STRIPE_PRICE_ENV_BY_PLAN_ID[catalogPlanId];
   if (!legacyEnv) return null;
   return readEnvPrice(legacyEnv);
 }
@@ -80,12 +113,25 @@ export function stripeCheckoutPriceError(planId: string, priceId: string | null)
   return null;
 }
 
-/** Reverse lookup: Stripe Price id → catalog plan_id (from STRIPE_PRICE_* env vars). */
+/** Prefer longer / recurring plans when several env vars share the same price id. */
+const PLAN_ID_FROM_STRIPE_PRICE_ORDER = [
+  "1-year-owner",
+  "3-month-owner",
+  "one-time-owner",
+  "1-year-friend",
+  "3-month-friend",
+  "one-time-friend",
+] as const;
+
+/** Reverse lookup: Stripe Price id → catalog plan_id (canonical + legacy env vars). */
 export function planIdFromStripePriceId(priceId: string): string | null {
   const trimmed = priceId.trim();
   if (!trimmed) return null;
-  for (const [planId, envName] of Object.entries(STRIPE_PRICE_ENV_BY_PLAN_ID)) {
-    if (process.env[envName]?.trim() === trimmed) return planId;
+  for (const planId of PLAN_ID_FROM_STRIPE_PRICE_ORDER) {
+    const canonicalEnv = STRIPE_PRICE_ENV_BY_PLAN_ID[planId];
+    if (canonicalEnv && process.env[canonicalEnv]?.trim() === trimmed) return planId;
+    const legacyEnv = LEGACY_STRIPE_PRICE_ENV_BY_PLAN_ID[planId];
+    if (legacyEnv && process.env[legacyEnv]?.trim() === trimmed) return planId;
   }
   return null;
 }
@@ -172,18 +218,21 @@ export function logStripeCheckoutPlanResolution(
   planId: string,
   role: MembershipRole,
 ): void {
-  const envName = stripePriceEnvVarForPlanId(planId);
-  const priceId = resolveStripePriceId(planId);
-  const billingInterval = billingIntervalFromPlanId(planId);
+  const catalogPlanId = normalizeCatalogPlanId(planId) ?? planId.trim();
+  const envName = stripePriceEnvVarForPlanId(catalogPlanId);
+  const priceId = resolveStripePriceId(catalogPlanId);
+  const billingInterval = billingIntervalFromPlanId(catalogPlanId);
   const mode = stripeCheckoutMode(billingInterval);
+  const priceSuffix =
+    priceId && priceId.length > 6 ? priceId.slice(-6) : priceId ? stripePriceIdSuffix(priceId) : null;
   console.log(`[stripe:${context}] checkout plan`, {
-    planId,
+    selectedPlan: catalogPlanId,
+    requestedPlan: planId,
     role,
-    envVar: envName,
+    resolvedEnvVar: envName,
     priceConfigured: Boolean(priceId),
-    priceSuffix: priceId ? stripePriceIdSuffix(priceId) : null,
-    priceFormatOk: priceId ? isValidStripePriceIdFormat(priceId) : false,
-    mode,
+    priceSuffix,
+    stripeMode: mode,
     billingInterval,
   });
 }
@@ -209,6 +258,10 @@ export function computeMembershipEndDate(
 }
 
 export function billingIntervalFromPlanId(planId: string): MembershipPlanDefinition["billing_interval"] {
+  const catalogPlanId = normalizeCatalogPlanId(planId);
+  if (catalogPlanId && PLAN_BILLING_INTERVAL[catalogPlanId]) {
+    return PLAN_BILLING_INTERVAL[catalogPlanId];
+  }
   if (planId.startsWith("one-time")) return "one_time";
   if (planId.includes("3-month")) return "3_months";
   return "12_months";

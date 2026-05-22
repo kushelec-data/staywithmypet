@@ -55,7 +55,7 @@ export function PetAvailabilityModal({
     title ??
     (careRequestTarget
       ? t.findCare.availabilityTitle.replace("{name}", name)
-      : `${name}'s calendar`);
+      : t.bookingCalendar.availabilityCalendarTitle);
   const description =
     subtitle ??
     (careRequestTarget ? t.findCare.availabilitySubtitle : "Dates when care is available.");
@@ -104,7 +104,7 @@ export function PetAvailabilityModal({
       <dialog
         ref={dialogRef}
         onClose={onClose}
-        className="w-[min(100%,28rem)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl backdrop:bg-foreground/40 dark:bg-surface"
+        className="mx-auto w-[min(100%,45rem)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl backdrop:bg-foreground/40 dark:bg-surface"
       >
         <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between gap-3">
