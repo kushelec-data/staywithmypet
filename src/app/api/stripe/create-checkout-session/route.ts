@@ -1,15 +1,20 @@
 import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import {
   billingIntervalFromPlanId,
+  logStripeCheckoutPlanResolution,
   resolveStripePriceId,
   stripeCheckoutConfigError,
   stripeCheckoutMode,
+  stripeCheckoutPriceError,
+  stripePriceEnvVarForPlanId,
+  validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
 import { getSiteUrl, getStripe } from "@/lib/stripe";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
+import Stripe from "stripe";
 import { NextResponse } from "next/server";
 
 type CheckoutBody = {
@@ -25,6 +30,27 @@ function isValidRole(value: unknown): value is MembershipRole {
 
 function planExistsForRole(role: MembershipRole, planId: string): boolean {
   return MEMBERSHIP_PLAN_CATALOG[role].some((p) => p.id === planId);
+}
+
+function checkoutErrorFromStripe(
+  err: unknown,
+  planId: string,
+  mode: "payment" | "subscription",
+): string {
+  const envName = stripePriceEnvVarForPlanId(planId) ?? "STRIPE_PRICE_*";
+  if (err instanceof Stripe.errors.StripeError) {
+    const msg = err.message.toLowerCase();
+    if (
+      msg.includes("recurring") ||
+      msg.includes("subscription") ||
+      msg.includes("one-time") ||
+      msg.includes("one time")
+    ) {
+      return `Missing or invalid price ID for ${planId}: ${envName} does not match checkout mode "${mode}". ${err.message}`;
+    }
+    return `Missing or invalid price ID for ${planId}: ${err.message}`;
+  }
+  return `Missing or invalid price ID for ${planId}`;
 }
 
 export async function POST(request: Request) {
@@ -51,6 +77,8 @@ export async function POST(request: Request) {
   }
 
   const trimmedPlanId = planId.trim();
+  logStripeCheckoutPlanResolution("create-checkout-session", trimmedPlanId, role);
+
   const configError = stripeCheckoutConfigError(trimmedPlanId);
   if (configError) {
     return NextResponse.json({ error: configError }, { status: 503 });
@@ -77,12 +105,9 @@ export async function POST(request: Request) {
   }
 
   const resolvedPriceId = resolveStripePriceId(trimmedPlanId);
-  if (!resolvedPriceId) {
-    const retryError = stripeCheckoutConfigError(trimmedPlanId);
-    return NextResponse.json(
-      { error: retryError ?? "Stripe price is not configured for this plan." },
-      { status: 503 },
-    );
+  const priceError = stripeCheckoutPriceError(trimmedPlanId, resolvedPriceId);
+  if (priceError) {
+    return NextResponse.json({ error: priceError }, { status: 503 });
   }
 
   if (clientPriceId?.trim() && clientPriceId.trim() !== resolvedPriceId) {
@@ -98,6 +123,22 @@ export async function POST(request: Request) {
   const siteUrl = getSiteUrl();
   const stripe = getStripe();
 
+  const priceTypeError = await validateStripePriceForCheckout(
+    stripe,
+    trimmedPlanId,
+    resolvedPriceId!,
+    mode,
+  );
+  if (priceTypeError) {
+    console.error("[stripe] checkout price validation failed", {
+      planId: trimmedPlanId,
+      role,
+      mode,
+      envVar: stripePriceEnvVarForPlanId(trimmedPlanId),
+    });
+    return NextResponse.json({ error: priceTypeError }, { status: 400 });
+  }
+
   const { data: existingMembership } = await supabase
     .from("user_memberships")
     .select("stripe_customer_id")
@@ -107,7 +148,7 @@ export async function POST(request: Request) {
 
   const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
     mode,
-    line_items: [{ price: resolvedPriceId, quantity: 1 }],
+    line_items: [{ price: resolvedPriceId!, quantity: 1 }],
     allow_promotion_codes: true,
     client_reference_id: sessionUserId,
     customer_email: user?.email ?? undefined,
@@ -151,7 +192,7 @@ export async function POST(request: Request) {
       mode,
       role,
       planId: trimmedPlanId,
-      priceId: resolvedPriceId,
+      envVar: stripePriceEnvVarForPlanId(trimmedPlanId),
       userId: sessionUserId,
       metadataKeys: Object.keys(sessionParams.metadata ?? {}),
     });
@@ -160,7 +201,15 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error("[stripe] create checkout session failed", err);
-    return NextResponse.json({ error: "Could not start checkout." }, { status: 500 });
+    console.error("[stripe] create checkout session failed", {
+      planId: trimmedPlanId,
+      role,
+      mode,
+      envVar: stripePriceEnvVarForPlanId(trimmedPlanId),
+      message: err instanceof Error ? err.message : String(err),
+    });
+    const error = checkoutErrorFromStripe(err, trimmedPlanId, mode);
+    const status = err instanceof Stripe.errors.StripeInvalidRequestError ? 400 : 500;
+    return NextResponse.json({ error }, { status });
   }
 }

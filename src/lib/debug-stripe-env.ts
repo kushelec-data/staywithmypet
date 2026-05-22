@@ -8,7 +8,17 @@ export function logStripeEnvPresence(context: string): void {
   console.log(`[stripe-env:${context}] NEXT_PUBLIC_SUPABASE_URL exists:`, Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()));
   console.log(`[stripe-env:${context}] VERCEL_PROJECT_PRODUCTION_URL:`, process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "(unset)");
   console.log(`[stripe-env:${context}] NEXT_PUBLIC_SITE_URL exists:`, Boolean(process.env.NEXT_PUBLIC_SITE_URL?.trim()));
-  console.log(`[stripe-env:${context}] STRIPE_PRICE_PARENT_1M exists:`, Boolean(process.env.STRIPE_PRICE_PARENT_1M?.trim()));
+  const priceEnvVars = [
+    "STRIPE_PRICE_PARENT_1M",
+    "STRIPE_PRICE_PARENT_3M",
+    "STRIPE_PRICE_PARENT_12M",
+    "STRIPE_PRICE_FRIEND_1M",
+    "STRIPE_PRICE_FRIEND_3M",
+    "STRIPE_PRICE_FRIEND_12M",
+  ] as const;
+  for (const name of priceEnvVars) {
+    console.log(`[stripe-env:${context}] ${name} exists:`, Boolean(process.env[name]?.trim()));
+  }
   console.log(`[stripe-env:${context}] NODE_ENV:`, process.env.NODE_ENV);
   console.log(`[stripe-env:${context}] VERCEL_ENV:`, process.env.VERCEL_ENV ?? "(unset)");
 }

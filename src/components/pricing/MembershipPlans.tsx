@@ -160,7 +160,7 @@ function PlanCard({
               {planConfigError}
             </p>
           ) : null}
-          {checkoutError && canCheckout ? (
+          {checkoutError ? (
             <p className="mt-4 text-center text-sm text-red-600" role="alert">
               {checkoutError}
             </p>
@@ -254,8 +254,11 @@ export function MembershipPlans({
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
+      if (!res.ok) {
         throw new Error(data.error ?? "Could not start checkout.");
+      }
+      if (!data.url) {
+        throw new Error(data.error ?? "Checkout session missing URL.");
       }
       window.location.href = data.url;
     } catch (err) {
