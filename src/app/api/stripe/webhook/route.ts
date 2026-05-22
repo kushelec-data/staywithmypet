@@ -24,13 +24,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const body = await request.text();
+  const signature = request.headers.get("stripe-signature");
+
   logStripeEnvPresence("webhook");
 
   const health = getMembershipWebhookHealth();
   console.log("[stripe] webhook env health", health);
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-  if (!webhookSecret) {
+  if (!process.env.STRIPE_WEBHOOK_SECRET?.trim()) {
     console.error("[stripe] webhook rejected: STRIPE_WEBHOOK_SECRET not configured");
     return NextResponse.json({ error: "Webhook secret not configured." }, { status: 503 });
   }
@@ -40,29 +42,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Membership webhook not configured." }, { status: 503 });
   }
 
-  const signature = request.headers.get("stripe-signature");
-  if (!signature) {
-    console.error("[stripe] webhook rejected: missing stripe-signature header");
-    return NextResponse.json({ error: "Missing stripe-signature." }, { status: 400 });
-  }
-
-  const body = await request.text();
   const stripe = getStripe();
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    if (!signature) {
+      console.error("[stripe] webhook rejected: missing stripe-signature header");
+      throw new Error("Missing stripe-signature header");
+    }
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET,
+    );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Invalid signature";
-    console.error("[stripe] webhook signature verification failed", message);
+    const message = err instanceof Error ? err.message : "Signature verification failed";
+    if (signature) {
+      console.error("[stripe] webhook signature verification failed:", message);
+    }
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  console.log("[stripe] signature verified");
   console.log("[stripe] webhook event received", {
     eventType: event.type,
     eventId: event.id,
   });
-  console.log("[stripe] webhook signature verified", { eventType: event.type, eventId: event.id });
 
   try {
     switch (event.type) {
