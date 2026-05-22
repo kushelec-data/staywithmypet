@@ -9,11 +9,12 @@ import {
   type UserMembership,
 } from "@/lib/membership";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeCatalogPlanId } from "@/lib/stripe-plans";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 
 export const MEMBERSHIP_RETURN_COLUMNS =
-  "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id";
+  "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_checkout_session_id";
 
 export type UpsertMembershipInput = {
   userId: string;
@@ -27,9 +28,22 @@ export type UpsertMembershipInput = {
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
   stripePriceId?: string | null;
+  stripeCheckoutSessionId?: string | null;
   /** When false, skip confirmation email (e.g. interim webhook updates). */
   sendConfirmationEmail?: boolean;
 };
+
+function normalizeMembershipTimestamp(value: string | undefined): string {
+  if (!value?.trim()) return new Date().toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+}
+
+function normalizeMembershipEndDate(value: string | null | undefined): string | null {
+  if (value == null || !String(value).trim()) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
 
 export async function upsertUserMembership(
   supabase: SupabaseClient,
@@ -38,18 +52,20 @@ export async function upsertUserMembership(
   | { ok: true; membership: UserMembership }
   | { ok: false; error: string; code?: string | null }
 > {
-  const startDate = input.startDate ?? new Date().toISOString();
+  const catalogPlanId =
+    normalizeCatalogPlanId(input.planId) ?? input.planId.trim();
+  const startDate = normalizeMembershipTimestamp(input.startDate);
   const planName =
-    input.planName?.trim() || resolvePlanName(input.role, input.planId.trim());
+    input.planName?.trim() || resolvePlanName(input.role, catalogPlanId);
 
   const payload: Record<string, unknown> = {
     user_id: input.userId,
     role: input.role,
-    plan_id: input.planId.trim(),
+    plan_id: catalogPlanId,
     plan_name: planName,
     status: input.status ?? "active",
     start_date: startDate,
-    end_date: input.endDate?.trim() || null,
+    end_date: normalizeMembershipEndDate(input.endDate),
     auto_renew: input.autoRenew ?? true,
   };
 
@@ -62,12 +78,35 @@ export async function upsertUserMembership(
   if (input.stripePriceId !== undefined) {
     payload.stripe_price_id = input.stripePriceId;
   }
+  if (input.stripeCheckoutSessionId !== undefined) {
+    payload.stripe_checkout_session_id = input.stripeCheckoutSessionId;
+  }
 
-  const { data, error } = await supabase
+  const returnColumns = MEMBERSHIP_RETURN_COLUMNS;
+  let upsertPayload = payload;
+  let selectColumns = returnColumns;
+
+  let { data, error } = await supabase
     .from("user_memberships")
-    .upsert(payload, { onConflict: "user_id,role" })
-    .select(MEMBERSHIP_RETURN_COLUMNS)
+    .upsert(upsertPayload, { onConflict: "user_id,role" })
+    .select(selectColumns)
     .single();
+
+  if (
+    error &&
+    "stripe_checkout_session_id" in upsertPayload &&
+    /stripe_checkout_session_id/i.test(error.message)
+  ) {
+    console.warn("[membership] retrying upsert without stripe_checkout_session_id (run migrations)");
+    const { stripe_checkout_session_id: _removed, ...withoutCheckout } = upsertPayload;
+    upsertPayload = withoutCheckout;
+    selectColumns = returnColumns.replace(", stripe_checkout_session_id", "");
+    ({ data, error } = await supabase
+      .from("user_memberships")
+      .upsert(upsertPayload, { onConflict: "user_id,role" })
+      .select(selectColumns)
+      .single());
+  }
 
   if (error) {
     console.error("[membership] user_memberships upsert failed", {
@@ -80,7 +119,7 @@ export async function upsertUserMembership(
     return { ok: false, error: error.message, code: error.code ?? null };
   }
 
-  const membership = data as UserMembership;
+  const membership = data as unknown as UserMembership;
 
   console.log("[membership] database updated", {
     table: "user_memberships",

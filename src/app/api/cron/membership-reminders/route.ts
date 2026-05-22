@@ -1,5 +1,6 @@
 import { membershipEmailContext } from "@/lib/membership-emails";
 import { sendTransactionalEmail } from "@/lib/email-send";
+import type { UserMembership } from "@/lib/membership";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
   const { data: expiring, error: expiringErr } = await admin
     .from("user_memberships")
     .select(
-      "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id",
+      "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_checkout_session_id",
     )
     .eq("status", "active")
     .gte("end_date", expiryStart)
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
   const { data: renewing, error: renewingErr } = await admin
     .from("user_memberships")
     .select(
-      "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id",
+      "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_checkout_session_id",
     )
     .eq("status", "active")
     .eq("auto_renew", true)
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       eventType: "membership_expiry_reminder",
       userId: row.user_id,
       requestId: row.id,
-      context: membershipEmailContext(row),
+      context: membershipEmailContext(row as UserMembership),
     });
     if (result.sent) expirySent += 1;
   }
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
       eventType: "membership_renewal_reminder",
       userId: row.user_id,
       requestId: row.id,
-      context: membershipEmailContext(row),
+      context: membershipEmailContext(row as UserMembership),
     });
     if (result.sent) renewalSent += 1;
   }

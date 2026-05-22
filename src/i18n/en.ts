@@ -346,6 +346,7 @@ export const en = {
     pastUnavailable: "Past date",
     pastCompleted: "Past date",
     availabilityCalendarTitle: "Availability calendar",
+    viewFullCalendar: "View full calendar",
     legendPast: "Past",
     legendPastCompleted: "Past",
     legendAvailable: "Available",
@@ -640,6 +641,16 @@ export const en = {
     paymentWebhookPending:
       "Payment received. Membership will activate after webhook is connected.",
     checkoutCancelled: "Checkout was cancelled. You can choose a plan when you are ready.",
+  },
+  membershipUpsell: {
+    oneStepTitle: "🐾 You're one step away!",
+    searchPetBody: "{name} wanted to meet you. Unlock membership to send a request.",
+    findCareBody: "{name} is ready to help. Unlock membership to arrange care.",
+    fallbackTitle: "🐾 You're one step away!",
+    fallbackBody: "Unlock membership to message, request care, and make bookings.",
+    unlockCta: "Unlock membership",
+    maybeLater: "Maybe later",
+    close: "Dismiss",
   },
   faq: {
     badge: "FAQ",
@@ -1088,10 +1099,6 @@ export const en = {
     availabilitySubtitle: "Dates when this Pet Friend is available for care.",
     noUpcomingDates: "No upcoming dates listed yet.",
     logInToSendRequest: "Log in to send request",
-    upgradeToRequest:
-      "Upgrade your Pet Parent membership to request care from Pet Friends.",
-    viewMembershipPlans: "View membership plans",
-    maybeLater: "Maybe later",
     checkCalendar: "Check calendar",
   },
   searchFilters: {

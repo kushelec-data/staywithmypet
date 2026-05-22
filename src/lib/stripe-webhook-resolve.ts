@@ -1,14 +1,43 @@
 import "server-only";
 
 import type Stripe from "stripe";
-import { membershipRoleFromPlanId, planIdFromStripePriceId } from "@/lib/stripe-plans";
+import {
+  membershipRoleFromPlanId,
+  normalizeCatalogPlanId,
+  planIdFromStripePriceId,
+} from "@/lib/stripe-plans";
 import type { MembershipRole } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export function roleFromStripeMetadata(value: string | undefined): MembershipRole | null {
-  if (value === "pet_parent" || value === "pet_friend") return value;
+  if (!value?.trim()) return null;
+  const normalized = value.trim().toLowerCase();
+  if (
+    normalized === "pet_parent" ||
+    normalized === "parent" ||
+    normalized === "owner" ||
+    normalized === "pet-parent"
+  ) {
+    return "pet_parent";
+  }
+  if (
+    normalized === "pet_friend" ||
+    normalized === "friend" ||
+    normalized === "pet-friend"
+  ) {
+    return "pet_friend";
+  }
   return null;
+}
+
+function planIdFromMergedMetadata(meta: Stripe.Metadata): string | undefined {
+  const raw =
+    meta.plan_id?.trim() ||
+    meta.plan?.trim() ||
+    meta.planId?.trim();
+  if (!raw) return undefined;
+  return normalizeCatalogPlanId(raw) ?? raw;
 }
 
 function mergeMetadata(
@@ -172,17 +201,24 @@ export async function resolveCheckoutActivationContext(
     mergedMetadata: mergedMeta,
   });
 
+  const metadataUserId =
+    mergedMeta.user_id?.trim() ||
+    mergedMeta.userId?.trim() ||
+    mergedMeta.supabase_user_id?.trim() ||
+    null;
+
   let userId = await resolveSupabaseUserId({
-    metadataUserId: mergedMeta.user_id,
+    metadataUserId,
     clientReferenceId: session.client_reference_id,
     email,
   });
 
   let role = roleFromStripeMetadata(mergedMeta.role);
-  let planId: string | undefined = mergedMeta.plan_id?.trim();
+  let planId = planIdFromMergedMetadata(mergedMeta);
 
   if (!planId && priceId) {
-    planId = planIdFromStripePriceId(priceId) ?? undefined;
+    const fromPrice = planIdFromStripePriceId(priceId);
+    planId = fromPrice ? normalizeCatalogPlanId(fromPrice) ?? fromPrice : undefined;
   }
   if (!role && planId) {
     role = membershipRoleFromPlanId(planId);
@@ -198,13 +234,19 @@ export async function resolveCheckoutActivationContext(
       }));
 
     role = role ?? roleFromStripeMetadata(subscription.metadata.role);
-    planId = planId || subscription.metadata.plan_id?.trim();
+    planId =
+      planId ||
+      planIdFromMergedMetadata(subscription.metadata) ||
+      undefined;
 
     const subPriceId = subscription.items.data[0]?.price.id;
     if (!planId && subPriceId) {
+      const fromPrice = planIdFromStripePriceId(subPriceId);
       planId =
-        planIdFromStripePriceId(subPriceId) ??
-        subscription.items.data[0]?.price.metadata?.plan_id?.trim();
+        (fromPrice ? normalizeCatalogPlanId(fromPrice) ?? fromPrice : undefined) ??
+        planIdFromMergedMetadata(
+          subscription.items.data[0]?.price.metadata ?? {},
+        );
     }
     if (!role && planId) {
       role = membershipRoleFromPlanId(planId);

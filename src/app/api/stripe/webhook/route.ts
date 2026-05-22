@@ -1,4 +1,5 @@
 import {
+  handleCheckoutAsyncPaymentSucceeded,
   handleCheckoutSessionCompleted,
   handleInvoicePaymentFailed,
   handleInvoicePaymentSucceeded,
@@ -57,14 +58,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  console.log("[stripe] webhook event received", {
+    eventType: event.type,
+    eventId: event.id,
+  });
   console.log("[stripe] webhook signature verified", { eventType: event.type, eventId: event.id });
 
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
         const customerEmail = await checkoutSessionEmail(session);
-        console.log("[stripe] webhook received checkout.session.completed", {
+        console.log("[stripe] webhook checkout session", {
           eventType: event.type,
           eventId: event.id,
           sessionId: session.id,
@@ -74,7 +80,11 @@ export async function POST(request: Request) {
           clientReferenceId: session.client_reference_id ?? null,
           metadata: session.metadata ?? {},
         });
-        await handleCheckoutSessionCompleted(session);
+        if (event.type === "checkout.session.async_payment_succeeded") {
+          await handleCheckoutAsyncPaymentSucceeded(session);
+        } else {
+          await handleCheckoutSessionCompleted(session);
+        }
         break;
       }
       case "customer.subscription.created":

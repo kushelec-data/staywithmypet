@@ -31,6 +31,9 @@ import {
   type UserMembership,
 } from "@/lib/membership";
 import { resolveActiveMode } from "@/lib/profile-mode";
+import type { CheckoutPlanDebugMeta } from "@/lib/membership";
+import type { MembershipActivationDebug } from "@/lib/membership-page-debug";
+import { parseMembershipPageRole } from "@/lib/membership-upsell";
 
 type StripeCheckoutReadiness = {
   ready: boolean;
@@ -40,13 +43,15 @@ type StripeCheckoutReadiness = {
 type MembershipPageContentProps = {
   stripeCheckoutByRole?: Record<MembershipRole, StripeCheckoutReadiness>;
   stripePlanErrorsByRole?: Record<MembershipRole, Record<string, string | null>>;
+  debugCheckoutMetaByRole?: Record<MembershipRole, CheckoutPlanDebugMeta[]>;
   /** Server: STRIPE_WEBHOOK_SECRET + SUPABASE_SERVICE_ROLE_KEY configured. */
   membershipWebhookWritable?: boolean;
+  /** Temporary production debug — server-loaded membership snapshot. */
+  activationDebug?: MembershipActivationDebug | null;
 };
 
 function parseCheckoutRole(value: string | null): MembershipRole | null {
-  if (value === "pet_parent" || value === "pet_friend") return value;
-  return null;
+  return parseMembershipPageRole(value);
 }
 
 function RoleMembershipSummary({
@@ -104,7 +109,9 @@ function RoleMembershipSummary({
 export function MembershipPageContent({
   stripeCheckoutByRole,
   stripePlanErrorsByRole,
+  debugCheckoutMetaByRole,
   membershipWebhookWritable = true,
+  activationDebug = null,
 }: MembershipPageContentProps = {}) {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
@@ -112,6 +119,7 @@ export function MembershipPageContent({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
   const handledReturnRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -119,8 +127,9 @@ export function MembershipPageContent({
     const cancelled = searchParams.get("cancelled") === "true";
     if (!success && !cancelled) return;
 
+    const sessionId = searchParams.get("session_id")?.trim() ?? "";
     const returnKey = success
-      ? `success:${searchParams.get("role") ?? ""}`
+      ? `success:${searchParams.get("role") ?? ""}:${sessionId}`
       : "cancelled";
     if (handledReturnRef.current === returnKey) return;
     handledReturnRef.current = returnKey;
@@ -140,16 +149,47 @@ export function MembershipPageContent({
         parseCheckoutRole(searchParams.get("role")) ??
         (profile ? activeModeToMembershipRole(resolveActiveMode(profile.role, profile.active_mode)) : null);
 
-      if (!membershipWebhookWritable) {
+      let activated = false;
+
+      if (sessionId.startsWith("cs_")) {
+        try {
+          const res = await fetch("/api/stripe/confirm-membership", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId }),
+          });
+          const payload = (await res.json()) as {
+            activated?: boolean;
+            pending?: boolean;
+            error?: string;
+          };
+          if (!cancelledEffect) {
+            if (res.ok && payload.activated) {
+              activated = true;
+              setConfirmStatus("confirmed via Stripe session");
+            } else if (res.ok && payload.pending) {
+              setConfirmStatus("payment still processing");
+            } else if (!res.ok) {
+              setConfirmStatus(payload.error ?? `confirm failed (${res.status})`);
+            }
+          }
+        } catch (err) {
+          if (!cancelledEffect) {
+            setConfirmStatus(
+              err instanceof Error ? err.message : "confirm-membership request failed",
+            );
+          }
+        }
+      } else if (!membershipWebhookWritable) {
         if (!cancelledEffect) {
           setCheckoutBanner(t.membershipCheckout.paymentWebhookPending);
+          setConfirmStatus("no session_id; webhook not writable");
         }
         router.replace("/membership", { scroll: false });
         return;
       }
 
-      const pollDelaysMs = [0, 800, 1600, 3200, 5000];
-      let activated = false;
+      const pollDelaysMs = activated ? [0] : [0, 800, 1600, 3200, 5000];
 
       for (const delay of pollDelaysMs) {
         if (cancelledEffect) return;
@@ -192,18 +232,26 @@ export function MembershipPageContent({
     profile,
   ]);
 
-  const activeMode = profile
+  const profileMode = profile
     ? resolveActiveMode(profile.role, profile.active_mode)
     : "pet_parent";
+  const roleFromQuery = parseMembershipPageRole(searchParams.get("role"));
+  const planMode =
+    roleFromQuery === "pet_friend"
+      ? "pet_friend"
+      : roleFromQuery === "pet_parent"
+        ? "pet_parent"
+        : profileMode;
   const memberships = profile?.memberships ?? emptyMembershipsByRole();
-  const modeTab = activeModeToPricingTab(activeMode);
+  const modeTab = activeModeToPricingTab(planMode);
   const status = profile
-    ? membershipStatusForMode(memberships, activeMode)
+    ? membershipStatusForMode(memberships, planMode)
     : DEMO_MEMBERSHIP_LABEL;
-  const isActive = profile ? hasActiveMembershipForMode(memberships, activeMode) : false;
+  const isActive = profile ? hasActiveMembershipForMode(memberships, planMode) : false;
   const dualActive = hasDualActiveMemberships(memberships);
-  const modeRole = activeModeToMembershipRole(activeMode);
+  const modeRole = activeModeToMembershipRole(planMode);
   const activeMembership = memberships[modeRole];
+  const modeActivationDebug = activationDebug?.[modeRole];
 
   const activePlanName = useMemo(() => {
     if (!profile || !isActive) return null;
@@ -240,11 +288,11 @@ export function MembershipPageContent({
   }
 
   const loading = profileLoading;
-  const pageTitle = membershipPageTitle(activeMode);
-  const pageSubtitle = membershipPageSubtitle(activeMode);
+  const pageTitle = membershipPageTitle(planMode);
+  const pageSubtitle = membershipPageSubtitle(planMode);
   const statusHeadline = isActive && activePlanName
-    ? membershipActiveHeadline(activeMode, activePlanName)
-    : membershipInactiveHeadline(activeMode);
+    ? membershipActiveHeadline(planMode, activePlanName)
+    : membershipInactiveHeadline(planMode);
 
   return (
     <DashboardShell
@@ -311,8 +359,8 @@ export function MembershipPageContent({
         ) : null}
         <p className="mt-2 text-sm text-muted">
           {isActive
-            ? `Your ${activeMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} membership unlocks messaging and bookings in this mode.`
-            : `Choose a ${activeMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} plan below to pay securely with Stripe (TEST mode). Browse for free until you upgrade.`}
+            ? `Your ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} membership unlocks messaging and bookings in this mode.`
+            : `Choose a ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} plan below to pay securely with Stripe (TEST mode). Browse for free until you upgrade.`}
         </p>
       </div>
 
@@ -323,6 +371,91 @@ export function MembershipPageContent({
         >
           {checkoutBanner}
         </p>
+      ) : null}
+
+      {activationDebug ? (
+        <div
+          className="mb-4 rounded-2xl border border-dashed border-amber-400/70 bg-amber-50/80 px-4 py-3 font-mono text-xs text-amber-950"
+          aria-label="Membership activation debug"
+        >
+          <p className="mb-2 font-sans text-sm font-semibold text-amber-950">
+            Activation debug (temporary)
+          </p>
+          <dl className="grid gap-1 sm:grid-cols-2">
+            <div>
+              <dt className="text-amber-800">User id</dt>
+              <dd className="break-all">{activationDebug.userId}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">Webhook writable</dt>
+              <dd>{activationDebug.webhookWritable ? "yes" : "no"}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">Confirm API writable</dt>
+              <dd>{activationDebug.confirmWritable ? "yes" : "no"}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">
+                {membershipRoleTitle(modeRole)} row found
+              </dt>
+              <dd>{modeActivationDebug?.rowFound ? "yes" : "no"}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">
+                {membershipRoleTitle(modeRole)} active (DB rules)
+              </dt>
+              <dd>{modeActivationDebug?.isActive ? "yes" : "no"}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">Status</dt>
+              <dd>{modeActivationDebug?.status ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">Expires</dt>
+              <dd>
+                {modeActivationDebug?.endDate
+                  ? formatMembershipDate(modeActivationDebug.endDate)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">Plan id (DB)</dt>
+              <dd>{modeActivationDebug?.planId ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">UI mode / role checked</dt>
+              <dd>
+                {planMode} → {modeRole}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">Parent active</dt>
+              <dd>{activationDebug.pet_parent.isActive ? "yes" : "no"}</dd>
+            </div>
+            <div>
+              <dt className="text-amber-800">Friend active</dt>
+              <dd>{activationDebug.pet_friend.isActive ? "yes" : "no"}</dd>
+            </div>
+            {confirmStatus ? (
+              <div className="sm:col-span-2">
+                <dt className="text-amber-800">Confirm API</dt>
+                <dd>{confirmStatus}</dd>
+              </div>
+            ) : null}
+          </dl>
+          {!activationDebug.confirmWritable ? (
+            <p className="mt-2 font-sans text-xs text-amber-900">
+              Confirm API cannot write memberships: check STRIPE_SECRET_KEY and
+              SUPABASE_SERVICE_ROLE_KEY on the server.
+            </p>
+          ) : null}
+          {!activationDebug.webhookWritable ? (
+            <p className="mt-2 font-sans text-xs text-amber-900">
+              Webhook cannot write memberships: check STRIPE_WEBHOOK_SECRET and
+              SUPABASE_SERVICE_ROLE_KEY on the server.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {stripeConfigMessage ? (
@@ -344,6 +477,7 @@ export function MembershipPageContent({
         checkoutRole={modeRole}
         enableCheckout={!isActive && stripeCheckoutReady}
         planCheckoutErrors={stripePlanErrorsByRole?.[modeRole]}
+        debugCheckoutMeta={debugCheckoutMetaByRole?.[modeRole]}
       />
     </DashboardShell>
   );

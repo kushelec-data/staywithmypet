@@ -8,7 +8,7 @@ import {
 import { isMissingRelationError } from "@/lib/supabase-errors";
 
 const MEMBERSHIP_SELECT =
-  "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id";
+  "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_checkout_session_id";
 
 function mapMembershipRow(data: Record<string, unknown>): UserMembership {
   return {
@@ -26,6 +26,10 @@ function mapMembershipRow(data: Record<string, unknown>): UserMembership {
     stripe_subscription_id:
       data.stripe_subscription_id == null ? null : String(data.stripe_subscription_id),
     stripe_price_id: data.stripe_price_id == null ? null : String(data.stripe_price_id),
+    stripe_checkout_session_id:
+      data.stripe_checkout_session_id == null || data.stripe_checkout_session_id === undefined
+        ? null
+        : String(data.stripe_checkout_session_id),
   };
 }
 
@@ -33,10 +37,16 @@ export async function fetchUserMemberships(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserMembershipsByRole> {
-  const { data, error } = await supabase
+  let select = MEMBERSHIP_SELECT;
+  let { data, error } = await supabase
     .from("user_memberships")
-    .select(MEMBERSHIP_SELECT)
+    .select(select)
     .eq("user_id", userId);
+
+  if (error && /stripe_checkout_session_id/i.test(error.message)) {
+    select = select.replace(", stripe_checkout_session_id", "");
+    ({ data, error } = await supabase.from("user_memberships").select(select).eq("user_id", userId));
+  }
 
   if (error) {
     if (isMissingRelationError(error)) {
@@ -45,7 +55,9 @@ export async function fetchUserMemberships(
     throw error;
   }
 
-  const rows = (data ?? []).map((row) => mapMembershipRow(row as Record<string, unknown>));
+  const rows = (data ?? []).map((row) =>
+    mapMembershipRow(row as unknown as Record<string, unknown>),
+  );
   return indexMemberships(rows);
 }
 

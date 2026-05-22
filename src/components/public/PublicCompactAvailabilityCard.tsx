@@ -1,11 +1,12 @@
 "use client";
 
-import { PetPublicAvailabilityCalendar } from "@/components/pets/PetPublicAvailabilityCalendar";
+import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
+import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatDate, formatDateRange } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 type PublicCompactAvailabilityCardProps = {
   petId?: string;
@@ -20,9 +21,9 @@ export function PublicCompactAvailabilityCard({
   petFriendId,
   availableDates,
   availabilityNotes,
-  visibility = "public",
 }: PublicCompactAvailabilityCardProps) {
   const { t, locale } = useLanguage();
+  const [fullCalendarOpen, setFullCalendarOpen] = useState(false);
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
 
   const chips = useMemo(() => {
@@ -44,28 +45,42 @@ export function PublicCompactAvailabilityCard({
       <h2 className={PUBLIC_SECTION_TITLE}>{t.searchFilters.availability}</h2>
 
       {chips.length ? (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
+        <ul className="mt-3 flex flex-wrap gap-2">
           {chips.map((chip) => (
             <li
               key={chip}
-              className="rounded-full border border-brand-teal/20 bg-mint/40 px-2.5 py-0.5 text-xs font-semibold text-brand-teal"
+              className="rounded-full border-2 border-brand-teal/35 bg-mint/55 px-3 py-1 text-xs font-bold text-foreground"
             >
               {chip}
             </li>
           ))}
         </ul>
-      ) : null}
+      ) : (
+        <p className="mt-3 rounded-xl border-2 border-dashed border-foreground/20 bg-surface px-3 py-3 text-sm font-medium text-foreground">
+          {t.findCare.noUpcomingDates}
+        </p>
+      )}
 
-      <div className="mt-4">
-        <PetPublicAvailabilityCalendar
-          petId={petId}
-          petFriendId={petFriendId}
-          availableDates={available}
-          availabilityNotes={availabilityNotes}
-          visibility={visibility}
-          viewRole={petFriendId && visibility === "full" ? "pet-friend" : undefined}
-        />
-      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="mt-4 w-full justify-center border-2 border-brand-teal/30 font-semibold text-brand-teal"
+        onClick={() => setFullCalendarOpen(true)}
+      >
+        {t.bookingCalendar.viewFullCalendar}
+      </Button>
+
+      <PetAvailabilityModal
+        open={fullCalendarOpen}
+        name={t.searchFilters.availability}
+        petId={petId}
+        petFriendId={petFriendId}
+        dates={available}
+        onClose={() => setFullCalendarOpen(false)}
+        title={t.bookingCalendar.availabilityCalendarTitle}
+        highContrast
+      />
     </section>
   );
 }

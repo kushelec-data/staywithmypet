@@ -1,11 +1,10 @@
 import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import {
-  billingIntervalFromPlanId,
   logStripeCheckoutPlanResolution,
   normalizeCatalogPlanId,
   resolveStripePriceId,
   stripeCheckoutConfigError,
-  stripeCheckoutMode,
+  stripeCheckoutModeForPlanId,
   stripeCheckoutPriceError,
   stripePriceEnvVarForPlanId,
   stripePriceIdSuffix,
@@ -23,7 +22,6 @@ type CheckoutBody = {
   role?: MembershipRole;
   planId?: string;
   plan_id?: string;
-  priceId?: string;
   userId?: string;
 };
 
@@ -66,7 +64,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { role, planId: planIdBody, plan_id: planIdSnake, priceId: clientPriceId, userId } = body;
+  const { role, planId: planIdBody, plan_id: planIdSnake, userId } = body;
   const rawPlanId = (planIdBody ?? planIdSnake)?.trim();
 
   if (!isValidRole(role) || !rawPlanId || !userId?.trim()) {
@@ -76,7 +74,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const trimmedPlanId = normalizeCatalogPlanId(rawPlanId) ?? rawPlanId;
+  const trimmedPlanId = normalizeCatalogPlanId(rawPlanId);
+  if (!trimmedPlanId) {
+    return NextResponse.json({ error: `Unknown plan: ${rawPlanId}` }, { status: 400 });
+  }
 
   if (!planExistsForRole(role, trimmedPlanId)) {
     return NextResponse.json({ error: "Unknown plan for role." }, { status: 400 });
@@ -115,16 +116,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: priceError }, { status: 503 });
   }
 
-  if (clientPriceId?.trim() && clientPriceId.trim() !== resolvedPriceId) {
-    return NextResponse.json({ error: "Price id does not match plan." }, { status: 400 });
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const billingInterval = billingIntervalFromPlanId(trimmedPlanId);
-  const mode = stripeCheckoutMode(billingInterval);
+  const mode = stripeCheckoutModeForPlanId(trimmedPlanId);
+  if (!mode) {
+    return NextResponse.json({ error: `Unknown plan: ${trimmedPlanId}` }, { status: 400 });
+  }
   const siteUrl = getSiteUrl();
   const stripe = getStripe();
 
@@ -179,8 +178,10 @@ export async function POST(request: Request) {
       user_id: sessionUserId,
       role,
       plan_id: trimmedPlanId,
+      plan: trimmedPlanId,
+      price_id: resolvedPriceId!,
     },
-    success_url: `${siteUrl}/membership?success=true&role=${role}`,
+    success_url: `${siteUrl}/membership?success=true&role=${role}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl}/membership?cancelled=true`,
   };
 
@@ -196,6 +197,8 @@ export async function POST(request: Request) {
         user_id: sessionUserId,
         role,
         plan_id: trimmedPlanId,
+        plan: trimmedPlanId,
+        price_id: resolvedPriceId!,
       },
     };
   } else {
@@ -204,6 +207,8 @@ export async function POST(request: Request) {
         user_id: sessionUserId,
         role,
         plan_id: trimmedPlanId,
+        plan: trimmedPlanId,
+        price_id: resolvedPriceId!,
       },
     };
   }

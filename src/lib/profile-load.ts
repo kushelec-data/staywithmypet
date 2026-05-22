@@ -149,6 +149,7 @@ function legacyMembershipFromProfile(data: ProfileDbRow): UserMembership | null 
     stripe_customer_id: null,
     stripe_subscription_id: null,
     stripe_price_id: null,
+    stripe_checkout_session_id: null,
   };
 }
 

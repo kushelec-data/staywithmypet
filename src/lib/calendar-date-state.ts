@@ -105,6 +105,9 @@ export const DEFAULT_TODAY_SELECT_CELL =
 export const UNAVAILABLE_REQUEST_CELL =
   "bg-neutral-200 text-neutral-500 cursor-not-allowed dark:bg-neutral-700/60 dark:text-neutral-400";
 
+export const HIGH_CONTRAST_UNAVAILABLE_CELL =
+  "bg-neutral-300 text-neutral-800 ring-2 ring-neutral-500 cursor-not-allowed dark:bg-neutral-600 dark:text-neutral-100 dark:ring-neutral-400";
+
 export function bookingColorClasses(color: CalendarBookingColor): string {
   return `${color.bg} ${color.text} ring-1 ${color.ring} cursor-not-allowed`;
 }
@@ -126,6 +129,7 @@ export function resolveCalendarDay(
     disabled?: boolean;
     primaryTint?: string | null;
     primaryColor?: CalendarBookingColor;
+    highContrast?: boolean;
   },
 ): ResolvedCalendarDay {
   const today = input.today ?? todayISODate();
@@ -206,7 +210,9 @@ export function resolveCalendarDay(
   } else if (visual === "available") {
     cellClassName = isToday ? AVAILABLE_TODAY_CELL : AVAILABLE_CELL;
   } else if (visual === "unavailable") {
-    cellClassName = UNAVAILABLE_REQUEST_CELL;
+    cellClassName = options?.highContrast
+      ? HIGH_CONTRAST_UNAVAILABLE_CELL
+      : UNAVAILABLE_REQUEST_CELL;
   } else if (isToday) {
     cellClassName = DEFAULT_TODAY_SELECT_CELL;
   }

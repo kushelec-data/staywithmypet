@@ -1,6 +1,9 @@
 import { PublicProfilePageContent } from "@/components/profile/PublicProfilePageContent";
 import type { Metadata } from "next";
 
+/** Always serve latest profile/calendar UI (avoid stale static HTML). */
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };

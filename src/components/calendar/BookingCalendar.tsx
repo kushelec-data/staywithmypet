@@ -52,6 +52,7 @@ export type BookingCalendarProps = {
   showLegend?: boolean;
   showSelectedChips?: boolean;
   className?: string;
+  highContrast?: boolean;
 };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -70,6 +71,7 @@ export function BookingCalendar({
   showLegend = true,
   showSelectedChips,
   className = "",
+  highContrast = false,
 }: BookingCalendarProps) {
   const { t, locale } = useLanguage();
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
@@ -257,6 +259,7 @@ export function BookingCalendar({
                   disabled,
                   primaryTint: primaryBooking?.color.tint ?? null,
                   primaryColor: primaryBooking?.color,
+                  highContrast,
                 },
               );
 
@@ -329,7 +332,11 @@ export function BookingCalendar({
       ) : null}
 
       {showLegend ? (
-        <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-foreground">
+        <ul
+          className={`flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium ${
+            highContrast ? "font-semibold text-foreground" : "text-foreground"
+          }`}
+        >
           <li className="flex items-center gap-1.5">
             <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_AVAILABLE_CLASS}`} />
             {t.bookingCalendar.legendAvailable}

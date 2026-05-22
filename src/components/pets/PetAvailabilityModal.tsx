@@ -1,7 +1,7 @@
 "use client";
 
 import { BookingCalendar } from "@/components/calendar/BookingCalendar";
-import { UpgradeMembershipModal } from "@/components/membership/UpgradeMembershipModal";
+import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import {
   SendRequestButton,
   type ParentToFriendRequestTarget,
@@ -29,6 +29,7 @@ type PetAvailabilityModalProps = {
   subtitle?: string;
   /** Find Care: enable send-request flow from this modal. */
   careRequestTarget?: ParentToFriendRequestTarget | null;
+  highContrast?: boolean;
 };
 
 export function PetAvailabilityModal({
@@ -41,6 +42,7 @@ export function PetAvailabilityModal({
   title,
   subtitle,
   careRequestTarget = null,
+  highContrast = false,
 }: PetAvailabilityModalProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -104,7 +106,7 @@ export function PetAvailabilityModal({
       <dialog
         ref={dialogRef}
         onClose={onClose}
-        className="mx-auto w-[min(100%,45rem)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl backdrop:bg-foreground/40 dark:bg-surface"
+        className="mx-auto w-[min(100%,720px)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl backdrop:bg-foreground/40 dark:bg-surface"
       >
         <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between gap-3">
@@ -134,6 +136,7 @@ export function PetAvailabilityModal({
                 petFriendId={petFriendId}
                 showLegend
                 showSelectedChips={false}
+                highContrast={highContrast}
                 className="rounded-2xl"
               />
             ) : (
@@ -195,12 +198,11 @@ export function PetAvailabilityModal({
             requestModalOpen={requestOpen}
             onRequestModalOpenChange={setRequestOpen}
           />
-          <UpgradeMembershipModal
+          <MembershipUpsellToast
             open={upgradeOpen}
-            activeMode="pet_parent"
-            message={t.findCare.upgradeToRequest}
-            primaryLabel={t.findCare.viewMembershipPlans}
-            secondaryLabel={t.findCare.maybeLater}
+            variant="findCare"
+            name={careRequestTarget.label}
+            role="pet_parent"
             onClose={() => setUpgradeOpen(false)}
           />
         </>

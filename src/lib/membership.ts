@@ -23,6 +23,7 @@ export type UserMembership = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
+  stripe_checkout_session_id: string | null;
 };
 
 export type UserMembershipsByRole = {
@@ -40,6 +41,13 @@ export type MembershipPlanDefinition = {
   future_stripe_price_id: string | null;
   features: readonly string[];
   popular?: boolean;
+};
+
+/** Client-safe checkout debug row (env var name + mode only — no Stripe price ids). */
+export type CheckoutPlanDebugMeta = {
+  planId: string;
+  envVar: string;
+  mode: "payment" | "subscription";
 };
 
 export const DEMO_MEMBERSHIP_LABEL = "Demo";

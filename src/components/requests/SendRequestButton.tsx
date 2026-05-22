@@ -23,7 +23,8 @@ import { formatRequestSubmitErrorForUi } from "@/lib/supabase-errors";
 import { createClient } from "@/lib/supabase";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { UpgradeMembershipModal } from "@/components/membership/UpgradeMembershipModal";
+import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
+import { membershipUpsellVariantForRequest } from "@/lib/membership-upsell";
 import { useProfile } from "@/context/ProfileContext";
 import {
   canUseMembershipFeaturesForMode,
@@ -335,10 +336,11 @@ export function SendRequestButton({
         onSubmit={handleSubmit}
       />
 
-      <UpgradeMembershipModal
+      <MembershipUpsellToast
         open={upgradeOpen}
+        variant={membershipUpsellVariantForRequest(target)}
+        name={target.label}
         role={senderMode === "pet_friend" ? "pet_friend" : "pet_parent"}
-        activeMode={senderMode}
         onClose={() => setUpgradeOpen(false)}
       />
     </>

@@ -19,9 +19,10 @@ import { blockUser, formatTrustSafetyError, isUserBlocked } from "@/lib/trust-sa
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { UpgradeMembershipModal } from "@/components/membership/UpgradeMembershipModal";
+import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { useProfile } from "@/context/ProfileContext";
 import {
+  activeModeToMembershipRole,
   canUseMembershipFeaturesForMode,
   emptyMembershipsByRole,
 } from "@/lib/membership";
@@ -371,10 +372,15 @@ export function ChatPanel({
         onClose={() => setReportOpen(false)}
       />
 
-      <UpgradeMembershipModal
+      <MembershipUpsellToast
         open={upgradeOpen}
-        activeMode={
-          profile ? resolveActiveMode(profile.role, profile.active_mode) : "pet_parent"
+        variant="fallback"
+        role={
+          profile
+            ? activeModeToMembershipRole(
+                resolveActiveMode(profile.role, profile.active_mode),
+              )
+            : "pet_parent"
         }
         onClose={() => setUpgradeOpen(false)}
       />

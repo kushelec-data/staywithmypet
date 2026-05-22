@@ -4,21 +4,25 @@ import type Stripe from "stripe";
 import {
   MEMBERSHIP_PLAN_CATALOG,
   PLAN_BILLING_INTERVAL,
+  type CheckoutPlanDebugMeta,
   type MembershipPlanDefinition,
   type MembershipRole,
 } from "@/lib/membership";
 
-export type StripeCheckoutReadiness = {
-  ready: boolean;
-  message: string | null;
-};
+export type { CheckoutPlanDebugMeta };
 
-/**
- * Catalog plan_id → Stripe Price env var.
- * PARENT = pet_parent (owner), FRIEND = pet_friend.
- * 1M = one-time, 3M = 3-month, 12M = 12-month.
- */
-export const STRIPE_PRICE_ENV_BY_PLAN_ID: Record<string, string> = {
+export const KNOWN_CHECKOUT_PLAN_IDS = [
+  "one-time-owner",
+  "3-month-owner",
+  "1-year-owner",
+  "one-time-friend",
+  "3-month-friend",
+  "1-year-friend",
+] as const;
+
+export type CheckoutPlanId = (typeof KNOWN_CHECKOUT_PLAN_IDS)[number];
+
+export const STRIPE_PRICE_ENV_BY_PLAN: Record<CheckoutPlanId, string> = {
   "one-time-owner": "STRIPE_PRICE_PARENT_1M",
   "3-month-owner": "STRIPE_PRICE_PARENT_3M",
   "1-year-owner": "STRIPE_PRICE_PARENT_12M",
@@ -27,49 +31,40 @@ export const STRIPE_PRICE_ENV_BY_PLAN_ID: Record<string, string> = {
   "1-year-friend": "STRIPE_PRICE_FRIEND_12M",
 };
 
-/** Pre-2026-05 rename env vars — read as fallback when canonical vars are unset. */
-const LEGACY_STRIPE_PRICE_ENV_BY_PLAN_ID: Record<string, string> = {
-  "one-time-owner": "STRIPE_PRICE_ONE_TIME_OWNER",
-  "3-month-owner": "STRIPE_PRICE_3_MONTH_OWNER",
-  "1-year-owner": "STRIPE_PRICE_1_YEAR_OWNER",
-  "one-time-friend": "STRIPE_PRICE_ONE_TIME_FRIEND",
-  "3-month-friend": "STRIPE_PRICE_3_MONTH_FRIEND",
-  "1-year-friend": "STRIPE_PRICE_1_YEAR_FRIEND",
+export const STRIPE_MODE_BY_PLAN: Record<CheckoutPlanId, "payment" | "subscription"> = {
+  "one-time-owner": "payment",
+  "3-month-owner": "subscription",
+  "1-year-owner": "subscription",
+  "one-time-friend": "payment",
+  "3-month-friend": "subscription",
+  "1-year-friend": "subscription",
 };
 
-/** Resolve request/catalog plan id to a known MEMBERSHIP_PLAN_CATALOG id. */
-export function normalizeCatalogPlanId(planId: string): string | null {
+/** @deprecated Use STRIPE_PRICE_ENV_BY_PLAN */
+export const STRIPE_PRICE_ENV_BY_PLAN_ID = STRIPE_PRICE_ENV_BY_PLAN;
+
+export type StripeCheckoutReadiness = {
+  ready: boolean;
+  message: string | null;
+};
+
+function isCheckoutPlanId(planId: string): planId is CheckoutPlanId {
+  return (KNOWN_CHECKOUT_PLAN_IDS as readonly string[]).includes(planId);
+}
+
+/** Resolve request/catalog plan id to one of the six checkout plan ids (trim + catalog alias only). */
+export function normalizeCatalogPlanId(planId: string): CheckoutPlanId | null {
   const trimmed = planId.trim();
   if (!trimmed) return null;
-  if (STRIPE_PRICE_ENV_BY_PLAN_ID[trimmed]) return trimmed;
+  if (isCheckoutPlanId(trimmed)) return trimmed;
   const lower = trimmed.toLowerCase();
   for (const role of Object.keys(MEMBERSHIP_PLAN_CATALOG) as MembershipRole[]) {
-    const match = MEMBERSHIP_PLAN_CATALOG[role].find((p) => p.id === trimmed || p.id.toLowerCase() === lower);
-    if (match) return match.id;
+    const match = MEMBERSHIP_PLAN_CATALOG[role].find(
+      (p) => p.id === trimmed || p.id.toLowerCase() === lower,
+    );
+    if (match && isCheckoutPlanId(match.id)) return match.id;
   }
   return null;
-}
-
-function stripeEnvSuffixForBillingInterval(
-  billingInterval: MembershipPlanDefinition["billing_interval"],
-): "1M" | "3M" | "12M" | null {
-  if (billingInterval === "one_time") return "1M";
-  if (billingInterval === "3_months") return "3M";
-  if (billingInterval === "12_months") return "12M";
-  return null;
-}
-
-export function stripePriceEnvVarForPlanId(planId: string): string | null {
-  const catalogPlanId = normalizeCatalogPlanId(planId);
-  if (catalogPlanId) {
-    return STRIPE_PRICE_ENV_BY_PLAN_ID[catalogPlanId] ?? null;
-  }
-  const role = membershipRoleFromPlanId(planId);
-  const interval = billingIntervalFromPlanId(planId);
-  const suffix = stripeEnvSuffixForBillingInterval(interval);
-  if (!role || !suffix) return null;
-  const prefix = role === "pet_friend" ? "FRIEND" : "PARENT";
-  return `STRIPE_PRICE_${prefix}_${suffix}`;
 }
 
 function readEnvPrice(envName: string): string | null {
@@ -77,15 +72,23 @@ function readEnvPrice(envName: string): string | null {
   return value || null;
 }
 
+export function stripePriceEnvVarForPlanId(planId: string): string | null {
+  const catalogPlanId = normalizeCatalogPlanId(planId);
+  if (!catalogPlanId) return null;
+  return STRIPE_PRICE_ENV_BY_PLAN[catalogPlanId];
+}
+
 export function resolveStripePriceId(planId: string): string | null {
-  const catalogPlanId = normalizeCatalogPlanId(planId) ?? planId.trim();
-  const envName = stripePriceEnvVarForPlanId(catalogPlanId);
-  if (!envName) return null;
-  const canonical = readEnvPrice(envName);
-  if (canonical) return canonical;
-  const legacyEnv = LEGACY_STRIPE_PRICE_ENV_BY_PLAN_ID[catalogPlanId];
-  if (!legacyEnv) return null;
-  return readEnvPrice(legacyEnv);
+  const catalogPlanId = normalizeCatalogPlanId(planId);
+  if (!catalogPlanId) return null;
+  const envName = STRIPE_PRICE_ENV_BY_PLAN[catalogPlanId];
+  return readEnvPrice(envName);
+}
+
+export function stripeCheckoutModeForPlanId(planId: string): "payment" | "subscription" | null {
+  const catalogPlanId = normalizeCatalogPlanId(planId);
+  if (!catalogPlanId) return null;
+  return STRIPE_MODE_BY_PLAN[catalogPlanId];
 }
 
 /** Last 4 chars of a Stripe price id for logs (never log full id). */
@@ -101,37 +104,25 @@ export function isValidStripePriceIdFormat(priceId: string): boolean {
 }
 
 export function stripeCheckoutPriceError(planId: string, priceId: string | null): string | null {
+  const catalogPlanId = normalizeCatalogPlanId(planId);
+  if (!catalogPlanId) return `Unknown plan: ${planId}`;
+  const envName = STRIPE_PRICE_ENV_BY_PLAN[catalogPlanId];
   if (!priceId?.trim()) {
-    const envName = stripePriceEnvVarForPlanId(planId);
-    if (!envName) return `Unknown plan: ${planId}`;
-    return `Missing or invalid price ID for ${planId} (set ${envName})`;
+    return `Missing or invalid price ID for ${catalogPlanId} (set ${envName})`;
   }
   if (!isValidStripePriceIdFormat(priceId)) {
-    const envName = stripePriceEnvVarForPlanId(planId) ?? "STRIPE_PRICE_*";
-    return `Missing or invalid price ID for ${planId} (${envName} must be a Stripe price_… id, got …${stripePriceIdSuffix(priceId)})`;
+    return `Missing or invalid price ID for ${catalogPlanId} (${envName} must be a Stripe price_… id, got …${stripePriceIdSuffix(priceId)})`;
   }
   return null;
 }
 
-/** Prefer longer / recurring plans when several env vars share the same price id. */
-const PLAN_ID_FROM_STRIPE_PRICE_ORDER = [
-  "1-year-owner",
-  "3-month-owner",
-  "one-time-owner",
-  "1-year-friend",
-  "3-month-friend",
-  "one-time-friend",
-] as const;
-
-/** Reverse lookup: Stripe Price id → catalog plan_id (canonical + legacy env vars). */
+/** Reverse lookup: Stripe Price id → catalog plan_id (canonical env vars only). */
 export function planIdFromStripePriceId(priceId: string): string | null {
   const trimmed = priceId.trim();
   if (!trimmed) return null;
-  for (const planId of PLAN_ID_FROM_STRIPE_PRICE_ORDER) {
-    const canonicalEnv = STRIPE_PRICE_ENV_BY_PLAN_ID[planId];
-    if (canonicalEnv && process.env[canonicalEnv]?.trim() === trimmed) return planId;
-    const legacyEnv = LEGACY_STRIPE_PRICE_ENV_BY_PLAN_ID[planId];
-    if (legacyEnv && process.env[legacyEnv]?.trim() === trimmed) return planId;
+  for (const planId of KNOWN_CHECKOUT_PLAN_IDS) {
+    const env = STRIPE_PRICE_ENV_BY_PLAN[planId];
+    if (process.env[env]?.trim() === trimmed) return planId;
   }
   return null;
 }
@@ -218,11 +209,10 @@ export function logStripeCheckoutPlanResolution(
   planId: string,
   role: MembershipRole,
 ): void {
-  const catalogPlanId = normalizeCatalogPlanId(planId) ?? planId.trim();
-  const envName = stripePriceEnvVarForPlanId(catalogPlanId);
-  const priceId = resolveStripePriceId(catalogPlanId);
-  const billingInterval = billingIntervalFromPlanId(catalogPlanId);
-  const mode = stripeCheckoutMode(billingInterval);
+  const catalogPlanId = normalizeCatalogPlanId(planId);
+  const envName = catalogPlanId ? STRIPE_PRICE_ENV_BY_PLAN[catalogPlanId] : null;
+  const priceId = catalogPlanId ? resolveStripePriceId(catalogPlanId) : null;
+  const mode = catalogPlanId ? STRIPE_MODE_BY_PLAN[catalogPlanId] : null;
   const priceSuffix =
     priceId && priceId.length > 6 ? priceId.slice(-6) : priceId ? stripePriceIdSuffix(priceId) : null;
   console.log(`[stripe:${context}] checkout plan`, {
@@ -233,22 +223,35 @@ export function logStripeCheckoutPlanResolution(
     priceConfigured: Boolean(priceId),
     priceSuffix,
     stripeMode: mode,
-    billingInterval,
   });
 }
 
-export function stripeCheckoutMode(
-  billingInterval: MembershipPlanDefinition["billing_interval"],
-): "payment" | "subscription" {
-  return billingInterval === "one_time" ? "payment" : "subscription";
+/** Per-plan env var + checkout mode for membership UI debug (server → client props). */
+export function checkoutDebugMetaByRole(role: MembershipRole): CheckoutPlanDebugMeta[] {
+  return MEMBERSHIP_PLAN_CATALOG[role].map((plan) => ({
+    planId: plan.id,
+    envVar: STRIPE_PRICE_ENV_BY_PLAN[plan.id as CheckoutPlanId],
+    mode: STRIPE_MODE_BY_PLAN[plan.id as CheckoutPlanId],
+  }));
+}
+
+export function checkoutDebugMetaRecordForRole(
+  role: MembershipRole,
+): Record<string, CheckoutPlanDebugMeta> {
+  return Object.fromEntries(
+    checkoutDebugMetaByRole(role).map((row) => [row.planId, row]),
+  );
 }
 
 export function computeMembershipEndDate(
   billingInterval: MembershipPlanDefinition["billing_interval"],
   start: Date,
 ): string | null {
-  if (billingInterval === "one_time") return null;
   const end = new Date(start);
+  if (billingInterval === "one_time") {
+    end.setMonth(end.getMonth() + 1);
+    return end.toISOString();
+  }
   if (billingInterval === "3_months") {
     end.setMonth(end.getMonth() + 3);
   } else if (billingInterval === "12_months") {
@@ -257,14 +260,12 @@ export function computeMembershipEndDate(
   return end.toISOString();
 }
 
-export function billingIntervalFromPlanId(planId: string): MembershipPlanDefinition["billing_interval"] {
+export function billingIntervalFromPlanId(
+  planId: string,
+): MembershipPlanDefinition["billing_interval"] | null {
   const catalogPlanId = normalizeCatalogPlanId(planId);
-  if (catalogPlanId && PLAN_BILLING_INTERVAL[catalogPlanId]) {
-    return PLAN_BILLING_INTERVAL[catalogPlanId];
-  }
-  if (planId.startsWith("one-time")) return "one_time";
-  if (planId.includes("3-month")) return "3_months";
-  return "12_months";
+  if (!catalogPlanId) return null;
+  return PLAN_BILLING_INTERVAL[catalogPlanId] ?? null;
 }
 
 export function membershipPlansWithStripePrices<T extends { plan_id: string; future_stripe_price_id: string | null }>(

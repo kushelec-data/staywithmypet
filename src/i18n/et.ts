@@ -349,6 +349,7 @@ export const et = {
     pastUnavailable: "Mineviku kuupäev",
     pastCompleted: "Mineviku kuupäev",
     availabilityCalendarTitle: "Saadavuse kalender",
+    viewFullCalendar: "Vaata täiskalendrit",
     legendPast: "Minevik",
     legendPastCompleted: "Minevik",
     legendAvailable: "Saadaval",
@@ -645,6 +646,16 @@ export const et = {
     paymentWebhookPending:
       "Makse laekus. Liikmelisus aktiveerub pärast veebikonkside ühendamist.",
     checkoutCancelled: "Makse katkestati. Saad paketi valida, kui oled valmis.",
+  },
+  membershipUpsell: {
+    oneStepTitle: "🐾 Oled ühe sammu kaugusel!",
+    searchPetBody: "{name} tahab sinuga tutvuda. Ava liikmelisus, et päring saata.",
+    findCareBody: "{name} on valmis aitama. Ava liikmelisus, et hooldust korraldada.",
+    fallbackTitle: "🐾 Oled ühe sammu kaugusel!",
+    fallbackBody: "Ava liikmelisus, et sõnumeid saata, hooldust paluda ja broneerida.",
+    unlockCta: "Ava liikmelisus",
+    maybeLater: "Võib-olla hiljem",
+    close: "Sulge",
   },
   faq: {
     badge: "KKK",
@@ -1086,10 +1097,6 @@ export const et = {
     availabilitySubtitle: "Kuupäevad, mil see lemmikloomasõber on hoolduseks saadaval.",
     noUpcomingDates: "Tulevasi kuupäevi pole veel kirjas.",
     logInToSendRequest: "Logi sisse, et päring saata",
-    upgradeToRequest:
-      "Hoolduspäringu saatmiseks lemmikloomasõpradele uuenda Lemmiklooma omaniku liikmelisust.",
-    viewMembershipPlans: "Vaata liikmelisuse pakette",
-    maybeLater: "Võib-olla hiljem",
     checkCalendar: "Vaata kalendrit",
   },
   searchFilters: {

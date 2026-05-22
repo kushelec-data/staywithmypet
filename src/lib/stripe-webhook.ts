@@ -1,19 +1,17 @@
 import "server-only";
 
 import type Stripe from "stripe";
+import { activateMembershipFromCheckoutSession } from "@/lib/stripe-checkout-activate";
 import {
-  billingIntervalFromPlanId,
-  computeMembershipEndDate,
   membershipRoleFromPlanId,
+  normalizeCatalogPlanId,
   planIdFromStripePriceId,
-  resolveStripePriceId,
 } from "@/lib/stripe-plans";
 import { upsertUserMembershipAsAdmin } from "@/lib/membership-activate";
 import type { MembershipRole, MembershipStatus } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
 import {
   findSupabaseUserIdByEmail,
-  resolveCheckoutActivationContext,
   roleFromStripeMetadata,
 } from "@/lib/stripe-webhook-resolve";
 
@@ -137,12 +135,16 @@ async function syncFromSubscription(
   const priceId = subscription.items.data[0]?.price.id ?? null;
   const planFromPrice = priceId ? planIdFromStripePriceId(priceId) : null;
 
-  const planId =
+  const rawPlanId =
     overrides?.planId?.trim() ||
     subscription.metadata.plan_id?.trim() ||
+    subscription.metadata.plan?.trim() ||
     subscription.items.data[0]?.price.metadata?.plan_id?.trim() ||
     planFromPrice ||
     undefined;
+  const planId = rawPlanId
+    ? normalizeCatalogPlanId(rawPlanId) ?? rawPlanId
+    : undefined;
 
   const role =
     overrides?.role ??
@@ -192,69 +194,46 @@ async function syncFromSubscription(
 export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
-  const stripe = getStripe();
   console.log("[stripe] handleCheckoutSessionCompleted start", {
     sessionId: session.id,
     paymentStatus: session.payment_status,
     mode: session.mode,
   });
 
-  const { userId, role, planId, priceId } = await resolveCheckoutActivationContext(session);
+  const result = await activateMembershipFromCheckoutSession(session);
 
-  console.log("[stripe] activating membership from checkout", {
-    sessionId: session.id,
-    userId,
-    role,
-    planId,
-    priceId,
-  });
-
-  const customerId =
-    typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
-
-  let subscription: Stripe.Subscription | null = null;
-  if (session.subscription) {
-    const subId =
-      typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-    subscription = await stripe.subscriptions.retrieve(subId);
+  if (!result.ok) {
+    throw new Error(`[stripe] checkout ${session.id}: ${result.error}`);
   }
 
-  const resolvedPriceId = priceId ?? resolveStripePriceId(planId);
-  const billingInterval = billingIntervalFromPlanId(planId);
-  const startDate = subscription
-    ? periodStartIso(subscription) ?? new Date().toISOString()
-    : new Date().toISOString();
-  const endDate = subscription
-    ? periodEndIso(subscription)
-    : computeMembershipEndDate(billingInterval, new Date(startDate));
-
-  const status: MembershipStatus =
-    session.payment_status === "paid" || session.payment_status === "no_payment_required"
-      ? "active"
-      : "inactive";
-
-  if (status !== "active") {
-    console.warn("[stripe] checkout completed but payment_status not active", {
+  if (!result.activated) {
+    console.log("[stripe] checkout completed; activation deferred until paid", {
       sessionId: session.id,
       paymentStatus: session.payment_status,
     });
+    return;
   }
+}
 
-  const result = await upsertUserMembershipAsAdmin({
-    userId,
-    role,
-    planId,
-    status,
-    startDate,
-    endDate,
-    autoRenew: Boolean(subscription) && !subscription?.cancel_at_period_end,
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: subscription?.id ?? null,
-    stripePriceId: resolvedPriceId,
-    sendConfirmationEmail: status === "active",
+export async function handleCheckoutAsyncPaymentSucceeded(
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  console.log("[stripe] handleCheckoutAsyncPaymentSucceeded", {
+    sessionId: session.id,
+    paymentStatus: session.payment_status,
   });
 
-  await assertMembershipUpsert(result, `checkout ${session.id}`);
+  const result = await activateMembershipFromCheckoutSession(session);
+
+  if (!result.ok) {
+    throw new Error(`[stripe] async checkout ${session.id}: ${result.error}`);
+  }
+
+  if (!result.activated) {
+    throw new Error(
+      `[stripe] async checkout ${session.id}: payment still not paid (${session.payment_status})`,
+    );
+  }
 }
 
 export async function handleSubscriptionEvent(subscription: Stripe.Subscription): Promise<void> {
