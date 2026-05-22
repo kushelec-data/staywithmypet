@@ -57,6 +57,13 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Signature verification failed";
+    console.error("[stripe] webhook signature debug", {
+      webhookSecretExists: !!process.env.STRIPE_WEBHOOK_SECRET?.trim(),
+      webhookSecretPrefix: process.env.STRIPE_WEBHOOK_SECRET?.trim().slice(0, 8) ?? null,
+      signatureHeaderExists: !!signature,
+      rawBodyLength: body.length,
+      endpointPath: new URL(request.url).pathname,
+    });
     if (signature) {
       console.error("[stripe] webhook signature verification failed:", message);
     }
