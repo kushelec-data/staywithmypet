@@ -1,6 +1,12 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { logServerError, toFriendlyClientMessage } from "@/lib/security/errors";
-import { formatSupabaseError } from "@/lib/profile-load";
+
+export type SupabaseErrorDetail = {
+  code: string | null;
+  message: string;
+  details: string | null;
+  hint: string | null;
+};
 
 export function isPostgrestError(error: unknown): error is PostgrestError {
   return (
@@ -10,6 +16,16 @@ export function isPostgrestError(error: unknown): error is PostgrestError {
     "message" in error &&
     typeof (error as PostgrestError).message === "string"
   );
+}
+
+export function supabaseErrorDetail(error: PostgrestError | null | undefined): SupabaseErrorDetail | null {
+  if (!error) return null;
+  return {
+    code: error.code ?? null,
+    message: error.message,
+    details: error.details ?? null,
+    hint: error.hint ?? null,
+  };
 }
 
 /** Log full PostgREST / Postgres error fields for debugging. */
@@ -27,8 +43,15 @@ export function logSupabaseError(context: string, error: PostgrestError | Error)
 }
 
 /** Undefined column (Postgres) or missing schema cache column (PostgREST). */
-export function isMissingColumnError(error: PostgrestError): boolean {
-  return error.code === "42703" || error.code === "PGRST204";
+export function isMissingColumnError(error: PostgrestError, column?: string): boolean {
+  const codeMatch = error.code === "42703" || error.code === "PGRST204";
+  if (!column) return codeMatch;
+  const pattern = new RegExp(column, "i");
+  return (
+    codeMatch ||
+    pattern.test(error.message) ||
+    pattern.test(error.details ?? "")
+  );
 }
 
 /** Table/relation missing (migrations not applied). */

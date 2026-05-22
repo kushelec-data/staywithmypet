@@ -79,7 +79,13 @@ export async function POST(request: Request) {
 
   if (!result.ok) {
     return NextResponse.json(
-      { error: result.error, code: result.code ?? null, activated: false },
+      {
+        error: result.error,
+        code: result.code ?? null,
+        step: result.step,
+        supabaseError: result.supabaseError ?? null,
+        activated: false,
+      },
       { status: 500 },
     );
   }

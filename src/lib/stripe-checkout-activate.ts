@@ -7,8 +7,14 @@ import {
   resolveStripePriceId,
   normalizeCatalogPlanId,
 } from "@/lib/stripe-plans";
-import { upsertUserMembershipAsAdmin } from "@/lib/membership-activate";
+import {
+  MEMBERSHIP_TABLE,
+  upsertUserMembershipAsAdmin,
+  type MembershipPayloadAttempted,
+} from "@/lib/membership-activate";
 import type { MembershipRole, MembershipStatus } from "@/lib/membership";
+import type { SupabaseErrorDetail } from "@/lib/supabase-errors";
+import { WebhookHandlerError } from "@/lib/stripe-webhook-handler-error";
 import { getStripe } from "@/lib/stripe";
 import { resolveCheckoutActivationContext } from "@/lib/stripe-webhook-resolve";
 
@@ -33,7 +39,14 @@ export function checkoutSessionIsPaid(session: Stripe.Checkout.Session): boolean
 export type CheckoutActivationResult =
   | { ok: true; activated: true; sessionId: string; userId: string; role: string; planId: string }
   | { ok: true; activated: false; sessionId: string; reason: "payment_pending" }
-  | { ok: false; error: string; code?: string | null };
+  | {
+      ok: false;
+      error: string;
+      code?: string | null;
+      step: string;
+      supabaseError?: SupabaseErrorDetail | null;
+      payloadAttempted?: MembershipPayloadAttempted | null;
+    };
 
 /**
  * Activate membership from a Stripe Checkout Session (webhook or confirm-membership).
@@ -74,14 +87,14 @@ export async function activateMembershipFromCheckoutSession(
       message,
       metadata: session.metadata ?? {},
     });
-    return { ok: false, error: message };
+    return { ok: false, error: message, step: "resolve_checkout_context" };
   }
   const planId = normalizeCatalogPlanId(resolvedPlanId) ?? resolvedPlanId;
 
   if (!userId?.trim()) {
     const error = `[stripe] checkout ${sessionId}: missing user_id after resolution`;
     console.error("[stripe] checkout activation aborted", { sessionId, metadata: session.metadata ?? {} });
-    return { ok: false, error };
+    return { ok: false, error, step: "validate_user_id" };
   }
 
   console.log("[stripe] activating membership from checkout", {
@@ -101,7 +114,13 @@ export async function activateMembershipFromCheckoutSession(
   if (session.subscription) {
     const subId =
       typeof session.subscription === "string" ? session.subscription : session.subscription.id;
-    subscription = await stripe.subscriptions.retrieve(subId);
+    try {
+      subscription = await stripe.subscriptions.retrieve(subId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[stripe] subscription retrieve failed", { sessionId, subId, message });
+      return { ok: false, error: message, step: "stripe_subscription_retrieve" };
+    }
   }
 
   const resolvedPriceId = priceId ?? resolveStripePriceId(planId);
@@ -133,13 +152,22 @@ export async function activateMembershipFromCheckoutSession(
   if (!result.ok) {
     console.error("[stripe] checkout membership upsert failed", {
       sessionId,
+      table: MEMBERSHIP_TABLE,
       userId,
       role,
       planId,
       error: result.error,
       code: result.code ?? null,
+      supabaseError: result.supabaseError ?? null,
     });
-    return { ok: false, error: result.error, code: result.code ?? null };
+    return {
+      ok: false,
+      error: result.error,
+      code: result.code ?? null,
+      step: result.step ?? "upsert_user_memberships",
+      supabaseError: result.supabaseError ?? null,
+      payloadAttempted: result.payloadAttempted ?? null,
+    };
   }
 
   console.log("[membership] checkout activation succeeded", {
@@ -159,4 +187,16 @@ export async function activateMembershipFromCheckoutSession(
     role,
     planId,
   };
+}
+
+export function throwCheckoutActivationFailure(
+  sessionId: string,
+  result: Extract<CheckoutActivationResult, { ok: false }>,
+): never {
+  throw new WebhookHandlerError(result.error, {
+    step: result.step,
+    supabaseError: result.supabaseError ?? null,
+    sessionId,
+    payloadAttempted: result.payloadAttempted ?? null,
+  });
 }

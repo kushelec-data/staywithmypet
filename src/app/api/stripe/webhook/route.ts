@@ -11,9 +11,88 @@ import {
   isMembershipWebhookWritable,
 } from "@/lib/stripe-webhook-config";
 import { checkoutSessionEmail } from "@/lib/stripe-webhook-resolve";
+import {
+  isWebhookHandlerError,
+  type WebhookHandlerError,
+} from "@/lib/stripe-webhook-handler-error";
+import { MEMBERSHIP_TABLE } from "@/lib/membership-activate";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+
+function checkoutMetadataFields(meta: Stripe.Metadata | null | undefined) {
+  const m = meta ?? {};
+  return {
+    user_id: m.user_id ?? m.userId ?? null,
+    membership_role: m.membership_role ?? null,
+    role: m.role ?? null,
+    plan_id: m.plan_id ?? m.plan ?? m.planId ?? null,
+  };
+}
+
+function webhookFailureDiagnostics(err: unknown): {
+  step: string;
+  supabaseErrorCode: string | null;
+  supabaseErrorMessage: string | null;
+  supabaseErrorDetails: string | null;
+  supabaseErrorHint: string | null;
+  payloadAttempted: WebhookHandlerError["payloadAttempted"];
+  message: string;
+} {
+  const handlerErr = isWebhookHandlerError(err) ? err : null;
+  const supabaseError = handlerErr?.supabaseError ?? null;
+  return {
+    step: handlerErr?.step ?? "unknown",
+    supabaseErrorCode: supabaseError?.code ?? null,
+    supabaseErrorMessage: supabaseError?.message ?? null,
+    supabaseErrorDetails: supabaseError?.details ?? null,
+    supabaseErrorHint: supabaseError?.hint ?? null,
+    payloadAttempted: handlerErr?.payloadAttempted ?? null,
+    message: err instanceof Error ? err.message : String(err),
+  };
+}
+
+function logCheckoutHandlerFailure(
+  event: Stripe.Event,
+  session: Stripe.Checkout.Session,
+  err: unknown,
+): void {
+  const meta = session.metadata ?? {};
+  const fields = checkoutMetadataFields(meta);
+  const diagnostics = webhookFailureDiagnostics(err);
+  console.error("[stripe] webhook checkout handler failed", {
+    eventType: event.type,
+    eventId: event.id,
+    sessionId: session.id,
+    paymentStatus: session.payment_status,
+    sessionMetadata: meta,
+    metadataUserId: fields.user_id,
+    metadataMembershipRole: fields.membership_role,
+    metadataRole: fields.role,
+    metadataPlanId: fields.plan_id,
+    supabaseTable: MEMBERSHIP_TABLE,
+    ...diagnostics,
+    stack: err instanceof Error ? err.stack : undefined,
+  });
+}
+
+function webhookFailureResponse(err: unknown): NextResponse {
+  const diagnostics = webhookFailureDiagnostics(err);
+  console.error("[stripe] webhook handler failed", diagnostics);
+
+  return NextResponse.json(
+    {
+      error: "Webhook handler failed",
+      step: diagnostics.step,
+      supabaseErrorCode: diagnostics.supabaseErrorCode,
+      supabaseErrorMessage: diagnostics.supabaseErrorMessage,
+      supabaseErrorDetails: diagnostics.supabaseErrorDetails,
+      supabaseErrorHint: diagnostics.supabaseErrorHint,
+      payloadAttempted: diagnostics.payloadAttempted,
+    },
+    { status: 500 },
+  );
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -91,7 +170,13 @@ export async function POST(request: Request) {
           customerEmail,
           clientReferenceId: session.client_reference_id ?? null,
         });
+        const metaFields = checkoutMetadataFields(session.metadata);
         console.log("[stripe] webhook session.metadata", session.metadata ?? {});
+        console.log("[stripe] webhook checkout metadata fields", {
+          ...metaFields,
+          paymentStatus: session.payment_status,
+          supabaseTable: MEMBERSHIP_TABLE,
+        });
         if (event.type === "checkout.session.async_payment_succeeded") {
           await handleCheckoutAsyncPaymentSucceeded(session);
         } else {
@@ -129,15 +214,22 @@ export async function POST(request: Request) {
         break;
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? err.stack : undefined;
-    console.error("[stripe] webhook handler failed", {
-      eventType: event.type,
-      eventId: event.id,
-      message,
-      stack,
-    });
-    return NextResponse.json({ error: "Webhook handler failed." }, { status: 500 });
+    if (
+      event.type === "checkout.session.completed" ||
+      event.type === "checkout.session.async_payment_succeeded"
+    ) {
+      logCheckoutHandlerFailure(event, event.data.object as Stripe.Checkout.Session, err);
+    } else {
+      const diagnostics = webhookFailureDiagnostics(err);
+      console.error("[stripe] webhook handler failed", {
+        eventType: event.type,
+        eventId: event.id,
+        supabaseTable: MEMBERSHIP_TABLE,
+        ...diagnostics,
+        stack: err instanceof Error ? err.stack : undefined,
+      });
+    }
+    return webhookFailureResponse(err);
   }
 
   console.log("[stripe] webhook handled ok", { eventType: event.type });

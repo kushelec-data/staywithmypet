@@ -1,7 +1,11 @@
 import "server-only";
 
 import type Stripe from "stripe";
-import { activateMembershipFromCheckoutSession } from "@/lib/stripe-checkout-activate";
+import {
+  activateMembershipFromCheckoutSession,
+  throwCheckoutActivationFailure,
+} from "@/lib/stripe-checkout-activate";
+import { WebhookHandlerError } from "@/lib/stripe-webhook-handler-error";
 import {
   membershipRoleFromPlanId,
   normalizeCatalogPlanId,
@@ -66,9 +70,14 @@ async function assertMembershipUpsert(
     console.error("[membership] upsert error", {
       message: result.error,
       code: result.code ?? null,
+      supabaseError: result.supabaseError ?? null,
       context,
     });
-    throw new Error(`[stripe] ${context}: ${result.error}`);
+    throw new WebhookHandlerError(`[stripe] ${context}: ${result.error}`, {
+      step: result.step ?? "upsert_user_memberships",
+      supabaseError: result.supabaseError ?? null,
+      payloadAttempted: result.payloadAttempted ?? null,
+    });
   }
   console.log("[membership] upsert success", {
     userId: result.membership.user_id,
@@ -157,8 +166,9 @@ async function syncFromSubscription(
       !role ? "role" : null,
       !planId ? "plan_id" : null,
     ].filter(Boolean);
-    throw new Error(
+    throw new WebhookHandlerError(
       `[stripe] subscription ${subscription.id}: missing ${missing.join(", ")}`,
+      { step: "resolve_subscription_context" },
     );
   }
 
@@ -203,12 +213,7 @@ export async function handleCheckoutSessionCompleted(
   const result = await activateMembershipFromCheckoutSession(session);
 
   if (!result.ok) {
-    console.error("[membership] upsert error", {
-      message: result.error,
-      code: result.code ?? null,
-      sessionId: session.id,
-    });
-    throw new Error(`[stripe] checkout ${session.id}: ${result.error}`);
+    throwCheckoutActivationFailure(session.id, result);
   }
 
   if (!result.activated) {
@@ -231,12 +236,13 @@ export async function handleCheckoutAsyncPaymentSucceeded(
   const result = await activateMembershipFromCheckoutSession(session);
 
   if (!result.ok) {
-    throw new Error(`[stripe] async checkout ${session.id}: ${result.error}`);
+    throwCheckoutActivationFailure(session.id, result);
   }
 
   if (!result.activated) {
-    throw new Error(
+    throw new WebhookHandlerError(
       `[stripe] async checkout ${session.id}: payment still not paid (${session.payment_status})`,
+      { step: "checkout_payment_pending", sessionId: session.id },
     );
   }
 }

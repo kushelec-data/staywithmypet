@@ -74,7 +74,7 @@ export function PetAvailabilityModal({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) dialog.show();
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -106,8 +106,9 @@ export function PetAvailabilityModal({
       <dialog
         ref={dialogRef}
         onClose={onClose}
-        className="mx-auto w-[min(100%,720px)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl backdrop:bg-foreground/40 dark:bg-surface"
+        className="fixed inset-0 z-50 m-0 flex h-[100dvh] w-full max-w-none items-center justify-center border-0 bg-foreground/40 p-4 sm:p-6"
       >
+        <div className="mx-auto w-[min(100%,720px)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl dark:bg-surface">
         <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -188,6 +189,7 @@ export function PetAvailabilityModal({
             )}
           </div>
         </div>
+        </div>
       </dialog>
 
       {careRequestTarget ? (
@@ -203,6 +205,7 @@ export function PetAvailabilityModal({
             variant="findCare"
             name={careRequestTarget.label}
             role="pet_parent"
+            onDismissModal={onClose}
             onClose={() => setUpgradeOpen(false)}
           />
         </>
