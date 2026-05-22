@@ -3,45 +3,50 @@
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
+import { initialActiveModeForRole } from "@/lib/profile-mode";
 import { saveUserRole, type ProfileRole } from "@/lib/profile-setup";
 import { needsRoleOnboarding } from "@/lib/profile-utils";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-const roleOptions: {
-  value: ProfileRole;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "pet_parent",
-    label: "Pet Parent",
-    description: "I own a pet and need care or companionship for them.",
-  },
-  {
-    value: "pet_friend",
-    label: "Pet Friend",
-    description: "I want to spend time with pets and help Pet Parents.",
-  },
-  {
-    value: "both",
-    label: "Both",
-    description: "I have pets and also want to spend time with other pets.",
-  },
-];
+/** Roles offered during first-time onboarding (existing `both` profiles are unchanged). */
+type OnboardingRole = Exclude<ProfileRole, "both">;
+
+function isOnboardingRole(value: string | null | undefined): value is OnboardingRole {
+  return value === "pet_parent" || value === "pet_friend";
+}
 
 export function RoleOnboardingContent() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
 
-  const [role, setRole] = useState<ProfileRole>("pet_friend");
+  const [role, setRole] = useState<OnboardingRole>("pet_friend");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const roleOptions: {
+    value: OnboardingRole;
+    label: string;
+    description: string;
+  }[] = [
+    {
+      value: "pet_parent",
+      label: t.roles.petParent.label,
+      description: t.onboarding.role.petParentDescription,
+    },
+    {
+      value: "pet_friend",
+      label: t.roles.petFriend.label,
+      description: t.onboarding.role.petFriendDescription,
+    },
+  ];
 
   useEffect(() => {
     if (authLoading) return;
@@ -55,9 +60,12 @@ export function RoleOnboardingContent() {
   }, [authLoading, user, profile, profileLoading, router]);
 
   useEffect(() => {
-    if (profile?.role && needsRoleOnboarding(profile)) {
+    if (!profile?.role || !needsRoleOnboarding(profile)) return;
+    if (isOnboardingRole(profile.role)) {
       setRole(profile.role);
+      return;
     }
+    setRole(initialActiveModeForRole(profile.role));
   }, [profile]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,7 +86,7 @@ export function RoleOnboardingContent() {
       router.push(DASHBOARD_PATH);
       router.refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save your role.";
+      const message = err instanceof Error ? err.message : t.onboarding.role.saveError;
       console.error("[profile] role onboarding failed", message);
       setError(message);
     } finally {
@@ -89,7 +97,7 @@ export function RoleOnboardingContent() {
   if (authLoading || profileLoading || !user) {
     return (
       <div className="mx-auto flex min-h-[50vh] max-w-lg items-center justify-center px-4 py-16">
-        <p className="text-sm text-muted">Loading…</p>
+        <p className="text-sm text-muted">{t.onboarding.role.loading}</p>
       </div>
     );
   }
@@ -97,7 +105,7 @@ export function RoleOnboardingContent() {
   if (!needsRoleOnboarding(profile)) {
     return (
       <div className="mx-auto flex min-h-[50vh] max-w-lg items-center justify-center px-4 py-16">
-        <p className="text-sm text-muted">Taking you to your dashboard…</p>
+        <p className="text-sm text-muted">{t.onboarding.role.redirecting}</p>
       </div>
     );
   }
@@ -110,13 +118,13 @@ export function RoleOnboardingContent() {
 
       <div className="card-elevated space-y-6 rounded-3xl p-6 sm:p-8">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-teal">Welcome</p>
-          <h1 className="font-heading mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-            How will you use StayWithMyPet?
-          </h1>
-          <p className="mt-2 text-sm text-muted">
-            Choose the option that best describes you. You can update this later in your profile.
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand-teal">
+            {t.onboarding.role.eyebrow}
           </p>
+          <h1 className="font-heading mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
+            {t.onboarding.role.title}
+          </h1>
+          <p className="mt-2 text-sm text-muted">{t.onboarding.role.subtitle}</p>
         </div>
 
         {error ? (
@@ -127,8 +135,8 @@ export function RoleOnboardingContent() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <fieldset>
-            <legend className="sr-only">Your role</legend>
-            <div className="grid gap-3 sm:grid-cols-1">
+            <legend className="sr-only">{t.onboarding.role.legend}</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
               {roleOptions.map((option) => (
                 <label
                   key={option.value}
@@ -154,7 +162,7 @@ export function RoleOnboardingContent() {
           </fieldset>
 
           <Button type="submit" variant="primary" disabled={saving} className="w-full sm:w-auto">
-            {saving ? "Saving…" : "Continue to dashboard"}
+            {saving ? t.onboarding.role.saving : t.onboarding.role.continue}
           </Button>
         </form>
       </div>

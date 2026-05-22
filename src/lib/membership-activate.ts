@@ -109,25 +109,22 @@ export async function upsertUserMembership(
   }
 
   if (error) {
-    console.error("[membership] user_memberships upsert failed", {
+    console.error("[membership] upsert error", {
+      message: error.message,
+      code: error.code ?? null,
       userId: input.userId,
       role: input.role,
       planId: input.planId,
-      message: error.message,
-      code: error.code,
     });
     return { ok: false, error: error.message, code: error.code ?? null };
   }
 
   const membership = data as unknown as UserMembership;
 
-  console.log("[membership] database updated", {
-    table: "user_memberships",
+  console.log("[membership] upsert success", {
     userId: input.userId,
     role: input.role,
     planId: membership.plan_id,
-    status: membership.status,
-    endDate: membership.end_date,
   });
 
   const planLabel = membershipPlanLabel(membership) ?? membership.plan_id;

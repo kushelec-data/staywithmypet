@@ -11,6 +11,7 @@ import {
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
+import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import { getSiteUrl, getStripe } from "@/lib/stripe";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
@@ -24,10 +25,6 @@ type CheckoutBody = {
   plan_id?: string;
   userId?: string;
 };
-
-function isValidRole(value: unknown): value is MembershipRole {
-  return value === "pet_parent" || value === "pet_friend";
-}
 
 function planExistsForRole(role: MembershipRole, planId: string): boolean {
   return MEMBERSHIP_PLAN_CATALOG[role].some((p) => p.id === planId);
@@ -64,12 +61,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { role, planId: planIdBody, plan_id: planIdSnake, userId } = body;
+  const { role: roleRaw, planId: planIdBody, plan_id: planIdSnake, userId } = body;
   const rawPlanId = (planIdBody ?? planIdSnake)?.trim();
+  const role = parseMembershipRoleInput(roleRaw);
 
-  if (!isValidRole(role) || !rawPlanId || !userId?.trim()) {
+  if (!role || !rawPlanId || !userId?.trim()) {
     return NextResponse.json(
-      { error: "role, planId, and userId are required." },
+      { error: "role (parent|friend or pet_parent|pet_friend), planId, and userId are required." },
       { status: 400 },
     );
   }
@@ -127,7 +125,23 @@ export async function POST(request: Request) {
   const siteUrl = getSiteUrl();
   const stripe = getStripe();
 
-  const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId);
+  const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId) ?? "STRIPE_PRICE_*";
+  const checkoutMetadata = buildStripeCheckoutMetadata({
+    userId: sessionUserId,
+    role,
+    planId: trimmedPlanId,
+    priceId: resolvedPriceId!,
+    priceEnv: resolvedEnvVar,
+  });
+
+  console.log("[stripe] checkout session metadata", {
+    user_id: sessionUserId,
+    role: checkoutMetadata.role,
+    membership_role: checkoutMetadata.membership_role,
+    plan_id: trimmedPlanId,
+    price_env: resolvedEnvVar,
+  });
+
   const priceSuffix =
     resolvedPriceId && resolvedPriceId.length > 6
       ? resolvedPriceId.slice(-6)
@@ -174,13 +188,7 @@ export async function POST(request: Request) {
     allow_promotion_codes: true,
     client_reference_id: sessionUserId,
     customer_email: user?.email ?? undefined,
-    metadata: {
-      user_id: sessionUserId,
-      role,
-      plan_id: trimmedPlanId,
-      plan: trimmedPlanId,
-      price_id: resolvedPriceId!,
-    },
+    metadata: checkoutMetadata,
     success_url: `${siteUrl}/membership?success=true&role=${role}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${siteUrl}/membership?cancelled=true`,
   };
@@ -192,25 +200,9 @@ export async function POST(request: Request) {
   }
 
   if (mode === "subscription") {
-    sessionParams.subscription_data = {
-      metadata: {
-        user_id: sessionUserId,
-        role,
-        plan_id: trimmedPlanId,
-        plan: trimmedPlanId,
-        price_id: resolvedPriceId!,
-      },
-    };
+    sessionParams.subscription_data = { metadata: { ...checkoutMetadata } };
   } else {
-    sessionParams.payment_intent_data = {
-      metadata: {
-        user_id: sessionUserId,
-        role,
-        plan_id: trimmedPlanId,
-        plan: trimmedPlanId,
-        price_id: resolvedPriceId!,
-      },
-    };
+    sessionParams.payment_intent_data = { metadata: { ...checkoutMetadata } };
   }
 
   try {
@@ -218,10 +210,11 @@ export async function POST(request: Request) {
     console.log("[stripe] checkout session created", {
       sessionId: session.id,
       mode,
-      role,
-      planId: trimmedPlanId,
-      envVar: stripePriceEnvVarForPlanId(trimmedPlanId),
-      userId: sessionUserId,
+      user_id: sessionUserId,
+      role: checkoutMetadata.role,
+      membership_role: checkoutMetadata.membership_role,
+      plan_id: trimmedPlanId,
+      price_env: resolvedEnvVar,
       metadataKeys: Object.keys(sessionParams.metadata ?? {}),
     });
     if (!session.url) {

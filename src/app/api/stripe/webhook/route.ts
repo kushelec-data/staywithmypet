@@ -78,8 +78,8 @@ export async function POST(request: Request) {
           mode: session.mode,
           customerEmail,
           clientReferenceId: session.client_reference_id ?? null,
-          metadata: session.metadata ?? {},
         });
+        console.log("[stripe] webhook session.metadata", session.metadata ?? {});
         if (event.type === "checkout.session.async_payment_succeeded") {
           await handleCheckoutAsyncPaymentSucceeded(session);
         } else {

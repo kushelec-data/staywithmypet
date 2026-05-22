@@ -8,7 +8,7 @@ import {
   normalizeCatalogPlanId,
 } from "@/lib/stripe-plans";
 import { upsertUserMembershipAsAdmin } from "@/lib/membership-activate";
-import type { MembershipStatus } from "@/lib/membership";
+import type { MembershipRole, MembershipStatus } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
 import { resolveCheckoutActivationContext } from "@/lib/stripe-webhook-resolve";
 
@@ -44,6 +44,13 @@ export async function activateMembershipFromCheckoutSession(
 ): Promise<CheckoutActivationResult> {
   const sessionId = session.id;
 
+  console.log("[stripe] checkout.session metadata", {
+    sessionId,
+    paymentStatus: session.payment_status,
+    metadata: session.metadata ?? {},
+    clientReferenceId: session.client_reference_id ?? null,
+  });
+
   if (!checkoutSessionIsPaid(session)) {
     console.warn("[stripe] checkout activation skipped: payment not paid", {
       sessionId,
@@ -53,9 +60,29 @@ export async function activateMembershipFromCheckoutSession(
   }
 
   const stripe = getStripe();
-  const { userId, role, planId: resolvedPlanId, priceId } =
-    await resolveCheckoutActivationContext(session);
+  let userId: string;
+  let role: MembershipRole;
+  let resolvedPlanId: string;
+  let priceId: string | null;
+  try {
+    ({ userId, role, planId: resolvedPlanId, priceId } =
+      await resolveCheckoutActivationContext(session));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[stripe] checkout activation context failed", {
+      sessionId,
+      message,
+      metadata: session.metadata ?? {},
+    });
+    return { ok: false, error: message };
+  }
   const planId = normalizeCatalogPlanId(resolvedPlanId) ?? resolvedPlanId;
+
+  if (!userId?.trim()) {
+    const error = `[stripe] checkout ${sessionId}: missing user_id after resolution`;
+    console.error("[stripe] checkout activation aborted", { sessionId, metadata: session.metadata ?? {} });
+    return { ok: false, error };
+  }
 
   console.log("[stripe] activating membership from checkout", {
     sessionId,

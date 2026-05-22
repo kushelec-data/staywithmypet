@@ -1230,4 +1230,22 @@ export const en = {
     namePlaceholder: "Alex Johnson",
     emailPlaceholder: "you@example.com",
   },
+  onboarding: {
+    role: {
+      eyebrow: "Welcome",
+      title: "How will you use StayWithMyPet?",
+      subtitle:
+        "Choose your starting role. You can switch modes later from your dashboard.",
+      petParentDescription:
+        "I own a pet and need care or companionship for them.",
+      petFriendDescription:
+        "I want to spend time with pets and help Pet Parents.",
+      continue: "Continue to dashboard",
+      saving: "Saving…",
+      loading: "Loading…",
+      redirecting: "Taking you to your dashboard…",
+      saveError: "Could not save your role.",
+      legend: "Your role",
+    },
+  },
 } as const;

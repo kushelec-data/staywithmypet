@@ -31,6 +31,39 @@ export function roleFromStripeMetadata(value: string | undefined): MembershipRol
   return null;
 }
 
+/** Accept API/checkout aliases; always returns DB enum values. */
+export function parseMembershipRoleInput(value: unknown): MembershipRole | null {
+  return roleFromStripeMetadata(typeof value === "string" ? value : undefined);
+}
+
+/** Stripe Checkout metadata: UI role alias + canonical DB enum. */
+export function buildStripeCheckoutMetadata(input: {
+  userId: string;
+  role: MembershipRole;
+  planId: string;
+  priceId: string;
+  priceEnv: string;
+}): Stripe.Metadata {
+  return {
+    user_id: input.userId,
+    role: input.role === "pet_parent" ? "parent" : "friend",
+    membership_role: input.role,
+    plan_id: input.planId,
+    plan: input.planId,
+    price_id: input.priceId,
+    price_env: input.priceEnv,
+  };
+}
+
+export function membershipRoleFromMergedMetadata(
+  meta: Stripe.Metadata,
+): MembershipRole | null {
+  return (
+    roleFromStripeMetadata(meta.membership_role) ??
+    roleFromStripeMetadata(meta.role)
+  );
+}
+
 function planIdFromMergedMetadata(meta: Stripe.Metadata): string | undefined {
   const raw =
     meta.plan_id?.trim() ||
@@ -205,6 +238,7 @@ export async function resolveCheckoutActivationContext(
     mergedMeta.user_id?.trim() ||
     mergedMeta.userId?.trim() ||
     mergedMeta.supabase_user_id?.trim() ||
+    mergedMeta.supabaseUserId?.trim() ||
     null;
 
   let userId = await resolveSupabaseUserId({
@@ -213,7 +247,7 @@ export async function resolveCheckoutActivationContext(
     email,
   });
 
-  let role = roleFromStripeMetadata(mergedMeta.role);
+  let role = membershipRoleFromMergedMetadata(mergedMeta);
   let planId = planIdFromMergedMetadata(mergedMeta);
 
   if (!planId && priceId) {
@@ -233,7 +267,7 @@ export async function resolveCheckoutActivationContext(
         email: await checkoutSessionEmail(session),
       }));
 
-    role = role ?? roleFromStripeMetadata(subscription.metadata.role);
+    role = role ?? membershipRoleFromMergedMetadata(subscription.metadata);
     planId =
       planId ||
       planIdFromMergedMetadata(subscription.metadata) ||
@@ -268,11 +302,14 @@ export async function resolveCheckoutActivationContext(
       priceId,
       customerEmail: email,
       clientReferenceId: session.client_reference_id ?? null,
+      sessionMetadata: session.metadata ?? {},
       mergedMetadata: mergedMeta,
     });
-    throw new Error(
+    const err = new Error(
       `[stripe] checkout ${session.id}: missing ${missing.join(", ")} (metadata/price/email resolution failed)`,
     );
+    (err as Error & { statusCode?: number }).statusCode = 500;
+    throw err;
   }
 
   console.log("[stripe] checkout context resolved", {

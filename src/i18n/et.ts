@@ -1228,4 +1228,22 @@ export const et = {
     namePlaceholder: "Alex Johnson",
     emailPlaceholder: "sina@näide.ee",
   },
+  onboarding: {
+    role: {
+      eyebrow: "Tere tulemast",
+      title: "Kuidas kasutad StayWithMyPet'i?",
+      subtitle:
+        "Vali alustav roll. Režiimi saad hiljem juhtpaneelilt vahetada.",
+      petParentDescription:
+        "Mul on lemmikloom ja vajan talle hooldust või seltsi.",
+      petFriendDescription:
+        "Tahan veeta aega lemmikloomadega ja aidata lemmiklooma omanikke.",
+      continue: "Jätka juhtpaneelile",
+      saving: "Salvestan…",
+      loading: "Laadin…",
+      redirecting: "Suuname sind juhtpaneelile…",
+      saveError: "Rolli ei õnnestunud salvestada.",
+      legend: "Sinu roll",
+    },
+  },
 } satisfies import("./translations").Dictionary;

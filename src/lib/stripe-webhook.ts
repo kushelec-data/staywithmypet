@@ -12,7 +12,7 @@ import type { MembershipRole, MembershipStatus } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
 import {
   findSupabaseUserIdByEmail,
-  roleFromStripeMetadata,
+  membershipRoleFromMergedMetadata,
 } from "@/lib/stripe-webhook-resolve";
 
 function subscriptionStatusToMembership(status: Stripe.Subscription.Status): MembershipStatus {
@@ -63,19 +63,18 @@ async function assertMembershipUpsert(
   context: string,
 ): Promise<void> {
   if (!result.ok) {
-    console.error("[stripe] membership upsert failed", {
-      context,
-      error: result.error,
+    console.error("[membership] upsert error", {
+      message: result.error,
       code: result.code ?? null,
+      context,
     });
     throw new Error(`[stripe] ${context}: ${result.error}`);
   }
-  console.log("[membership] upsert succeeded", {
-    context,
+  console.log("[membership] upsert success", {
     userId: result.membership.user_id,
     role: result.membership.role,
     planId: result.membership.plan_id,
-    status: result.membership.status,
+    context,
   });
 }
 
@@ -148,8 +147,8 @@ async function syncFromSubscription(
 
   const role =
     overrides?.role ??
-    roleFromStripeMetadata(subscription.metadata.role) ??
-    roleFromStripeMetadata(customerMeta?.role) ??
+    membershipRoleFromMergedMetadata(subscription.metadata) ??
+    (customerMeta ? membershipRoleFromMergedMetadata(customerMeta) : null) ??
     (planId ? membershipRoleFromPlanId(planId) : null);
 
   if (!userId || !role || !planId) {
@@ -198,11 +197,17 @@ export async function handleCheckoutSessionCompleted(
     sessionId: session.id,
     paymentStatus: session.payment_status,
     mode: session.mode,
+    metadata: session.metadata ?? {},
   });
 
   const result = await activateMembershipFromCheckoutSession(session);
 
   if (!result.ok) {
+    console.error("[membership] upsert error", {
+      message: result.error,
+      code: result.code ?? null,
+      sessionId: session.id,
+    });
     throw new Error(`[stripe] checkout ${session.id}: ${result.error}`);
   }
 
