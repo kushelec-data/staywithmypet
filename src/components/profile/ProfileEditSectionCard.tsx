@@ -48,11 +48,26 @@ export function ProfileEditSectionCard({
           <h2 className="font-heading text-lg font-semibold text-foreground">{title}</h2>
           <p className="mt-1 text-sm text-muted">{description}</p>
         </div>
-        {frozen ? (
-          <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            disabled={!frozen || saving}
+          >
             {editLabel}
           </Button>
-        ) : null}
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={frozen || saving}
+            onClick={onSave}
+          >
+            {saving ? savingLabel : saveLabel}
+          </Button>
+        </div>
       </div>
 
       {success ? (
@@ -77,13 +92,6 @@ export function ProfileEditSectionCard({
         {children}
       </div>
 
-      {isEditing ? (
-        <div className="mt-6 flex flex-wrap gap-3 border-t border-black/5 pt-5">
-          <Button type="button" variant="primary" disabled={saving} onClick={onSave}>
-            {saving ? savingLabel : saveLabel}
-          </Button>
-        </div>
-      ) : null}
     </section>
   );
 }
