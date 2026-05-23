@@ -3,8 +3,6 @@ import {
   logStripeCheckoutPlanResolution,
   normalizeCatalogPlanId,
   resolveStripePriceId,
-  STRIPE_CHECKOUT_CANCEL_URL,
-  STRIPE_CHECKOUT_SUCCESS_URL,
   stripeCheckoutConfigError,
   stripeCheckoutModeForPlanId,
   stripeCheckoutPriceError,
@@ -190,8 +188,9 @@ export async function POST(request: Request) {
     client_reference_id: sessionUserId,
     customer_email: user?.email ?? undefined,
     metadata: checkoutMetadata,
-    success_url: `${STRIPE_CHECKOUT_SUCCESS_URL}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: STRIPE_CHECKOUT_CANCEL_URL,
+    success_url:
+      "https://staywithmypet-clean.vercel.app/membership?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    cancel_url: "https://staywithmypet-clean.vercel.app/membership?checkout=cancelled",
   };
 
   const existingCustomerId = existingMembership?.stripe_customer_id?.trim();
