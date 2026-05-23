@@ -1,3 +1,4 @@
+import { getSiteOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase";
 
 export async function signOut() {
@@ -6,15 +7,9 @@ export async function signOut() {
   if (error) throw error;
 }
 
-/**
- * Base URL for auth redirects (OAuth callback, password reset landing).
- * Prefers NEXT_PUBLIC_SITE_URL when set so links match dashboard config; falls back to the browser origin.
- */
+/** Base URL for auth redirects (OAuth callback, password reset landing). */
 export function getAuthRedirectOrigin(): string {
-  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
-  if (site) return site;
-  if (typeof window !== "undefined") return window.location.origin;
-  return "http://localhost:3000";
+  return getSiteOrigin();
 }
 
 export function getAuthCallbackUrl(nextPath: string) {

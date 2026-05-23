@@ -1,14 +1,32 @@
 import { publicProfileHref } from "@/lib/profile-completeness";
 import { publicPetHref } from "@/lib/public-pet";
 
-/** Site origin for share links (production or local). */
-export function getSiteOrigin(): string {
-  if (typeof window !== "undefined") {
-    return window.location.origin;
+/** Canonical production origin for share links and emails when env is unset. */
+export const DEFAULT_SITE_ORIGIN = "https://staywithmypet-clean.vercel.app";
+
+function isLocalDevOrigin(origin: string): boolean {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch {
+    return false;
   }
+}
+
+/**
+ * Site origin for share links, emails, and auth redirects.
+ * Prefers NEXT_PUBLIC_SITE_URL so preview deployments do not emit preview URLs.
+ */
+export function getSiteOrigin(): string {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
-  return "http://localhost:3000";
+
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin.replace(/\/$/, "");
+    if (isLocalDevOrigin(origin)) return origin;
+  }
+
+  return DEFAULT_SITE_ORIGIN;
 }
 
 /** Absolute URL for a member's public profile page. */
