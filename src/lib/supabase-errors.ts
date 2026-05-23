@@ -42,6 +42,15 @@ export function logSupabaseError(context: string, error: PostgrestError | Error)
   console.error(`[request] ${context}`, error);
 }
 
+/** Invalid enum literal (e.g. membership_status before inactive/trialing migration). */
+export function isInvalidEnumValueError(error: PostgrestError): boolean {
+  return (
+    error.code === "22P02" ||
+    /invalid input value for enum/i.test(error.message) ||
+    /enum\s+membership_status/i.test(error.message)
+  );
+}
+
 /** Undefined column (Postgres) or missing schema cache column (PostgREST). */
 export function isMissingColumnError(error: PostgrestError, column?: string): boolean {
   const codeMatch = error.code === "42703" || error.code === "PGRST204";

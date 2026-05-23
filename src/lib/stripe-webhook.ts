@@ -56,6 +56,32 @@ function periodStartIso(subscription: Stripe.Subscription): string | null {
   return new Date(start * 1000).toISOString();
 }
 
+/** plan_id from Stripe Price metadata, legacy env, or role-based price env fallback. */
+async function resolvePlanIdFromStripePrice(priceId: string): Promise<string | undefined> {
+  const fromEnv = planIdFromStripePriceId(priceId);
+  if (fromEnv) {
+    return normalizeCatalogPlanId(fromEnv) ?? fromEnv;
+  }
+
+  try {
+    const price = await getStripe().prices.retrieve(priceId);
+    const metaPlan =
+      price.metadata?.plan_id?.trim() ||
+      price.metadata?.plan?.trim() ||
+      price.metadata?.planId?.trim();
+    if (metaPlan) {
+      return normalizeCatalogPlanId(metaPlan) ?? metaPlan;
+    }
+  } catch (err) {
+    console.warn("[stripe] price retrieve failed for plan_id resolution", {
+      priceIdSuffix: priceId.slice(-6),
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  return undefined;
+}
+
 function customerMetadata(
   customer: string | Stripe.Customer | Stripe.DeletedCustomer,
 ): Stripe.Metadata | undefined {
@@ -143,7 +169,7 @@ async function syncFromSubscription(
   const userId = await resolveSubscriptionUserId(subscription, customerId);
 
   const priceId = subscription.items.data[0]?.price.id ?? null;
-  const planFromPrice = priceId ? planIdFromStripePriceId(priceId) : null;
+  const planFromPrice = priceId ? await resolvePlanIdFromStripePrice(priceId) : undefined;
 
   const rawPlanId =
     overrides?.planId?.trim() ||
@@ -251,6 +277,16 @@ export async function handleCheckoutAsyncPaymentSucceeded(
 }
 
 export async function handleSubscriptionEvent(subscription: Stripe.Subscription): Promise<void> {
+  if (
+    subscription.status === "incomplete" ||
+    subscription.status === "incomplete_expired"
+  ) {
+    console.log("[stripe] subscription sync deferred until active (checkout webhook activates)", {
+      subscriptionId: subscription.id,
+      status: subscription.status,
+    });
+    return;
+  }
   await syncFromSubscription(subscription);
 }
 

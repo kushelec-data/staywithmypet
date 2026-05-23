@@ -39,6 +39,7 @@ export type WebhookFailureBody = {
   message: string;
   details: string | null;
   hint: string | null;
+  supabaseError: SupabaseErrorDetail | null;
   payloadAttempted: MembershipPayloadAttempted | null;
 };
 
@@ -54,6 +55,7 @@ export function webhookFailureBody(err: unknown): WebhookFailureBody {
     message: supabaseError?.message ?? message,
     details: supabaseError?.details ?? null,
     hint: supabaseError?.hint ?? null,
+    supabaseError,
     payloadAttempted: handlerErr?.payloadAttempted ?? null,
   };
 }

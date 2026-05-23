@@ -159,9 +159,22 @@ function planIdFromLegacyStripePriceId(priceId: string): string | null {
   return null;
 }
 
-/** Reverse lookup: Stripe Price id → catalog plan_id (legacy per-plan env vars only). */
+/**
+ * Fallback catalog plan when only role-based Stripe price is known (no duration in price id).
+ * Prefer checkout/subscription metadata plan_id; this is last resort for webhooks.
+ */
+export function defaultCatalogPlanIdForRole(role: MembershipRole): CheckoutPlanId {
+  return MEMBERSHIP_PLAN_CATALOG[role][0].id as CheckoutPlanId;
+}
+
+/** Reverse lookup: Stripe Price id → catalog plan_id (legacy env vars, then role-based price env). */
 export function planIdFromStripePriceId(priceId: string): string | null {
-  return planIdFromLegacyStripePriceId(priceId.trim());
+  const trimmed = priceId.trim();
+  const legacy = planIdFromLegacyStripePriceId(trimmed);
+  if (legacy) return legacy;
+  const role = membershipRoleFromStripePriceId(trimmed);
+  if (role) return defaultCatalogPlanIdForRole(role);
+  return null;
 }
 
 export function membershipRoleFromPlanId(planId: string): MembershipRole | null {

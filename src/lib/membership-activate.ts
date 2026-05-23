@@ -10,6 +10,7 @@ import {
 } from "@/lib/membership";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  isInvalidEnumValueError,
   isMissingColumnError,
   supabaseErrorDetail,
   type SupabaseErrorDetail,
@@ -22,6 +23,10 @@ export const MEMBERSHIP_TABLE = "user_memberships";
 
 export const MEMBERSHIP_RETURN_COLUMNS =
   "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_checkout_session_id";
+
+/** Core columns always present after 20260602100000_user_memberships.sql */
+const MEMBERSHIP_CORE_SELECT_COLUMNS =
+  "id, user_id, role, plan_id, status, start_date, end_date, auto_renew";
 
 export type UpsertMembershipInput = {
   userId: string;
@@ -102,6 +107,12 @@ export function toDbMembershipStatus(status: MembershipStatus | undefined): DbMe
     default:
       return "active";
   }
+}
+
+/** Base enum (pre-20260603100000) only had active | cancelled | expired. */
+function membershipStatusFallback(dbStatus: DbMembershipStatus): DbMembershipStatus {
+  if (dbStatus === "inactive" || dbStatus === "trialing") return "active";
+  return dbStatus;
 }
 
 /** Never persist Stripe/UI aliases (parent, friend) — DB enum only. */
@@ -210,7 +221,6 @@ function buildMembershipUpsertPayload(input: UpsertMembershipInput): {
 }
 
 async function ensureProfileRow(
-  supabase: SupabaseClient,
   userId: string,
 ): Promise<
   | { ok: true }
@@ -222,7 +232,17 @@ async function ensureProfileRow(
       step?: string;
     }
 > {
-  const { data: existing, error: selectError } = await supabase
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      error: "Cannot ensure profile: SUPABASE_SERVICE_ROLE_KEY is not configured.",
+      code: "missing_service_role",
+      step: "ensure_profile",
+    };
+  }
+
+  const { data: existing, error: selectError } = await admin
     .from("profiles")
     .select("id")
     .eq("id", userId)
@@ -239,16 +259,6 @@ async function ensureProfileRow(
   }
 
   if (existing?.id) return { ok: true };
-
-  const admin = createAdminClient();
-  if (!admin) {
-    return {
-      ok: false,
-      error: "Cannot ensure profile: SUPABASE_SERVICE_ROLE_KEY is not configured.",
-      code: "missing_service_role",
-      step: "ensure_profile",
-    };
-  }
 
   const { data: authData, error: authError } = await admin.auth.admin.getUserById(userId);
   if (authError || !authData.user) {
@@ -269,7 +279,7 @@ async function ensureProfileRow(
     authData.user.email?.split("@")[0]?.trim() ||
     "Member";
 
-  const { error: insertError } = await supabase.from("profiles").insert({
+  const { error: insertError } = await admin.from("profiles").insert({
     id: userId,
     display_name: displayName,
   });
@@ -350,58 +360,55 @@ export async function upsertUserMembership(
     };
   }
 
-  const profileReady = await ensureProfileRow(supabase, input.userId);
+  const profileReady = await ensureProfileRow(input.userId);
   if (!profileReady.ok) {
     return { ...profileReady, payloadAttempted };
   }
 
+  let dbStatus = toDbMembershipStatus(input.status);
   console.log("[membership] upsert user_memberships", {
     table: MEMBERSHIP_TABLE,
     userId: input.userId,
     role: input.role,
     planId: catalogPlanId,
-    status: payload.status,
+    status: dbStatus,
     onConflict: "user_id,role",
     payloadKeys: Object.keys(payload),
     payloadAttempted,
   });
 
-  let upsertPayload = { ...payload };
-  let selectColumns = MEMBERSHIP_RETURN_COLUMNS;
+  const upsertPayload = { ...payload };
   const strippedOptional: string[] = [];
 
-  async function runUpsert() {
+  function buildCoreRow(status: DbMembershipStatus): Record<string, unknown> {
     const row: Record<string, unknown> = {};
     for (const col of MEMBERSHIP_CORE_COLUMNS) {
-      if (col in upsertPayload) row[col] = upsertPayload[col];
+      row[col] = col === "status" ? status : upsertPayload[col];
     }
-    for (const col of MEMBERSHIP_OPTIONAL_STRIP_COLUMNS) {
-      if (col in upsertPayload) row[col] = upsertPayload[col];
-    }
+    return row;
+  }
+
+  async function runCoreUpsert(status: DbMembershipStatus) {
     return supabase
       .from(MEMBERSHIP_TABLE)
-      .upsert(row, { onConflict: "user_id,role" })
-      .select(selectColumns)
+      .upsert(buildCoreRow(status), { onConflict: "user_id,role" })
+      .select(MEMBERSHIP_CORE_SELECT_COLUMNS)
       .single();
   }
 
-  let { data, error } = await runUpsert();
+  let { data, error } = await runCoreUpsert(dbStatus);
 
-  for (const col of MEMBERSHIP_OPTIONAL_STRIP_COLUMNS) {
-    if (!error) break;
-    const colInPayload = col in upsertPayload;
-    const colInSelect = selectColumns.includes(col);
-    if (!colInPayload && !colInSelect) break;
-    if (!isMissingColumnError(error, col)) break;
-    console.warn(`[membership] retrying upsert without ${col} (run migrations)`);
-    strippedOptional.push(col);
-    if (colInPayload) {
-      upsertPayload = stripOptionalColumns(upsertPayload, [col]);
+  if (error && isInvalidEnumValueError(error)) {
+    const fallbackStatus = membershipStatusFallback(dbStatus);
+    if (fallbackStatus !== dbStatus) {
+      console.warn("[membership] retrying upsert with status fallback", {
+        from: dbStatus,
+        to: fallbackStatus,
+        userId: input.userId,
+      });
+      dbStatus = fallbackStatus;
+      ({ data, error } = await runCoreUpsert(dbStatus));
     }
-    if (colInSelect) {
-      selectColumns = selectColumnsWithout(strippedOptional);
-    }
-    ({ data, error } = await runUpsert());
   }
 
   if (error) {
@@ -429,7 +436,52 @@ export async function upsertUserMembership(
     };
   }
 
-  const membership = data as unknown as UserMembership;
+  let membership = data as unknown as UserMembership;
+
+  const optionalPatch: Record<string, unknown> = {};
+  for (const col of MEMBERSHIP_OPTIONAL_STRIP_COLUMNS) {
+    if (col in upsertPayload) optionalPatch[col] = upsertPayload[col];
+  }
+
+  if (Object.keys(optionalPatch).length > 0) {
+    let patchPayload = { ...optionalPatch };
+    let patchSelect = MEMBERSHIP_RETURN_COLUMNS;
+
+    async function runOptionalPatch() {
+      return supabase
+        .from(MEMBERSHIP_TABLE)
+        .update(patchPayload)
+        .eq("id", membership.id)
+        .select(patchSelect)
+        .single();
+    }
+
+    let patchResult = await runOptionalPatch();
+
+    for (const col of MEMBERSHIP_OPTIONAL_STRIP_COLUMNS) {
+      if (!patchResult.error) break;
+      if (!(col in patchPayload) && !patchSelect.includes(col)) break;
+      if (!isMissingColumnError(patchResult.error, col)) break;
+      console.warn(`[membership] skipping optional column ${col} (run migrations)`);
+      strippedOptional.push(col);
+      patchPayload = stripOptionalColumns(patchPayload, [col]);
+      if (patchSelect.includes(col)) {
+        patchSelect = selectColumnsWithout([...strippedOptional]);
+      }
+      patchResult = await runOptionalPatch();
+    }
+
+    if (patchResult.error) {
+      const detail = supabaseErrorDetail(patchResult.error);
+      console.error("[membership] optional column patch failed (core row saved)", {
+        membershipId: membership.id,
+        strippedOptional,
+        ...detail,
+      });
+    } else if (patchResult.data) {
+      membership = patchResult.data as unknown as UserMembership;
+    }
+  }
 
   console.log("[membership] upsert success", {
     table: MEMBERSHIP_TABLE,
