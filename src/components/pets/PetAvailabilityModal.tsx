@@ -15,8 +15,10 @@ import {
   emptyMembershipsByRole,
 } from "@/lib/membership";
 import type { MonthCursor } from "@/lib/booking-calendar";
+import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 
 type PetAvailabilityModalProps = {
   open: boolean;
@@ -31,8 +33,12 @@ type PetAvailabilityModalProps = {
   /** Find Care: enable send-request flow from this modal. */
   careRequestTarget?: ParentToFriendRequestTarget | null;
   variant?: "default" | "pastel";
+  visibility?: "full" | "public";
   monthCursor?: MonthCursor;
   onMonthCursorChange?: (cursor: MonthCursor) => void;
+  /** Member profile: toggle dates in the full calendar (request-select). */
+  selectedDates?: string[];
+  onSelectedDatesChange?: (dates: string[]) => void;
 };
 
 export function PetAvailabilityModal({
@@ -46,8 +52,11 @@ export function PetAvailabilityModal({
   subtitle,
   careRequestTarget = null,
   variant = "default",
+  visibility = "public",
   monthCursor,
   onMonthCursorChange,
+  selectedDates,
+  onSelectedDatesChange,
 }: PetAvailabilityModalProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -57,6 +66,7 @@ export function PetAvailabilityModal({
   const { profile } = useProfile();
   const [requestOpen, setRequestOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const upgradeToastOpenRef = useRef(false);
 
   const heading =
@@ -71,6 +81,12 @@ export function PetAvailabilityModal({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const memberships = profile?.memberships ?? emptyMembershipsByRole();
   const hasParentMembership = canUseMembershipFeaturesForMode(memberships, "pet_parent");
+  const selectable = Boolean(onSelectedDatesChange);
+  const sortedSelected = useMemo(
+    () => normalizeAvailabilityDates(selectedDates ?? []),
+    [selectedDates],
+  );
+  const available = useMemo(() => normalizeAvailabilityDates(dates), [dates]);
 
   const returnUrl = useMemo(() => {
     const q = searchParams.toString();
@@ -78,10 +94,26 @@ export function PetAvailabilityModal({
   }, [pathname, searchParams]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.show();
-    if (!open && dialog.open) dialog.close();
+    if (open) {
+      if (!dialog.open) dialog.showModal();
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
 
   const closeUpgradeToast = useCallback(() => {
@@ -106,6 +138,10 @@ export function PetAvailabilityModal({
     }
   }, [open, closeUpgradeToast]);
 
+  function handleBackdropClick(event: MouseEvent<HTMLDialogElement>) {
+    if (event.target === dialogRef.current) onClose();
+  }
+
   function handleSendCareRequest() {
     if (authLoading || !careRequestTarget) return;
     if (!user) {
@@ -121,97 +157,107 @@ export function PetAvailabilityModal({
   }
 
   const showCareActions = Boolean(careRequestTarget);
+  const calendarViewRole =
+    visibility === "full" ? (petId ? "pet-parent" : "pet-friend") : "public";
 
-  return (
+  if (!mounted) return null;
+
+  const modal = (
     <>
       <dialog
         ref={dialogRef}
         onClose={onClose}
-        className="fixed inset-0 z-50 m-0 flex h-[100dvh] w-full max-w-none items-center justify-center border-0 bg-foreground/40 p-4 sm:p-6"
+        onClick={handleBackdropClick}
+        className="fixed inset-0 z-[100] m-0 flex h-[100dvh] w-full max-w-none items-center justify-center border-0 bg-transparent p-4 backdrop:bg-foreground/40 sm:p-6"
       >
-        <div className="mx-auto w-[min(100%,720px)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl dark:bg-surface">
-        <div className="p-6 sm:p-8">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-heading text-lg font-semibold">{heading}</h2>
-              <p className="mt-1 text-sm text-muted">{description}</p>
+        <div
+          role="document"
+          className="mx-auto w-[min(100%,720px)] max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-cream p-0 text-foreground shadow-xl dark:bg-surface"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-heading text-lg font-semibold">{heading}</h2>
+                <p className="mt-1 text-sm text-muted">{description}</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full px-2 py-1 text-sm text-muted hover:bg-mint/50 hover:text-foreground"
+                aria-label={t.bookingCalendar.close}
+              >
+                ✕
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full px-2 py-1 text-sm text-muted hover:bg-mint/50 hover:text-foreground"
-              aria-label={t.bookingCalendar.close}
+
+            <div className="mt-6">
+              {available.length > 0 || petId || petFriendId ? (
+                <BookingCalendar
+                  mode={selectable ? "request-select" : "availability-readonly"}
+                  visibility={visibility}
+                  viewRole={calendarViewRole}
+                  availableDates={available}
+                  selectedDates={selectable ? sortedSelected : []}
+                  onChange={onSelectedDatesChange}
+                  petId={petId}
+                  petFriendId={petFriendId}
+                  showLegend
+                  showSelectedChips={selectable}
+                  variant={variant}
+                  className="rounded-2xl"
+                  monthCursor={monthCursor}
+                  onMonthCursorChange={onMonthCursorChange}
+                />
+              ) : (
+                <p className="rounded-2xl bg-mint/30 px-4 py-6 text-center text-sm text-muted">
+                  {t.findCare.noUpcomingDates}
+                </p>
+              )}
+            </div>
+
+            <div
+              className={`mt-6 flex flex-col gap-2 sm:flex-row ${
+                showCareActions ? "sm:justify-stretch" : "sm:justify-end"
+              }`}
             >
-              ✕
-            </button>
-          </div>
-
-          <div className="mt-6">
-            {dates.length > 0 ? (
-              <BookingCalendar
-                mode="availability-readonly"
-                visibility="public"
-                viewRole="public"
-                availableDates={dates}
-                selectedDates={[]}
-                petId={petId}
-                petFriendId={petFriendId}
-                showLegend
-                showSelectedChips={false}
-                variant={variant}
-                className="rounded-2xl"
-                monthCursor={monthCursor}
-                onMonthCursorChange={onMonthCursorChange}
-              />
-            ) : (
-              <p className="rounded-2xl bg-mint/30 px-4 py-6 text-center text-sm text-muted">
-                {t.findCare.noUpcomingDates}
-              </p>
-            )}
-          </div>
-
-          <div
-            className={`mt-6 flex flex-col gap-2 sm:flex-row ${
-              showCareActions ? "sm:justify-stretch" : "sm:justify-end"
-            }`}
-          >
-            {showCareActions ? (
-              <>
-                {!user ? (
+              {showCareActions ? (
+                <>
+                  {!user ? (
+                    <Button
+                      type="button"
+                      className="w-full sm:flex-1"
+                      onClick={handleSendCareRequest}
+                      disabled={authLoading}
+                    >
+                      {t.findCare.logInToSendRequest}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      className="w-full sm:flex-1"
+                      onClick={handleSendCareRequest}
+                      disabled={authLoading}
+                    >
+                      {t.requests.sendCareRequest}
+                    </Button>
+                  )}
                   <Button
                     type="button"
+                    variant="secondary"
                     className="w-full sm:flex-1"
-                    onClick={handleSendCareRequest}
-                    disabled={authLoading}
+                    onClick={onClose}
                   >
-                    {t.findCare.logInToSendRequest}
+                    {t.bookingCalendar.close}
                   </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    className="w-full sm:flex-1"
-                    onClick={handleSendCareRequest}
-                    disabled={authLoading}
-                  >
-                    {t.requests.sendCareRequest}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full sm:flex-1"
-                  onClick={onClose}
-                >
+                </>
+              ) : (
+                <Button type="button" size="sm" onClick={onClose}>
                   {t.bookingCalendar.close}
                 </Button>
-              </>
-            ) : (
-              <Button type="button" size="sm" onClick={onClose}>
-                {t.bookingCalendar.close}
-              </Button>
-            )}
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </dialog>
 
@@ -235,4 +281,6 @@ export function PetAvailabilityModal({
       ) : null}
     </>
   );
+
+  return createPortal(modal, document.body);
 }
