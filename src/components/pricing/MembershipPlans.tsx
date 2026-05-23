@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
 import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
-import type { CheckoutPlanDebugMeta } from "@/lib/membership";
 
 export type PricingPlan = {
   id: string;
@@ -35,8 +34,6 @@ type MembershipPlansProps = {
   enableCheckout?: boolean;
   /** Server-resolved per-plan config errors, e.g. "Missing STRIPE_PRICE_PARENT_3M". */
   planCheckoutErrors?: Record<string, string | null>;
-  /** Server-computed env var + mode per plan (temporary production debug). */
-  debugCheckoutMeta?: CheckoutPlanDebugMeta[];
 };
 
 function planId(plan: PricingPlan | MembershipPlanDefinition): string {
@@ -81,7 +78,6 @@ function PlanCard({
   checkoutLoadingPlanId,
   checkoutError,
   planConfigError,
-  planDebugMeta,
   onChoosePlan,
 }: {
   plan: PricingPlan;
@@ -99,7 +95,6 @@ function PlanCard({
   checkoutLoadingPlanId?: string | null;
   checkoutError?: string | null;
   planConfigError?: string | null;
-  planDebugMeta?: CheckoutPlanDebugMeta;
   onChoosePlan?: (plan: PricingPlan) => void;
 }) {
   const isCurrent =
@@ -188,14 +183,6 @@ function PlanCard({
                   ? choosePlanLabel
                   : planConfigError ?? checkoutUnavailableLabel}
           </Button>
-          {planDebugMeta ? (
-            <pre
-              className="mt-2 whitespace-pre-wrap font-mono text-[0.65rem] leading-snug text-muted"
-              aria-label="Checkout debug"
-            >
-              {`planId: ${planDebugMeta.planId}\nenvVar: ${planDebugMeta.envVar}\nmode: ${planDebugMeta.mode}`}
-            </pre>
-          ) : null}
         </>
       )}
     </article>
@@ -228,7 +215,6 @@ export function MembershipPlans({
   checkoutRole,
   enableCheckout = false,
   planCheckoutErrors,
-  debugCheckoutMeta,
 }: MembershipPlansProps) {
   const { t } = useLanguage();
   const lockedTab = modeFilter ?? initialTab;
@@ -253,11 +239,6 @@ export function MembershipPlans({
 
   const effectiveCheckoutRole: MembershipRole | undefined =
     checkoutRole ?? (pricingTab === "owner" ? "pet_parent" : "pet_friend");
-
-  const debugMetaByPlanId = useMemo(() => {
-    if (!debugCheckoutMeta?.length) return null;
-    return Object.fromEntries(debugCheckoutMeta.map((row) => [row.planId, row]));
-  }, [debugCheckoutMeta]);
 
   async function handleChoosePlan(plan: PricingPlan) {
     if (!checkoutUserId || !effectiveCheckoutRole) return;
@@ -354,7 +335,6 @@ export function MembershipPlans({
             checkoutLoadingPlanId={checkoutLoadingPlanId}
             checkoutError={checkoutError}
             planConfigError={planCheckoutErrors?.[plan.id] ?? null}
-            planDebugMeta={debugMetaByPlanId?.[plan.id]}
             onChoosePlan={enableCheckout ? handleChoosePlan : undefined}
           />
         ))}
