@@ -11,6 +11,7 @@ import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
 import { speciesDisplayLabel } from "@/lib/pet-data";
 import { placeholderPetImage } from "@/lib/images";
 import type { Pet } from "@/lib/pets";
+import type { SearchAvailabilityItem } from "@/lib/search-availability";
 
 function LocationIcon() {
   return (
@@ -63,11 +64,33 @@ function EyeIcon() {
   );
 }
 
-export function PetCard({ pet, compact = false }: { pet: Pet; compact?: boolean }) {
+export function PetCard({
+  pet,
+  compact = false,
+  onOpenAvailability,
+}: {
+  pet: Pet;
+  compact?: boolean;
+  onOpenAvailability?: (item: SearchAvailabilityItem) => void;
+}) {
   const { locale } = useLanguage();
   const detailHref = `/pet/${pet.id}`;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(pet.availabilityDates, 3, locale);
+
+  function openCalendar() {
+    const item: SearchAvailabilityItem = {
+      kind: "pet",
+      id: pet.id,
+      name: pet.name,
+      dates: availability.allDates,
+    };
+    if (onOpenAvailability) {
+      onOpenAvailability(item);
+      return;
+    }
+    setCalendarOpen(true);
+  }
   const tagline = pet.cardTagline ?? "";
   const speciesLabel = speciesDisplayLabel(pet.species, null);
   const metaParts = [pet.breed, pet.weightDisplayShort ?? pet.sizeLabel, pet.age].filter(
@@ -166,7 +189,7 @@ export function PetCard({ pet, compact = false }: { pet: Pet; compact?: boolean 
               type="button"
               onClick={(e) => {
                 e.preventDefault();
-                setCalendarOpen(true);
+                openCalendar();
               }}
               className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-teal/25 bg-mint/35 font-semibold text-brand-teal transition-colors hover:bg-mint/55 ${
                 compact ? "px-2.5 py-2 text-xs" : "gap-2 rounded-xl px-3 py-2.5 text-sm"
@@ -190,14 +213,16 @@ export function PetCard({ pet, compact = false }: { pet: Pet; compact?: boolean 
         </div>
       </article>
 
-      <PetAvailabilityModal
-        open={calendarOpen}
-        name={pet.name}
-        petId={pet.id}
-        dates={availability.allDates}
-        subtitle="Dates when this pet is available for care."
-        onClose={() => setCalendarOpen(false)}
-      />
+      {!onOpenAvailability ? (
+        <PetAvailabilityModal
+          open={calendarOpen}
+          name={pet.name}
+          petId={pet.id}
+          dates={availability.allDates}
+          subtitle="Dates when this pet is available for care."
+          onClose={() => setCalendarOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

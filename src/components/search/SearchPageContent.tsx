@@ -1,5 +1,6 @@
 "use client";
 
+import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { PetCard } from "@/components/pets/PetCard";
 import { OwnerCard } from "@/components/owners/OwnerCard";
 import { CareSearchParamsSync } from "@/components/search/CareSearchParamsSync";
@@ -28,9 +29,11 @@ import {
   type SearchProfile,
 } from "@/lib/search-profiles";
 import type { Pet } from "@/lib/pets";
+import type { SearchAvailabilityItem } from "@/lib/search-availability";
 import { createClient } from "@/lib/supabase";
 import type { Dictionary } from "@/i18n/translations";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type SearchPageMode = "pets" | "care";
@@ -138,6 +141,7 @@ function SearchResultsGrid({
   displayProfiles,
   t,
   className = "",
+  onOpenAvailability,
 }: {
   loading: boolean;
   isPets: boolean;
@@ -145,6 +149,7 @@ function SearchResultsGrid({
   displayProfiles: SearchProfile[];
   t: Dictionary;
   className?: string;
+  onOpenAvailability: (item: SearchAvailabilityItem) => void;
 }) {
   return (
     <div className={`${resultsGridClass()} ${className}`}>
@@ -158,7 +163,7 @@ function SearchResultsGrid({
         ) : (
           displayPets.map((pet) => (
             <article key={pet.id} id={`pet-${pet.id}`} className="min-w-0">
-              <PetCard pet={pet} compact />
+              <PetCard pet={pet} compact onOpenAvailability={onOpenAvailability} />
             </article>
           ))
         )
@@ -167,7 +172,7 @@ function SearchResultsGrid({
       ) : (
         displayProfiles.map((profile) => (
           <article key={profile.id} id={`profile-${profile.id}`} className="min-w-0">
-            <OwnerCard profile={profile} compact />
+            <OwnerCard profile={profile} compact onOpenAvailability={onOpenAvailability} />
           </article>
         ))
       )}
@@ -182,6 +187,7 @@ function SearchMapResultsList({
   displayProfiles,
   selectedId,
   onCardSelect,
+  onOpenAvailability,
   t,
   dimUnselected = true,
 }: {
@@ -191,6 +197,7 @@ function SearchMapResultsList({
   displayProfiles: SearchProfile[];
   selectedId: string | null;
   onCardSelect: (id: string) => void;
+  onOpenAvailability: (item: SearchAvailabilityItem) => void;
   t: Dictionary;
   dimUnselected?: boolean;
 }) {
@@ -219,6 +226,7 @@ function SearchMapResultsList({
                 pet={pet}
                 selected={selected}
                 onSelect={() => onCardSelect(pet.id)}
+                onOpenAvailability={onOpenAvailability}
               />
             </li>
           );
@@ -244,6 +252,7 @@ function SearchMapResultsList({
               profile={profile}
               selected={selected}
               onSelect={() => onCardSelect(profile.id)}
+              onOpenAvailability={onOpenAvailability}
             />
           </li>
         );
@@ -254,6 +263,7 @@ function SearchMapResultsList({
 
 export function SearchPageContent({ mode }: SearchPageContentProps) {
   const { t } = useLanguage();
+  const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
   const isPets = mode === "pets";
 
@@ -272,7 +282,17 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
   );
   const [viewMode, setViewMode] = useState<SearchViewMode>("list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedAvailabilityItem, setSelectedAvailabilityItem] =
+    useState<SearchAvailabilityItem | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const handleOpenAvailability = useCallback((item: SearchAvailabilityItem) => {
+    setSelectedAvailabilityItem(item);
+  }, []);
+
+  const handleCloseAvailability = useCallback(() => {
+    setSelectedAvailabilityItem(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -357,8 +377,13 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
   useEffect(() => {
     setViewMode("list");
     setSelectedId(null);
+    setSelectedAvailabilityItem(null);
     setMobileFiltersOpen(false);
   }, [mode]);
+
+  useEffect(() => {
+    setSelectedAvailabilityItem(null);
+  }, [pathname]);
 
   const showMapLayout = viewMode === "map";
   const hasMapMarkers = mapMarkers.length > 0;
@@ -476,6 +501,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
                 displayProfiles={displayProfiles}
                 selectedId={selectedId}
                 onCardSelect={handleCardSelect}
+                onOpenAvailability={handleOpenAvailability}
                 t={t}
               />
             </div>
@@ -519,12 +545,14 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
                     pet={selectedPet}
                     selected
                     onSelect={() => handleCardSelect(selectedPet.id)}
+                    onOpenAvailability={handleOpenAvailability}
                   />
                 ) : selectedProfile ? (
                   <SearchMapFriendCard
                     profile={selectedProfile}
                     selected
                     onSelect={() => handleCardSelect(selectedProfile.id)}
+                    onOpenAvailability={handleOpenAvailability}
                   />
                 ) : null}
               </div>
@@ -557,6 +585,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
             isPets={isPets}
             displayPets={displayPets}
             displayProfiles={displayProfiles}
+            onOpenAvailability={handleOpenAvailability}
             t={t}
             className="mt-4 sm:mt-5"
           />
@@ -574,6 +603,34 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
             {t.common.learnHowItWorks}
           </Link>
         </p>
+      ) : null}
+
+      {selectedAvailabilityItem ? (
+        <PetAvailabilityModal
+          open
+          name={selectedAvailabilityItem.name}
+          petId={selectedAvailabilityItem.kind === "pet" ? selectedAvailabilityItem.id : null}
+          petFriendId={
+            selectedAvailabilityItem.kind === "profile" ? selectedAvailabilityItem.id : null
+          }
+          dates={selectedAvailabilityItem.dates}
+          subtitle={
+            selectedAvailabilityItem.kind === "pet"
+              ? "Dates when this pet is available for care."
+              : undefined
+          }
+          onClose={handleCloseAvailability}
+          careRequestTarget={
+            selectedAvailabilityItem.kind === "profile"
+              ? {
+                  kind: "profile",
+                  friendId: selectedAvailabilityItem.id,
+                  label: selectedAvailabilityItem.name,
+                  availabilityDates: selectedAvailabilityItem.dates,
+                }
+              : null
+          }
+        />
       ) : null}
     </div>
   );

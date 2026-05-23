@@ -10,6 +10,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
 import { placeholderPetImage, placeholderProfileImage } from "@/lib/images";
 import type { Pet } from "@/lib/pets";
+import type { SearchAvailabilityItem } from "@/lib/search-availability";
 import type { SearchProfile } from "@/lib/search-profiles";
 
 function LocationIcon() {
@@ -47,13 +48,33 @@ type SearchMapPetCardProps = {
   pet: Pet;
   selected?: boolean;
   onSelect?: () => void;
+  onOpenAvailability?: (item: SearchAvailabilityItem) => void;
 };
 
-export function SearchMapPetCard({ pet, selected = false, onSelect }: SearchMapPetCardProps) {
+export function SearchMapPetCard({
+  pet,
+  selected = false,
+  onSelect,
+  onOpenAvailability,
+}: SearchMapPetCardProps) {
   const { locale } = useLanguage();
   const detailHref = `/pet/${pet.id}`;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(pet.availabilityDates, 3, locale);
+
+  function openCalendar() {
+    const item: SearchAvailabilityItem = {
+      kind: "pet",
+      id: pet.id,
+      name: pet.name,
+      dates: availability.allDates,
+    };
+    if (onOpenAvailability) {
+      onOpenAvailability(item);
+      return;
+    }
+    setCalendarOpen(true);
+  }
   const metaParts = [pet.breed, pet.weightDisplayShort ?? pet.sizeLabel, pet.age].filter(
     (part) => part && part !== "—",
   );
@@ -129,7 +150,7 @@ export function SearchMapPetCard({ pet, selected = false, onSelect }: SearchMapP
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setCalendarOpen(true);
+                openCalendar();
               }}
               className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-brand-teal/25 bg-mint/35 px-2 py-1.5 text-[0.7rem] font-semibold text-brand-teal hover:bg-mint/55"
             >
@@ -140,14 +161,16 @@ export function SearchMapPetCard({ pet, selected = false, onSelect }: SearchMapP
         </div>
       </article>
 
-      <PetAvailabilityModal
-        open={calendarOpen}
-        name={pet.name}
-        petId={pet.id}
-        dates={availability.allDates}
-        subtitle="Dates when this pet is available for care."
-        onClose={() => setCalendarOpen(false)}
-      />
+      {!onOpenAvailability ? (
+        <PetAvailabilityModal
+          open={calendarOpen}
+          name={pet.name}
+          petId={pet.id}
+          dates={availability.allDates}
+          subtitle="Dates when this pet is available for care."
+          onClose={() => setCalendarOpen(false)}
+        />
+      ) : null}
     </>
   );
 }
@@ -156,17 +179,33 @@ type SearchMapFriendCardProps = {
   profile: SearchProfile;
   selected?: boolean;
   onSelect?: () => void;
+  onOpenAvailability?: (item: SearchAvailabilityItem) => void;
 };
 
 export function SearchMapFriendCard({
   profile,
   selected = false,
   onSelect,
+  onOpenAvailability,
 }: SearchMapFriendCardProps) {
   const { locale } = useLanguage();
   const profileHref = `/users/${profile.id}`;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(profile.availabilityDates, 3, locale);
+
+  function openCalendar() {
+    const item: SearchAvailabilityItem = {
+      kind: "profile",
+      id: profile.id,
+      name: profile.displayName,
+      dates: availability.allDates,
+    };
+    if (onOpenAvailability) {
+      onOpenAvailability(item);
+      return;
+    }
+    setCalendarOpen(true);
+  }
   const avatarSrc = profile.avatarUrl?.trim()
     ? profile.avatarUrl
     : placeholderProfileImage(profile.id);
@@ -264,7 +303,7 @@ export function SearchMapFriendCard({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setCalendarOpen(true);
+                openCalendar();
               }}
               className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-brand-teal/25 bg-mint/35 px-2 py-1.5 text-[0.7rem] font-semibold text-brand-teal hover:bg-mint/55"
             >
@@ -275,19 +314,21 @@ export function SearchMapFriendCard({
         </div>
       </article>
 
-      <PetAvailabilityModal
-        open={calendarOpen}
-        name={profile.displayName}
-        petFriendId={profile.id}
-        dates={availability.allDates}
-        onClose={() => setCalendarOpen(false)}
-        careRequestTarget={{
-          kind: "profile",
-          friendId: profile.id,
-          label: profile.displayName,
-          availabilityDates: availability.allDates,
-        }}
-      />
+      {!onOpenAvailability ? (
+        <PetAvailabilityModal
+          open={calendarOpen}
+          name={profile.displayName}
+          petFriendId={profile.id}
+          dates={availability.allDates}
+          onClose={() => setCalendarOpen(false)}
+          careRequestTarget={{
+            kind: "profile",
+            friendId: profile.id,
+            label: profile.displayName,
+            availabilityDates: availability.allDates,
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -10,6 +10,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
 import { placeholderProfileImage } from "@/lib/images";
 import type { SearchProfile } from "@/lib/search-profiles";
+import type { SearchAvailabilityItem } from "@/lib/search-availability";
 
 function LocationIcon() {
   return (
@@ -65,14 +66,30 @@ function EyeIcon() {
 export function OwnerCard({
   profile,
   compact = false,
+  onOpenAvailability,
 }: {
   profile: SearchProfile;
   compact?: boolean;
+  onOpenAvailability?: (item: SearchAvailabilityItem) => void;
 }) {
   const { locale, t } = useLanguage();
   const profileHref = `/users/${profile.id}`;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(profile.availabilityDates, 3, locale);
+
+  function openCalendar() {
+    const item: SearchAvailabilityItem = {
+      kind: "profile",
+      id: profile.id,
+      name: profile.displayName,
+      dates: availability.allDates,
+    };
+    if (onOpenAvailability) {
+      onOpenAvailability(item);
+      return;
+    }
+    setCalendarOpen(true);
+  }
   const avatarSrc = profile.avatarUrl?.trim()
     ? profile.avatarUrl
     : placeholderProfileImage(profile.id);
@@ -178,7 +195,7 @@ export function OwnerCard({
 
             <button
               type="button"
-              onClick={() => setCalendarOpen(true)}
+              onClick={openCalendar}
               className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-teal/25 bg-mint/35 font-semibold text-brand-teal transition-colors hover:bg-mint/55 ${
                 compact ? "px-2.5 py-2 text-xs" : "gap-2 rounded-xl px-3 py-2.5 text-sm"
               }`}
@@ -201,19 +218,21 @@ export function OwnerCard({
         </div>
       </article>
 
-      <PetAvailabilityModal
-        open={calendarOpen}
-        name={profile.displayName}
-        petFriendId={profile.id}
-        dates={availability.allDates}
-        onClose={() => setCalendarOpen(false)}
-        careRequestTarget={{
-          kind: "profile",
-          friendId: profile.id,
-          label: profile.displayName,
-          availabilityDates: availability.allDates,
-        }}
-      />
+      {!onOpenAvailability ? (
+        <PetAvailabilityModal
+          open={calendarOpen}
+          name={profile.displayName}
+          petFriendId={profile.id}
+          dates={availability.allDates}
+          onClose={() => setCalendarOpen(false)}
+          careRequestTarget={{
+            kind: "profile",
+            friendId: profile.id,
+            label: profile.displayName,
+            availabilityDates: availability.allDates,
+          }}
+        />
+      ) : null}
     </>
   );
 }
