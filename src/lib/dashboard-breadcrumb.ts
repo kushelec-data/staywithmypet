@@ -37,7 +37,7 @@ export function dashboardBreadcrumbFromPath(
   }
 
   if (pathname === "/profile/edit") {
-    return { title: "My profile" };
+    return { title: "Change My Profile" };
   }
   if (pathname === "/profile/setup") {
     return { title: "Set up your profile" };

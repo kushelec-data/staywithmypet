@@ -397,13 +397,21 @@ export const et = {
     close: "Sulge",
   },
   profileEdit: {
-    pageTitle: "Minu profiil",
-    pageDescription: "Uuenda profiili jaotistena. Iga jaotis salvestatakse eraldi.",
+    pageTitle: "Muuda oma profiili",
+    pageDescription: "Uuenda profiili samm-sammult. Iga samm salvestatakse eraldi.",
     signedInAs: "Sisse logitud kui",
     saveChanges: "Salvesta muudatused",
     saving: "Salvestan…",
     edit: "Muuda",
     sectionSaved: "Jaotis salvestatud.",
+    wizard: {
+      stepProgress: "Samm {current}/{total} · {title} · {status}",
+      statusCompleted: "Täidetud",
+      statusIncomplete: "Täitmata",
+      previous: "Eelmine",
+      nextStep: "Järgmine samm",
+      tabsLabel: "Profiili sammud",
+    },
     basic: {
       title: "Põhiprofiil",
       description: "Foto, galerii, kuvatav nimi, asukoht, keeled ja bio.",
@@ -427,11 +435,11 @@ export const et = {
       description: "Telefon, kinnitused ja privaatne hädaabikontakt (avalikus profiilis ei kuvata).",
     },
     petFriend: {
-      title: "Pet Friend profiil",
+      title: "Hooldus, mida saan pakkuda",
       description: "Loomaliigid, hoolduselistused, kogemus, kodukeskkond ja saadavus.",
     },
     petParent: {
-      title: "Pet Parent profiil",
+      title: "Minu lemmik ja hoolduse vajadused",
       description: "Kirjelda oma loomi, hoolduse vajadusi, kodu märkmeid ja mida Pet Friendilt ootad.",
       ownPetsSummary: "Sinu loomad (kokkuvõte)",
       ownPetsSummaryPlaceholder: "nt Max, sõbralik 3-aastane labrador",

@@ -5,7 +5,10 @@ import { GooglePlacesInput } from "@/components/location/GooglePlacesInput";
 import { PetFriendProfileFormSections } from "@/components/profile/PetFriendProfileFormSections";
 import { PetParentProfileFormSection } from "@/components/profile/PetParentProfileFormSection";
 import { ProfileAvatarUpload } from "@/components/profile/ProfileAvatarUpload";
-import { ProfileEditSectionCard } from "@/components/profile/ProfileEditSectionCard";
+import {
+  ProfileEditWizard,
+  type ProfileEditWizardStep,
+} from "@/components/profile/ProfileEditWizard";
 import { ProfileGalleryUpload } from "@/components/profile/ProfileGalleryUpload";
 import { ProfileRoleStatusCard } from "@/components/profile/ProfileRoleStatusCard";
 import {
@@ -37,10 +40,15 @@ import { PROFILE_LOCATION_CITY_OPTIONS, PROFILE_LOCATION_DATALIST_ID } from "@/l
 import { languageOptions } from "@/lib/legacy/search-filters";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
-  hasCarePreferences,
-  hasLivingSituation,
-  profileCalendarSelectedDates,
-} from "@/lib/profile-details";
+  isBasicProfileSectionComplete,
+  isPetFriendSectionComplete,
+  isPetParentSectionComplete,
+  isProfileEditSectionComplete,
+  isTrustSafetySectionComplete,
+  profileEditStepFromHash,
+  visibleProfileEditSteps,
+  type ProfileEditSectionKey,
+} from "@/lib/profile-edit-sections";
 import {
   emptyPetFriendProfileForm,
   petFriendFormFromDetailsRaw,
@@ -49,7 +57,6 @@ import {
 import { resolveActiveMode } from "@/lib/profile-mode";
 import {
   emptyPetParentProfileForm,
-  hasPetParentProfileContent,
   petParentFormFromDetailsRaw,
   type PetParentProfileFormInput,
 } from "@/lib/profile-parent-form";
@@ -66,12 +73,9 @@ import {
   DEFAULT_PHONE_DIAL_CODE,
   parseDialCodeFromE164,
 } from "@/lib/phone-eu";
-import { isPhoneOnFile } from "@/lib/profile-completeness";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import { createClient } from "@/lib/supabase";
-import { useEffect, useMemo, useState } from "react";
-
-type SectionKey = "basic" | "trust" | "petFriend" | "petParent";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 function applyBasicFromProfile(
   profile: ProfileRow,
@@ -119,32 +123,6 @@ function applyTrustFromProfile(
   });
 }
 
-function isBasicSectionComplete(profile: ProfileRow | null, bioValid: boolean): boolean {
-  if (!profile) return false;
-  return Boolean(
-    profile.display_name?.trim() &&
-      profile.location?.trim() &&
-      (profile.languages?.length ?? 0) > 0 &&
-      bioValid,
-  );
-}
-
-function isTrustSectionComplete(profile: ProfileRow | null): boolean {
-  if (!profile) return false;
-  const emergency = parseEmergencyContactFromProfile(profile);
-  return isPhoneOnFile(profile) || Boolean(emergency?.name?.trim());
-}
-
-function isPetFriendSectionComplete(profile: ProfileRow | null): boolean {
-  if (!profile?.details) return false;
-  const details = profile.details;
-  return (
-    hasCarePreferences(details) ||
-    hasLivingSituation(details) ||
-    profileCalendarSelectedDates(details).length > 0
-  );
-}
-
 export function ProfileEditForm() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -169,24 +147,25 @@ export function ProfileEditForm() {
     emptyPetParentProfileForm,
   );
 
-  const [editing, setEditing] = useState<Record<SectionKey, boolean>>({
+  const [editing, setEditing] = useState<Record<ProfileEditSectionKey, boolean>>({
     basic: true,
     trust: true,
     petFriend: true,
     petParent: true,
   });
-  const [saving, setSaving] = useState<Record<SectionKey, boolean>>({
+  const [saving, setSaving] = useState<Record<ProfileEditSectionKey, boolean>>({
     basic: false,
     trust: false,
     petFriend: false,
     petParent: false,
   });
-  const [errors, setErrors] = useState<Partial<Record<SectionKey, string | null>>>({});
-  const [success, setSuccess] = useState<Partial<Record<SectionKey, string | null>>>({});
+  const [errors, setErrors] = useState<Partial<Record<ProfileEditSectionKey, string | null>>>({});
+  const [success, setSuccess] = useState<Partial<Record<ProfileEditSectionKey, string | null>>>({});
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   const role: ProfileRole = profile?.role ?? "pet_friend";
-  const showFriendCard = role === "pet_friend" || role === "both";
-  const showParentCard = role === "pet_parent" || role === "both";
+  const visibleSteps = useMemo(() => visibleProfileEditSteps(role), [role]);
+  const activeStepId = visibleSteps[activeStepIndex] ?? visibleSteps[0];
   const activeMode = resolveActiveMode(role, profile?.active_mode);
   const availabilityUx = availabilityUxForProfile(role, activeMode);
 
@@ -194,6 +173,24 @@ export function ProfileEditForm() {
   const bioWordCount = useMemo(() => countBioWords(bio), [bio]);
   const bioStatus = bioWordStatus(bioWordCount);
   const bioValid = isBioWordCountValid(bioWordCount);
+
+  const sectionComplete = useCallback(
+    (section: ProfileEditSectionKey) => {
+      if (section === "basic") {
+        return isBasicProfileSectionComplete(profile, bioValid);
+      }
+      if (section === "trust") return isTrustSafetySectionComplete(profile);
+      if (section === "petFriend") return isPetFriendSectionComplete(profile);
+      return isPetParentSectionComplete(profile);
+    },
+    [profile, bioValid],
+  );
+
+  const isStepFieldsEnabled = useCallback(
+    (section: ProfileEditSectionKey) =>
+      editing[section] && activeStepId === section,
+    [editing, activeStepId],
+  );
 
   function handleBioChange(next: string) {
     const count = countBioWords(next);
@@ -232,16 +229,16 @@ export function ProfileEditForm() {
       );
       setPetParentForm(petParentFormFromDetailsRaw(profile.details));
 
-      const basicComplete = isBasicSectionComplete(profile, isBioWordCountValid(countBioWords(profile.bio ?? "")));
-      const trustComplete = isTrustSectionComplete(profile);
-      const friendComplete = isPetFriendSectionComplete(profile);
-      const parentComplete = hasPetParentProfileContent(profile.details ?? {});
-
+      const steps = visibleProfileEditSteps(profile.role ?? "pet_friend");
       setEditing({
-        basic: !basicComplete,
-        trust: !trustComplete,
-        petFriend: showFriendCard ? !friendComplete : false,
-        petParent: showParentCard ? !parentComplete : false,
+        basic: !isProfileEditSectionComplete("basic", profile),
+        trust: !isProfileEditSectionComplete("trust", profile),
+        petFriend: steps.includes("petFriend")
+          ? !isProfileEditSectionComplete("petFriend", profile)
+          : false,
+        petParent: steps.includes("petParent")
+          ? !isProfileEditSectionComplete("petParent", profile)
+          : false,
       });
       return;
     }
@@ -249,7 +246,20 @@ export function ProfileEditForm() {
     if (user) {
       setDisplayName(resolveProfileDisplayName(user, null));
     }
-  }, [profile, profileLoading, user, showFriendCard, showParentCard]);
+  }, [profile, profileLoading, user]);
+
+  useEffect(() => {
+    const hashStep = profileEditStepFromHash(window.location.hash);
+    if (!hashStep) return;
+    const index = visibleSteps.indexOf(hashStep);
+    if (index >= 0) setActiveStepIndex(index);
+  }, [visibleSteps]);
+
+  useEffect(() => {
+    if (activeStepIndex >= visibleSteps.length) {
+      setActiveStepIndex(Math.max(0, visibleSteps.length - 1));
+    }
+  }, [activeStepIndex, visibleSteps.length]);
 
   function handleAvatarUpdated(url: string) {
     setAvatarUrl(url);
@@ -268,13 +278,13 @@ export function ProfileEditForm() {
     notifyDashboardRefresh();
   }
 
-  function startEdit(section: SectionKey) {
+  function startEdit(section: ProfileEditSectionKey) {
     setEditing((prev) => ({ ...prev, [section]: true }));
     setErrors((prev) => ({ ...prev, [section]: null }));
     setSuccess((prev) => ({ ...prev, [section]: null }));
   }
 
-  async function afterSectionSave(section: SectionKey, saved: ProfileRow) {
+  async function afterSectionSave(section: ProfileEditSectionKey, saved: ProfileRow) {
     setProfileRow(saved);
     applyBasicFromProfile(saved, {
       setDisplayName,
@@ -454,224 +464,241 @@ export function ProfileEditForm() {
   }
 
   const anySaving = Object.values(saving).some(Boolean);
+  const basicEnabled = isStepFieldsEnabled("basic");
+  const trustEnabled = isStepFieldsEnabled("trust");
+  const petFriendEnabled = isStepFieldsEnabled("petFriend");
+  const petParentEnabled = isStepFieldsEnabled("petParent");
 
-  return (
-    <div className="space-y-6">
-      <ProfileEditSectionCard
-        id="basic-profile"
-        title={pe.basic.title}
-        description={pe.basic.description}
-        isEditing={editing.basic}
-        saving={saving.basic}
-        error={errors.basic}
-        success={success.basic}
-        onEdit={() => startEdit("basic")}
-        onSave={() => void handleSaveBasic()}
-        saveLabel={pe.saveChanges}
-        editLabel={pe.edit}
-        savingLabel={pe.saving}
-      >
-        {user ? (
-          <div className="rounded-2xl border border-black/5 bg-surface/80 p-4 sm:p-5">
-            <ProfileAvatarUpload
-              userId={user.id}
-              displayName={displayName || profile?.display_name || "User"}
-              email={user.email}
-              avatarUrl={avatarUrl}
-              onAvatarUpdated={handleAvatarUpdated}
-              disabled={!editing.basic || saving.basic}
-            />
-            <ProfileGalleryUpload
-              userId={user.id}
-              profile={profile}
-              avatarUrl={avatarUrl}
-              onProfileUpdated={handleProfileGalleryUpdated}
-              disabled={!editing.basic || saving.basic}
+  const stepMeta: Record<
+    ProfileEditSectionKey,
+    { title: string; description: string; onSave: () => void }
+  > = {
+    basic: {
+      title: pe.basic.title,
+      description: pe.basic.description,
+      onSave: () => void handleSaveBasic(),
+    },
+    trust: {
+      title: pe.trust.title,
+      description: pe.trust.description,
+      onSave: () => void handleSaveTrust(),
+    },
+    petFriend: {
+      title: pe.petFriend.title,
+      description: pe.petFriend.description,
+      onSave: () => void handleSavePetFriend(),
+    },
+    petParent: {
+      title: pe.petParent.title,
+      description: pe.petParent.description,
+      onSave: () => void handleSavePetParent(),
+    },
+  };
+
+  const wizardSteps: ProfileEditWizardStep[] = visibleSteps.map((stepId) => {
+    const meta = stepMeta[stepId];
+    const complete = sectionComplete(stepId);
+    let content: ReactNode = null;
+
+    if (stepId === "basic") {
+      content = (
+        <>
+          {user ? (
+            <div className="rounded-2xl border border-black/5 bg-surface/80 p-4 sm:p-5">
+              <ProfileAvatarUpload
+                userId={user.id}
+                displayName={displayName || profile?.display_name || "User"}
+                email={user.email}
+                avatarUrl={avatarUrl}
+                onAvatarUpdated={handleAvatarUpdated}
+                disabled={!basicEnabled || saving.basic}
+              />
+              <ProfileGalleryUpload
+                userId={user.id}
+                profile={profile}
+                avatarUrl={avatarUrl}
+                onProfileUpdated={handleProfileGalleryUpdated}
+                disabled={!basicEnabled || saving.basic}
+              />
+            </div>
+          ) : null}
+
+          {profile?.role_chosen_at ? <ProfileRoleStatusCard profile={profile} /> : null}
+
+          <div>
+            <label htmlFor="display_name" className="text-sm font-medium text-foreground">
+              {pe.basic.displayName}
+            </label>
+            <input
+              id="display_name"
+              name="display_name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+              autoComplete="name"
+              disabled={!basicEnabled || saving.basic || anySaving}
+              className="input-field mt-1"
+              placeholder={pe.basic.displayNamePlaceholder}
             />
           </div>
-        ) : null}
 
-        {profile?.role_chosen_at ? <ProfileRoleStatusCard profile={profile} /> : null}
-
-        <div>
-          <label htmlFor="display_name" className="text-sm font-medium text-foreground">
-            {pe.basic.displayName}
-          </label>
-          <input
-            id="display_name"
-            name="display_name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            required
-            autoComplete="name"
-            className="input-field mt-1"
-            placeholder={pe.basic.displayNamePlaceholder}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="location" className="text-sm font-medium text-foreground">
-            {pe.basic.location}
-          </label>
-          <GooglePlacesInput
-            id="location"
-            name="location"
-            value={locationFieldValue}
-            onChange={(text) => {
-              setLocation(text);
-              setAddress(text);
-              setLatitude(null);
-              setLongitude(null);
-              setGooglePlaceId(null);
-            }}
-            onPlaceSelect={(place) => {
-              setLocation(shortLocationLabel(place));
-              setAddress(place.formatted_address);
-              setLatitude(place.latitude);
-              setLongitude(place.longitude);
-              setGooglePlaceId(place.place_id);
-            }}
-            required
-            autoComplete="street-address"
-            className="input-field mt-1"
-            placeholder={pe.basic.locationPlaceholder}
-            datalistId={PROFILE_LOCATION_DATALIST_ID}
-          />
-          <datalist id={PROFILE_LOCATION_DATALIST_ID}>
-            {PROFILE_LOCATION_CITY_OPTIONS.map((city) => (
-              <option key={city} value={city} />
-            ))}
-          </datalist>
-          <p className="mt-1 text-xs text-muted">
-            {getGoogleMapsApiKey() ? pe.basic.locationHintGoogle : pe.basic.locationHintList}
-          </p>
-        </div>
-
-        <div>
-          <span className="text-sm font-medium text-foreground">{pe.basic.languages}</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {languageOptions.map((lang) => {
-              const selected = languages.includes(lang);
-              return (
-                <button
-                  key={lang}
-                  type="button"
-                  onClick={() => toggleLanguage(lang)}
-                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
-                    selected
-                      ? "border-brand-teal/30 bg-brand-teal text-white"
-                      : "border-black/5 bg-surface text-muted hover:bg-mint/40 hover:text-foreground"
-                  }`}
-                >
-                  {lang}
-                </button>
-              );
-            })}
+          <div>
+            <label htmlFor="location" className="text-sm font-medium text-foreground">
+              {pe.basic.location}
+            </label>
+            <GooglePlacesInput
+              id="location"
+              name="location"
+              value={locationFieldValue}
+              onChange={(text) => {
+                setLocation(text);
+                setAddress(text);
+                setLatitude(null);
+                setLongitude(null);
+                setGooglePlaceId(null);
+              }}
+              onPlaceSelect={(place) => {
+                setLocation(shortLocationLabel(place));
+                setAddress(place.formatted_address);
+                setLatitude(place.latitude);
+                setLongitude(place.longitude);
+                setGooglePlaceId(place.place_id);
+              }}
+              required
+              autoComplete="street-address"
+              disabled={!basicEnabled || saving.basic || anySaving}
+              className="input-field mt-1"
+              placeholder={pe.basic.locationPlaceholder}
+              datalistId={PROFILE_LOCATION_DATALIST_ID}
+            />
+            <datalist id={PROFILE_LOCATION_DATALIST_ID}>
+              {PROFILE_LOCATION_CITY_OPTIONS.map((city) => (
+                <option key={city} value={city} />
+              ))}
+            </datalist>
+            <p className="mt-1 text-xs text-muted">
+              {getGoogleMapsApiKey() ? pe.basic.locationHintGoogle : pe.basic.locationHintList}
+            </p>
           </div>
-        </div>
 
-        <div>
-          <label htmlFor="bio" className="text-sm font-medium text-foreground">
-            {pe.basic.bio}
-          </label>
-          <textarea
-            id="bio"
-            name="bio"
-            rows={4}
-            value={bio}
-            onChange={(e) => handleBioChange(e.target.value)}
-            required
-            className="input-field mt-1 resize-y"
-            placeholder={pe.basic.bioPlaceholder}
-            aria-describedby="bio-word-counter"
-          />
-          <BioWordCounter id="bio-word-counter" wordCount={bioWordCount} status={bioStatus} />
-        </div>
-      </ProfileEditSectionCard>
+          <div>
+            <span className="text-sm font-medium text-foreground">{pe.basic.languages}</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {languageOptions.map((lang) => {
+                const selected = languages.includes(lang);
+                return (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => toggleLanguage(lang)}
+                    disabled={!basicEnabled || saving.basic || anySaving}
+                    className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      selected
+                        ? "border-brand-teal/30 bg-brand-teal text-white"
+                        : "border-black/5 bg-surface text-muted hover:bg-mint/40 hover:text-foreground"
+                    }`}
+                  >
+                    {lang}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-      <ProfileEditSectionCard
-        id="trust-safety"
-        title={pe.trust.title}
-        description={pe.trust.description}
-        isEditing={editing.trust}
-        saving={saving.trust}
-        error={errors.trust}
-        success={success.trust}
-        onEdit={() => startEdit("trust")}
-        onSave={() => void handleSaveTrust()}
-        saveLabel={pe.saveChanges}
-        editLabel={pe.edit}
-        savingLabel={pe.saving}
-      >
+          <div>
+            <label htmlFor="bio" className="text-sm font-medium text-foreground">
+              {pe.basic.bio}
+            </label>
+            <textarea
+              id="bio"
+              name="bio"
+              rows={4}
+              value={bio}
+              onChange={(e) => handleBioChange(e.target.value)}
+              required
+              disabled={!basicEnabled || saving.basic || anySaving}
+              className="input-field mt-1 resize-y"
+              placeholder={pe.basic.bioPlaceholder}
+              aria-describedby="bio-word-counter"
+            />
+            <BioWordCounter id="bio-word-counter" wordCount={bioWordCount} status={bioStatus} />
+          </div>
+        </>
+      );
+    } else if (stepId === "trust") {
+      content = (
         <TrustSafetyFormSection
           values={trustSafety}
           emailVerified={Boolean(user?.email_confirmed_at)}
           phoneVerified={Boolean(profile?.phone_verified)}
           onChange={setTrustSafety}
-          disabled={!editing.trust || saving.trust || anySaving}
+          disabled={!trustEnabled || saving.trust || anySaving}
           embedded
         />
-      </ProfileEditSectionCard>
+      );
+    } else if (stepId === "petFriend") {
+      content = (
+        <PetFriendProfileFormSections
+          form={petFriendForm}
+          onChange={setPetFriendForm}
+          disabled={!petFriendEnabled || saving.petFriend || anySaving}
+          showCalendar={availabilityUx.showPersonalAvailabilityEditor}
+          petFriendId={user?.id ?? null}
+        />
+      );
+    } else {
+      content = (
+        <PetParentProfileFormSection
+          form={petParentForm}
+          onChange={setPetParentForm}
+          disabled={!petParentEnabled || saving.petParent || anySaving}
+          labels={{
+            ownPetsSummary: pe.petParent.ownPetsSummary,
+            ownPetsSummaryPlaceholder: pe.petParent.ownPetsSummaryPlaceholder,
+            careNeeds: pe.petParent.careNeeds,
+            careNeedsPlaceholder: pe.petParent.careNeedsPlaceholder,
+            homeLocationNotes: pe.petParent.homeLocationNotes,
+            homeLocationNotesPlaceholder: pe.petParent.homeLocationNotesPlaceholder,
+            preferredPetTypes: pe.petParent.preferredPetTypes,
+            preferredCareTypes: pe.petParent.preferredCareTypes,
+            petsLinkHint: pe.petParent.petsLinkHint,
+            petsLinkLabel: pe.petParent.petsLinkLabel,
+          }}
+        />
+      );
+    }
 
-      {showFriendCard ? (
-        <ProfileEditSectionCard
-          id="pet-friend-profile"
-          title={pe.petFriend.title}
-          description={pe.petFriend.description}
-          isEditing={editing.petFriend}
-          saving={saving.petFriend}
-          error={errors.petFriend}
-          success={success.petFriend}
-          onEdit={() => startEdit("petFriend")}
-          onSave={() => void handleSavePetFriend()}
-          saveLabel={pe.saveChanges}
-          editLabel={pe.edit}
-          savingLabel={pe.saving}
-        >
-          <PetFriendProfileFormSections
-            form={petFriendForm}
-            onChange={setPetFriendForm}
-            disabled={!editing.petFriend || saving.petFriend || anySaving}
-            showCalendar={availabilityUx.showPersonalAvailabilityEditor}
-            petFriendId={user?.id ?? null}
-          />
-        </ProfileEditSectionCard>
-      ) : null}
+    return {
+      id: stepId,
+      title: meta.title,
+      description: meta.description,
+      complete,
+      content,
+      isEditing: isStepFieldsEnabled(stepId),
+      saving: saving[stepId],
+      error: errors[stepId] ?? null,
+      success: success[stepId] ?? null,
+      onEdit: () => startEdit(stepId),
+      onSave: meta.onSave,
+    };
+  });
 
-      {showParentCard ? (
-        <ProfileEditSectionCard
-          id="pet-parent-profile"
-          title={pe.petParent.title}
-          description={pe.petParent.description}
-          isEditing={editing.petParent}
-          saving={saving.petParent}
-          error={errors.petParent}
-          success={success.petParent}
-          onEdit={() => startEdit("petParent")}
-          onSave={() => void handleSavePetParent()}
-          saveLabel={pe.saveChanges}
-          editLabel={pe.edit}
-          savingLabel={pe.saving}
-        >
-          <PetParentProfileFormSection
-            form={petParentForm}
-            onChange={setPetParentForm}
-            disabled={!editing.petParent || saving.petParent || anySaving}
-            labels={{
-              ownPetsSummary: pe.petParent.ownPetsSummary,
-              ownPetsSummaryPlaceholder: pe.petParent.ownPetsSummaryPlaceholder,
-              careNeeds: pe.petParent.careNeeds,
-              careNeedsPlaceholder: pe.petParent.careNeedsPlaceholder,
-              homeLocationNotes: pe.petParent.homeLocationNotes,
-              homeLocationNotesPlaceholder: pe.petParent.homeLocationNotesPlaceholder,
-              preferredPetTypes: pe.petParent.preferredPetTypes,
-              preferredCareTypes: pe.petParent.preferredCareTypes,
-              petsLinkHint: pe.petParent.petsLinkHint,
-              petsLinkLabel: pe.petParent.petsLinkLabel,
-            }}
-          />
-        </ProfileEditSectionCard>
-      ) : null}
-    </div>
+  return (
+    <ProfileEditWizard
+      steps={wizardSteps}
+      activeIndex={activeStepIndex}
+      onActiveIndexChange={setActiveStepIndex}
+      labels={{
+        stepProgress: pe.wizard.stepProgress,
+        statusCompleted: pe.wizard.statusCompleted,
+        statusIncomplete: pe.wizard.statusIncomplete,
+        previous: pe.wizard.previous,
+        nextStep: pe.wizard.nextStep,
+        edit: pe.edit,
+        saveChanges: pe.saveChanges,
+        saving: pe.saving,
+        tabsLabel: pe.wizard.tabsLabel,
+      }}
+    />
   );
 }

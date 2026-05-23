@@ -31,7 +31,11 @@ export function ProfileEditPageContent() {
   }
 
   return (
-    <DashboardShell title={pe.pageTitle} description={pe.pageDescription}>
+    <DashboardShell
+      title={pe.pageTitle}
+      description={pe.pageDescription}
+      breadcrumbTitle={pe.pageTitle}
+    >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           {pe.signedInAs}{" "}
