@@ -30,6 +30,8 @@ type TrustSafetyFormSectionProps = {
   phoneVerified: boolean;
   onChange: (values: TrustSafetyFormValues) => void;
   disabled?: boolean;
+  /** When true, render fields only (no collapsible wrapper). */
+  embedded?: boolean;
 };
 
 export function TrustSafetyFormSection({
@@ -38,6 +40,7 @@ export function TrustSafetyFormSection({
   phoneVerified,
   onChange,
   disabled = false,
+  embedded = false,
 }: TrustSafetyFormSectionProps) {
   const { t } = useLanguage();
   const ts = t.trustSafety;
@@ -49,10 +52,9 @@ export function TrustSafetyFormSection({
 
   const hasPhoneDigits = Boolean(values.phoneNational.trim());
 
-  return (
-    <ProfileCollapsibleSection id="trust-safety" title={ts.formSectionTitle} defaultOpen>
+  const body = (
       <div className="space-y-4 sm:col-span-2">
-        <p className="text-sm text-muted">{ts.formSectionHint}</p>
+        {!embedded ? <p className="text-sm text-muted">{ts.formSectionHint}</p> : null}
 
         <ul className="flex flex-wrap gap-2 text-xs">
           <StatusChip ok={emailVerified} label={ts.emailVerified} />
@@ -142,6 +144,13 @@ export function TrustSafetyFormSection({
           </div>
         </div>
       </div>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <ProfileCollapsibleSection id="trust-safety" title={ts.formSectionTitle} defaultOpen>
+      {body}
     </ProfileCollapsibleSection>
   );
 }

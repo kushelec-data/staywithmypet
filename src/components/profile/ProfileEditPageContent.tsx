@@ -2,8 +2,9 @@
 
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
-import { ProfileSetupForm } from "@/components/profile/ProfileSetupForm";
+import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -11,6 +12,8 @@ import { useEffect } from "react";
 export function ProfileEditPageContent() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
+  const pe = t.profileEdit;
   const { profile, loading: profileLoading } = useProfile();
 
   useEffect(() => {
@@ -28,19 +31,17 @@ export function ProfileEditPageContent() {
   }
 
   return (
-    <DashboardShell
-      title="My profile"
-      description="Tell us about yourself, your lifestyle, and why you want to spend time with pets."
-    >
+    <DashboardShell title={pe.pageTitle} description={pe.pageDescription}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
-          Signed in as <span className="font-medium text-foreground">{user.email}</span>
+          {pe.signedInAs}{" "}
+          <span className="font-medium text-foreground">{user.email}</span>
         </p>
         {profile?.is_public ? (
           <CopyPublicProfileLinkButton profileId={profile.id} size="sm" />
         ) : null}
       </div>
-      <ProfileSetupForm submitLabel="Save changes" hideRolePicker />
+      <ProfileEditForm />
     </DashboardShell>
   );
 }
