@@ -7,7 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { resolveInitialMonthCursor, type MonthCursor } from "@/lib/booking-calendar";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 type PublicCompactAvailabilityCardProps = {
   petId?: string;
@@ -16,6 +16,11 @@ type PublicCompactAvailabilityCardProps = {
   availabilityNotes?: string | null;
   visibility?: "full" | "public";
 };
+
+function shiftMonthCursor(cursor: MonthCursor, offset: number): MonthCursor {
+  const next = new Date(cursor.year, cursor.month + offset, 1);
+  return { year: next.getFullYear(), month: next.getMonth() };
+}
 
 export function PublicCompactAvailabilityCard({
   petId,
@@ -32,6 +37,10 @@ export function PublicCompactAvailabilityCard({
     resolveInitialMonthCursor(available, [], undefined),
   );
 
+  const handleMonthCursorChange = useCallback((next: MonthCursor) => {
+    setMonthCursor(shiftMonthCursor(next, 0));
+  }, []);
+
   return (
     <section className={PUBLIC_CARD}>
       <h2 className={PUBLIC_SECTION_TITLE}>{t.searchFilters.availability}</h2>
@@ -47,7 +56,7 @@ export function PublicCompactAvailabilityCard({
             compact
             variant="pastel"
             monthCursor={monthCursor}
-            onMonthCursorChange={setMonthCursor}
+            onMonthCursorChange={handleMonthCursorChange}
           />
         ) : (
           <p className="rounded-xl border border-dashed border-black/10 bg-cream/40 px-3 py-3 text-sm text-muted">
@@ -66,18 +75,20 @@ export function PublicCompactAvailabilityCard({
         {t.bookingCalendar.viewFullCalendar}
       </Button>
 
-      <PetAvailabilityModal
-        open={fullCalendarOpen}
-        name={t.searchFilters.availability}
-        petId={petId}
-        petFriendId={petFriendId}
-        dates={available}
-        onClose={() => setFullCalendarOpen(false)}
-        title={t.bookingCalendar.availabilityCalendarTitle}
-        variant="pastel"
-        monthCursor={monthCursor}
-        onMonthCursorChange={setMonthCursor}
-      />
+      {fullCalendarOpen ? (
+        <PetAvailabilityModal
+          open
+          name={t.searchFilters.availability}
+          petId={petId}
+          petFriendId={petFriendId}
+          dates={available}
+          onClose={() => setFullCalendarOpen(false)}
+          title={t.bookingCalendar.availabilityCalendarTitle}
+          variant="pastel"
+          monthCursor={monthCursor}
+          onMonthCursorChange={handleMonthCursorChange}
+        />
+      ) : null}
     </section>
   );
 }
