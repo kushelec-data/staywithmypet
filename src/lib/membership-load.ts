@@ -2,14 +2,27 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import {
   emptyMembershipsByRole,
   indexMemberships,
+  inferPlanIdFromLegacyLabel,
+  type MembershipRole,
   type UserMembership,
   type UserMembershipsByRole,
 } from "@/lib/membership";
+import type { ProfileRole } from "@/lib/profile-setup";
 import {
   isMissingColumnError,
   isMissingRelationError,
+  isPostgrestError,
   logSupabaseError,
 } from "@/lib/supabase-errors";
+
+/** Profile fields used for legacy membership_status fallback. */
+export type MembershipLegacySource = {
+  id: string;
+  role?: ProfileRole;
+  membership_status?: string | null;
+  details?: unknown;
+  created_at?: string | null;
+};
 
 const MEMBERSHIP_CORE_SELECT =
   "id, user_id, role, plan_id, status, start_date, end_date, auto_renew";
@@ -101,4 +114,107 @@ export async function fetchUserMemberships(
 export function formatMembershipLoadError(error: PostgrestError | Error): string {
   if (!("code" in error)) return error.message;
   return [error.message, error.details, error.hint, error.code].filter(Boolean).join(" — ");
+}
+
+function resolveLegacyMembershipLabel(source: MembershipLegacySource): string {
+  const fromColumn = source.membership_status?.trim();
+  if (fromColumn) return fromColumn;
+
+  const details = source.details;
+  if (details && typeof details === "object" && !Array.isArray(details)) {
+    const membership = (details as Record<string, unknown>).membership;
+    if (typeof membership === "string" && membership.trim()) return membership.trim();
+  }
+
+  return "";
+}
+
+function legacyMembershipForRole(
+  source: MembershipLegacySource,
+  role: MembershipRole,
+  label: string,
+): UserMembership | null {
+  const planId = inferPlanIdFromLegacyLabel(role, label);
+  if (!planId) return null;
+
+  return {
+    id: `legacy-${role}`,
+    user_id: source.id,
+    role,
+    plan_id: planId,
+    plan_name: label,
+    status: "active",
+    start_date: source.created_at ?? new Date().toISOString(),
+    end_date: null,
+    auto_renew: true,
+    stripe_customer_id: null,
+    stripe_subscription_id: null,
+    stripe_price_id: null,
+    stripe_checkout_session_id: null,
+  };
+}
+
+function legacyMembershipsFromProfileSource(
+  source: MembershipLegacySource,
+): UserMembershipsByRole {
+  const label = resolveLegacyMembershipLabel(source);
+  const result = emptyMembershipsByRole();
+  if (!label) return result;
+
+  const profileRole = source.role ?? "pet_friend";
+  if (profileRole === "both") {
+    for (const role of ["pet_parent", "pet_friend"] as const) {
+      const row = legacyMembershipForRole(source, role, label);
+      if (row) result[role] = row;
+    }
+    return result;
+  }
+
+  const role: MembershipRole = profileRole === "pet_friend" ? "pet_friend" : "pet_parent";
+  const row = legacyMembershipForRole(source, role, label);
+  if (row) result[role] = row;
+  return result;
+}
+
+/**
+ * Load memberships from user_memberships, falling back to profiles.membership_status
+ * (same rules as ProfileContext) so gating matches the UI.
+ */
+export async function resolveUserMemberships(
+  supabase: SupabaseClient,
+  userId: string,
+  legacySource?: MembershipLegacySource | null,
+): Promise<UserMembershipsByRole> {
+  try {
+    const memberships = await fetchUserMemberships(supabase, userId);
+    if (memberships.pet_parent || memberships.pet_friend) {
+      return memberships;
+    }
+  } catch (err) {
+    if (isPostgrestError(err)) {
+      logSupabaseError("resolveUserMemberships", err);
+    } else {
+      console.error("[membership] resolveUserMemberships", err);
+    }
+  }
+
+  if (legacySource) {
+    return legacyMembershipsFromProfileSource(legacySource);
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, role, membership_status, details, created_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    if (isPostgrestError(error)) {
+      logSupabaseError("resolveUserMemberships.profile", error);
+    }
+    return emptyMembershipsByRole();
+  }
+
+  if (!data) return emptyMembershipsByRole();
+  return legacyMembershipsFromProfileSource(data as MembershipLegacySource);
 }

@@ -6,7 +6,7 @@ import {
   type MembershipRole,
   type UserMembershipsByRole,
 } from "@/lib/membership";
-import { fetchUserMemberships } from "@/lib/membership-load";
+import { resolveUserMemberships } from "@/lib/membership-load";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 
 export const MEMBERSHIP_REQUIRED_MESSAGE =
@@ -20,7 +20,7 @@ export async function loadMembershipsForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserMembershipsByRole> {
-  return fetchUserMemberships(supabase, userId);
+  return resolveUserMemberships(supabase, userId);
 }
 
 /**

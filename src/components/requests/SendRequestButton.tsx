@@ -281,7 +281,14 @@ export function SendRequestButton({
       setOpen(false);
       setSuccess(true);
     } catch (err) {
-      logRequestSubmitFailure(err);
+      logRequestSubmitFailure(err, {
+        flow: target.kind,
+        petId,
+        petParentId,
+        petFriendId,
+        senderId,
+        receiverId,
+      });
       if (isMembershipRequiredError(err)) {
         openUpgradeToast();
         setError(null);

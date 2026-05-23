@@ -1,12 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import {
-  DEMO_MEMBERSHIP_LABEL,
-  emptyMembershipsByRole,
-  inferPlanIdFromLegacyLabel,
-  type MembershipRole,
-  type UserMembership,
-} from "@/lib/membership";
-import { fetchUserMemberships } from "@/lib/membership-load";
+import { DEMO_MEMBERSHIP_LABEL, emptyMembershipsByRole } from "@/lib/membership";
+import { resolveUserMemberships, type MembershipLegacySource } from "@/lib/membership-load";
 import { parseProfileDetails } from "@/lib/profile-details";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
@@ -126,70 +120,17 @@ export function mapProfileRow(data: ProfileDbRow): ProfileRow {
   };
 }
 
-function legacyMembershipRoleForProfile(role: ProfileRole): MembershipRole {
-  return role === "pet_friend" ? "pet_friend" : "pet_parent";
-}
-
-function legacyMembershipFromProfile(data: ProfileDbRow): UserMembership | null {
-  const label = resolveMembershipStatus(data);
-  const planId = inferPlanIdFromLegacyLabel(legacyMembershipRoleForProfile(data.role ?? "pet_friend"), label);
-  if (!planId) return null;
-
-  const membershipRole = legacyMembershipRoleForProfile(data.role ?? "pet_friend");
-  return {
-    id: `legacy-${membershipRole}`,
-    user_id: data.id,
-    role: membershipRole,
-    plan_id: planId,
-    plan_name: label,
-    status: "active",
-    start_date: data.created_at ?? new Date().toISOString(),
-    end_date: null,
-    auto_renew: true,
-    stripe_customer_id: null,
-    stripe_subscription_id: null,
-    stripe_price_id: null,
-    stripe_checkout_session_id: null,
-  };
-}
-
 export async function attachMemberships(
   supabase: SupabaseClient,
   profile: ProfileRow,
   source: ProfileDbRow,
 ): Promise<ProfileRow> {
-  try {
-    const memberships = await fetchUserMemberships(supabase, profile.id);
-    const hasAny = memberships.pet_parent || memberships.pet_friend;
-    if (hasAny) {
-      return applyMembershipsToProfile(profile, memberships);
-    }
-  } catch (err) {
-    console.error("[membership] load failed", err instanceof Error ? err.message : err);
-  }
-
-  const legacy = legacyMembershipFromProfile(source);
-
-  if (!legacy) {
-    return applyMembershipsToProfile(profile, emptyMembershipsByRole());
-  }
-
-  const memberships = emptyMembershipsByRole();
-  memberships[legacy.role] = legacy;
+  const memberships = await resolveUserMemberships(
+    supabase,
+    profile.id,
+    source as MembershipLegacySource,
+  );
   return applyMembershipsToProfile(profile, memberships);
-}
-
-function resolveMembershipStatus(data: ProfileDbRow): string {
-  const fromColumn = data.membership_status?.trim();
-  if (fromColumn) return fromColumn;
-
-  const details = data.details;
-  if (details && typeof details === "object" && !Array.isArray(details)) {
-    const membership = (details as Record<string, unknown>).membership;
-    if (typeof membership === "string" && membership.trim()) return membership.trim();
-  }
-
-  return "Demo";
 }
 
 function isMissingColumnError(error: PostgrestError): boolean {

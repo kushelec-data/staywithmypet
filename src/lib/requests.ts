@@ -449,7 +449,9 @@ export async function createCareRequest(
   const careType = input.careType.trim();
   const message = input.message.trim() || null;
 
+  const requestId = crypto.randomUUID();
   const payload: RequestInsert = {
+    id: requestId,
     pet_id: input.petId,
     pet_parent_id: input.petParentId,
     pet_friend_id: input.petFriendId,
@@ -463,20 +465,23 @@ export async function createCareRequest(
     status: "pending",
   };
 
-  const { data, error } = await supabase.from("requests").insert(payload).select("id").single();
+  const { error } = await supabase.from("requests").insert(payload);
   if (error) {
     logSupabaseError("insert", error);
+    console.error("[request] insert payload", payload);
     throw error;
   }
 
-  if (!data?.id) {
-    throw new Error("Request could not be created.");
-  }
-
-  return { requestId: data.id as string };
+  return { requestId };
 }
 
-export function logRequestSubmitFailure(error: unknown): void {
+export function logRequestSubmitFailure(
+  error: unknown,
+  context?: Record<string, unknown>,
+): void {
+  if (context && Object.keys(context).length > 0) {
+    console.error("[request] submit context", context);
+  }
   if (isPostgrestError(error)) {
     logSupabaseError("submit", error);
     return;
