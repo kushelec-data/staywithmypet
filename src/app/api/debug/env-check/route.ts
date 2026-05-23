@@ -1,3 +1,4 @@
+import { hasServerEnv } from "@/lib/server-env";
 import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import { NextResponse } from "next/server";
 
@@ -18,7 +19,7 @@ const ENV_VARS = [
 ] as const;
 
 function isSet(name: (typeof ENV_VARS)[number]): boolean {
-  return Boolean(process.env[name]?.trim());
+  return hasServerEnv(name);
 }
 
 export async function GET() {

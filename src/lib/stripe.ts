@@ -1,11 +1,12 @@
 import "server-only";
 
+import { hasServerEnv, readServerEnv } from "@/lib/server-env";
 import Stripe from "stripe";
 
 let stripeClient: Stripe | null = null;
 
 export function getStripe(): Stripe {
-  const secret = process.env.STRIPE_SECRET_KEY?.trim();
+  const secret = readServerEnv("STRIPE_SECRET_KEY");
   if (!secret) {
     throw new Error("STRIPE_SECRET_KEY is not configured.");
   }
@@ -16,14 +17,11 @@ export function getStripe(): Stripe {
 }
 
 export function getSiteUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000";
+  const url = readServerEnv("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000";
   return url.replace(/\/$/, "");
 }
 
 /** Base checkout env (secret + site URL). Plan price ids checked per plan in stripe-plans.ts. */
 export function isStripeConfigured(): boolean {
-  return (
-    Boolean(process.env.STRIPE_SECRET_KEY?.trim()) &&
-    Boolean(process.env.NEXT_PUBLIC_SITE_URL?.trim())
-  );
+  return hasServerEnv("STRIPE_SECRET_KEY") && hasServerEnv("NEXT_PUBLIC_SITE_URL");
 }

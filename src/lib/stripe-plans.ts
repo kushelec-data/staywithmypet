@@ -1,5 +1,6 @@
 import "server-only";
 
+import { hasServerEnv, readServerEnv } from "@/lib/server-env";
 import type Stripe from "stripe";
 import {
   MEMBERSHIP_PLAN_CATALOG,
@@ -80,8 +81,7 @@ export function normalizeCatalogPlanId(planId: string): CheckoutPlanId | null {
 }
 
 function readEnvPrice(envName: string): string | null {
-  const value = process.env[envName]?.trim();
-  return value || null;
+  return readServerEnv(envName) ?? null;
 }
 
 export function stripePriceEnvVarForRole(role: MembershipRole): string {
@@ -144,8 +144,8 @@ export function stripeCheckoutPriceError(planId: string, priceId: string | null)
 export function membershipRoleFromStripePriceId(priceId: string): MembershipRole | null {
   const trimmed = priceId.trim();
   if (!trimmed) return null;
-  if (process.env.STRIPE_PARENT_PRICE_ID?.trim() === trimmed) return "pet_parent";
-  if (process.env.STRIPE_FRIEND_PRICE_ID?.trim() === trimmed) return "pet_friend";
+  if (readServerEnv("STRIPE_PARENT_PRICE_ID") === trimmed) return "pet_parent";
+  if (readServerEnv("STRIPE_FRIEND_PRICE_ID") === trimmed) return "pet_friend";
   const legacyPlanId = planIdFromLegacyStripePriceId(trimmed);
   return legacyPlanId ? membershipRoleFromPlanId(legacyPlanId) : null;
 }
@@ -154,7 +154,7 @@ export function membershipRoleFromStripePriceId(priceId: string): MembershipRole
 function planIdFromLegacyStripePriceId(priceId: string): string | null {
   for (const planId of KNOWN_CHECKOUT_PLAN_IDS) {
     const env = STRIPE_PRICE_ENV_BY_PLAN[planId];
-    if (process.env[env]?.trim() === priceId) return planId;
+    if (readServerEnv(env) === priceId) return planId;
   }
   return null;
 }
@@ -172,10 +172,10 @@ export function membershipRoleFromPlanId(planId: string): MembershipRole | null 
 
 /** First missing env var required for checkout (secret, site URL, plan price). */
 export function missingStripeCheckoutEnv(planId: string): string | null {
-  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+  if (!hasServerEnv("STRIPE_SECRET_KEY")) {
     return "STRIPE_SECRET_KEY";
   }
-  if (!process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
+  if (!hasServerEnv("NEXT_PUBLIC_SITE_URL")) {
     return "NEXT_PUBLIC_SITE_URL";
   }
   if (!resolveStripePriceId(planId)) {

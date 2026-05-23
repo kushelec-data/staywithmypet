@@ -10,6 +10,7 @@ import type { MembershipRole } from "@/lib/membership";
 import { isMembershipWebhookWritable } from "@/lib/stripe-webhook-config";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function MembershipPage() {
+  await connection();
   logStripeEnvPresence("membership-page");
 
   const stripeCheckoutByRole = {

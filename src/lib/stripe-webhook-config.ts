@@ -1,8 +1,10 @@
 import "server-only";
 
+import { hasServerEnv } from "@/lib/server-env";
+
 /** True when Stripe can verify webhook signatures. */
 export function isStripeWebhookConfigured(): boolean {
-  return Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim());
+  return hasServerEnv("STRIPE_WEBHOOK_SECRET");
 }
 
 /** True when checkout webhooks can write user_memberships (service role bypasses RLS). */
@@ -25,9 +27,9 @@ export function getMembershipWebhookHealth(): {
   membershipConfirmWritable: boolean;
 } {
   const webhookSecretConfigured = isStripeWebhookConfigured();
-  const stripeSecretConfigured = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
-  const serviceRoleConfigured = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
-  const supabaseUrlConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim());
+  const stripeSecretConfigured = hasServerEnv("STRIPE_SECRET_KEY");
+  const serviceRoleConfigured = hasServerEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrlConfigured = hasServerEnv("NEXT_PUBLIC_SUPABASE_URL");
   const canWriteDb = serviceRoleConfigured && supabaseUrlConfigured;
   return {
     webhookSecretConfigured,
