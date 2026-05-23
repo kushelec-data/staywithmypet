@@ -3,7 +3,6 @@
 import { PageCta } from "@/components/layout/PageCta";
 import { PageHero } from "@/components/layout/PageHero";
 import { PageMain } from "@/components/layout/PageMain";
-import { SearchModeTabs } from "@/components/search/SearchModeTabs";
 import { SearchPageContent } from "@/components/search/SearchPageContent";
 import { useLanguage } from "@/context/LanguageContext";
 import { Suspense } from "react";
@@ -18,9 +17,7 @@ export function FindCarePageClient() {
         badge={t.roles.petParent.label}
         title={t.findCare.title}
         description={t.findCare.subtitle}
-      >
-        <SearchModeTabs />
-      </PageHero>
+      />
 
       <PageMain>
         <Suspense fallback={null}>

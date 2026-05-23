@@ -3,7 +3,6 @@
 import { PageCta } from "@/components/layout/PageCta";
 import { PageHero } from "@/components/layout/PageHero";
 import { PageMain } from "@/components/layout/PageMain";
-import { SearchModeTabs } from "@/components/search/SearchModeTabs";
 import { SearchPageContent } from "@/components/search/SearchPageContent";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -17,9 +16,7 @@ export function FindPetsPageClient() {
         badge={t.roles.petFriend.label}
         title={t.findPets.title}
         description={t.findPets.subtitle}
-      >
-        <SearchModeTabs />
-      </PageHero>
+      />
 
       <PageMain>
         <SearchPageContent mode="pets" />
