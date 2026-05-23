@@ -319,7 +319,7 @@ export function BookingCalendar({
                     key={iso}
                     title={resolved.title}
                     aria-label={resolved.ariaLabel}
-                    className={`relative flex aspect-square items-center justify-center transition-all ${cellRound} ${resolved.cellClassName}`}
+                    className={`relative flex aspect-square items-center justify-center transition-colors ${cellRound} ${resolved.cellClassName}`}
                   >
                     {cellInner}
                   </div>
@@ -350,7 +350,7 @@ export function BookingCalendar({
                       setActiveBooking(primaryBooking);
                     }
                   }}
-                  className={`relative flex aspect-square items-center justify-center transition-all ${cellRound} ${resolved.cellClassName}`}
+                  className={`relative flex aspect-square items-center justify-center transition-colors ${cellRound} ${resolved.cellClassName}`}
                 >
                   {cellInner}
                 </button>

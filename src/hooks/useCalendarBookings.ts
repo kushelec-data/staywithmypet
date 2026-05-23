@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BOOKING_BLOCKING_STATUSES,
   applyViewRoleToDayMap,
@@ -50,13 +50,16 @@ export function useCalendarBookings({
   const [publicBookedDates, setPublicBookedDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadedMonthKeysRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
+    const monthKey = `${year}-${month}`;
 
     async function load(client: SupabaseClient) {
-      setLoading(true);
+      const showSpinner = !loadedMonthKeysRef.current.has(monthKey);
+      if (showSpinner) setLoading(true);
       setError(null);
       try {
         if (visibility === "public" && petId) {
@@ -93,7 +96,10 @@ export function useCalendarBookings({
           setError(err instanceof Error ? err.message : "Could not load bookings");
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          loadedMonthKeysRef.current.add(monthKey);
+          setLoading(false);
+        }
       }
     }
 

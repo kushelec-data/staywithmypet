@@ -16,7 +16,7 @@ import {
 } from "@/lib/membership";
 import type { MonthCursor } from "@/lib/booking-calendar";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type PetAvailabilityModalProps = {
   open: boolean;
@@ -57,6 +57,7 @@ export function PetAvailabilityModal({
   const { profile } = useProfile();
   const [requestOpen, setRequestOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const upgradeToastOpenRef = useRef(false);
 
   const heading =
     title ??
@@ -83,12 +84,27 @@ export function PetAvailabilityModal({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  const closeUpgradeToast = useCallback(() => {
+    upgradeToastOpenRef.current = false;
+    setUpgradeOpen(false);
+  }, []);
+
+  const openUpgradeToast = useCallback(() => {
+    if (upgradeToastOpenRef.current) return;
+    upgradeToastOpenRef.current = true;
+    setUpgradeOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!upgradeOpen) upgradeToastOpenRef.current = false;
+  }, [upgradeOpen]);
+
   useEffect(() => {
     if (!open) {
       setRequestOpen(false);
-      setUpgradeOpen(false);
+      closeUpgradeToast();
     }
-  }, [open]);
+  }, [open, closeUpgradeToast]);
 
   function handleSendCareRequest() {
     if (authLoading || !careRequestTarget) return;
@@ -97,7 +113,7 @@ export function PetAvailabilityModal({
       return;
     }
     if (!hasParentMembership) {
-      setUpgradeOpen(true);
+      openUpgradeToast();
       return;
     }
     onClose();
@@ -213,7 +229,7 @@ export function PetAvailabilityModal({
             name={careRequestTarget.label}
             role="pet_parent"
             onDismissModal={onClose}
-            onClose={() => setUpgradeOpen(false)}
+            onClose={closeUpgradeToast}
           />
         </>
       ) : null}

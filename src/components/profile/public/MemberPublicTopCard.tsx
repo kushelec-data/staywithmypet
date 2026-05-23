@@ -20,12 +20,14 @@ type MemberPublicTopCardProps = {
   profile: PublicProfileView;
   reviewsAvg: number;
   reviewsCount: number;
+  initialSelectedDates?: string[];
 };
 
 export function MemberPublicTopCard({
   profile,
   reviewsAvg,
   reviewsCount,
+  initialSelectedDates = [],
 }: MemberPublicTopCardProps) {
   const { user } = useAuth();
   const isSelf = user?.id === profile.id;
@@ -104,6 +106,7 @@ export function MemberPublicTopCard({
               }}
               size="md"
               className="w-full justify-center"
+              initialSelectedDates={initialSelectedDates}
             />
           ) : (
             <Button href="/find-care" size="sm" className="w-full justify-center">

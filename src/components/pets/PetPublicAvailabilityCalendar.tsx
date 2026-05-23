@@ -19,6 +19,9 @@ type PetPublicAvailabilityCalendarProps = {
   variant?: "default" | "pastel";
   monthCursor?: MonthCursor;
   onMonthCursorChange?: (cursor: MonthCursor) => void;
+  /** When set, dates toggle select/unselect only (no modal, navigation, or toast). */
+  selectedDates?: string[];
+  onSelectedDatesChange?: (dates: string[]) => void;
 };
 
 export function PetPublicAvailabilityCalendar({
@@ -32,8 +35,11 @@ export function PetPublicAvailabilityCalendar({
   variant = "default",
   monthCursor,
   onMonthCursorChange,
+  selectedDates = [],
+  onSelectedDatesChange,
 }: PetPublicAvailabilityCalendarProps) {
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
+  const selectable = Boolean(onSelectedDatesChange);
 
   if (!available.length && visibility === "public" && !petId && !petFriendId) {
     return (
@@ -64,17 +70,19 @@ export function PetPublicAvailabilityCalendar({
         </p>
       ) : null}
       <BookingCalendar
-        mode="availability-readonly"
+        mode={selectable ? "request-select" : "availability-readonly"}
         visibility={visibility}
         viewRole={
           viewRole ??
           (visibility === "full" ? (petId ? "pet-parent" : "pet-friend") : "public")
         }
         availableDates={available}
+        selectedDates={selectable ? selectedDates : []}
+        onChange={onSelectedDatesChange}
         petId={petId}
         petFriendId={petFriendId}
         showLegend
-        showSelectedChips={false}
+        showSelectedChips={selectable}
         compact={compact}
         variant={variant}
         monthCursor={monthCursor}

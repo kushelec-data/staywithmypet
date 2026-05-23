@@ -15,6 +15,9 @@ type PublicCompactAvailabilityCardProps = {
   availableDates: string[];
   availabilityNotes?: string | null;
   visibility?: "full" | "public";
+  /** Optional date pre-selection for request flow (member profile). */
+  selectedDates?: string[];
+  onSelectedDatesChange?: (dates: string[]) => void;
 };
 
 function shiftMonthCursor(cursor: MonthCursor, offset: number): MonthCursor {
@@ -28,6 +31,8 @@ export function PublicCompactAvailabilityCard({
   availableDates,
   availabilityNotes,
   visibility = "public",
+  selectedDates,
+  onSelectedDatesChange,
 }: PublicCompactAvailabilityCardProps) {
   const { t } = useLanguage();
   const [fullCalendarOpen, setFullCalendarOpen] = useState(false);
@@ -57,6 +62,8 @@ export function PublicCompactAvailabilityCard({
             variant="pastel"
             monthCursor={monthCursor}
             onMonthCursorChange={handleMonthCursorChange}
+            selectedDates={selectedDates}
+            onSelectedDatesChange={onSelectedDatesChange}
           />
         ) : (
           <p className="rounded-xl border border-dashed border-black/10 bg-cream/40 px-3 py-3 text-sm text-muted">
@@ -75,20 +82,18 @@ export function PublicCompactAvailabilityCard({
         {t.bookingCalendar.viewFullCalendar}
       </Button>
 
-      {fullCalendarOpen ? (
-        <PetAvailabilityModal
-          open
-          name={t.searchFilters.availability}
-          petId={petId}
-          petFriendId={petFriendId}
-          dates={available}
-          onClose={() => setFullCalendarOpen(false)}
-          title={t.bookingCalendar.availabilityCalendarTitle}
-          variant="pastel"
-          monthCursor={monthCursor}
-          onMonthCursorChange={handleMonthCursorChange}
-        />
-      ) : null}
+      <PetAvailabilityModal
+        open={fullCalendarOpen}
+        name={t.searchFilters.availability}
+        petId={petId}
+        petFriendId={petFriendId}
+        dates={available}
+        onClose={() => setFullCalendarOpen(false)}
+        title={t.bookingCalendar.availabilityCalendarTitle}
+        variant="pastel"
+        monthCursor={monthCursor}
+        onMonthCursorChange={handleMonthCursorChange}
+      />
     </section>
   );
 }

@@ -22,7 +22,7 @@ import {
 import { formatRequestSubmitErrorForUi } from "@/lib/supabase-errors";
 import { createClient } from "@/lib/supabase";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { membershipUpsellVariantForRequest } from "@/lib/membership-upsell";
 import { useProfile } from "@/context/ProfileContext";
@@ -61,6 +61,8 @@ type SendRequestButtonProps = {
   showTrigger?: boolean;
   requestModalOpen?: boolean;
   onRequestModalOpenChange?: (open: boolean) => void;
+  /** Pre-selected dates from a public profile availability calendar. */
+  initialSelectedDates?: string[];
 };
 
 export function SendRequestButton({
@@ -71,6 +73,7 @@ export function SendRequestButton({
   showTrigger = true,
   requestModalOpen,
   onRequestModalOpenChange,
+  initialSelectedDates = [],
 }: SendRequestButtonProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -83,6 +86,7 @@ export function SendRequestButton({
   const open = requestModalOpen ?? openInternal;
   const setOpen = onRequestModalOpenChange ?? setOpenInternal;
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const upgradeToastOpenRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -120,6 +124,21 @@ export function SendRequestButton({
 
   const isControlledModal = requestModalOpen !== undefined;
 
+  const closeUpgradeToast = useCallback(() => {
+    upgradeToastOpenRef.current = false;
+    setUpgradeOpen(false);
+  }, []);
+
+  const openUpgradeToast = useCallback(() => {
+    if (upgradeToastOpenRef.current) return;
+    upgradeToastOpenRef.current = true;
+    setUpgradeOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!upgradeOpen) upgradeToastOpenRef.current = false;
+  }, [upgradeOpen]);
+
   useEffect(() => {
     if (!isControlledModal || !requestModalOpen || !user || blocked || authLoading) return;
     if (target.kind === "profile" && pets.length === 0 && !noPets && !petsLoading) {
@@ -150,7 +169,7 @@ export function SendRequestButton({
     setNoPets(false);
 
     if (needsUpgrade) {
-      setUpgradeOpen(true);
+      openUpgradeToast();
       return;
     }
 
@@ -240,7 +259,7 @@ export function SendRequestButton({
     }
 
     if (needsUpgrade) {
-      setUpgradeOpen(true);
+      openUpgradeToast();
       return;
     }
 
@@ -264,7 +283,7 @@ export function SendRequestButton({
     } catch (err) {
       logRequestSubmitFailure(err);
       if (isMembershipRequiredError(err)) {
-        setUpgradeOpen(true);
+        openUpgradeToast();
         setError(null);
       } else {
         const msg = formatRequestSubmitErrorForUi(err);
@@ -332,6 +351,7 @@ export function SendRequestButton({
         pets={pets}
         requestPetId={target.kind === "pet" ? target.petId : null}
         availableDates={bookableDates}
+        initialSelectedDates={initialSelectedDates}
         onClose={() => setOpen(false)}
         onSubmit={handleSubmit}
       />
@@ -341,7 +361,7 @@ export function SendRequestButton({
         variant={membershipUpsellVariantForRequest(target)}
         name={target.label}
         role={senderMode === "pet_friend" ? "pet_friend" : "pet_parent"}
-        onClose={() => setUpgradeOpen(false)}
+        onClose={closeUpgradeToast}
       />
     </>
   );

@@ -9,7 +9,7 @@ import {
   type MembershipUpsellVariant,
 } from "@/lib/membership-upsell";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const AUTO_DISMISS_MS = 15_000;
@@ -36,6 +36,8 @@ export function MembershipUpsellToast({
   const { t } = useLanguage();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     setMounted(true);
@@ -43,24 +45,24 @@ export function MembershipUpsellToast({
 
   useEffect(() => {
     if (!open) return;
-    const timer = window.setTimeout(() => onClose(), AUTO_DISMISS_MS);
+    const timer = window.setTimeout(() => onCloseRef.current(), AUTO_DISMISS_MS);
     return () => window.clearTimeout(timer);
-  }, [open, onClose]);
-
-  if (!mounted || !open) return null;
+  }, [open]);
 
   const { title, body } = membershipUpsellCopy(variant, name, t.membershipUpsell);
   const upgradeHref = membershipUpsellHref(role);
 
-  function handleUnlock() {
+  const handleUnlock = useCallback(() => {
     onDismissModal?.();
-    onClose();
+    onCloseRef.current();
     router.push(upgradeHref);
-  }
+  }, [onDismissModal, router, upgradeHref]);
 
-  function handleMaybeLater() {
-    onClose();
-  }
+  const handleMaybeLater = useCallback(() => {
+    onCloseRef.current();
+  }, []);
+
+  if (!mounted || !open) return null;
 
   return createPortal(
     <div
@@ -70,7 +72,6 @@ export function MembershipUpsellToast({
       aria-label={title}
     >
       <div className="membership-upsell-toast w-full max-w-sm rounded-2xl border border-brand-teal/30 bg-[#fffaf2]/95 p-4 shadow-[0_14px_44px_rgba(15,60,55,0.14)] backdrop-blur-md dark:border-brand-teal/25 dark:bg-surface/95">
-        <p className="font-mono text-[9px] leading-none text-muted/50">TOAST_V2_CLICKABLE</p>
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <p className="font-heading text-sm font-bold leading-snug text-foreground">{title}</p>

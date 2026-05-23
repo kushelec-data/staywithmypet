@@ -30,6 +30,7 @@ type RequestModalProps = {
   /** Pet being requested (fixed for pet-target flows). */
   requestPetId?: string | null;
   availableDates: string[];
+  initialSelectedDates?: string[];
   onClose: () => void;
   onSubmit: (values: RequestFormValues) => void;
 };
@@ -44,6 +45,7 @@ export function RequestModal({
   pets,
   requestPetId,
   availableDates,
+  initialSelectedDates = [],
   onClose,
   onSubmit,
 }: RequestModalProps) {
@@ -55,6 +57,7 @@ export function RequestModal({
   const [localError, setLocalError] = useState<string | null>(null);
   const calendarPetId = requestPetId ?? (showPetSelector ? selectedPetId : null);
   const charCount = countMessageCharacters(message);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -64,13 +67,17 @@ export function RequestModal({
   }, [open]);
 
   useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      setSelectedDates(initialSelectedDates);
+    }
+    wasOpenRef.current = open;
     if (!open) {
       setMessage("");
       setSelectedDates([]);
       setLocalError(null);
       setSelectedPetId(requestPetId ?? pets[0]?.id ?? "");
     }
-  }, [open, requestPetId, pets]);
+  }, [open, requestPetId, pets, initialSelectedDates]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
