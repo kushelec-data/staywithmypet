@@ -5,10 +5,33 @@ import {
   type UserMembership,
   type UserMembershipsByRole,
 } from "@/lib/membership";
-import { isMissingRelationError } from "@/lib/supabase-errors";
+import {
+  isMissingColumnError,
+  isMissingRelationError,
+  logSupabaseError,
+} from "@/lib/supabase-errors";
 
-const MEMBERSHIP_SELECT =
-  "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_checkout_session_id";
+const MEMBERSHIP_CORE_SELECT =
+  "id, user_id, role, plan_id, status, start_date, end_date, auto_renew";
+
+/** Optional columns from 20260603100000 + 20260605120000 — omitted when migrations are behind. */
+const MEMBERSHIP_OPTIONAL_SELECT = [
+  "plan_name",
+  "stripe_customer_id",
+  "stripe_subscription_id",
+  "stripe_price_id",
+  "stripe_checkout_session_id",
+] as const;
+
+const MEMBERSHIP_SELECT = [MEMBERSHIP_CORE_SELECT, ...MEMBERSHIP_OPTIONAL_SELECT].join(", ");
+
+function selectWithoutColumns(removed: readonly string[]): string {
+  let select = MEMBERSHIP_SELECT;
+  for (const col of removed) {
+    select = select.replace(`, ${col}`, "");
+  }
+  return select;
+}
 
 function mapMembershipRow(data: Record<string, unknown>): UserMembership {
   return {
@@ -37,21 +60,35 @@ export async function fetchUserMemberships(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserMembershipsByRole> {
+  const stripped: string[] = [];
   let select = MEMBERSHIP_SELECT;
   let { data, error } = await supabase
     .from("user_memberships")
     .select(select)
     .eq("user_id", userId);
 
-  if (error && /stripe_checkout_session_id/i.test(error.message)) {
-    select = select.replace(", stripe_checkout_session_id", "");
-    ({ data, error } = await supabase.from("user_memberships").select(select).eq("user_id", userId));
+  while (error && isMissingColumnError(error)) {
+    const missing =
+      MEMBERSHIP_OPTIONAL_SELECT.find(
+        (col) =>
+          !stripped.includes(col) && select.includes(col) && isMissingColumnError(error!, col),
+      ) ??
+      MEMBERSHIP_OPTIONAL_SELECT.find((col) => !stripped.includes(col) && select.includes(col));
+    if (!missing) break;
+    stripped.push(missing);
+    console.warn(`[membership] retrying load without column ${missing}`);
+    select = selectWithoutColumns(stripped);
+    ({ data, error } = await supabase
+      .from("user_memberships")
+      .select(select)
+      .eq("user_id", userId));
   }
 
   if (error) {
     if (isMissingRelationError(error)) {
       return emptyMembershipsByRole();
     }
+    logSupabaseError("fetchUserMemberships", error);
     throw error;
   }
 
