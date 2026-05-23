@@ -689,7 +689,7 @@ export function ProfileEditForm() {
       activeIndex={activeStepIndex}
       onActiveIndexChange={setActiveStepIndex}
       labels={{
-        stepProgress: pe.wizard.stepProgress,
+        stepNumber: pe.wizard.stepNumber,
         statusCompleted: pe.wizard.statusCompleted,
         statusIncomplete: pe.wizard.statusIncomplete,
         previous: pe.wizard.previous,

@@ -20,7 +20,7 @@ export type ProfileEditWizardStep = {
 };
 
 type ProfileEditWizardLabels = {
-  stepProgress: string;
+  stepNumber: string;
   statusCompleted: string;
   statusIncomplete: string;
   previous: string;
@@ -53,24 +53,12 @@ export function ProfileEditWizard({
   labels,
 }: ProfileEditWizardProps) {
   const tabsRef = useRef<HTMLDivElement>(null);
-  const swipeRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const scrollSyncRef = useRef(false);
 
   const totalSteps = steps.length;
   const activeStep = steps[activeIndex];
   const isFirst = activeIndex === 0;
   const isLast = activeIndex === totalSteps - 1;
-
-  const progressStatus = activeStep?.complete
-    ? labels.statusCompleted
-    : labels.statusIncomplete;
-
-  const progressLine = labels.stepProgress
-    .replace("{current}", String(activeIndex + 1))
-    .replace("{total}", String(totalSteps))
-    .replace("{title}", activeStep?.title ?? "")
-    .replace("{status}", progressStatus);
 
   const scrollTabIntoView = useCallback((index: number) => {
     const tabs = tabsRef.current;
@@ -79,37 +67,17 @@ export function ProfileEditWizard({
     tab?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, []);
 
-  const scrollSwipeToIndex = useCallback((index: number) => {
-    const el = swipeRef.current;
-    if (!el) return;
-    scrollSyncRef.current = true;
-    const width = el.clientWidth;
-    el.scrollTo({ left: width * index, behavior: "smooth" });
-    window.setTimeout(() => {
-      scrollSyncRef.current = false;
-    }, 400);
-  }, []);
-
   const goToIndex = useCallback(
     (index: number) => {
       if (index < 0 || index >= totalSteps) return;
       onActiveIndexChange(index);
       scrollTabIntoView(index);
-      scrollSwipeToIndex(index);
     },
-    [onActiveIndexChange, scrollSwipeToIndex, scrollTabIntoView, totalSteps],
+    [onActiveIndexChange, scrollTabIntoView, totalSteps],
   );
 
   useEffect(() => {
     scrollTabIntoView(activeIndex);
-    const el = swipeRef.current;
-    if (!el) return;
-    scrollSyncRef.current = true;
-    el.scrollLeft = el.clientWidth * activeIndex;
-    const timer = window.setTimeout(() => {
-      scrollSyncRef.current = false;
-    }, 50);
-    return () => window.clearTimeout(timer);
   }, [activeIndex, scrollTabIntoView]);
 
   useEffect(() => {
@@ -118,98 +86,76 @@ export function ProfileEditWizard({
     return () => window.cancelAnimationFrame(id);
   }, [activeStep?.isEditing, activeStep?.id]);
 
-  function handleSwipeScroll() {
-    if (scrollSyncRef.current) return;
-    const el = swipeRef.current;
-    if (!el || el.clientWidth <= 0) return;
-    const index = Math.round(el.scrollLeft / el.clientWidth);
-    if (index !== activeIndex && index >= 0 && index < totalSteps) {
-      onActiveIndexChange(index);
-      scrollTabIntoView(index);
-    }
-  }
-
   if (!activeStep) return null;
 
-  return (
-    <div className="space-y-4">
-      <p className="text-sm font-medium text-foreground" aria-live="polite">
-        {progressLine}
-      </p>
+  const tabGridClass =
+    totalSteps >= 4 ? "md:grid-cols-4" : totalSteps === 3 ? "md:grid-cols-3" : "md:grid-cols-2";
 
+  return (
+    <div className="mx-auto w-full max-w-2xl space-y-4">
       <div
         ref={tabsRef}
         role="tablist"
         aria-label={labels.tabsLabel}
-        className="-mx-1 flex justify-center gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-1 pb-1 snap-x snap-mandatory [scrollbar-width:thin]"
+        className={`flex gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] md:grid md:overflow-visible ${tabGridClass}`}
       >
         {steps.map((step, index) => {
           const selected = index === activeIndex;
-          const tabLabel = labels.stepProgress
-            .replace("{current}", String(index + 1))
-            .replace("{total}", String(totalSteps))
-            .replace("{title}", step.title)
-            .replace(
-              "{status}",
-              step.complete ? labels.statusCompleted : labels.statusIncomplete,
-            );
+          const stepLabel = labels.stepNumber.replace("{n}", String(index + 1));
+          const statusLabel = step.complete ? labels.statusCompleted : labels.statusIncomplete;
+          const tabText = `${stepLabel} ${step.title}`;
+
           return (
             <button
               key={step.id}
               type="button"
               role="tab"
               aria-selected={selected}
-              aria-label={tabLabel}
               aria-controls={`profile-edit-panel-${step.id}`}
               id={`profile-edit-tab-${step.id}`}
               onClick={() => goToIndex(index)}
-              className={`shrink-0 snap-center rounded-full p-2 transition-colors ${
-                selected ? "ring-2 ring-brand-teal ring-offset-2" : "hover:bg-mint/40"
+              className={`flex min-w-[9.5rem] shrink-0 cursor-pointer flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-left transition-colors md:min-w-0 ${
+                selected
+                  ? "border-brand-teal/50 bg-mint/35 shadow-sm ring-1 ring-brand-teal/25"
+                  : "border-black/10 bg-surface hover:border-brand-teal/35 hover:bg-mint/20"
               }`}
             >
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {stepLabel}
+              </span>
+              <span className="text-sm font-medium leading-snug text-foreground">{step.title}</span>
               <span
-                aria-hidden
-                className={`block size-3 rounded-full ${
+                className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                   step.complete
-                    ? "bg-brand-teal"
-                    : selected
-                      ? "bg-brand-teal/50"
-                      : "bg-black/15"
+                    ? "bg-brand-teal/15 text-brand-teal"
+                    : "bg-black/5 text-muted"
                 }`}
-              />
+              >
+                {statusLabel}
+              </span>
+              <span className="sr-only">{tabText}</span>
             </button>
           );
         })}
       </div>
 
-      <p className="text-sm text-muted">{activeStep.description}</p>
-
       <div
-        ref={swipeRef}
-        className="-mx-4 flex overflow-x-auto overscroll-x-contain scroll-smooth snap-x snap-mandatory touch-pan-x sm:mx-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        onScroll={handleSwipeScroll}
+        id={`profile-edit-panel-${activeStep.id}`}
+        role="tabpanel"
+        aria-labelledby={`profile-edit-tab-${activeStep.id}`}
       >
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            id={`profile-edit-panel-${step.id}`}
-            role="tabpanel"
-            aria-labelledby={`profile-edit-tab-${step.id}`}
-            className="w-full shrink-0 snap-start px-4 sm:px-0"
-          >
-            <ProfileEditStepPanel
-              panelRef={index === activeIndex ? panelRef : undefined}
-              isEditing={step.isEditing}
-              error={step.error}
-              success={step.success}
-            >
-              {step.content}
-            </ProfileEditStepPanel>
-          </div>
-        ))}
+        <p className="mb-3 text-sm text-muted">{activeStep.description}</p>
+        <ProfileEditStepPanel
+          panelRef={panelRef}
+          isEditing={activeStep.isEditing}
+          error={activeStep.error}
+          success={activeStep.success}
+        >
+          {activeStep.content}
+        </ProfileEditStepPanel>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-black/5 pt-4">
+      <div className="flex flex-col gap-3 border-t border-black/5 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -233,12 +179,22 @@ export function ProfileEditWizard({
 
         <div className="flex flex-wrap gap-2">
           {!isFirst ? (
-            <Button type="button" variant="outline" size="sm" onClick={() => goToIndex(activeIndex - 1)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => goToIndex(activeIndex - 1)}
+            >
               {labels.previous}
             </Button>
           ) : null}
           {!isLast ? (
-            <Button type="button" variant="primary" size="sm" onClick={() => goToIndex(activeIndex + 1)}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => goToIndex(activeIndex + 1)}
+            >
               {labels.nextStep}
             </Button>
           ) : null}

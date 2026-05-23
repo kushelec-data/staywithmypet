@@ -405,11 +405,11 @@ export const et = {
     edit: "Muuda",
     sectionSaved: "Jaotis salvestatud.",
     wizard: {
-      stepProgress: "Samm {current}/{total} · {title} · {status}",
+      stepNumber: "Samm {n}",
       statusCompleted: "Täidetud",
       statusIncomplete: "Täitmata",
       previous: "Eelmine",
-      nextStep: "Järgmine samm",
+      nextStep: "Järgmine",
       tabsLabel: "Profiili sammud",
     },
     basic: {

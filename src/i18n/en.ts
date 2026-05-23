@@ -401,11 +401,11 @@ export const en = {
     edit: "Edit",
     sectionSaved: "Section saved.",
     wizard: {
-      stepProgress: "Step {current}/{total} · {title} · {status}",
+      stepNumber: "Step {n}",
       statusCompleted: "Completed",
       statusIncomplete: "Incomplete",
       previous: "Previous",
-      nextStep: "Next step",
+      nextStep: "Next",
       tabsLabel: "Profile steps",
     },
     basic: {

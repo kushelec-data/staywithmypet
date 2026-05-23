@@ -22,7 +22,7 @@ export function ProfileEditStepPanel({
   return (
     <div
       ref={panelRef}
-      className={`card-elevated scroll-mt-24 rounded-3xl p-6 sm:p-8 ${
+      className={`card-elevated scroll-mt-24 rounded-2xl p-5 sm:p-6 ${
         frozen ? "opacity-[0.92]" : ""
       }`}
     >
