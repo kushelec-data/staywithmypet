@@ -14,7 +14,10 @@ import {
 } from "@/lib/membership-activate";
 import type { MembershipRole, MembershipStatus } from "@/lib/membership";
 import type { SupabaseErrorDetail } from "@/lib/supabase-errors";
-import { WebhookHandlerError } from "@/lib/stripe-webhook-handler-error";
+import {
+  isWebhookHandlerError,
+  WebhookHandlerError,
+} from "@/lib/stripe-webhook-handler-error";
 import { getStripe } from "@/lib/stripe";
 import { resolveCheckoutActivationContext } from "@/lib/stripe-webhook-resolve";
 
@@ -81,20 +84,24 @@ export async function activateMembershipFromCheckoutSession(
     ({ userId, role, planId: resolvedPlanId, priceId } =
       await resolveCheckoutActivationContext(session));
   } catch (err) {
+    if (isWebhookHandlerError(err)) throw err;
     const message = err instanceof Error ? err.message : String(err);
     console.error("[stripe] checkout activation context failed", {
       sessionId,
       message,
       metadata: session.metadata ?? {},
     });
-    return { ok: false, error: message, step: "resolve_checkout_context" };
+    throw new WebhookHandlerError(message, {
+      step: "resolve_checkout_context",
+      code: "resolve_checkout_context",
+    });
   }
   const planId = normalizeCatalogPlanId(resolvedPlanId) ?? resolvedPlanId;
 
   if (!userId?.trim()) {
     const error = `[stripe] checkout ${sessionId}: missing user_id after resolution`;
     console.error("[stripe] checkout activation aborted", { sessionId, metadata: session.metadata ?? {} });
-    return { ok: false, error, step: "validate_user_id" };
+    return { ok: false, error, code: "missing_user_id", step: "validate_user_id" };
   }
 
   console.log("[stripe] activating membership from checkout", {
@@ -195,6 +202,7 @@ export function throwCheckoutActivationFailure(
 ): never {
   throw new WebhookHandlerError(result.error, {
     step: result.step,
+    code: result.code ?? result.supabaseError?.code ?? null,
     supabaseError: result.supabaseError ?? null,
     sessionId,
     payloadAttempted: result.payloadAttempted ?? null,

@@ -1,6 +1,7 @@
 "use client";
 
 import { BookingCalendar } from "@/components/calendar/BookingCalendar";
+import type { MonthCursor } from "@/lib/booking-calendar";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useMemo } from "react";
 
@@ -12,8 +13,12 @@ type PetPublicAvailabilityCalendarProps = {
   /** Owner preview sees full booking details. */
   visibility?: "full" | "public";
   viewRole?: "pet-parent" | "pet-friend" | "public";
-  /** Stronger borders and legend contrast for public profile surfaces. */
-  highContrast?: boolean;
+  /** Smaller grid for compact sidebar cards. */
+  compact?: boolean;
+  /** Soft mint/grey palette for public profile surfaces. */
+  variant?: "default" | "pastel";
+  monthCursor?: MonthCursor;
+  onMonthCursorChange?: (cursor: MonthCursor) => void;
 };
 
 export function PetPublicAvailabilityCalendar({
@@ -23,7 +28,10 @@ export function PetPublicAvailabilityCalendar({
   availabilityNotes,
   visibility = "public",
   viewRole,
-  highContrast = false,
+  compact = false,
+  variant = "default",
+  monthCursor,
+  onMonthCursorChange,
 }: PetPublicAvailabilityCalendarProps) {
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
 
@@ -31,8 +39,8 @@ export function PetPublicAvailabilityCalendar({
     return (
       <p
         className={
-          highContrast
-            ? "rounded-xl border-2 border-foreground/15 bg-surface px-4 py-4 text-sm font-medium text-foreground"
+          variant === "pastel"
+            ? "rounded-xl border border-dashed border-black/10 bg-cream/40 px-3 py-3 text-sm text-muted"
             : "rounded-xl border border-dashed border-black/10 bg-cream/40 px-3 py-4 text-sm text-muted"
         }
       >
@@ -43,15 +51,15 @@ export function PetPublicAvailabilityCalendar({
   }
 
   return (
-    <div
-      className={
-        highContrast
-          ? "space-y-3 rounded-2xl border-2 border-foreground/12 bg-surface p-3 sm:p-4"
-          : "space-y-3"
-      }
-    >
+    <div className={compact ? "space-y-2" : "space-y-3"}>
       {availabilityNotes?.trim() ? (
-        <p className={highContrast ? "text-sm font-medium text-foreground" : "text-sm text-muted"}>
+        <p
+          className={
+            variant === "pastel"
+              ? "text-xs leading-relaxed text-muted"
+              : "text-sm text-muted"
+          }
+        >
           {availabilityNotes.trim()}
         </p>
       ) : null}
@@ -67,7 +75,10 @@ export function PetPublicAvailabilityCalendar({
         petFriendId={petFriendId}
         showLegend
         showSelectedChips={false}
-        highContrast={highContrast}
+        compact={compact}
+        variant={variant}
+        monthCursor={monthCursor}
+        onMonthCursorChange={onMonthCursorChange}
       />
     </div>
   );

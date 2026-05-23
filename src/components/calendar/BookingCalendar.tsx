@@ -5,19 +5,17 @@ import { BookingPopover } from "@/components/calendar/BookingPopover";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCalendarBookings } from "@/hooks/useCalendarBookings";
 import {
-  addMonths,
   mondayIndex,
-  startOfMonth,
+  monthCursorToDate,
+  resolveInitialMonthCursor,
+  shiftMonthCursor,
   type CalendarBooking,
   type CalendarViewRole,
+  type MonthCursor,
 } from "@/lib/booking-calendar";
 import {
   filterPastDates,
-  LEGEND_AVAILABLE_CLASS,
-  LEGEND_BOOKED_CLASS,
-  LEGEND_PAST_CLASS,
-  LEGEND_SELECTED_CLASS,
-  LEGEND_UNAVAILABLE_CLASS,
+  legendSwatchClass,
   resolveCalendarDay,
   todayISODate,
 } from "@/lib/calendar-date-state";
@@ -49,9 +47,17 @@ export type BookingCalendarProps = {
   petFriendId?: string | null;
   /** Initial month when no dates present */
   initialMonth?: Date;
+  /** Controlled visible month (optional; pairs with onMonthCursorChange). */
+  monthCursor?: MonthCursor;
+  onMonthCursorChange?: (cursor: MonthCursor) => void;
   showLegend?: boolean;
   showSelectedChips?: boolean;
   className?: string;
+  /** Smaller grid for sidebar mini calendars. */
+  compact?: boolean;
+  /** Soft mint/grey palette for public profile surfaces. */
+  variant?: "default" | "pastel";
+  /** @deprecated Use variant="pastel" instead. */
   highContrast?: boolean;
 };
 
@@ -68,35 +74,44 @@ export function BookingCalendar({
   petId,
   petFriendId,
   initialMonth,
+  monthCursor: monthCursorProp,
+  onMonthCursorChange,
   showLegend = true,
   showSelectedChips,
   className = "",
+  compact = false,
+  variant: variantProp = "default",
   highContrast = false,
 }: BookingCalendarProps) {
+  const variant = variantProp;
   const { t, locale } = useLanguage();
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
   const availableSet = useMemo(() => new Set(available), [available]);
   const sortedSelected = useMemo(() => normalizeAvailabilityDates(selectedDates), [selectedDates]);
   const selectedSet = useMemo(() => new Set(sortedSelected), [sortedSelected]);
 
-  const initialCursor = useMemo(() => {
-    const first = available[0] ?? sortedSelected[0];
-    if (first) {
-      const [y, m] = first.split("-").map(Number);
-      if (y && m) return startOfMonth(new Date(y, m - 1, 1));
-    }
-    return startOfMonth(initialMonth ?? new Date());
-  }, [available, sortedSelected, initialMonth]);
+  const [internalMonthCursor, setInternalMonthCursor] = useState<MonthCursor>(() =>
+    resolveInitialMonthCursor(available, sortedSelected, initialMonth),
+  );
+  const monthCursor = monthCursorProp ?? internalMonthCursor;
 
-  const [cursor, setCursor] = useState(initialCursor);
+  function goToMonth(delta: number) {
+    const next = shiftMonthCursor(monthCursor, delta);
+    if (onMonthCursorChange) onMonthCursorChange(next);
+    else setInternalMonthCursor(next);
+  }
   const [activeBooking, setActiveBooking] = useState<CalendarBooking | null>(null);
   const [popoverVariant, setPopoverVariant] = useState<"popover" | "sheet">("popover");
   const activeCellRef = useRef<HTMLButtonElement | null>(null);
   const lastSelectedRef = useRef<string | null>(null);
 
-  const year = cursor.getFullYear();
-  const month = cursor.getMonth();
-  const title = cursor.toLocaleString(undefined, { month: "long", year: "numeric" });
+  const year = monthCursor.year;
+  const month = monthCursor.month;
+  const title = monthCursorToDate(monthCursor).toLocaleString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+  const navigationDisabled = Boolean(disabled) && mode !== "availability-readonly";
   const today = todayISODate();
 
   const { dayMap, blockingBookedDateSet, loading } = useCalendarBookings({
@@ -185,45 +200,66 @@ export function BookingCalendar({
     );
   }
 
+  const navBtnClass = compact
+    ? "rounded-lg border border-black/8 bg-surface px-2 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-mint/35 disabled:opacity-50"
+    : "rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-mint/40 disabled:opacity-50";
+
+  const gridShellClass =
+    variant === "pastel"
+      ? compact
+        ? "overflow-x-auto rounded-xl border border-black/[0.06] bg-cream/40 p-2"
+        : "overflow-x-auto rounded-2xl border border-black/[0.06] bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-3 sm:p-4"
+      : "overflow-x-auto rounded-2xl border border-brand-teal/20 bg-gradient-to-b from-mint/30 to-surface p-3 sm:p-4";
+
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`${compact ? "space-y-2.5" : "space-y-4"} ${className}`}>
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
-          disabled={disabled}
-          onClick={() => setCursor(addMonths(cursor, -1))}
-          className="rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-mint/40 disabled:opacity-50"
+          disabled={navigationDisabled}
+          onClick={() => goToMonth(-1)}
+          className={navBtnClass}
           aria-label={t.bookingCalendar.prevMonth}
         >
           ←
         </button>
-        <p className="min-w-0 flex-1 text-center font-heading text-sm font-semibold text-foreground sm:text-base">
+        <p
+          className={`min-w-0 flex-1 text-center font-heading font-semibold text-foreground ${
+            compact ? "text-xs" : "text-sm sm:text-base"
+          }`}
+        >
           {title}
           {loading ? (
-            <span className="ml-2 text-xs font-normal text-muted">{t.bookingCalendar.loading}</span>
+            <span className="ml-1.5 text-[0.65rem] font-normal text-muted">
+              {t.bookingCalendar.loading}
+            </span>
           ) : null}
         </p>
         <button
           type="button"
-          disabled={disabled}
-          onClick={() => setCursor(addMonths(cursor, 1))}
-          className="rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-mint/40 disabled:opacity-50"
+          disabled={navigationDisabled}
+          onClick={() => goToMonth(1)}
+          className={navBtnClass}
           aria-label={t.bookingCalendar.nextMonth}
         >
           →
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-brand-teal/20 bg-gradient-to-b from-mint/30 to-surface p-3 sm:p-4">
-        <div className="mx-auto min-w-[260px] max-w-md">
-          <div className="grid grid-cols-7 gap-0.5 text-center text-[0.65rem] font-semibold uppercase tracking-wide text-muted sm:text-xs">
+      <div className={gridShellClass}>
+        <div className={compact ? "min-w-0 w-full" : "mx-auto min-w-[260px] max-w-md"}>
+          <div
+            className={`grid grid-cols-7 gap-0.5 text-center font-semibold uppercase tracking-wide text-muted ${
+              compact ? "text-[0.6rem]" : "text-[0.65rem] sm:text-xs"
+            }`}
+          >
             {WEEKDAYS.map((d) => (
               <div key={d} className="py-1">
                 {d}
               </div>
             ))}
           </div>
-          <div className="mt-1 grid grid-cols-7 gap-1">
+          <div className={`mt-1 grid grid-cols-7 ${compact ? "gap-0.5" : "gap-1"}`}>
             {cells.map((day, idx) => {
               if (day === null) {
                 return <div key={`e-${idx}`} className="aspect-square" />;
@@ -260,9 +296,11 @@ export function BookingCalendar({
                   primaryTint: primaryBooking?.color.tint ?? null,
                   primaryColor: primaryBooking?.color,
                   highContrast,
+                  variant,
                 },
               );
 
+              const cellRound = compact ? "rounded-lg" : "rounded-xl";
               const cellInner = (
                 <BookingDateCell
                   day={day}
@@ -270,6 +308,8 @@ export function BookingCalendar({
                   booked={blockingBooked || slices.length > 0}
                   showAvatars={resolved.showAvatars && viewRole !== "public"}
                   tint={resolved.tint}
+                  compact={compact}
+                  bookedDotPastel={variant === "pastel"}
                 />
               );
 
@@ -279,7 +319,7 @@ export function BookingCalendar({
                     key={iso}
                     title={resolved.title}
                     aria-label={resolved.ariaLabel}
-                    className={`relative flex aspect-square items-center justify-center rounded-xl transition-all ${resolved.cellClassName}`}
+                    className={`relative flex aspect-square items-center justify-center transition-all ${cellRound} ${resolved.cellClassName}`}
                   >
                     {cellInner}
                   </div>
@@ -310,7 +350,7 @@ export function BookingCalendar({
                       setActiveBooking(primaryBooking);
                     }
                   }}
-                  className={`relative flex aspect-square items-center justify-center rounded-xl transition-all ${resolved.cellClassName}`}
+                  className={`relative flex aspect-square items-center justify-center transition-all ${cellRound} ${resolved.cellClassName}`}
                 >
                   {cellInner}
                 </button>
@@ -333,31 +373,41 @@ export function BookingCalendar({
 
       {showLegend ? (
         <ul
-          className={`flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium ${
-            highContrast ? "font-semibold text-foreground" : "text-foreground"
-          }`}
+          className={`flex flex-wrap gap-x-3 gap-y-1.5 font-medium text-foreground ${
+            compact ? "text-[0.65rem]" : "text-xs"
+          } ${variant === "pastel" ? "text-muted" : ""}`}
         >
           <li className="flex items-center gap-1.5">
-            <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_AVAILABLE_CLASS}`} />
+            <span
+              className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("available", variant)}`}
+            />
             {t.bookingCalendar.legendAvailable}
           </li>
           <li className="flex items-center gap-1.5">
-            <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_PAST_CLASS}`} />
+            <span
+              className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("past", variant)}`}
+            />
             {t.bookingCalendar.legendPast}
           </li>
           <li className="flex items-center gap-1.5">
-            <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_BOOKED_CLASS}`} />
+            <span
+              className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("booked", variant)}`}
+            />
             {t.bookingCalendar.legendBooked}
           </li>
           {mode === "availability-readonly" || mode === "request-select" ? (
             <li className="flex items-center gap-1.5">
-              <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_UNAVAILABLE_CLASS}`} />
+              <span
+                className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("unavailable", variant)}`}
+              />
               {t.bookingCalendar.legendUnavailable}
             </li>
           ) : null}
           {mode !== "availability-readonly" ? (
             <li className="flex items-center gap-1.5">
-              <span className={`h-3 w-3 shrink-0 rounded-sm ${LEGEND_SELECTED_CLASS}`} />
+              <span
+                className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("selected", variant)}`}
+              />
               {t.bookingCalendar.legendSelected}
             </li>
           ) : null}
@@ -389,7 +439,9 @@ export function BookingCalendar({
           </ul>
         </div>
       ) : mode === "availability-readonly" ? (
-        <p className="text-xs text-muted">{t.bookingCalendar.viewOnlyHint}</p>
+        compact ? null : (
+          <p className="text-xs text-muted">{t.bookingCalendar.viewOnlyHint}</p>
+        )
       ) : mode === "availability-select" ? (
         <p className="text-xs text-muted">{t.bookingCalendar.tapToAdd}</p>
       ) : mode === "request-select" ? (

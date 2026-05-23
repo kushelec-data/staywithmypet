@@ -14,6 +14,7 @@ import {
   canUseMembershipFeaturesForMode,
   emptyMembershipsByRole,
 } from "@/lib/membership";
+import type { MonthCursor } from "@/lib/booking-calendar";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -29,7 +30,9 @@ type PetAvailabilityModalProps = {
   subtitle?: string;
   /** Find Care: enable send-request flow from this modal. */
   careRequestTarget?: ParentToFriendRequestTarget | null;
-  highContrast?: boolean;
+  variant?: "default" | "pastel";
+  monthCursor?: MonthCursor;
+  onMonthCursorChange?: (cursor: MonthCursor) => void;
 };
 
 export function PetAvailabilityModal({
@@ -42,7 +45,9 @@ export function PetAvailabilityModal({
   title,
   subtitle,
   careRequestTarget = null,
-  highContrast = false,
+  variant = "default",
+  monthCursor,
+  onMonthCursorChange,
 }: PetAvailabilityModalProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -137,8 +142,10 @@ export function PetAvailabilityModal({
                 petFriendId={petFriendId}
                 showLegend
                 showSelectedChips={false}
-                highContrast={highContrast}
+                variant={variant}
                 className="rounded-2xl"
+                monthCursor={monthCursor}
+                onMonthCursorChange={onMonthCursorChange}
               />
             ) : (
               <p className="rounded-2xl bg-mint/30 px-4 py-6 text-center text-sm text-muted">

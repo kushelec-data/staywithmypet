@@ -9,6 +9,7 @@ import {
 import type { MembershipRole } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { WebhookHandlerError } from "@/lib/stripe-webhook-handler-error";
 
 export function roleFromStripeMetadata(value: string | undefined): MembershipRole | null {
   if (!value?.trim()) return null;
@@ -71,6 +72,10 @@ function planIdFromMergedMetadata(meta: Stripe.Metadata): string | undefined {
     meta.planId?.trim();
   if (!raw) return undefined;
   return normalizeCatalogPlanId(raw) ?? raw;
+}
+
+function priceIdFromMergedMetadata(meta: Stripe.Metadata): string | null {
+  return meta.price_id?.trim() || meta.priceId?.trim() || null;
 }
 
 function mergeMetadata(
@@ -222,8 +227,20 @@ export async function resolveCheckoutActivationContext(
     subscription?.metadata,
   );
 
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-  const priceId = lineItems.data[0]?.price?.id ?? null;
+  let lineItems: Stripe.ApiList<Stripe.LineItem>;
+  try {
+    lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[stripe] checkout listLineItems failed", { sessionId: session.id, message });
+    throw new WebhookHandlerError(
+      `[stripe] checkout ${session.id}: listLineItems failed (${message})`,
+      { step: "resolve_checkout_context", code: "stripe_list_line_items" },
+    );
+  }
+
+  const priceId =
+    priceIdFromMergedMetadata(mergedMeta) ?? lineItems.data[0]?.price?.id ?? null;
 
   console.log("[stripe] checkout line items", {
     sessionId: session.id,
@@ -305,11 +322,10 @@ export async function resolveCheckoutActivationContext(
       sessionMetadata: session.metadata ?? {},
       mergedMetadata: mergedMeta,
     });
-    const err = new Error(
+    throw new WebhookHandlerError(
       `[stripe] checkout ${session.id}: missing ${missing.join(", ")} (metadata/price/email resolution failed)`,
+      { step: "resolve_checkout_context", code: "missing_checkout_metadata" },
     );
-    (err as Error & { statusCode?: number }).statusCode = 500;
-    throw err;
   }
 
   console.log("[stripe] checkout context resolved", {

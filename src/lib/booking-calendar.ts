@@ -177,3 +177,33 @@ export function startOfMonth(d: Date): Date {
 export function addMonths(d: Date, delta: number): Date {
   return new Date(d.getFullYear(), d.getMonth() + delta, 1);
 }
+
+/** Immutable calendar month (month is 0-based, matching Date#getMonth). */
+export type MonthCursor = { year: number; month: number };
+
+export function monthCursorFromDate(d: Date): MonthCursor {
+  return { year: d.getFullYear(), month: d.getMonth() };
+}
+
+export function monthCursorToDate({ year, month }: MonthCursor): Date {
+  return new Date(year, month, 1);
+}
+
+export function shiftMonthCursor(cursor: MonthCursor, delta: number): MonthCursor {
+  const next = new Date(cursor.year, cursor.month + delta, 1);
+  return { year: next.getFullYear(), month: next.getMonth() };
+}
+
+export function resolveInitialMonthCursor(
+  available: string[],
+  selected: string[],
+  initialMonth?: Date,
+): MonthCursor {
+  const first = available[0] ?? selected[0];
+  if (first) {
+    const [y, m] = first.split("-").map(Number);
+    if (y && m) return { year: y, month: m - 1 };
+  }
+  const base = initialMonth ?? new Date();
+  return { year: base.getFullYear(), month: base.getMonth() };
+}

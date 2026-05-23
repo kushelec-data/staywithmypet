@@ -75,6 +75,45 @@ export const LEGEND_AVAILABLE_CLASS = "bg-emerald-600";
 export const LEGEND_UNAVAILABLE_CLASS = "bg-neutral-200 ring-1 ring-neutral-300";
 export const LEGEND_SELECTED_CLASS = "bg-brand-teal ring-2 ring-brand-teal/40";
 
+/** Soft public-profile palette (mini card + modal). */
+export const PASTEL_LEGEND_PAST_CLASS = "bg-stone-200";
+export const PASTEL_LEGEND_BOOKED_CLASS = "bg-slate-300";
+export const PASTEL_LEGEND_AVAILABLE_CLASS = "bg-emerald-100 ring-1 ring-emerald-300/50";
+export const PASTEL_LEGEND_UNAVAILABLE_CLASS = "bg-neutral-100 ring-1 ring-neutral-200";
+export const PASTEL_LEGEND_SELECTED_CLASS = "bg-brand-teal/25 ring-1 ring-brand-teal/35";
+
+export function legendSwatchClass(
+  kind: "past" | "booked" | "available" | "unavailable" | "selected",
+  variant: "default" | "pastel" = "default",
+): string {
+  if (variant === "pastel") {
+    switch (kind) {
+      case "past":
+        return PASTEL_LEGEND_PAST_CLASS;
+      case "booked":
+        return PASTEL_LEGEND_BOOKED_CLASS;
+      case "available":
+        return PASTEL_LEGEND_AVAILABLE_CLASS;
+      case "unavailable":
+        return PASTEL_LEGEND_UNAVAILABLE_CLASS;
+      case "selected":
+        return PASTEL_LEGEND_SELECTED_CLASS;
+    }
+  }
+  switch (kind) {
+    case "past":
+      return LEGEND_PAST_CLASS;
+    case "booked":
+      return LEGEND_BOOKED_CLASS;
+    case "available":
+      return LEGEND_AVAILABLE_CLASS;
+    case "unavailable":
+      return LEGEND_UNAVAILABLE_CLASS;
+    case "selected":
+      return LEGEND_SELECTED_CLASS;
+  }
+}
+
 export const PAST_DAY_CELL =
   "bg-neutral-600 text-neutral-100 cursor-not-allowed dark:bg-neutral-600 dark:text-neutral-100";
 
@@ -108,6 +147,30 @@ export const UNAVAILABLE_REQUEST_CELL =
 export const HIGH_CONTRAST_UNAVAILABLE_CELL =
   "bg-neutral-300 text-neutral-800 ring-2 ring-neutral-500 cursor-not-allowed dark:bg-neutral-600 dark:text-neutral-100 dark:ring-neutral-400";
 
+export const PASTEL_PAST_DAY_CELL =
+  "bg-stone-100 text-stone-400 cursor-not-allowed dark:bg-stone-800/40 dark:text-stone-500";
+
+export const PASTEL_PAST_COMPLETED_CELL =
+  "bg-stone-200/90 text-stone-500 cursor-not-allowed ring-1 ring-stone-200 dark:bg-stone-700/50 dark:text-stone-400";
+
+export const PASTEL_PUBLIC_BOOKED_CELL =
+  "bg-slate-200/95 text-slate-600 cursor-not-allowed dark:bg-slate-600/40 dark:text-slate-300";
+
+export const PASTEL_AVAILABLE_CELL =
+  "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/70 cursor-default dark:bg-emerald-950/30 dark:text-emerald-200 dark:ring-emerald-800/50";
+
+export const PASTEL_AVAILABLE_TODAY_CELL =
+  "bg-emerald-50 text-emerald-800 ring-2 ring-emerald-300/80 ring-offset-1 cursor-default dark:bg-emerald-950/30 dark:text-emerald-200 dark:ring-emerald-700";
+
+export const PASTEL_UNAVAILABLE_CELL =
+  "bg-neutral-50 text-neutral-400 cursor-not-allowed dark:bg-neutral-800/40 dark:text-neutral-500";
+
+export const PASTEL_DEFAULT_SELECT_CELL =
+  "bg-surface text-foreground/80 ring-1 ring-neutral-100 dark:ring-neutral-700";
+
+export const PASTEL_DEFAULT_TODAY_SELECT_CELL =
+  "bg-surface text-foreground ring-2 ring-emerald-200/80 ring-offset-1 dark:ring-emerald-800/60";
+
 export function bookingColorClasses(color: CalendarBookingColor): string {
   return `${color.bg} ${color.text} ring-1 ${color.ring} cursor-not-allowed`;
 }
@@ -129,7 +192,9 @@ export function resolveCalendarDay(
     disabled?: boolean;
     primaryTint?: string | null;
     primaryColor?: CalendarBookingColor;
+    /** @deprecated Prefer variant="pastel" on public surfaces. */
     highContrast?: boolean;
+    variant?: "default" | "pastel";
   },
 ): ResolvedCalendarDay {
   const today = input.today ?? todayISODate();
@@ -143,6 +208,7 @@ export function resolveCalendarDay(
   const isToday = input.iso === today;
   const visibility = options?.visibility ?? "full";
   const disabled = options?.disabled ?? false;
+  const pastel = options?.variant === "pastel";
   const primaryBooking = input.slices[0]?.booking;
   const hasBookingSlice = input.slices.length > 0;
 
@@ -195,12 +261,12 @@ export function resolveCalendarDay(
     cellClassName =
       input.mode === "availability-readonly" ? READONLY_SELECTED_CELL : SELECTED_CELL;
   } else if (visual === "past") {
-    cellClassName = PAST_DAY_CELL;
+    cellClassName = pastel ? PASTEL_PAST_DAY_CELL : PAST_DAY_CELL;
   } else if (visual === "past-completed") {
-    cellClassName = PAST_COMPLETED_CELL;
+    cellClassName = pastel ? PASTEL_PAST_COMPLETED_CELL : PAST_COMPLETED_CELL;
   } else if (visual === "future-booked") {
-    if (visibility === "public") {
-      cellClassName = PUBLIC_BOOKED_CELL;
+    if (visibility === "public" || pastel) {
+      cellClassName = pastel ? PASTEL_PUBLIC_BOOKED_CELL : PUBLIC_BOOKED_CELL;
     } else if (options?.primaryColor) {
       cellClassName = bookingColorClasses(options.primaryColor);
       tint = options.primaryTint ?? options.primaryColor.tint;
@@ -208,13 +274,23 @@ export function resolveCalendarDay(
       cellClassName = PUBLIC_BOOKED_CELL;
     }
   } else if (visual === "available") {
-    cellClassName = isToday ? AVAILABLE_TODAY_CELL : AVAILABLE_CELL;
+    cellClassName = pastel
+      ? isToday
+        ? PASTEL_AVAILABLE_TODAY_CELL
+        : PASTEL_AVAILABLE_CELL
+      : isToday
+        ? AVAILABLE_TODAY_CELL
+        : AVAILABLE_CELL;
   } else if (visual === "unavailable") {
-    cellClassName = options?.highContrast
-      ? HIGH_CONTRAST_UNAVAILABLE_CELL
-      : UNAVAILABLE_REQUEST_CELL;
+    cellClassName = pastel
+      ? PASTEL_UNAVAILABLE_CELL
+      : options?.highContrast
+        ? HIGH_CONTRAST_UNAVAILABLE_CELL
+        : UNAVAILABLE_REQUEST_CELL;
   } else if (isToday) {
-    cellClassName = DEFAULT_TODAY_SELECT_CELL;
+    cellClassName = pastel ? PASTEL_DEFAULT_TODAY_SELECT_CELL : DEFAULT_TODAY_SELECT_CELL;
+  } else if (pastel) {
+    cellClassName = PASTEL_DEFAULT_SELECT_CELL;
   }
 
   let ariaLabel = labels.iso;

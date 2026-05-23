@@ -104,6 +104,12 @@ export function toDbMembershipStatus(status: MembershipStatus | undefined): DbMe
   }
 }
 
+/** Never persist Stripe/UI aliases (parent, friend) — DB enum only. */
+export function toDbMembershipRole(role: string): MembershipRole | null {
+  if (role === "pet_parent" || role === "pet_friend") return role;
+  return null;
+}
+
 export function safeMembershipPayloadAttempted(
   payload: Record<string, unknown>,
 ): MembershipPayloadAttempted {
@@ -167,9 +173,14 @@ function buildMembershipUpsertPayload(input: UpsertMembershipInput): {
     input.planName?.trim() || resolvePlanName(input.role, catalogPlanId);
   const dbStatus = toDbMembershipStatus(input.status);
 
+  const dbRole = toDbMembershipRole(input.role);
+  if (!dbRole) {
+    throw new Error(`Invalid membership role "${input.role}" (expected pet_parent or pet_friend).`);
+  }
+
   const payload: Record<string, unknown> = {
     user_id: input.userId,
-    role: input.role,
+    role: dbRole,
     plan_id: catalogPlanId,
     plan_name: planName,
     status: dbStatus,
@@ -302,16 +313,33 @@ export async function upsertUserMembership(
   supabase: SupabaseClient,
   input: UpsertMembershipInput,
 ): Promise<UpsertMembershipResult> {
-  if (input.role !== "pet_parent" && input.role !== "pet_friend") {
+  const dbRole = toDbMembershipRole(input.role);
+  if (!dbRole) {
     return {
       ok: false,
-      error: `Invalid membership role "${input.role}" (expected pet_parent or pet_friend).`,
+      error: `Invalid membership role "${input.role}" (expected pet_parent or pet_friend; never parent/friend).`,
       code: "invalid_role",
       step: "validate_role",
     };
   }
 
-  const { catalogPlanId, payload, payloadAttempted } = buildMembershipUpsertPayload(input);
+  let catalogPlanId: string;
+  let payload: Record<string, unknown>;
+  let payloadAttempted: MembershipPayloadAttempted;
+  try {
+    ({ catalogPlanId, payload, payloadAttempted } = buildMembershipUpsertPayload({
+      ...input,
+      role: dbRole,
+    }));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      error: message,
+      code: "invalid_role",
+      step: "validate_role",
+    };
+  }
   if (!catalogPlanId) {
     return {
       ok: false,
@@ -360,12 +388,19 @@ export async function upsertUserMembership(
   let { data, error } = await runUpsert();
 
   for (const col of MEMBERSHIP_OPTIONAL_STRIP_COLUMNS) {
-    if (!error || !(col in upsertPayload)) break;
+    if (!error) break;
+    const colInPayload = col in upsertPayload;
+    const colInSelect = selectColumns.includes(col);
+    if (!colInPayload && !colInSelect) break;
     if (!isMissingColumnError(error, col)) break;
     console.warn(`[membership] retrying upsert without ${col} (run migrations)`);
     strippedOptional.push(col);
-    upsertPayload = stripOptionalColumns(upsertPayload, [col]);
-    selectColumns = selectColumnsWithout(strippedOptional);
+    if (colInPayload) {
+      upsertPayload = stripOptionalColumns(upsertPayload, [col]);
+    }
+    if (colInSelect) {
+      selectColumns = selectColumnsWithout(strippedOptional);
+    }
     ({ data, error } = await runUpsert());
   }
 
@@ -399,50 +434,53 @@ export async function upsertUserMembership(
   console.log("[membership] upsert success", {
     table: MEMBERSHIP_TABLE,
     userId: input.userId,
-    role: input.role,
+    role: dbRole,
     planId: membership.plan_id,
+    status: membership.status,
     membershipId: membership.id,
   });
 
-  const planLabel = membershipPlanLabel(membership) ?? membership.plan_id;
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ membership_status: planLabel })
-    .eq("id", input.userId);
-
-  if (profileError) {
-    console.error("[membership] profiles.membership_status update failed", {
-      userId: input.userId,
-      table: "profiles",
-      ...supabaseErrorDetail(profileError),
-    });
-  } else {
-    console.log("[membership] database updated", {
-      table: "profiles",
-      userId: input.userId,
-      membership_status: planLabel,
-    });
-  }
-
-  if (input.sendConfirmationEmail !== false) {
-    const { data: profileRow } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", input.userId)
-      .maybeSingle();
-
-    triggerMembershipConfirmationEmail(
-      input.userId,
-      membership,
-      (profileRow?.display_name as string | undefined)?.trim(),
-    );
-  }
-
   try {
+    const planLabel = membershipPlanLabel(membership) ?? membership.plan_id;
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ membership_status: planLabel })
+      .eq("id", input.userId);
+
+    if (profileError) {
+      console.error("[membership] profiles.membership_status update failed", {
+        userId: input.userId,
+        table: "profiles",
+        ...supabaseErrorDetail(profileError),
+      });
+    } else {
+      console.log("[membership] database updated", {
+        table: "profiles",
+        userId: input.userId,
+        membership_status: planLabel,
+      });
+    }
+
+    if (input.sendConfirmationEmail !== false) {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", input.userId)
+        .maybeSingle();
+
+      triggerMembershipConfirmationEmail(
+        input.userId,
+        membership,
+        (profileRow?.display_name as string | undefined)?.trim(),
+      );
+    }
+
     revalidatePath("/membership");
     revalidatePath("/dashboard");
   } catch (err) {
-    console.warn("[membership] revalidatePath skipped", {
+    console.warn("[membership] post-upsert side effects failed (membership row saved)", {
+      userId: input.userId,
+      role: dbRole,
       message: err instanceof Error ? err.message : String(err),
     });
   }

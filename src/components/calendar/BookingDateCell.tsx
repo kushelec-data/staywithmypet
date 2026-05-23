@@ -13,6 +13,9 @@ type BookingDateCellProps = {
   booked?: boolean;
   tint?: string | null;
   className?: string;
+  compact?: boolean;
+  /** Booked indicator dot on light pastel cells. */
+  bookedDotPastel?: boolean;
 };
 
 export function BookingDateCell({
@@ -22,6 +25,8 @@ export function BookingDateCell({
   booked = false,
   tint,
   className = "",
+  compact = false,
+  bookedDotPastel = false,
 }: BookingDateCellProps) {
   const hasBookings = slices.length > 0 || booked;
   const visible = showAvatars ? slices.slice(0, MAX_AVATARS) : [];
@@ -32,7 +37,11 @@ export function BookingDateCell({
       className={`relative flex h-full w-full flex-col items-center justify-center gap-0.5 ${className}`}
       style={tint ? { backgroundColor: tint } : undefined}
     >
-      <span className="text-sm font-semibold leading-none">{day}</span>
+      <span
+        className={`font-semibold leading-none ${compact ? "text-[0.65rem]" : "text-sm"}`}
+      >
+        {day}
+      </span>
       {hasBookings && showAvatars ? (
         <div className="flex items-center justify-center -space-x-1.5">
           {visible.map((slice) => (
@@ -65,7 +74,10 @@ export function BookingDateCell({
           ) : null}
         </div>
       ) : hasBookings && !showAvatars ? (
-        <span className="h-1.5 w-1.5 rounded-full bg-white/80" aria-hidden />
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${bookedDotPastel ? "bg-slate-500/70" : "bg-white/80"}`}
+          aria-hidden
+        />
       ) : null}
     </div>
   );

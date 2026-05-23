@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import {
   activateMembershipFromCheckoutSession,
   throwCheckoutActivationFailure,
+  type CheckoutActivationResult,
 } from "@/lib/stripe-checkout-activate";
 import { WebhookHandlerError } from "@/lib/stripe-webhook-handler-error";
 import {
@@ -75,6 +76,7 @@ async function assertMembershipUpsert(
     });
     throw new WebhookHandlerError(`[stripe] ${context}: ${result.error}`, {
       step: result.step ?? "upsert_user_memberships",
+      code: result.code ?? result.supabaseError?.code ?? null,
       supabaseError: result.supabaseError ?? null,
       payloadAttempted: result.payloadAttempted ?? null,
     });
@@ -202,7 +204,7 @@ async function syncFromSubscription(
 
 export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
-): Promise<void> {
+): Promise<Extract<CheckoutActivationResult, { ok: true }>> {
   console.log("[stripe] handleCheckoutSessionCompleted start", {
     sessionId: session.id,
     paymentStatus: session.payment_status,
@@ -221,8 +223,9 @@ export async function handleCheckoutSessionCompleted(
       sessionId: session.id,
       paymentStatus: session.payment_status,
     });
-    return;
   }
+
+  return result;
 }
 
 export async function handleCheckoutAsyncPaymentSucceeded(
