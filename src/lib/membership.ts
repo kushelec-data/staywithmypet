@@ -89,7 +89,7 @@ export const PLAN_BILLING_INTERVAL: Record<string, MembershipPlanDefinition["bil
 
 /**
  * Client-safe placeholder; server resolves ids via `resolveStripePriceId` in stripe-plans.ts
- * (STRIPE_PRICE_PARENT_1M / _3M / _12M and STRIPE_PRICE_FRIEND_1M / _3M / _12M).
+ * (STRIPE_PARENT_PRICE_ID / STRIPE_FRIEND_PRICE_ID by role).
  */
 const FUTURE_STRIPE_PRICE_IDS: Record<string, string | null> = {
   "one-time-owner": null,

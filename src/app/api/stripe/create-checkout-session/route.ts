@@ -3,6 +3,8 @@ import {
   logStripeCheckoutPlanResolution,
   normalizeCatalogPlanId,
   resolveStripePriceId,
+  STRIPE_CHECKOUT_CANCEL_URL,
+  STRIPE_CHECKOUT_SUCCESS_URL,
   stripeCheckoutConfigError,
   stripeCheckoutModeForPlanId,
   stripeCheckoutPriceError,
@@ -12,7 +14,7 @@ import {
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
-import { getSiteUrl, getStripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
@@ -35,7 +37,7 @@ function checkoutErrorFromStripe(
   planId: string,
   mode: "payment" | "subscription",
 ): string {
-  const envName = stripePriceEnvVarForPlanId(planId) ?? "STRIPE_PRICE_*";
+  const envName = stripePriceEnvVarForPlanId(planId) ?? "STRIPE_*_PRICE_ID";
   if (err instanceof Stripe.errors.StripeError) {
     const msg = err.message.toLowerCase();
     if (
@@ -122,10 +124,9 @@ export async function POST(request: Request) {
   if (!mode) {
     return NextResponse.json({ error: `Unknown plan: ${trimmedPlanId}` }, { status: 400 });
   }
-  const siteUrl = getSiteUrl();
   const stripe = getStripe();
 
-  const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId) ?? "STRIPE_PRICE_*";
+  const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId) ?? "STRIPE_*_PRICE_ID";
   const checkoutMetadata = buildStripeCheckoutMetadata({
     userId: sessionUserId,
     role,
@@ -189,8 +190,8 @@ export async function POST(request: Request) {
     client_reference_id: sessionUserId,
     customer_email: user?.email ?? undefined,
     metadata: checkoutMetadata,
-    success_url: `${siteUrl}/membership?success=true&role=${role}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${siteUrl}/membership?cancelled=true`,
+    success_url: `${STRIPE_CHECKOUT_SUCCESS_URL}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: STRIPE_CHECKOUT_CANCEL_URL,
   };
 
   const existingCustomerId = existingMembership?.stripe_customer_id?.trim();

@@ -9,6 +9,8 @@ export function logStripeEnvPresence(context: string): void {
   console.log(`[stripe-env:${context}] VERCEL_PROJECT_PRODUCTION_URL:`, process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "(unset)");
   console.log(`[stripe-env:${context}] NEXT_PUBLIC_SITE_URL exists:`, Boolean(process.env.NEXT_PUBLIC_SITE_URL?.trim()));
   const priceEnvVars = [
+    "STRIPE_PARENT_PRICE_ID",
+    "STRIPE_FRIEND_PRICE_ID",
     "STRIPE_PRICE_PARENT_1M",
     "STRIPE_PRICE_PARENT_3M",
     "STRIPE_PRICE_PARENT_12M",

@@ -3,6 +3,7 @@ import "server-only";
 import type Stripe from "stripe";
 import {
   membershipRoleFromPlanId,
+  membershipRoleFromStripePriceId,
   normalizeCatalogPlanId,
   planIdFromStripePriceId,
 } from "@/lib/stripe-plans";
@@ -271,6 +272,9 @@ export async function resolveCheckoutActivationContext(
     const fromPrice = planIdFromStripePriceId(priceId);
     planId = fromPrice ? normalizeCatalogPlanId(fromPrice) ?? fromPrice : undefined;
   }
+  if (!role && priceId) {
+    role = membershipRoleFromStripePriceId(priceId);
+  }
   if (!role && planId) {
     role = membershipRoleFromPlanId(planId);
   }
@@ -298,6 +302,9 @@ export async function resolveCheckoutActivationContext(
         planIdFromMergedMetadata(
           subscription.items.data[0]?.price.metadata ?? {},
         );
+    }
+    if (!role && subPriceId) {
+      role = membershipRoleFromStripePriceId(subPriceId);
     }
     if (!role && planId) {
       role = membershipRoleFromPlanId(planId);
