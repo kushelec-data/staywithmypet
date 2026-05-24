@@ -73,18 +73,44 @@ export function isMissingRelationError(error: PostgrestError): boolean {
   );
 }
 
+const REQUEST_SUBMIT_FALLBACK = "Could not send request. Please try again.";
+
+function formatSupabaseDetailAppendix(error: PostgrestError): string {
+  return [
+    error.code ? `code: ${error.code}` : null,
+    error.message ? `message: ${error.message}` : null,
+    error.details ? `details: ${error.details}` : null,
+    error.hint ? `hint: ${error.hint}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function formatRequestSubmitError(error: unknown): string {
   if (isPostgrestError(error)) {
     logServerError("request", error);
-    return toFriendlyClientMessage(error, "Could not send request. Please try again.");
+    return toFriendlyClientMessage(error, REQUEST_SUBMIT_FALLBACK);
   }
   if (error instanceof Error && error.message.trim()) {
-    return toFriendlyClientMessage(error, "Could not send request. Please try again.");
+    return toFriendlyClientMessage(error, REQUEST_SUBMIT_FALLBACK);
   }
-  return "Could not send request. Please try again.";
+  return REQUEST_SUBMIT_FALLBACK;
 }
 
-/** Friendly UI copy; raw Postgres details only in development. */
+/**
+ * Friendly headline plus raw PostgREST fields (all environments) for request-submit debugging.
+ */
 export function formatRequestSubmitErrorForUi(error: unknown): string {
-  return formatRequestSubmitError(error);
+  const base = formatRequestSubmitError(error);
+  if (!isPostgrestError(error)) return base;
+
+  const appendix = formatSupabaseDetailAppendix(error);
+  if (!appendix) return base;
+
+  const alreadyVerbose =
+    base.includes(error.message) &&
+    (error.details ? base.includes(error.details) : true);
+  if (alreadyVerbose) return base;
+
+  return `${base}\n\n${appendix}`;
 }

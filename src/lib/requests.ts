@@ -12,6 +12,7 @@ import {
   PAST_DATE_REQUEST_ERROR,
 } from "@/lib/request-validation";
 import { ensureUserProfile } from "@/lib/profile";
+import { fetchUserPets } from "@/lib/pet-data";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { isBookingOverlapError } from "@/lib/bookings";
 import { pickSupabaseJoin, profileDisplayName } from "@/lib/profile-display";
@@ -659,17 +660,17 @@ export async function countIncomingPendingReply(
 
 export type RequestPetOption = { id: string; name: string };
 
+/** Pets owned by the logged-in Pet Parent (for parent → friend requests). */
 export async function fetchRequesterPets(
   supabase: SupabaseClient,
   ownerId: string,
 ): Promise<RequestPetOption[]> {
-  const { data, error } = await supabase
-    .from("pets")
-    .select("id, name")
-    .eq("owner_id", ownerId)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  if (error) return [];
-  return (data ?? []).map((p) => ({ id: p.id, name: p.name }));
+  try {
+    const rows = await fetchUserPets(supabase, ownerId);
+    return rows
+      .filter((p) => p.is_active !== false)
+      .map((p) => ({ id: p.id, name: p.name }));
+  } catch (err) {
+    throw err instanceof Error ? err : new Error("Could not load your pets.");
+  }
 }

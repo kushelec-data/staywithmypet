@@ -39,6 +39,8 @@ type PetAvailabilityModalProps = {
   /** Member profile: toggle dates in the full calendar (request-select). */
   selectedDates?: string[];
   onSelectedDatesChange?: (dates: string[]) => void;
+  /** Pre-selected dates passed into the request modal. */
+  initialSelectedDates?: string[];
 };
 
 export function PetAvailabilityModal({
@@ -57,13 +59,14 @@ export function PetAvailabilityModal({
   onMonthCursorChange,
   selectedDates,
   onSelectedDatesChange,
+  initialSelectedDates = [],
 }: PetAvailabilityModalProps) {
   const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const [requestOpen, setRequestOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -143,7 +146,7 @@ export function PetAvailabilityModal({
   }
 
   function handleSendCareRequest() {
-    if (authLoading || !careRequestTarget) return;
+    if (authLoading || profileLoading || !careRequestTarget) return;
     if (!user) {
       router.push(`/login?next=${encodeURIComponent(returnUrl)}`);
       return;
@@ -228,7 +231,7 @@ export function PetAvailabilityModal({
                       type="button"
                       className="w-full sm:flex-1"
                       onClick={handleSendCareRequest}
-                      disabled={authLoading}
+                      disabled={authLoading || profileLoading}
                     >
                       {t.findCare.logInToSendRequest}
                     </Button>
@@ -237,7 +240,7 @@ export function PetAvailabilityModal({
                       type="button"
                       className="w-full sm:flex-1"
                       onClick={handleSendCareRequest}
-                      disabled={authLoading}
+                      disabled={authLoading || profileLoading}
                     >
                       {t.requests.sendCareRequest}
                     </Button>
@@ -268,6 +271,7 @@ export function PetAvailabilityModal({
             showTrigger={false}
             requestModalOpen={requestOpen}
             onRequestModalOpenChange={setRequestOpen}
+            initialSelectedDates={initialSelectedDates}
           />
           <MembershipUpsellToast
             open={upgradeOpen}

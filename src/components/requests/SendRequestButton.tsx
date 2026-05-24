@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { RequestModal, type RequestFormValues } from "@/components/requests/RequestModal";
 import { useAuth } from "@/context/AuthContext";
@@ -80,7 +79,7 @@ export function SendRequestButton({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const supabase = useMemo(() => createClient(), []);
   const [openInternal, setOpenInternal] = useState(false);
   const open = requestModalOpen ?? openInternal;
@@ -101,9 +100,9 @@ export function SendRequestButton({
   const senderMode: ProfileActiveMode =
     target.kind === "pet" ? "pet_friend" : "pet_parent";
   const memberships = profile?.memberships ?? emptyMembershipsByRole();
+  const membershipReady = Boolean(user) && !profileLoading;
   const needsUpgrade =
-    Boolean(user) &&
-    !canUseMembershipFeaturesForMode(memberships, senderMode);
+    membershipReady && !canUseMembershipFeaturesForMode(memberships, senderMode);
 
   const bookableDates = useMemo(() => {
     const min = todayDateInputValue();
@@ -139,26 +138,61 @@ export function SendRequestButton({
     if (!upgradeOpen) upgradeToastOpenRef.current = false;
   }, [upgradeOpen]);
 
-  useEffect(() => {
-    if (!isControlledModal || !requestModalOpen || !user || blocked || authLoading) return;
-    if (target.kind === "profile" && pets.length === 0 && !noPets && !petsLoading) {
-      void openRequestModal();
+  const loadRequesterPets = useCallback(async () => {
+    if (!user || target.kind !== "profile") return [];
+    setPetsLoading(true);
+    try {
+      const owned = await fetchRequesterPets(supabase, user.id);
+      setPets(owned);
+      setNoPets(owned.length === 0);
+      return owned;
+    } catch {
+      setError(t.requests.saveError);
+      setPets([]);
+      setNoPets(false);
+      return null;
+    } finally {
+      setPetsLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- openRequestModal is stable enough for this gate
+  }, [supabase, target.kind, t.requests.saveError, user]);
+
+  useEffect(() => {
+    if (!user || blocked || authLoading || target.kind !== "profile") return;
+    void loadRequesterPets();
+  }, [user, blocked, authLoading, target.kind, loadRequesterPets]);
+
+  useEffect(() => {
+    if (!isControlledModal || !requestModalOpen || !user || blocked || authLoading || profileLoading) {
+      return;
+    }
+    if (target.kind !== "profile") {
+      setOpen(true);
+      return;
+    }
+    if (petsLoading) return;
+    if (noPets || pets.length === 0) {
+      setOpen(false);
+      router.push("/pets/new");
+      return;
+    }
+    setOpen(true);
   }, [
     isControlledModal,
     requestModalOpen,
     user,
     blocked,
     authLoading,
+    profileLoading,
     target.kind,
     pets.length,
     noPets,
     petsLoading,
+    router,
+    setOpen,
   ]);
 
   async function handleOpen() {
-    if (authLoading || blocked) return;
+    if (authLoading || profileLoading || blocked) return;
     if (!user) {
       router.push(`/login?next=${encodeURIComponent(returnUrl)}`);
       return;
@@ -166,34 +200,23 @@ export function SendRequestButton({
 
     setError(null);
     setSuccess(false);
-    setNoPets(false);
 
     if (needsUpgrade) {
       openUpgradeToast();
       return;
     }
 
-    await openRequestModal();
-  }
-
-  async function openRequestModal() {
-    if (!user) return;
     if (target.kind === "profile") {
-      setPetsLoading(true);
-      try {
-        const owned = await fetchRequesterPets(supabase, user.id);
-        if (!owned.length) {
-          setNoPets(true);
-          return;
-        }
-        setPets(owned);
-      } catch {
-        setError(t.requests.saveError);
+      const owned =
+        pets.length > 0 && !noPets ? pets : (await loadRequesterPets()) ?? [];
+      if (!owned.length) {
+        router.push("/pets/new");
         return;
-      } finally {
-        setPetsLoading(false);
       }
+      setOpen(true);
+      return;
     }
+
     setOpen(true);
   }
 
@@ -321,19 +344,10 @@ export function SendRequestButton({
           size={size}
           className={`w-full ${className}`}
           onClick={handleOpen}
-          disabled={authLoading || blocked || success || petsLoading}
+          disabled={authLoading || profileLoading || blocked || success}
         >
-          {petsLoading ? t.auth.pleaseWait : buttonLabel}
+          {buttonLabel}
         </Button>
-      ) : null}
-
-      {noPets ? (
-        <p className="mt-2 text-center text-xs text-muted">
-          {t.requests.addPetFirst}{" "}
-          <Link href="/pets/new" className="font-semibold text-brand-teal hover:text-brand-pink">
-            {t.requests.addPetLink}
-          </Link>
-        </p>
       ) : null}
 
       {success ? (

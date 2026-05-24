@@ -175,6 +175,16 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
                 onSelectedDatesChange={
                   canSelectRequestDates ? handleSelectedRequestDatesChange : undefined
                 }
+                careRequestTarget={
+                  canSelectRequestDates
+                    ? {
+                        kind: "profile",
+                        friendId: profile.id,
+                        label: profile.display_name,
+                        availabilityDates: friendDates,
+                      }
+                    : null
+                }
               />
             ) : null}
             <PublicApproximateMapCard profile={profile} />

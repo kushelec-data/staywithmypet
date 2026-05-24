@@ -1,6 +1,7 @@
 "use client";
 
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
+import type { ParentToFriendRequestTarget } from "@/components/requests/SendRequestButton";
 import { Button } from "@/components/ui/Button";
 import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
@@ -20,6 +21,8 @@ type PublicCompactAvailabilityCardProps = {
   /** Optional date pre-selection for request flow (member profile). */
   selectedDates?: string[];
   onSelectedDatesChange?: (dates: string[]) => void;
+  /** Enables send-request from the full calendar (Pet Parent → Pet Friend). */
+  careRequestTarget?: ParentToFriendRequestTarget | null;
 };
 
 function shiftMonthCursor(cursor: MonthCursor, offset: number): MonthCursor {
@@ -35,6 +38,7 @@ export function PublicCompactAvailabilityCard({
   visibility = "public",
   selectedDates,
   onSelectedDatesChange,
+  careRequestTarget = null,
 }: PublicCompactAvailabilityCardProps) {
   const { t, locale } = useLanguage();
   const [fullCalendarOpen, setFullCalendarOpen] = useState(false);
@@ -139,6 +143,8 @@ export function PublicCompactAvailabilityCard({
           onMonthCursorChange={handleMonthCursorChange}
           selectedDates={selectable ? sortedSelected : undefined}
           onSelectedDatesChange={onSelectedDatesChange}
+          careRequestTarget={careRequestTarget}
+          initialSelectedDates={selectable ? sortedSelected : undefined}
         />
       ) : null}
     </section>
