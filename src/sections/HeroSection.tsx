@@ -76,7 +76,7 @@ export function HeroSection() {
             <HeroTrustBadges labels={trustCards} />
           </div>
         </div>
-        <PetMascotCTA variant="home" className="mt-5 sm:mt-7" />
+        <PetMascotCTA />
       </div>
     </section>
   );

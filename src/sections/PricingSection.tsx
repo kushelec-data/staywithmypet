@@ -18,7 +18,7 @@ export function PricingSection() {
           description={t.pricing.subtitle}
           className="mx-auto max-w-3xl"
         />
-        <PetMascotCTA variant="pricing" className="mx-auto mt-8 max-w-5xl" />
+        <PetMascotCTA />
         <MembershipPlans variant="marketing" initialTab="owner" />
       </div>
     </section>
