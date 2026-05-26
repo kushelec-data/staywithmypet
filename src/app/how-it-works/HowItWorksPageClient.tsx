@@ -1,5 +1,6 @@
 "use client";
 
+import { RunningDogCTA } from "@/components/marketing/RunningDogCTA";
 import { CtaBanner } from "@/components/ui/CtaBanner";
 import { AppImage } from "@/components/ui/AppImage";
 import { Button } from "@/components/ui/Button";
@@ -89,6 +90,7 @@ export function HowItWorksPageClient() {
           />
         </div>
       </section>
+      <RunningDogCTA />
     </div>
   );
 }

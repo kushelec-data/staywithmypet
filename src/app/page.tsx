@@ -1,3 +1,4 @@
+import { RunningDogCTA } from "@/components/marketing/RunningDogCTA";
 import { HeroSection } from "@/sections/HeroSection";
 import { HomeExploreSection } from "@/sections/HomeExploreSection";
 import { SearchSection } from "@/sections/SearchSection";
@@ -12,6 +13,7 @@ export default function HomePage() {
       <ServicesSection />
       <WhyChooseUsSection />
       <HomeExploreSection />
+      <RunningDogCTA />
     </div>
   );
 }
