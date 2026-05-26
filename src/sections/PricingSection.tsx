@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/context/LanguageContext";
+import { PetMascotCTA } from "@/components/marketing/PetMascotCTA";
 import { MembershipPlans } from "@/components/pricing/MembershipPlans";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { CONTENT_CONTAINER, PAGE_SECTION } from "@/lib/layout";
@@ -17,6 +18,7 @@ export function PricingSection() {
           description={t.pricing.subtitle}
           className="mx-auto max-w-3xl"
         />
+        <PetMascotCTA variant="pricing" className="mx-auto mt-8 max-w-5xl" />
         <MembershipPlans variant="marketing" initialTab="owner" />
       </div>
     </section>

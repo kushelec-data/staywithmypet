@@ -1,6 +1,7 @@
 "use client";
 
 import { HeroStoryCarousel } from "@/components/home/HeroStoryCarousel";
+import { PetMascotCTA } from "@/components/marketing/PetMascotCTA";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { CONTENT_CONTAINER, HEADING_HERO } from "@/lib/layout";
@@ -75,6 +76,7 @@ export function HeroSection() {
             <HeroTrustBadges labels={trustCards} />
           </div>
         </div>
+        <PetMascotCTA variant="home" className="mt-5 sm:mt-7" />
       </div>
     </section>
   );
