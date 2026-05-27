@@ -102,7 +102,7 @@ export function legendSwatchClass(
 }
 
 export const PAST_DAY_CELL =
-  "bg-stone-100 text-stone-400 cursor-not-allowed dark:bg-stone-800/30 dark:text-stone-500";
+  "bg-stone-100 text-stone-600 cursor-not-allowed dark:bg-stone-800/30 dark:text-stone-400";
 
 export const PAST_COMPLETED_CELL =
   "bg-stone-200/80 text-stone-500 cursor-not-allowed ring-1 ring-stone-200/70 dark:bg-stone-700/40 dark:text-stone-400 dark:ring-stone-600/50";
@@ -135,7 +135,7 @@ export const DEFAULT_TODAY_SELECT_CELL =
   "bg-surface text-foreground ring-2 ring-brand-teal/35 ring-offset-1 hover:bg-mint/40 cursor-pointer dark:ring-brand-teal/40";
 
 export const UNAVAILABLE_REQUEST_CELL =
-  "bg-neutral-100 text-neutral-400 cursor-not-allowed ring-1 ring-neutral-200/80 dark:bg-neutral-800/40 dark:text-neutral-500 dark:ring-neutral-700/60";
+  "bg-neutral-100 text-neutral-600 cursor-not-allowed ring-1 ring-neutral-200/80 dark:bg-neutral-800/40 dark:text-neutral-400 dark:ring-neutral-700/60";
 
 /** @deprecated Alias — same as UNAVAILABLE_REQUEST_CELL. */
 export const HIGH_CONTRAST_UNAVAILABLE_CELL = UNAVAILABLE_REQUEST_CELL;

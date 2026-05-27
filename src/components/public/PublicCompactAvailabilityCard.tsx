@@ -25,11 +25,6 @@ type PublicCompactAvailabilityCardProps = {
   careRequestTarget?: ParentToFriendRequestTarget | null;
 };
 
-function shiftMonthCursor(cursor: MonthCursor, offset: number): MonthCursor {
-  const next = new Date(cursor.year, cursor.month + offset, 1);
-  return { year: next.getFullYear(), month: next.getMonth() };
-}
-
 export function PublicCompactAvailabilityCard({
   petId,
   petFriendId,
@@ -67,7 +62,7 @@ export function PublicCompactAvailabilityCard({
   );
 
   const handleMonthCursorChange = useCallback((next: MonthCursor) => {
-    setMonthCursor(shiftMonthCursor(next, 0));
+    setMonthCursor(next);
   }, []);
 
   return (
@@ -128,25 +123,23 @@ export function PublicCompactAvailabilityCard({
         {t.bookingCalendar.viewFullCalendar}
       </Button>
 
-      {fullCalendarOpen ? (
-        <PetAvailabilityModal
-          open
-          name={t.searchFilters.availability}
-          petId={petId}
-          petFriendId={petFriendId}
-          dates={available}
-          onClose={() => setFullCalendarOpen(false)}
-          title={t.bookingCalendar.availabilityCalendarTitle}
-          variant="pastel"
-          visibility={visibility}
-          monthCursor={monthCursor}
-          onMonthCursorChange={handleMonthCursorChange}
-          selectedDates={selectable ? sortedSelected : undefined}
-          onSelectedDatesChange={onSelectedDatesChange}
-          careRequestTarget={careRequestTarget}
-          initialSelectedDates={selectable ? sortedSelected : undefined}
-        />
-      ) : null}
+      <PetAvailabilityModal
+        open={fullCalendarOpen}
+        name={t.searchFilters.availability}
+        petId={petId}
+        petFriendId={petFriendId}
+        dates={available}
+        onClose={() => setFullCalendarOpen(false)}
+        title={t.bookingCalendar.availabilityCalendarTitle}
+        variant="pastel"
+        visibility={visibility}
+        monthCursor={monthCursor}
+        onMonthCursorChange={handleMonthCursorChange}
+        selectedDates={selectable ? sortedSelected : undefined}
+        onSelectedDatesChange={onSelectedDatesChange}
+        careRequestTarget={careRequestTarget}
+        initialSelectedDates={selectable ? sortedSelected : undefined}
+      />
     </section>
   );
 }

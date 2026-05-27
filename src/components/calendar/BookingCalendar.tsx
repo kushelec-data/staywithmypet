@@ -92,12 +92,14 @@ export function BookingCalendar({
   const [internalMonthCursor, setInternalMonthCursor] = useState<MonthCursor>(() =>
     resolveInitialMonthCursor(available, sortedSelected, initialMonth),
   );
-  const monthCursor = monthCursorProp ?? internalMonthCursor;
+  const isMonthControlled =
+    monthCursorProp !== undefined && onMonthCursorChange !== undefined;
+  const monthCursor = isMonthControlled ? monthCursorProp : internalMonthCursor;
 
   function goToMonth(delta: number) {
     const next = shiftMonthCursor(monthCursor, delta);
     if (onMonthCursorChange) onMonthCursorChange(next);
-    else setInternalMonthCursor(next);
+    if (!isMonthControlled) setInternalMonthCursor(next);
   }
   const [activeBooking, setActiveBooking] = useState<CalendarBooking | null>(null);
   const [popoverVariant, setPopoverVariant] = useState<"popover" | "sheet">("popover");
@@ -110,7 +112,8 @@ export function BookingCalendar({
     month: "long",
     year: "numeric",
   });
-  const navigationDisabled = Boolean(disabled) && mode !== "availability-readonly";
+  const navigationDisabled =
+    mode === "availability-readonly" ? false : Boolean(disabled);
   const today = todayISODate();
 
   const { dayMap, blockingBookedDateSet, loading } = useCalendarBookings({
