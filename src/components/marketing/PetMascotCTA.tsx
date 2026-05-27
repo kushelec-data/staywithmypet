@@ -18,46 +18,102 @@ function PawIcon({ className = "" }: { className?: string }) {
   );
 }
 
-function RunningPuppy() {
+function RunningBostonTerrier() {
   return (
     <svg className="pet-mascot-cta__dog-svg" viewBox="0 0 150 92" aria-hidden="true" focusable="false">
       <defs>
-        <linearGradient id="petMascotGoldenFur" x1="18" x2="120" y1="12" y2="78" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#f8c277" />
-          <stop offset="0.55" stopColor="#d98a36" />
-          <stop offset="1" stopColor="#b96b22" />
+        <linearGradient id="petMascotCoatBlack" x1="24" x2="108" y1="18" y2="72" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2a2a30" />
+          <stop offset="1" stopColor="#141418" />
         </linearGradient>
-        <linearGradient id="petMascotCreamFur" x1="82" x2="142" y1="20" y2="66" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#fff7e9" />
-          <stop offset="1" stopColor="#f0d4ae" />
+        <linearGradient id="petMascotCoatWhite" x1="88" x2="138" y1="22" y2="58" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#fafbfc" />
+          <stop offset="1" stopColor="#e8eaee" />
         </linearGradient>
       </defs>
-      <ellipse cx="70" cy="80" rx="50" ry="8" fill="#5f3d20" opacity="0.12" />
+      <ellipse cx="72" cy="81" rx="46" ry="7" fill="#1a1a1f" opacity="0.1" />
       <path
         className="pet-mascot-cta__tail"
-        d="M27 45c-13-2-19-11-16-20 8 1 17 8 18 17"
-        fill="none"
-        stroke="#c87526"
-        strokeLinecap="round"
-        strokeWidth="10"
+        d="M30 48c-4-6-3-12 2-14 3 5 2 10-2 14"
+        fill="#1c1c22"
+        stroke="#1c1c22"
+        strokeLinejoin="round"
+        strokeWidth="1"
       />
       <path
-        d="M33 49c4-18 20-29 43-27 18 1 34 10 40 24 4 10 0 20-10 24-15 6-44 6-62 1-11-3-15-11-11-22Z"
-        fill="url(#petMascotGoldenFur)"
+        d="M36 52c2-14 18-24 40-22 14 1 28 8 34 20 3 7 1 15-7 19-12 6-38 7-55 2-9-3-13-10-12-19Z"
+        fill="url(#petMascotCoatBlack)"
       />
-      <path d="M98 34c4-12 16-19 29-16 15 4 20 18 13 31-5 9-16 13-29 9-11-3-17-12-13-24Z" fill="url(#petMascotCreamFur)" />
-      <path d="M111 25c-1-13 8-17 18-11-1 12-8 19-17 20" fill="#b76424" />
-      <path className="pet-mascot-cta__ear" d="M101 27c-10-9-23-7-27 3 6 11 18 13 28 5" fill="#9f551f" />
-      <path d="M118 46c8 3 16 2 21-3-1 9-8 15-19 14-7-1-12-4-15-8 3-4 7-5 13-3Z" fill="#fff9ef" />
-      <circle cx="124" cy="34" r="3.1" fill="#2b1a10" />
-      <circle cx="125" cy="33" r="1" fill="#fff" opacity="0.8" />
-      <path d="M139 39c4 1 6 3 4 5-2 2-5 1-8-1 1-2 2-3 4-4Z" fill="#2b1a10" />
-      <path d="M102 51c-12 4-26 3-41-2" fill="none" stroke="#fff4df" strokeLinecap="round" strokeWidth="4" opacity="0.45" />
-      <path className="pet-mascot-cta__leg pet-mascot-cta__leg--front" d="M100 66c5 9 12 12 22 11" fill="none" stroke="#b96b22" strokeLinecap="round" strokeWidth="9" />
-      <path className="pet-mascot-cta__leg pet-mascot-cta__leg--front-alt" d="M92 67c-2 9-7 14-17 17" fill="none" stroke="#d68a38" strokeLinecap="round" strokeWidth="9" />
-      <path className="pet-mascot-cta__leg pet-mascot-cta__leg--back" d="M53 68c-8 7-17 9-29 7" fill="none" stroke="#b96b22" strokeLinecap="round" strokeWidth="9" />
-      <path className="pet-mascot-cta__leg pet-mascot-cta__leg--back-alt" d="M60 68c3 8 9 13 19 15" fill="none" stroke="#d68a38" strokeLinecap="round" strokeWidth="9" />
-      <path d="M100 54c5 4 12 6 19 5" fill="none" stroke="#2f6b3f" strokeLinecap="round" strokeWidth="4" />
+      <path
+        d="M48 58c10 5 24 6 36 2 8-3 12-9 10-16-2-8-10-14-22-15-12-1-22 5-26 14-2 5 0 11 2 15Z"
+        fill="url(#petMascotCoatWhite)"
+      />
+      <path
+        d="M94 36c3-10 14-16 28-13 12 3 18 14 13 26-4 9-13 14-24 12-9-2-15-9-17-18-1-4 0-5 0-7Z"
+        fill="url(#petMascotCoatWhite)"
+      />
+      <path
+        d="M108 30c8-2 16 0 20 6-6 2-12 1-16-2-2-2-3-3-4-4Z"
+        fill="#1c1c22"
+      />
+      <path className="pet-mascot-cta__ear" d="M104 24c-6-8-14-9-18-2 4 7 11 9 18 4" fill="#1c1c22" />
+      <path className="pet-mascot-cta__ear" d="M98 21c-5-6-12-5-14 1 3 5 9 6 14 2" fill="#24242c" opacity="0.85" />
+      <path d="M118 44c7 2 14 1 18-4-1 7-7 12-16 11-6-1-10-3-12-6 2-2 6-2 10-1Z" fill="#f4f5f7" />
+      <ellipse cx="123" cy="33" rx="4.2" ry="4.8" fill="#1c1c22" />
+      <circle cx="124.5" cy="31.5" r="1.1" fill="#f7f8fa" opacity="0.85" />
+      <ellipse cx="133" cy="38" rx="2.4" ry="2" fill="#2a2a30" />
+      <path d="M140 40c3 1 5 3 3 5-2 2-5 0-7-2 1-2 2-2 4-3Z" fill="#1c1c22" />
+      <path
+        d="M105 50c-10 3-22 3-34 0"
+        fill="none"
+        stroke="#dce0e6"
+        strokeLinecap="round"
+        strokeWidth="3"
+        opacity="0.55"
+      />
+      <path
+        className="pet-mascot-cta__leg pet-mascot-cta__leg--front"
+        d="M98 66c4 8 11 11 20 10"
+        fill="none"
+        stroke="#1c1c22"
+        strokeLinecap="round"
+        strokeWidth="7"
+      />
+      <path
+        className="pet-mascot-cta__leg pet-mascot-cta__leg--front-alt"
+        d="M90 67c-1 8-6 13-15 15"
+        fill="none"
+        stroke="#303038"
+        strokeLinecap="round"
+        strokeWidth="7"
+      />
+      <path
+        className="pet-mascot-cta__leg pet-mascot-cta__leg--back"
+        d="M52 68c-7 6-15 8-26 6"
+        fill="none"
+        stroke="#1c1c22"
+        strokeLinecap="round"
+        strokeWidth="7"
+      />
+      <path
+        className="pet-mascot-cta__leg pet-mascot-cta__leg--back-alt"
+        d="M58 68c2 7 8 12 17 14"
+        fill="none"
+        stroke="#303038"
+        strokeLinecap="round"
+        strokeWidth="7"
+      />
+      <ellipse cx="104" cy="66" rx="3.2" ry="2.4" fill="#f4f5f7" />
+      <ellipse cx="78" cy="68" rx="3" ry="2.2" fill="#f4f5f7" />
+      <path
+        d="M99 53c6 3 13 4 20 3"
+        fill="none"
+        stroke="#265d32"
+        strokeLinecap="round"
+        strokeWidth="3.5"
+        opacity="0.92"
+      />
+      <circle cx="108" cy="53" r="1.6" fill="#c3e8d2" opacity="0.9" />
     </svg>
   );
 }
@@ -84,7 +140,7 @@ export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
         <span className="pet-mascot-cta__paw-print pet-mascot-cta__paw-print--three">
           <PawIcon />
         </span>
-        <RunningPuppy />
+        <RunningBostonTerrier />
       </div>
 
       <Link href="/signup" className="pet-mascot-cta__signup-paw pointer-events-auto" aria-label="Sign up">
@@ -93,9 +149,9 @@ export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
 
       <style>{`
         .pet-mascot-cta {
-          --pet-gold: #f5b453;
-          --pet-gold-deep: #c77723;
           --pet-ink: #2f2a24;
+          --pet-shadow: rgba(26, 26, 31, 0.12);
+          --pet-collar: #265d32;
           position: fixed;
           right: 0;
           bottom: clamp(4.25rem, 9vh, 6.5rem);
@@ -120,13 +176,13 @@ export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
           height: auto;
           width: 100%;
           overflow: visible;
-          filter: drop-shadow(0 10px 10px rgba(95, 61, 32, 0.13));
+          filter: drop-shadow(0 8px 12px var(--pet-shadow));
         }
 
         .pet-mascot-cta__paw-print {
           position: absolute;
           z-index: -1;
-          color: rgba(199, 119, 35, 0.2);
+          color: rgba(38, 93, 50, 0.16);
           opacity: 0.7;
         }
 
@@ -208,7 +264,7 @@ export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
           position: absolute;
           z-index: 1;
           display: none;
-          color: rgba(245, 180, 83, 0.56);
+          color: rgba(38, 93, 50, 0.28);
           font-size: 0.82rem;
           line-height: 1;
           opacity: 0;
@@ -228,28 +284,29 @@ export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
 
         .dark .pet-mascot-cta__dog-svg {
           filter:
-            drop-shadow(0 10px 10px rgba(0, 0, 0, 0.22))
-            drop-shadow(0 0 14px rgba(245, 180, 83, 0.12));
+            drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28))
+            drop-shadow(0 0 10px rgba(247, 248, 250, 0.08));
         }
 
         .dark .pet-mascot-cta__copy {
-          color: #f9e4bd;
-          text-shadow: 0 0 18px rgba(245, 180, 83, 0.24);
+          color: #e8eaee;
+          text-shadow: 0 0 12px rgba(247, 248, 250, 0.14);
         }
 
         .dark .pet-mascot-cta__paw-print {
-          color: rgba(250, 202, 112, 0.2);
+          color: rgba(195, 232, 210, 0.14);
         }
 
         .dark .pet-mascot-cta__signup-paw {
-          color: rgba(245, 180, 83, 0.68);
-          filter: drop-shadow(0 0 8px rgba(245, 180, 83, 0.2));
+          color: rgba(195, 232, 210, 0.62);
+          filter: drop-shadow(0 0 8px rgba(47, 107, 63, 0.22));
         }
 
         .dark .pet-mascot-cta__sparkle {
           display: block;
-          opacity: 0.72;
-          text-shadow: 0 0 14px rgba(245, 180, 83, 0.72);
+          color: rgba(195, 232, 210, 0.32);
+          opacity: 0.55;
+          text-shadow: 0 0 10px rgba(247, 248, 250, 0.18);
         }
 
         @keyframes pet-mascot-cross {
@@ -334,7 +391,7 @@ export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
           }
 
           .pet-mascot-cta__tail {
-            transform-origin: 29px 44px;
+            transform-origin: 32px 48px;
             animation: pet-mascot-tail 520ms ease-in-out infinite;
           }
 
@@ -364,6 +421,20 @@ export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
 
         @media (prefers-reduced-motion: reduce) {
           .pet-mascot-cta__runner {
+            opacity: 1;
+            animation: none;
+            transform: translate3d(calc(100vw - clamp(9rem, 18vw, 14rem)), 0.1rem, 0);
+          }
+
+          .pet-mascot-cta__dog-svg,
+          .pet-mascot-cta__tail,
+          .pet-mascot-cta__leg,
+          .pet-mascot-cta__paw-print,
+          .pet-mascot-cta__sparkle {
+            animation: none;
+          }
+
+          .pet-mascot-cta__sparkle {
             display: none;
           }
         }
