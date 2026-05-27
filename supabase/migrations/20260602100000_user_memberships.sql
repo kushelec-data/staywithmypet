@@ -1,8 +1,18 @@
 -- Dual role memberships: one row per user per role (pet_parent | pet_friend)
 
-create type public.membership_role as enum ('pet_parent', 'pet_friend');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'membership_role') then
+    create type public.membership_role as enum ('pet_parent', 'pet_friend');
+  end if;
+end $$;
 
-create type public.membership_status as enum ('active', 'cancelled', 'expired');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'membership_status') then
+    create type public.membership_status as enum ('active', 'cancelled', 'expired');
+  end if;
+end $$;
 
 create table if not exists public.user_memberships (
   id uuid primary key default gen_random_uuid(),

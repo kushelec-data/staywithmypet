@@ -2,13 +2,7 @@
 
 do $$
 begin
-  if not exists (
-    select 1
-    from pg_type t
-    join pg_namespace n on n.oid = t.typnamespace
-    where t.typname = 'profile_role'
-      and n.nspname = 'public'
-  ) then
+  if not exists (select 1 from pg_type where typname = 'profile_role') then
     create type public.profile_role as enum ('pet_parent', 'pet_friend', 'both');
   end if;
 end $$;

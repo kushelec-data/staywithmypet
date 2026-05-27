@@ -1,11 +1,16 @@
 -- In-app notifications (request + message events)
 
-create type public.notification_type as enum (
-  'care_request_received',
-  'request_accepted',
-  'request_declined',
-  'message_received'
-);
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'notification_type') then
+    create type public.notification_type as enum (
+      'care_request_received',
+      'request_accepted',
+      'request_declined',
+      'message_received'
+    );
+  end if;
+end $$;
 
 create table public.notifications (
   id uuid primary key default gen_random_uuid(),

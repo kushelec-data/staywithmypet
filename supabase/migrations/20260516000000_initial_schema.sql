@@ -21,19 +21,39 @@ $$;
 -- Enums
 -- ---------------------------------------------------------------------------
 
-create type public.profile_role as enum ('pet_parent', 'pet_friend', 'both');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'profile_role') then
+    create type public.profile_role as enum ('pet_parent', 'pet_friend', 'both');
+  end if;
+end $$;
 
-create type public.pet_species as enum ('dog', 'cat', 'rabbit', 'bird', 'other');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'pet_species') then
+    create type public.pet_species as enum ('dog', 'cat', 'rabbit', 'bird', 'other');
+  end if;
+end $$;
 
-create type public.request_status as enum (
-  'pending',
-  'accepted',
-  'declined',
-  'cancelled',
-  'completed'
-);
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'request_status') then
+    create type public.request_status as enum (
+      'pending',
+      'accepted',
+      'declined',
+      'cancelled',
+      'completed'
+    );
+  end if;
+end $$;
 
-create type public.article_status as enum ('draft', 'published', 'archived');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'article_status') then
+    create type public.article_status as enum ('draft', 'published', 'archived');
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- profiles (1:1 with auth.users)

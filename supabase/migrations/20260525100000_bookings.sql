@@ -1,11 +1,16 @@
 -- Bookings: created automatically when a care request is accepted.
 
-create type public.booking_status as enum (
-  'upcoming',
-  'active',
-  'completed',
-  'cancelled'
-);
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'booking_status') then
+    create type public.booking_status as enum (
+      'upcoming',
+      'active',
+      'completed',
+      'cancelled'
+    );
+  end if;
+end $$;
 
 create table public.bookings (
   id uuid primary key default gen_random_uuid(),

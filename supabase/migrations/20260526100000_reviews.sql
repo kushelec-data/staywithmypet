@@ -4,13 +4,14 @@
 -- Enum
 -- ---------------------------------------------------------------------------
 
-do $$ begin
-  create type public.review_type as enum (
-    'pet_parent_reviews_pet_friend',
-    'pet_friend_reviews_pet'
-  );
-exception
-  when duplicate_object then null;
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'review_type') then
+    create type public.review_type as enum (
+      'pet_parent_reviews_pet_friend',
+      'pet_friend_reviews_pet'
+    );
+  end if;
 end $$;
 
 -- ---------------------------------------------------------------------------
