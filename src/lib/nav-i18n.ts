@@ -26,6 +26,27 @@ export function getPrimaryNavLinks(t: Dictionary["navbar"], loggedIn = false) {
   }));
 }
 
+/** Logged-in center nav: one search link based on active_mode. */
+export function getPrimaryNavLinksForUser(
+  t: Dictionary["navbar"],
+  profile: ProfileRow | null,
+  loggedIn: boolean,
+) {
+  const links = getPrimaryNavLinks(t, loggedIn);
+  if (!loggedIn || !profile) return links;
+
+  const mode = resolveActiveMode(profile.role, profile.active_mode);
+  const searchLink =
+    mode === "pet_friend"
+      ? { href: "/find-pets" as const, label: t.searchPets }
+      : { href: "/find-care" as const, label: t.findCare };
+
+  const withoutSearch = links.filter(
+    (item) => item.href !== "/find-pets" && item.href !== "/find-care",
+  );
+  return [searchLink, ...withoutSearch];
+}
+
 export function requestsHrefForProfile(profile: ProfileRow | null): string {
   if (!profile) return "/requests";
   const mode = resolveActiveMode(profile.role, profile.active_mode);

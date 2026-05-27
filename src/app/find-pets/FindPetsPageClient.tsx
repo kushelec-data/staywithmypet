@@ -3,6 +3,7 @@
 import { PageCta } from "@/components/layout/PageCta";
 import { PageHero } from "@/components/layout/PageHero";
 import { PageMain } from "@/components/layout/PageMain";
+import { RoleModeSearchGuard } from "@/components/role-mode/RoleModeSearchGuard";
 import { SearchPageContent } from "@/components/search/SearchPageContent";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -19,7 +20,9 @@ export function FindPetsPageClient() {
       />
 
       <PageMain>
-        <SearchPageContent mode="pets" />
+        <RoleModeSearchGuard page="pets">
+          <SearchPageContent mode="pets" />
+        </RoleModeSearchGuard>
       </PageMain>
 
       <PageCta

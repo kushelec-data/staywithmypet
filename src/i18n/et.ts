@@ -1285,6 +1285,22 @@ export const et = {
     namePlaceholder: "Alex Johnson",
     emailPlaceholder: "sina@näide.ee",
   },
+  roleMode: {
+    eyebrow: "Režiim",
+    switching: "Vahetan…",
+    findCareBlocked: {
+      message:
+        "Sirvid praegu lemmikusõbra rollis. Lemmiklooma omaniku režiimi lülitu, et leida oma lemmikloomadele hooldust.",
+      switch: "Lülitu lemmiklooma omanikuks",
+      cancel: "Tühista",
+    },
+    findPetsBlocked: {
+      message:
+        "Sirvid praegu lemmiklooma omaniku rollis. Lemmikusõbra režiimi lülitu, et sirvida hooldust vajavaid lemmikloomi.",
+      switch: "Lülitu lemmikusõbraks",
+      cancel: "Tühista",
+    },
+  },
   onboarding: {
     role: {
       eyebrow: "Tere tulemast",

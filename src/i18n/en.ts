@@ -1287,6 +1287,22 @@ export const en = {
     namePlaceholder: "Alex Johnson",
     emailPlaceholder: "you@example.com",
   },
+  roleMode: {
+    eyebrow: "Mode",
+    switching: "Switching…",
+    findCareBlocked: {
+      message:
+        "You are currently browsing as a Pet Friend. Switch to Pet Parent mode to find care for your pets.",
+      switch: "Switch to Pet Parent",
+      cancel: "Cancel",
+    },
+    findPetsBlocked: {
+      message:
+        "You are currently browsing as a Pet Parent. Switch to Pet Friend mode to browse pets needing care.",
+      switch: "Switch to Pet Friend",
+      cancel: "Cancel",
+    },
+  },
   onboarding: {
     role: {
       eyebrow: "Welcome",

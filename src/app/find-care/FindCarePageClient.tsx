@@ -3,6 +3,7 @@
 import { PageCta } from "@/components/layout/PageCta";
 import { PageHero } from "@/components/layout/PageHero";
 import { PageMain } from "@/components/layout/PageMain";
+import { RoleModeSearchGuard } from "@/components/role-mode/RoleModeSearchGuard";
 import { SearchPageContent } from "@/components/search/SearchPageContent";
 import { useLanguage } from "@/context/LanguageContext";
 import { Suspense } from "react";
@@ -20,9 +21,11 @@ export function FindCarePageClient() {
       />
 
       <PageMain>
-        <Suspense fallback={null}>
-          <SearchPageContent mode="care" />
-        </Suspense>
+        <RoleModeSearchGuard page="care">
+          <Suspense fallback={null}>
+            <SearchPageContent mode="care" />
+          </Suspense>
+        </RoleModeSearchGuard>
       </PageMain>
 
       <PageCta

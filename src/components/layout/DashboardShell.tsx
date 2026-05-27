@@ -7,7 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import { headerNavForActiveMode, isSidebarLinkActive, sidebarNavForActiveMode } from "@/lib/account-nav";
 import { resolveActiveMode, sidebarModeActionForProfile } from "@/lib/profile-mode";
-import { saveUserActiveMode } from "@/lib/profile-setup";
+import { searchHrefForActiveMode } from "@/lib/role-mode-search";
+import { performActiveModeSwitch } from "@/lib/switch-active-mode";
 import { profileInitials, profileUsername } from "@/lib/profile-utils";
 import { createClient } from "@/lib/supabase";
 import { DashboardAccountNavStrip } from "@/components/dashboard/DashboardAccountNavStrip";
@@ -20,7 +21,6 @@ import {
   dashboardBreadcrumbFromPath,
   type DashboardBreadcrumbParent,
 } from "@/lib/dashboard-breadcrumb";
-import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { useLanguage } from "@/context/LanguageContext";
 import { accountSidebarLabel } from "@/lib/nav-i18n";
 
@@ -130,19 +130,18 @@ export function DashboardShell({
     setSwitchingMode(targetMode);
     setModeError(null);
     try {
-      const saved = await saveUserActiveMode(supabase, user.id, targetMode, profile, {
+      await performActiveModeSwitch({
+        supabase,
         user,
-        existingDisplayName: profile.display_name,
+        profile,
+        targetMode,
+        setProfileRow,
+        refreshProfile,
       });
-      setProfileRow(saved);
-      const { sendWelcomeForModeSwitchAction } = await import("@/app/actions/email-events");
-      void sendWelcomeForModeSwitchAction(targetMode);
-      await refreshProfile({ background: true });
-      notifyDashboardRefresh();
       if (isMembershipRoute) {
         router.refresh();
       } else {
-        router.push(DASHBOARD_PATH);
+        router.push(searchHrefForActiveMode(targetMode));
         router.refresh();
       }
     } catch (err) {

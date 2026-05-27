@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useProfile } from "@/context/ProfileContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { NavbarSavedLink } from "@/components/navbar/NavbarSavedLink";
 import { NavbarUserMenu } from "@/components/navbar/NavbarUserMenu";
-import { getAuthNavLinks, getPrimaryNavLinks } from "@/lib/nav-i18n";
+import { getAuthNavLinks, getPrimaryNavLinksForUser } from "@/lib/nav-i18n";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
 const LOGO_SRC = "/logo.png";
@@ -90,11 +91,15 @@ export function Navbar() {
   const router = useRouter();
   const { t } = useLanguage();
   const { user, loading, signOut } = useAuth();
+  const { profile } = useProfile();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const isLoggedIn = !!user && !loading;
-  const centerNavLinks = useMemo(() => getPrimaryNavLinks(t.navbar, isLoggedIn), [t, isLoggedIn]);
+  const centerNavLinks = useMemo(
+    () => getPrimaryNavLinksForUser(t.navbar, profile, isLoggedIn),
+    [t, profile, isLoggedIn],
+  );
   const authNavLinks = useMemo(() => getAuthNavLinks(t.navbar), [t]);
 
   async function handleLogout() {
