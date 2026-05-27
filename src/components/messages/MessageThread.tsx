@@ -13,7 +13,6 @@ type MessageThreadProps = {
   loading: boolean;
   emptyTitle: string;
   emptyHint: string;
-  bottomRef: React.RefObject<HTMLDivElement | null>;
   incomingAvatarUrl?: string | null;
   incomingInitial?: string;
 };
@@ -57,7 +56,6 @@ export function MessageThread({
   loading,
   emptyTitle,
   emptyHint,
-  bottomRef,
   incomingAvatarUrl,
   incomingInitial = "?",
 }: MessageThreadProps) {
@@ -155,7 +153,6 @@ export function MessageThread({
           </div>
         </div>
       ))}
-      <div ref={bottomRef} className="h-px shrink-0" aria-hidden />
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
 import { blockUser, formatTrustSafetyError, isUserBlocked } from "@/lib/trust-safety";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { useProfile } from "@/context/ProfileContext";
 import {
@@ -62,8 +62,8 @@ export function ChatPanel({
   const [reportOpen, setReportOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prefersSmoothScrollRef = useRef(false);
 
   const canSend = canSendInConversation(conversation) && !blocked;
   const showReviewBanner =
@@ -72,6 +72,16 @@ export function ChatPanel({
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
   const thumbInitial = displayName.trim().charAt(0).toUpperCase() || "?";
+
+  const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
+  }, []);
+
+  useEffect(() => {
+    prefersSmoothScrollRef.current = false;
+  }, [conversationId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +92,7 @@ export function ChatPanel({
       setMessages([]);
       setDraft("");
       setEmojiOpen(false);
+      prefersSmoothScrollRef.current = false;
 
       try {
         const [rows, isBlocked] = await Promise.all([
@@ -126,8 +137,10 @@ export function ChatPanel({
 
   useEffect(() => {
     if (loading) return;
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, loading, conversationId]);
+    const behavior = prefersSmoothScrollRef.current ? "smooth" : "auto";
+    scrollThreadToBottom(behavior);
+    prefersSmoothScrollRef.current = true;
+  }, [messages.length, loading, conversationId, scrollThreadToBottom]);
 
   async function handleBlock() {
     const confirmed = window.confirm(
@@ -284,14 +297,13 @@ export function ChatPanel({
 
       <div
         ref={scrollContainerRef}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto scroll-smooth bg-[#f8f5ef]/60 px-2 dark:bg-[#1c1b19]/40 sm:px-3"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain scroll-smooth bg-[#f8f5ef]/60 px-2 dark:bg-[#1c1b19]/40 sm:px-3"
       >
         <MessageThread
           messages={messages}
           loading={loading}
           emptyTitle={m.threadEmptyTitle}
           emptyHint={m.threadEmptyHint}
-          bottomRef={bottomRef}
           incomingAvatarUrl={conversation.otherPartyAvatarUrl}
           incomingInitial={
             conversation.otherPartyName.trim().charAt(0).toUpperCase() || "?"

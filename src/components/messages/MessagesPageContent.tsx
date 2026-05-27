@@ -160,7 +160,7 @@ export function MessagesPageContent() {
       description={t.messages.pageDescription}
       hideCompleteProfileBanner
     >
-      <div className="flex h-[min(78dvh,720px)] min-h-[min(320px,65dvh)] w-full max-w-full min-w-0 flex-col gap-3 bg-[#f8f5ef] sm:min-h-[420px] lg:flex-row lg:gap-4 dark:bg-[#1c1b19]">
+      <div className="flex h-[min(78dvh,720px)] min-h-[min(320px,65dvh)] w-full max-w-full min-w-0 flex-col gap-3 overflow-hidden bg-[#f8f5ef] sm:min-h-[420px] lg:flex-row lg:gap-4 dark:bg-[#1c1b19]">
         <aside
           className={`flex w-full min-w-0 shrink-0 flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-[#f5f1e8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:border-white/10 dark:bg-[#2a2824] dark:shadow-[0_2px_12px_rgba(0,0,0,0.35)] lg:w-[340px] ${
             showMobileChat ? "hidden lg:flex" : "flex"
