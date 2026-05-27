@@ -14,7 +14,7 @@ type BookingDateCellProps = {
   tint?: string | null;
   className?: string;
   compact?: boolean;
-  /** Booked indicator dot on light pastel cells. */
+  /** @deprecated Dots use the unified soft palette. */
   bookedDotPastel?: boolean;
 };
 
@@ -26,7 +26,6 @@ export function BookingDateCell({
   tint,
   className = "",
   compact = false,
-  bookedDotPastel = false,
 }: BookingDateCellProps) {
   const hasBookings = slices.length > 0 || booked;
   const visible = showAvatars ? slices.slice(0, MAX_AVATARS) : [];
@@ -74,10 +73,7 @@ export function BookingDateCell({
           ) : null}
         </div>
       ) : hasBookings && !showAvatars ? (
-        <span
-          className={`h-1.5 w-1.5 rounded-full ${bookedDotPastel ? "bg-slate-500/70" : "bg-white/80"}`}
-          aria-hidden
-        />
+        <span className="h-1.5 w-1.5 rounded-full bg-slate-500/60" aria-hidden />
       ) : null}
     </div>
   );

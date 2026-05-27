@@ -55,9 +55,9 @@ export type BookingCalendarProps = {
   className?: string;
   /** Smaller grid for sidebar mini calendars. */
   compact?: boolean;
-  /** Soft mint/grey palette for public profile surfaces. */
+  /** @deprecated Ignored — one soft palette site-wide. */
   variant?: "default" | "pastel";
-  /** @deprecated Use variant="pastel" instead. */
+  /** @deprecated Ignored — same as default palette. */
   highContrast?: boolean;
 };
 
@@ -80,10 +80,9 @@ export function BookingCalendar({
   showSelectedChips,
   className = "",
   compact = false,
-  variant: variantProp = "default",
-  highContrast = false,
+  variant: _variant = "default",
+  highContrast: _highContrast = false,
 }: BookingCalendarProps) {
-  const variant = variantProp;
   const { t, locale } = useLanguage();
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
   const availableSet = useMemo(() => new Set(available), [available]);
@@ -204,12 +203,9 @@ export function BookingCalendar({
     ? "rounded-lg border border-black/8 bg-surface px-2 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-mint/35 disabled:opacity-50"
     : "rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-mint/40 disabled:opacity-50";
 
-  const gridShellClass =
-    variant === "pastel"
-      ? compact
-        ? "overflow-x-auto rounded-xl border border-black/[0.06] bg-cream/40 p-2"
-        : "overflow-x-auto rounded-2xl border border-black/[0.06] bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-3 sm:p-4"
-      : "overflow-x-auto rounded-2xl border border-brand-teal/20 bg-gradient-to-b from-mint/30 to-surface p-3 sm:p-4";
+  const gridShellClass = compact
+    ? "overflow-x-auto rounded-xl border border-black/[0.06] bg-cream/40 p-2 sm:p-2.5"
+    : "overflow-x-auto rounded-2xl border border-black/[0.06] bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-2.5 sm:p-4";
 
   return (
     <div className={`${compact ? "space-y-2.5" : "space-y-4"} ${className}`}>
@@ -247,7 +243,13 @@ export function BookingCalendar({
       </div>
 
       <div className={gridShellClass}>
-        <div className={compact ? "min-w-0 w-full" : "mx-auto min-w-[260px] max-w-md"}>
+        <div
+          className={
+            compact
+              ? "min-w-0 w-full"
+              : "mx-auto w-full min-w-[min(100%,260px)] max-w-md px-0.5 sm:px-0"
+          }
+        >
           <div
             className={`grid grid-cols-7 gap-0.5 text-center font-semibold uppercase tracking-wide text-muted ${
               compact ? "text-[0.6rem]" : "text-[0.65rem] sm:text-xs"
@@ -259,7 +261,9 @@ export function BookingCalendar({
               </div>
             ))}
           </div>
-          <div className={`mt-1 grid grid-cols-7 ${compact ? "gap-0.5" : "gap-1"}`}>
+          <div
+            className={`mt-1 grid grid-cols-7 ${compact ? "gap-0.5" : "gap-0.5 sm:gap-1"}`}
+          >
             {cells.map((day, idx) => {
               if (day === null) {
                 return <div key={`e-${idx}`} className="aspect-square" />;
@@ -295,12 +299,10 @@ export function BookingCalendar({
                   disabled,
                   primaryTint: primaryBooking?.color.tint ?? null,
                   primaryColor: primaryBooking?.color,
-                  highContrast,
-                  variant,
                 },
               );
 
-              const cellRound = compact ? "rounded-lg" : "rounded-xl";
+              const cellRound = compact ? "rounded-lg" : "rounded-lg sm:rounded-xl";
               const cellInner = (
                 <BookingDateCell
                   day={day}
@@ -309,7 +311,6 @@ export function BookingCalendar({
                   showAvatars={resolved.showAvatars && viewRole !== "public"}
                   tint={resolved.tint}
                   compact={compact}
-                  bookedDotPastel={variant === "pastel"}
                 />
               );
 
@@ -373,32 +374,32 @@ export function BookingCalendar({
 
       {showLegend ? (
         <ul
-          className={`flex flex-wrap gap-x-3 gap-y-1.5 font-medium text-foreground ${
+          className={`flex flex-wrap gap-x-3 gap-y-1.5 font-medium text-muted ${
             compact ? "text-[0.65rem]" : "text-xs"
-          } ${variant === "pastel" ? "text-muted" : ""}`}
+          }`}
         >
           <li className="flex items-center gap-1.5">
             <span
-              className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("available", variant)}`}
+              className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("available")}`}
             />
             {t.bookingCalendar.legendAvailable}
           </li>
           <li className="flex items-center gap-1.5">
             <span
-              className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("past", variant)}`}
+              className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("past")}`}
             />
             {t.bookingCalendar.legendPast}
           </li>
           <li className="flex items-center gap-1.5">
             <span
-              className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("booked", variant)}`}
+              className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("booked")}`}
             />
             {t.bookingCalendar.legendBooked}
           </li>
           {mode === "availability-readonly" || mode === "request-select" ? (
             <li className="flex items-center gap-1.5">
               <span
-                className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("unavailable", variant)}`}
+                className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("unavailable")}`}
               />
               {t.bookingCalendar.legendUnavailable}
             </li>
@@ -406,7 +407,7 @@ export function BookingCalendar({
           {mode !== "availability-readonly" ? (
             <li className="flex items-center gap-1.5">
               <span
-                className={`shrink-0 ${variant === "pastel" ? "h-2 w-2 rounded-full" : "h-3 w-3 rounded-sm"} ${legendSwatchClass("selected", variant)}`}
+                className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("selected")}`}
               />
               {t.bookingCalendar.legendSelected}
             </li>
