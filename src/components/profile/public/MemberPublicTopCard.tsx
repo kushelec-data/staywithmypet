@@ -6,7 +6,6 @@ import { placeholderProfileImage } from "@/lib/images";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { SendRequestButton } from "@/components/requests/SendRequestButton";
-import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { Button } from "@/components/ui/Button";
 import { formatProfileRoleBadge } from "@/lib/profile-mode";
@@ -116,12 +115,6 @@ export function MemberPublicTopCard({
             variant="outline"
             className="w-full justify-center"
           />
-          {!isSelf ? (
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-black/5 bg-cream/50 py-2">
-              <FavoriteButton target={{ type: "friend", id: profile.id }} />
-              <span className="text-sm font-medium text-foreground">Save profile</span>
-            </div>
-          ) : null}
           <p className="text-center text-[0.65rem] leading-snug text-muted">
             Exact address, phone, and email stay private.
           </p>

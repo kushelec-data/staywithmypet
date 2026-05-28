@@ -13,7 +13,6 @@ import { profileInitials, profileUsername } from "@/lib/profile-utils";
 import { createClient } from "@/lib/supabase";
 import { DashboardAccountNavStrip } from "@/components/dashboard/DashboardAccountNavStrip";
 import { DashboardHeaderNavLink } from "@/components/dashboard/DashboardHeaderNavLink";
-import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { DashboardBreadcrumb } from "@/components/dashboard/DashboardBreadcrumb";
 import { Button } from "@/components/ui/Button";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
@@ -177,7 +176,6 @@ export function DashboardShell({
           ) : null}
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <NotificationsBell />
           {headerNav.map((item) => (
             <DashboardHeaderNavLink key={item.href} item={item} />
           ))}
