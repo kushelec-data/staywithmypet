@@ -1,5 +1,6 @@
 "use client";
 
+import { PetPublicAvailabilityCalendar } from "@/components/pets/PetPublicAvailabilityCalendar";
 import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
@@ -52,6 +53,16 @@ export function PublicCompactAvailabilityCard({
             {t.findCare.noUpcomingDates}
           </p>
         )}
+
+        {petFriendId ? (
+          <PetPublicAvailabilityCalendar
+            petFriendId={petFriendId}
+            availableDates={available}
+            visibility={visibility}
+            compact
+            variant="pastel"
+          />
+        ) : null}
       </div>
     </section>
   );
