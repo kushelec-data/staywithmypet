@@ -91,6 +91,8 @@ export function PetAvailabilityModal({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pathnameWhenOpenedRef = useRef<string | null>(null);
   const wasOpenRef = useRef(false);
+  const bodyScrollLockedRef = useRef(false);
+  const prevBodyOverflowRef = useRef<string>("");
   const memberships = profile?.memberships ?? emptyMembershipsByRole();
   const hasParentMembership = canUseMembershipFeaturesForMode(memberships, "pet_parent");
   const selectable = Boolean(onSelectedDatesChange);
@@ -130,19 +132,26 @@ export function PetAvailabilityModal({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
+    if (!mounted || !open) return;
+    if (bodyScrollLockedRef.current) return;
+    prevBodyOverflowRef.current = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    bodyScrollLockedRef.current = true;
     return () => {
-      document.body.style.overflow = prev;
+      if (!bodyScrollLockedRef.current) return;
+      document.body.style.overflow = prevBodyOverflowRef.current;
+      bodyScrollLockedRef.current = false;
     };
-  }, [open]);
+  }, [mounted, open]);
 
   useEffect(() => {
     return () => {
       const dialog = dialogRef.current;
       if (dialog?.open) dialog.close();
-      document.body.style.overflow = "";
+      if (bodyScrollLockedRef.current) {
+        document.body.style.overflow = prevBodyOverflowRef.current;
+        bodyScrollLockedRef.current = false;
+      }
     };
   }, []);
 

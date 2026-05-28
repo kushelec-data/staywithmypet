@@ -198,6 +198,7 @@ export function OwnerCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log("[calendar] open", profile.id);
                 openCalendar();
               }}
               className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-teal/25 bg-mint/35 font-semibold text-brand-teal transition-colors relative z-10 pointer-events-auto hover:bg-mint/55 ${
