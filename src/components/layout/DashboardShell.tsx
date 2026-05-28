@@ -231,7 +231,7 @@ export function DashboardShell({
                       href={item.href}
                       className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                         active
-                          ? "bg-brand-pink text-white shadow-sm"
+                          ? "bg-mint/60 text-brand-teal shadow-sm ring-1 ring-brand-teal/15"
                           : "text-muted hover:bg-mint/40 hover:text-foreground"
                       }`}
                     >

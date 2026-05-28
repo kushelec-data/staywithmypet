@@ -17,7 +17,7 @@ const sidebarItems: ModeNavItem[] = [
   { href: "/find-pets", label: "Search pets", modes: ["pet_friend"] },
   { href: "/saved", label: "Saved pets", modes: ["pet_friend"] },
   { href: "/requests?direction=outgoing", label: "Requests", modes: ["pet_friend"] },
-  { href: "/profile/edit", label: "My profile", modes: ["pet_parent", "pet_friend"] },
+  { href: "/profile/edit", label: "Edit Profile", modes: ["pet_parent", "pet_friend"] },
   { href: "/membership", label: "Membership", modes: ["pet_parent", "pet_friend"] },
   { href: "/change-password", label: "Change password", modes: ["pet_parent", "pet_friend"] },
 ];

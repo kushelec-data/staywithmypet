@@ -92,7 +92,7 @@ export function ProfileEditWizard({
     totalSteps >= 4 ? "md:grid-cols-4" : totalSteps === 3 ? "md:grid-cols-3" : "md:grid-cols-2";
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-4">
+    <div className="mx-auto w-full max-w-3xl space-y-5">
       <div
         ref={tabsRef}
         role="tablist"
@@ -144,7 +144,18 @@ export function ProfileEditWizard({
         role="tabpanel"
         aria-labelledby={`profile-edit-tab-${activeStep.id}`}
       >
-        <p className="mb-3 text-sm text-muted">{activeStep.description}</p>
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+          <p className="text-sm text-muted">{activeStep.description}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={activeStep.onEdit}
+            disabled={activeStep.isEditing || activeStep.saving}
+          >
+            {labels.edit}
+          </Button>
+        </div>
         <ProfileEditStepPanel
           panelRef={panelRef}
           isEditing={activeStep.isEditing}
@@ -155,21 +166,23 @@ export function ProfileEditWizard({
         </ProfileEditStepPanel>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-black/5 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={activeStep.onEdit}
-            disabled={activeStep.isEditing || activeStep.saving}
-          >
-            {labels.edit}
-          </Button>
+      <div className="grid gap-2 border-t border-black/5 pt-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+        <div>
+          {!isFirst ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => goToIndex(activeIndex - 1)}>
+              {labels.previous}
+            </Button>
+          ) : (
+            <span />
+          )}
+        </div>
+
+        <div className="flex justify-stretch sm:justify-center">
           <Button
             type="button"
             variant="primary"
             size="sm"
+            className="w-full sm:w-auto"
             disabled={!activeStep.isEditing || activeStep.saving}
             onClick={() => activeStep.onSave()}
           >
@@ -177,27 +190,14 @@ export function ProfileEditWizard({
           </Button>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {!isFirst ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => goToIndex(activeIndex - 1)}
-            >
-              {labels.previous}
-            </Button>
-          ) : null}
+        <div className="flex justify-end">
           {!isLast ? (
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => goToIndex(activeIndex + 1)}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => goToIndex(activeIndex + 1)}>
               {labels.nextStep}
             </Button>
-          ) : null}
+          ) : (
+            <span />
+          )}
         </div>
       </div>
     </div>

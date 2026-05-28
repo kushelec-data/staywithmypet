@@ -393,8 +393,9 @@ export const en = {
     close: "Close",
   },
   profileEdit: {
-    pageTitle: "Change My Profile",
-    pageDescription: "Update your profile step by step. Each step saves independently.",
+    pageTitle: "Edit Profile",
+    pageDescription:
+      "Update your profile step by step. Each section saves your information clearly.",
     signedInAs: "Signed in as",
     saveChanges: "Save changes",
     saving: "Saving…",
