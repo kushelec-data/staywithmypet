@@ -37,7 +37,7 @@ export function BookingDateCell({
       style={tint ? { backgroundColor: tint } : undefined}
     >
       <span
-        className={`font-semibold leading-none ${compact ? "text-[0.65rem]" : "text-sm"}`}
+        className={`font-semibold leading-none ${compact ? "text-[0.65rem]" : "text-[0.95rem]"}`}
       >
         {day}
       </span>
@@ -73,7 +73,7 @@ export function BookingDateCell({
           ) : null}
         </div>
       ) : hasBookings && !showAvatars ? (
-        <span className="h-1.5 w-1.5 rounded-full bg-slate-500/60" aria-hidden />
+        <span className="h-2 w-2 rounded-full bg-indigo-500/60" aria-hidden />
       ) : null}
     </div>
   );

@@ -166,7 +166,7 @@ export function CalendarPageContent() {
           </div>
           <p className="text-sm text-muted">
             <Link
-              href="/profile/edit"
+              href="/profile/edit?step=availability"
               className="font-medium text-brand-teal underline-offset-2 hover:underline"
             >
               {copy.editMyAvailability}

@@ -29,6 +29,8 @@ type PetFriendProfileFormSectionsProps = {
   /** Profile-level calendar (Pet Friend personal availability) */
   showCalendar?: boolean;
   petFriendId?: string | null;
+  /** Open availability panel by default (deep-link). */
+  availabilityDefaultOpen?: boolean;
 };
 
 function patch(
@@ -63,6 +65,7 @@ export function PetFriendProfileFormSections({
   disabled,
   showCalendar = true,
   petFriendId,
+  availabilityDefaultOpen = false,
 }: PetFriendProfileFormSectionsProps) {
   return (
     <div className="space-y-4 sm:col-span-2">
@@ -164,6 +167,7 @@ export function PetFriendProfileFormSections({
         id="availability"
         title="Availability"
         description="When and how long you can help."
+        defaultOpen={availabilityDefaultOpen}
       >
         <ProfileChipMultiSelect
           label="Preferred days & times"
@@ -192,9 +196,11 @@ export function PetFriendProfileFormSections({
         </div>
         {showCalendar ? (
           <div className="sm:col-span-2">
-            <p className="text-sm font-medium text-foreground">Calendar availability</p>
-            <p className="mt-1 text-xs text-muted">Tap days you are available to help with pet care.</p>
-            <div className="mt-3 rounded-2xl border-2 border-brand-teal/25 bg-surface/90 p-3 shadow-sm ring-1 ring-black/5 sm:p-4">
+            <p className="text-base font-semibold text-foreground">Edit my availability</p>
+            <p className="mt-1 text-sm text-muted">
+              Tap days you’re available. Pet Parents will see your availability on your public profile.
+            </p>
+            <div className="mt-4 rounded-3xl border border-black/5 bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
               <AvailabilityCalendar
                 selectedDates={form.availabilitySelectedDates}
                 onChange={(dates) => patch(form, onChange, { availabilitySelectedDates: dates })}

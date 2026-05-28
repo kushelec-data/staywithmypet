@@ -69,10 +69,10 @@ export type ResolvedCalendarDay = {
 };
 
 /** Legend swatches — keep in sync with day cell backgrounds. */
-export const LEGEND_PAST_CLASS = "bg-stone-200 ring-1 ring-stone-200/80";
-export const LEGEND_BOOKED_CLASS = "bg-slate-300 ring-1 ring-slate-200/70";
-export const LEGEND_AVAILABLE_CLASS = "bg-mint/70 ring-1 ring-emerald-200/60";
-export const LEGEND_UNAVAILABLE_CLASS = "bg-neutral-100 ring-1 ring-neutral-200";
+export const LEGEND_PAST_CLASS = "bg-stone-100 ring-1 ring-stone-200/70";
+export const LEGEND_BOOKED_CLASS = "bg-indigo-200/65 ring-1 ring-indigo-200/70";
+export const LEGEND_AVAILABLE_CLASS = "bg-mint/50 ring-1 ring-emerald-200/60";
+export const LEGEND_UNAVAILABLE_CLASS = "bg-neutral-200/55 ring-1 ring-neutral-300/80";
 export const LEGEND_SELECTED_CLASS = "bg-mint/50 ring-2 ring-brand-teal/45";
 
 /** @deprecated Alias — same palette as default legend classes. */
@@ -108,7 +108,7 @@ export const PAST_COMPLETED_CELL =
   "bg-stone-200/80 text-stone-500 cursor-not-allowed ring-1 ring-stone-200/70 dark:bg-stone-700/40 dark:text-stone-400 dark:ring-stone-600/50";
 
 export const PUBLIC_BOOKED_CELL =
-  "bg-slate-200/95 text-slate-700 cursor-not-allowed ring-1 ring-slate-200/70 dark:bg-slate-600/35 dark:text-slate-300 dark:ring-slate-500/40";
+  "bg-indigo-200/65 text-indigo-950 cursor-not-allowed ring-1 ring-indigo-200/70 dark:bg-indigo-950/25 dark:text-indigo-200 dark:ring-indigo-800/50";
 
 export const AVAILABLE_CELL =
   "bg-mint/50 text-emerald-900 ring-1 ring-emerald-200/60 hover:bg-mint/65 hover:ring-brand-teal/25 cursor-pointer dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-emerald-800/50";
@@ -135,7 +135,7 @@ export const DEFAULT_TODAY_SELECT_CELL =
   "bg-surface text-foreground ring-2 ring-brand-teal/35 ring-offset-1 hover:bg-mint/40 cursor-pointer dark:ring-brand-teal/40";
 
 export const UNAVAILABLE_REQUEST_CELL =
-  "bg-neutral-100 text-neutral-600 cursor-not-allowed ring-1 ring-neutral-200/80 dark:bg-neutral-800/40 dark:text-neutral-400 dark:ring-neutral-700/60";
+  "bg-neutral-200/55 text-neutral-700 cursor-not-allowed ring-1 ring-neutral-300/80 dark:bg-neutral-800/40 dark:text-neutral-300 dark:ring-neutral-700/60";
 
 /** @deprecated Alias — same as UNAVAILABLE_REQUEST_CELL. */
 export const HIGH_CONTRAST_UNAVAILABLE_CELL = UNAVAILABLE_REQUEST_CELL;

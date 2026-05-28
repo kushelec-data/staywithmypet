@@ -77,6 +77,17 @@ import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import { createClient } from "@/lib/supabase";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
+function profileEditStepFromQuery(step: string | null): ProfileEditSectionKey | null {
+  const value = (step ?? "").trim().toLowerCase();
+  if (!value) return null;
+  if (value === "availability") return "petFriend";
+  if (value === "petfriend") return "petFriend";
+  if (value === "petparent") return "petParent";
+  if (value === "basic") return "basic";
+  if (value === "trust") return "trust";
+  return null;
+}
+
 function applyBasicFromProfile(
   profile: ProfileRow,
   setters: {
@@ -129,6 +140,7 @@ export function ProfileEditForm() {
   const pe = t.profileEdit;
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
+  const [openAvailabilityPanel, setOpenAvailabilityPanel] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
   const [location, setLocation] = useState("");
@@ -253,6 +265,23 @@ export function ProfileEditForm() {
     if (!hashStep) return;
     const index = visibleSteps.indexOf(hashStep);
     if (index >= 0) setActiveStepIndex(index);
+  }, [visibleSteps]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("step") ?? params.get("section");
+    const stepFromQuery = profileEditStepFromQuery(raw);
+    if (!stepFromQuery) return;
+    const index = visibleSteps.indexOf(stepFromQuery);
+    if (index < 0) return;
+    setActiveStepIndex(index);
+
+    if ((raw ?? "").trim().toLowerCase() === "availability") {
+      setOpenAvailabilityPanel(true);
+      window.requestAnimationFrame(() => {
+        document.getElementById("availability")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
   }, [visibleSteps]);
 
   useEffect(() => {
@@ -644,6 +673,7 @@ export function ProfileEditForm() {
           disabled={!petFriendEnabled || saving.petFriend || anySaving}
           showCalendar={availabilityUx.showPersonalAvailabilityEditor}
           petFriendId={user?.id ?? null}
+          availabilityDefaultOpen={openAvailabilityPanel}
         />
       );
     } else {

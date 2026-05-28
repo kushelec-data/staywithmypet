@@ -208,7 +208,7 @@ export function BookingCalendar({
 
   const gridShellClass = compact
     ? "overflow-x-auto rounded-xl border border-black/[0.06] bg-cream/40 p-2 sm:p-2.5"
-    : "overflow-x-auto rounded-2xl border border-black/[0.06] bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-2.5 sm:p-4";
+    : "overflow-x-auto rounded-2xl border border-black/[0.06] bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-3 sm:p-5";
 
   return (
     <div className={`${compact ? "space-y-2.5" : "space-y-4"} ${className}`}>
@@ -250,7 +250,7 @@ export function BookingCalendar({
           className={
             compact
               ? "min-w-0 w-full"
-              : "mx-auto w-full min-w-[min(100%,260px)] max-w-md px-0.5 sm:px-0"
+              : "mx-auto w-full min-w-[min(100%,260px)] max-w-lg px-0.5 sm:px-0"
           }
         >
           <div
@@ -377,32 +377,32 @@ export function BookingCalendar({
 
       {showLegend ? (
         <ul
-          className={`flex flex-wrap gap-x-3 gap-y-1.5 font-medium text-muted ${
+          className={`flex flex-wrap gap-x-3 gap-y-1.5 font-semibold text-foreground/80 ${
             compact ? "text-[0.65rem]" : "text-xs"
           }`}
         >
           <li className="flex items-center gap-1.5">
             <span
-              className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("available")}`}
+              className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("available")}`}
             />
             {t.bookingCalendar.legendAvailable}
           </li>
           <li className="flex items-center gap-1.5">
             <span
-              className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("past")}`}
+              className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("past")}`}
             />
             {t.bookingCalendar.legendPast}
           </li>
           <li className="flex items-center gap-1.5">
             <span
-              className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("booked")}`}
+              className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("booked")}`}
             />
             {t.bookingCalendar.legendBooked}
           </li>
           {mode === "availability-readonly" || mode === "request-select" ? (
             <li className="flex items-center gap-1.5">
               <span
-                className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("unavailable")}`}
+                className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("unavailable")}`}
               />
               {t.bookingCalendar.legendUnavailable}
             </li>
@@ -410,7 +410,7 @@ export function BookingCalendar({
           {mode !== "availability-readonly" ? (
             <li className="flex items-center gap-1.5">
               <span
-                className={`h-3 w-3 shrink-0 rounded-md ${legendSwatchClass("selected")}`}
+                className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("selected")}`}
               />
               {t.bookingCalendar.legendSelected}
             </li>
