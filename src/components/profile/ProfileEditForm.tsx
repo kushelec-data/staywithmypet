@@ -41,6 +41,7 @@ import { languageOptions } from "@/lib/legacy/search-filters";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
   isBasicProfileSectionComplete,
+  isAvailabilitySectionComplete,
   isPetFriendSectionComplete,
   isPetParentSectionComplete,
   isProfileEditSectionComplete,
@@ -80,7 +81,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 function profileEditStepFromQuery(step: string | null): ProfileEditSectionKey | null {
   const value = (step ?? "").trim().toLowerCase();
   if (!value) return null;
-  if (value === "availability") return "petFriend";
+  if (value === "availability") return "availability";
   if (value === "petfriend") return "petFriend";
   if (value === "petparent") return "petParent";
   if (value === "basic") return "basic";
@@ -163,12 +164,14 @@ export function ProfileEditForm() {
     basic: true,
     trust: true,
     petFriend: true,
+    availability: true,
     petParent: true,
   });
   const [saving, setSaving] = useState<Record<ProfileEditSectionKey, boolean>>({
     basic: false,
     trust: false,
     petFriend: false,
+    availability: false,
     petParent: false,
   });
   const [errors, setErrors] = useState<Partial<Record<ProfileEditSectionKey, string | null>>>({});
@@ -176,9 +179,9 @@ export function ProfileEditForm() {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   const role: ProfileRole = profile?.role ?? "pet_friend";
-  const visibleSteps = useMemo(() => visibleProfileEditSteps(role), [role]);
-  const activeStepId = visibleSteps[activeStepIndex] ?? visibleSteps[0];
   const activeMode = resolveActiveMode(role, profile?.active_mode);
+  const visibleSteps = useMemo(() => visibleProfileEditSteps(role, activeMode), [role, activeMode]);
+  const activeStepId = visibleSteps[activeStepIndex] ?? visibleSteps[0];
   const availabilityUx = availabilityUxForProfile(role, activeMode);
 
   const locationFieldValue = locationInputDisplayValue(address, location);
@@ -193,14 +196,14 @@ export function ProfileEditForm() {
       }
       if (section === "trust") return isTrustSafetySectionComplete(profile);
       if (section === "petFriend") return isPetFriendSectionComplete(profile);
+      if (section === "availability") return isAvailabilitySectionComplete(profile);
       return isPetParentSectionComplete(profile);
     },
     [profile, bioValid],
   );
 
   const isStepFieldsEnabled = useCallback(
-    (section: ProfileEditSectionKey) =>
-      editing[section] && activeStepId === section,
+    (section: ProfileEditSectionKey) => editing[section] && activeStepId === section,
     [editing, activeStepId],
   );
 
@@ -241,12 +244,18 @@ export function ProfileEditForm() {
       );
       setPetParentForm(petParentFormFromDetailsRaw(profile.details));
 
-      const steps = visibleProfileEditSteps(profile.role ?? "pet_friend");
+      const steps = visibleProfileEditSteps(
+        profile.role ?? "pet_friend",
+        resolveActiveMode(profile.role ?? "pet_friend", profile.active_mode),
+      );
       setEditing({
         basic: !isProfileEditSectionComplete("basic", profile),
         trust: !isProfileEditSectionComplete("trust", profile),
         petFriend: steps.includes("petFriend")
           ? !isProfileEditSectionComplete("petFriend", profile)
+          : false,
+        availability: steps.includes("availability")
+          ? !isProfileEditSectionComplete("availability", profile)
           : false,
         petParent: steps.includes("petParent")
           ? !isProfileEditSectionComplete("petParent", profile)
@@ -496,6 +505,7 @@ export function ProfileEditForm() {
   const basicEnabled = isStepFieldsEnabled("basic");
   const trustEnabled = isStepFieldsEnabled("trust");
   const petFriendEnabled = isStepFieldsEnabled("petFriend");
+  const availabilityEnabled = isStepFieldsEnabled("availability");
   const petParentEnabled = isStepFieldsEnabled("petParent");
 
   const stepMeta: Record<
@@ -515,6 +525,11 @@ export function ProfileEditForm() {
     petFriend: {
       title: pe.petFriend.title,
       description: pe.petFriend.description,
+      onSave: () => void handleSavePetFriend(),
+    },
+    availability: {
+      title: pe.availability.title,
+      description: pe.availability.description,
       onSave: () => void handleSavePetFriend(),
     },
     petParent: {
@@ -674,6 +689,18 @@ export function ProfileEditForm() {
           showCalendar={availabilityUx.showPersonalAvailabilityEditor}
           petFriendId={user?.id ?? null}
           availabilityDefaultOpen={openAvailabilityPanel}
+        />
+      );
+    } else if (stepId === "availability") {
+      content = (
+        <PetFriendProfileFormSections
+          form={petFriendForm}
+          onChange={setPetFriendForm}
+          disabled={!availabilityEnabled || saving.availability || anySaving}
+          showCalendar={availabilityUx.showPersonalAvailabilityEditor}
+          petFriendId={user?.id ?? null}
+          availabilityDefaultOpen
+          onlyAvailabilitySection
         />
       );
     } else {

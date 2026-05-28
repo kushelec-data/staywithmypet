@@ -435,6 +435,10 @@ export const en = {
       title: "Care I Can Offer",
       description: "Pet types, care preferences, experience, home environment, and availability.",
     },
+    availability: {
+      title: "Availability",
+      description: "When you’re available to help with pet care.",
+    },
     petParent: {
       title: "My Pet & Care Needs",
       description: "Summarise your pets, care needs, home notes, and what you look for in a Pet Friend.",

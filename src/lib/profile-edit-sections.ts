@@ -8,14 +8,19 @@ import { hasPetParentProfileContent } from "@/lib/profile-parent-form";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { isPhoneOnFile } from "@/lib/profile-completeness";
 import type { ProfileRow } from "@/lib/profile-utils";
+import type { ProfileActiveMode } from "@/lib/profile-mode";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 
-export type ProfileEditSectionKey = "basic" | "trust" | "petFriend" | "petParent";
+export type ProfileEditSectionKey = "basic" | "trust" | "petFriend" | "availability" | "petParent";
 
-export function visibleProfileEditSteps(role: ProfileRole): ProfileEditSectionKey[] {
-  if (role === "pet_friend") return ["basic", "trust", "petFriend"];
-  if (role === "pet_parent") return ["basic", "trust", "petParent"];
-  return ["basic", "trust", "petFriend", "petParent"];
+export function visibleProfileEditSteps(
+  role: ProfileRole,
+  activeMode?: ProfileActiveMode | null,
+): ProfileEditSectionKey[] {
+  const mode = activeMode ?? (role === "pet_parent" ? "pet_parent" : "pet_friend");
+  if (mode === "pet_friend") return ["basic", "trust", "petFriend", "availability"];
+  // Pet parent edit: no profile-level availability editor here (pet availability lives on pet edit pages).
+  return ["basic", "trust", "petParent"];
 }
 
 const HASH_TO_STEP: Record<string, ProfileEditSectionKey> = {
@@ -24,7 +29,7 @@ const HASH_TO_STEP: Record<string, ProfileEditSectionKey> = {
   "pet-friend-profile": "petFriend",
   "pet-care-preferences": "petFriend",
   "living-situation": "petFriend",
-  availability: "petFriend",
+  availability: "availability",
   "pet-parent-profile": "petParent",
 };
 
@@ -63,6 +68,11 @@ export function isPetFriendSectionComplete(profile: ProfileRow | null): boolean 
   );
 }
 
+export function isAvailabilitySectionComplete(profile: ProfileRow | null): boolean {
+  if (!profile?.details) return false;
+  return profileCalendarSelectedDates(profile.details).length > 0;
+}
+
 export function isPetParentSectionComplete(profile: ProfileRow | null): boolean {
   if (!profile) return false;
   return hasPetParentProfileContent(profile.details ?? {});
@@ -83,6 +93,8 @@ export function isProfileEditSectionComplete(
       return isTrustSafetySectionComplete(profile);
     case "petFriend":
       return isPetFriendSectionComplete(profile);
+    case "availability":
+      return isAvailabilitySectionComplete(profile);
     case "petParent":
       return isPetParentSectionComplete(profile);
   }

@@ -438,6 +438,10 @@ export const et = {
       title: "Hooldus, mida saan pakkuda",
       description: "Loomaliigid, hoolduselistused, kogemus, kodukeskkond ja saadavus.",
     },
+    availability: {
+      title: "Saadavus",
+      description: "Millal oled saadaval lemmiku hoolduseks.",
+    },
     petParent: {
       title: "Minu lemmik ja hoolduse vajadused",
       description: "Kirjelda oma loomi, hoolduse vajadusi, kodu märkmeid ja mida Pet Friendilt ootad.",
