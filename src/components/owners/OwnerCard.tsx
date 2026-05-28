@@ -195,8 +195,12 @@ export function OwnerCard({
 
             <button
               type="button"
-              onClick={openCalendar}
-              className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-teal/25 bg-mint/35 font-semibold text-brand-teal transition-colors hover:bg-mint/55 ${
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openCalendar();
+              }}
+              className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-teal/25 bg-mint/35 font-semibold text-brand-teal transition-colors relative z-10 pointer-events-auto hover:bg-mint/55 ${
                 compact ? "px-2.5 py-2 text-xs" : "gap-2 rounded-xl px-3 py-2.5 text-sm"
               }`}
             >
