@@ -620,16 +620,6 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
               : undefined
           }
           onClose={handleCloseAvailability}
-          careRequestTarget={
-            selectedAvailabilityItem.kind === "profile"
-              ? {
-                  kind: "profile",
-                  friendId: selectedAvailabilityItem.id,
-                  label: selectedAvailabilityItem.name,
-                  availabilityDates: selectedAvailabilityItem.dates,
-                }
-              : null
-          }
         />
       ) : null}
     </div>

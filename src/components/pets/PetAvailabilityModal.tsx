@@ -1,22 +1,11 @@
 "use client";
 
 import { BookingCalendar } from "@/components/calendar/BookingCalendar";
-import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
-import {
-  SendRequestButton,
-  type ParentToFriendRequestTarget,
-} from "@/components/requests/SendRequestButton";
 import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { useProfile } from "@/context/ProfileContext";
-import {
-  canUseMembershipFeaturesForMode,
-  emptyMembershipsByRole,
-} from "@/lib/membership";
 import type { MonthCursor } from "@/lib/booking-calendar";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -37,17 +26,10 @@ type PetAvailabilityModalProps = {
   onClose: () => void;
   title?: string;
   subtitle?: string;
-  /** Find Care: enable send-request flow from this modal. */
-  careRequestTarget?: ParentToFriendRequestTarget | null;
   variant?: "default" | "pastel";
   visibility?: "full" | "public";
   monthCursor?: MonthCursor;
   onMonthCursorChange?: (cursor: MonthCursor) => void;
-  /** Member profile: toggle dates in the full calendar (request-select). */
-  selectedDates?: string[];
-  onSelectedDatesChange?: (dates: string[]) => void;
-  /** Pre-selected dates passed into the request modal. */
-  initialSelectedDates?: string[];
 };
 
 export function PetAvailabilityModal({
@@ -59,53 +41,27 @@ export function PetAvailabilityModal({
   onClose,
   title,
   subtitle,
-  careRequestTarget = null,
   variant = "default",
   visibility = "public",
   monthCursor,
   onMonthCursorChange,
-  selectedDates,
-  onSelectedDatesChange,
-  initialSelectedDates = [],
 }: PetAvailabilityModalProps) {
   const { t } = useLanguage();
-  const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
-  const [requestOpen, setRequestOpen] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const upgradeToastOpenRef = useRef(false);
 
   const heading =
     title ??
-    (careRequestTarget
-      ? t.findCare.availabilityTitle.replace("{name}", name)
-      : t.bookingCalendar.availabilityCalendarTitle);
+    t.bookingCalendar.availabilityCalendarTitle;
   const description =
-    subtitle ??
-    (careRequestTarget ? t.findCare.availabilitySubtitle : "Dates when care is available.");
+    subtitle ?? "Dates when care is available.";
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pathnameWhenOpenedRef = useRef<string | null>(null);
   const wasOpenRef = useRef(false);
   const bodyScrollLockedRef = useRef(false);
   const prevBodyOverflowRef = useRef<string>("");
-  const memberships = profile?.memberships ?? emptyMembershipsByRole();
-  const hasParentMembership = canUseMembershipFeaturesForMode(memberships, "pet_parent");
-  const selectable = Boolean(onSelectedDatesChange);
-  const sortedSelected = useMemo(
-    () => normalizeAvailabilityDates(selectedDates ?? []),
-    [selectedDates],
-  );
   const available = useMemo(() => normalizeAvailabilityDates(dates), [dates]);
-
-  const returnUrl = useMemo(() => {
-    const q = searchParams.toString();
-    return q ? `${pathname}?${q}` : pathname;
-  }, [pathname, searchParams]);
 
   useEffect(() => {
     setMounted(true);
@@ -165,50 +121,10 @@ export function PetAvailabilityModal({
     }
   }, [pathname, open, onClose]);
 
-  const closeUpgradeToast = useCallback(() => {
-    upgradeToastOpenRef.current = false;
-    setUpgradeOpen(false);
-  }, []);
-
-  const openUpgradeToast = useCallback(() => {
-    if (upgradeToastOpenRef.current) return;
-    upgradeToastOpenRef.current = true;
-    setUpgradeOpen(true);
-  }, []);
-
-  useEffect(() => {
-    if (!upgradeOpen) upgradeToastOpenRef.current = false;
-  }, [upgradeOpen]);
-
-  useEffect(() => {
-    if (!open) {
-      setRequestOpen(false);
-      closeUpgradeToast();
-    }
-  }, [open, closeUpgradeToast]);
-
   function handleDialogCancel(event: SyntheticEvent<HTMLDialogElement>) {
     event.preventDefault();
     onClose();
   }
-
-  function handleSendCareRequest() {
-    if (authLoading || profileLoading || !careRequestTarget) return;
-    if (!user) {
-      router.push(`/login?next=${encodeURIComponent(returnUrl)}`);
-      return;
-    }
-    if (!hasParentMembership) {
-      openUpgradeToast();
-      return;
-    }
-    onClose();
-    setRequestOpen(true);
-  }
-
-  const showCareActions = Boolean(careRequestTarget);
-  const calendarViewRole =
-    visibility === "full" ? (petId ? "pet-parent" : "pet-friend") : "public";
 
   if (!mounted || !open) return null;
 
@@ -253,16 +169,15 @@ export function PetAvailabilityModal({
             <div className="mt-6">
               {available.length > 0 || petId || petFriendId ? (
                 <BookingCalendar
-                  mode={selectable ? "request-select" : "availability-readonly"}
+                  mode="availability-readonly"
                   visibility={visibility}
-                  viewRole={calendarViewRole}
+                  viewRole="public"
                   availableDates={available}
-                  selectedDates={selectable ? sortedSelected : []}
-                  onChange={onSelectedDatesChange}
+                  selectedDates={[]}
                   petId={petId}
                   petFriendId={petFriendId}
                   showLegend
-                  showSelectedChips={selectable}
+                  showSelectedChips={false}
                   variant={variant}
                   className="rounded-2xl"
                   monthCursor={monthCursor}
@@ -275,70 +190,14 @@ export function PetAvailabilityModal({
               )}
             </div>
 
-            <div
-              className={`mt-6 flex flex-col gap-2 sm:flex-row ${
-                showCareActions ? "sm:justify-stretch" : "sm:justify-end"
-              }`}
-            >
-              {showCareActions ? (
-                <>
-                  {!user ? (
-                    <Button
-                      type="button"
-                      className="w-full sm:flex-1"
-                      onClick={handleSendCareRequest}
-                      disabled={authLoading || profileLoading}
-                    >
-                      {t.findCare.logInToSendRequest}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      className="w-full sm:flex-1"
-                      onClick={handleSendCareRequest}
-                      disabled={authLoading || profileLoading}
-                    >
-                      {t.requests.sendCareRequest}
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full sm:flex-1"
-                    onClick={onClose}
-                  >
-                    {t.bookingCalendar.close}
-                  </Button>
-                </>
-              ) : (
-                <Button type="button" size="sm" onClick={onClose}>
-                  {t.bookingCalendar.close}
-                </Button>
-              )}
+            <div className="mt-6 flex justify-end">
+              <Button type="button" size="sm" onClick={onClose}>
+                {t.bookingCalendar.close}
+              </Button>
             </div>
           </div>
         </div>
       </dialog>
-
-      {careRequestTarget ? (
-        <>
-          <SendRequestButton
-            target={careRequestTarget}
-            showTrigger={false}
-            requestModalOpen={requestOpen}
-            onRequestModalOpenChange={setRequestOpen}
-            initialSelectedDates={initialSelectedDates}
-          />
-          <MembershipUpsellToast
-            open={upgradeOpen}
-            variant="findCare"
-            name={careRequestTarget.label}
-            role="pet_parent"
-            onDismissModal={onClose}
-            onClose={closeUpgradeToast}
-          />
-        </>
-      ) : null}
     </>
   );
 

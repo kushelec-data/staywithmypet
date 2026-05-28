@@ -190,22 +190,8 @@ export function SearchMapFriendCard({
 }: SearchMapFriendCardProps) {
   const { locale } = useLanguage();
   const profileHref = `/users/${profile.id}`;
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(profile.availabilityDates, 3, locale);
 
-  function openCalendar() {
-    const item: SearchAvailabilityItem = {
-      kind: "profile",
-      id: profile.id,
-      name: profile.displayName,
-      dates: availability.allDates,
-    };
-    if (onOpenAvailability) {
-      onOpenAvailability(item);
-      return;
-    }
-    setCalendarOpen(true);
-  }
   const avatarSrc = profile.avatarUrl?.trim()
     ? profile.avatarUrl
     : placeholderProfileImage(profile.id);
@@ -299,36 +285,9 @@ export function SearchMapFriendCard({
             >
               View profile
             </Link>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openCalendar();
-              }}
-              className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-brand-teal/25 bg-mint/35 px-2 py-1.5 text-[0.7rem] font-semibold text-brand-teal hover:bg-mint/55"
-            >
-              <CalendarIcon />
-              Calendar
-            </button>
           </div>
         </div>
       </article>
-
-      {!onOpenAvailability ? (
-        <PetAvailabilityModal
-          open={calendarOpen}
-          name={profile.displayName}
-          petFriendId={profile.id}
-          dates={availability.allDates}
-          onClose={() => setCalendarOpen(false)}
-          careRequestTarget={{
-            kind: "profile",
-            friendId: profile.id,
-            label: profile.displayName,
-            availabilityDates: availability.allDates,
-          }}
-        />
-      ) : null}
     </>
   );
 }

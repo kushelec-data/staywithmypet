@@ -26,7 +26,7 @@ import {
 } from "@/lib/public-profile";
 import { resolvedAvailability } from "@/lib/profile-details";
 import { createClient } from "@/lib/supabase";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type PublicProfilePageContentProps = {
   profileId: string;
@@ -40,15 +40,6 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
   const [pets, setPets] = useState<PublicPet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRequestDates, setSelectedRequestDates] = useState<string[]>([]);
-
-  const handleSelectedRequestDatesChange = useCallback((dates: string[]) => {
-    setSelectedRequestDates(dates);
-  }, []);
-
-  useEffect(() => {
-    setSelectedRequestDates([]);
-  }, [profileId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +125,6 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
 
   const friendDates = resolvedAvailability(profile.details).selected_dates ?? [];
   const showFriendSections = showPublicCareSection(profile);
-  const canSelectRequestDates = Boolean(user && user.id !== profile.id && showFriendSections);
 
   return (
     <PublicPageShell backHref="/find-care" backLabel="Browse Pet Friends">
@@ -143,7 +133,6 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
           profile={profile}
           reviewsAvg={ratingAvg}
           reviewsCount={ratingCount}
-          initialSelectedDates={selectedRequestDates}
         />
 
         {profile.profilePhotos.length > 0 ? (
@@ -171,20 +160,6 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
                 availableDates={friendDates}
                 availabilityNotes={resolvedAvailability(profile.details).notes}
                 visibility={user?.id === profile.id ? "full" : "public"}
-                selectedDates={canSelectRequestDates ? selectedRequestDates : undefined}
-                onSelectedDatesChange={
-                  canSelectRequestDates ? handleSelectedRequestDatesChange : undefined
-                }
-                careRequestTarget={
-                  canSelectRequestDates
-                    ? {
-                        kind: "profile",
-                        friendId: profile.id,
-                        label: profile.display_name,
-                        availabilityDates: friendDates,
-                      }
-                    : null
-                }
               />
             ) : null}
             <PublicApproximateMapCard profile={profile} />

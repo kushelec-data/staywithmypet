@@ -26,29 +26,6 @@ function LocationIcon() {
   );
 }
 
-function CalendarIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.75" />
-      <path d="M8 3v4M16 3v4M3 10h18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ExternalIcon() {
-  return (
-    <svg className="h-3.5 w-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M14 5h5v5M10 14 19 5M15 9h-4a2 2 0 0 0-2 2v7"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function EyeIcon() {
   return (
     <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -193,23 +170,6 @@ export function OwnerCard({
               emptyLabel="No upcoming dates"
             />
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log("[calendar] open", profile.id);
-                openCalendar();
-              }}
-              className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-teal/25 bg-mint/35 font-semibold text-brand-teal transition-colors relative z-10 pointer-events-auto hover:bg-mint/55 ${
-                compact ? "px-2.5 py-2 text-xs" : "gap-2 rounded-xl px-3 py-2.5 text-sm"
-              }`}
-            >
-              <CalendarIcon />
-              <span>{t.findCare.checkCalendar}</span>
-              <ExternalIcon />
-            </button>
-
             <Link
               href={profileHref}
               className={`flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-teal font-semibold text-white shadow-md shadow-brand-teal/20 transition-colors hover:bg-brand-teal/90 ${
@@ -230,12 +190,6 @@ export function OwnerCard({
           petFriendId={profile.id}
           dates={availability.allDates}
           onClose={() => setCalendarOpen(false)}
-          careRequestTarget={{
-            kind: "profile",
-            friendId: profile.id,
-            label: profile.displayName,
-            availabilityDates: availability.allDates,
-          }}
         />
       ) : null}
     </>
