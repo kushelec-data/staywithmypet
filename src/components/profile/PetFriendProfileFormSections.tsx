@@ -168,69 +168,71 @@ export function PetFriendProfileFormSections({
         </ProfileCollapsibleSection>
       ) : null}
 
-      <ProfileCollapsibleSection
-        id="availability"
-        title="Availability"
-        description="When and how long you can help."
-        defaultOpen={availabilityDefaultOpen}
-      >
-        <ProfileChipMultiSelect
-          label="Preferred days & times"
-          options={preferredDaysTimesOptions}
-          selected={form.preferredDaysTimes}
-          onToggle={(v) => toggleInList(form, onChange, "preferredDaysTimes", v)}
-          disabled={disabled}
-        />
-        <div className="sm:col-span-1">
-          <label htmlFor="duration_of_care" className="text-sm font-medium text-foreground">
-            Duration of care preferred
-          </label>
-          <select
-            id="duration_of_care"
-            value={form.durationOfCarePreferred}
+      {onlyAvailabilitySection ? (
+        <ProfileCollapsibleSection
+          id="availability"
+          title="Availability"
+          description="When and how long you can help."
+          defaultOpen={availabilityDefaultOpen}
+        >
+          <ProfileChipMultiSelect
+            label="Preferred days & times"
+            options={preferredDaysTimesOptions}
+            selected={form.preferredDaysTimes}
+            onToggle={(v) => toggleInList(form, onChange, "preferredDaysTimes", v)}
             disabled={disabled}
-            onChange={(e) => patch(form, onChange, { durationOfCarePreferred: e.target.value })}
-            className="input-field mt-1"
-          >
-            {durationOfCareOptions.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </div>
-        {showCalendar ? (
-          <div className="sm:col-span-2">
-            <p className="text-base font-semibold text-foreground">Edit my availability</p>
-            <p className="mt-1 text-sm text-muted">
-              Tap days you’re available. Pet Parents will see your availability on your public profile.
-            </p>
-            <div className="mt-4 rounded-3xl border border-black/5 bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
-              <AvailabilityCalendar
-                selectedDates={form.availabilitySelectedDates}
-                onChange={(dates) => patch(form, onChange, { availabilitySelectedDates: dates })}
-                disabled={disabled}
-                petFriendId={petFriendId}
-                viewRole="pet-friend"
-              />
-            </div>
-          </div>
-        ) : null}
-        <div className="sm:col-span-2">
-          <label htmlFor="availability_notes" className="text-sm font-medium text-foreground">
-            Additional availability notes
-          </label>
-          <textarea
-            id="availability_notes"
-            rows={2}
-            disabled={disabled}
-            value={form.availabilityNotes}
-            onChange={(e) => patch(form, onChange, { availabilityNotes: e.target.value })}
-            placeholder="e.g. Flexible evenings, school holidays"
-            className="input-field mt-1 resize-y"
           />
-        </div>
-      </ProfileCollapsibleSection>
+          <div className="sm:col-span-1">
+            <label htmlFor="duration_of_care" className="text-sm font-medium text-foreground">
+              Duration of care preferred
+            </label>
+            <select
+              id="duration_of_care"
+              value={form.durationOfCarePreferred}
+              disabled={disabled}
+              onChange={(e) => patch(form, onChange, { durationOfCarePreferred: e.target.value })}
+              className="input-field mt-1"
+            >
+              {durationOfCareOptions.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </div>
+          {showCalendar ? (
+            <div className="sm:col-span-2">
+              <p className="text-base font-semibold text-foreground">Edit my availability</p>
+              <p className="mt-1 text-sm text-muted">
+                Tap days you’re available. Pet Parents will see your availability on your public profile.
+              </p>
+              <div className="mt-4 rounded-3xl border border-black/5 bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
+                <AvailabilityCalendar
+                  selectedDates={form.availabilitySelectedDates}
+                  onChange={(dates) => patch(form, onChange, { availabilitySelectedDates: dates })}
+                  disabled={disabled}
+                  petFriendId={petFriendId}
+                  viewRole="pet-friend"
+                />
+              </div>
+            </div>
+          ) : null}
+          <div className="sm:col-span-2">
+            <label htmlFor="availability_notes" className="text-sm font-medium text-foreground">
+              Additional availability notes
+            </label>
+            <textarea
+              id="availability_notes"
+              rows={2}
+              disabled={disabled}
+              value={form.availabilityNotes}
+              onChange={(e) => patch(form, onChange, { availabilityNotes: e.target.value })}
+              placeholder="e.g. Flexible evenings, school holidays"
+              className="input-field mt-1 resize-y"
+            />
+          </div>
+        </ProfileCollapsibleSection>
+      ) : null}
 
       {!onlyAvailabilitySection ? (
         <ProfileCollapsibleSection
