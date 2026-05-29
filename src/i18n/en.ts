@@ -293,6 +293,11 @@ export const en = {
     selectedDates: "Selected dates",
     messageLabel: "Request message",
     leaveReview: "Leave review",
+    confirmedGuidance: {
+      title: "Great news — your booking has been confirmed!",
+      body: "You can now contact each other directly through platform messages to arrange drop-off and pick-up details, discuss routines, and share any important care instructions. Please make sure all feeding, medication, emergency contacts, and special requirements are communicated before the stay begins.",
+      openMessages: "Open messages",
+    },
   },
   profileCompleteness: {
     sectionTitle: "Profile completeness",

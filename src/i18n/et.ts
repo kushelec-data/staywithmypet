@@ -293,6 +293,11 @@ export const et = {
     selectedDates: "Valitud kuupäevad",
     messageLabel: "Päringu sõnum",
     leaveReview: "Jäta arvustus",
+    confirmedGuidance: {
+      title: "Suurepärane uudis — sinu broneering on kinnitatud!",
+      body: "Nüüd saate omavahel otse platvormi sõnumite kaudu ühendust võtta, et kokku leppida üleandmise ja järeletuleku detailid, arutada rutiine ning jagada olulisi hooldusjuhiseid. Veendu, et kõik toitmine, ravimid, hädaabikontaktid ja erinõuded on enne hoolduse algust edastatud.",
+      openMessages: "Ava sõnumid",
+    },
   },
   profileCompleteness: {
     sectionTitle: "Profiili täielikkus",

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBookingGuidanceNote";
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
@@ -136,7 +137,13 @@ export function RequestListItem({
             </div>
           ) : null}
 
-          {request.status === "accepted" || request.status === "completed" ? (
+          {request.status === "accepted" ? (
+            <div className="border-t border-black/5 pt-4 dark:border-border">
+              <ConfirmedBookingGuidanceNote messagesHref={`/messages?request=${request.id}`} />
+            </div>
+          ) : null}
+
+          {request.status === "completed" ? (
             <div className="border-t border-black/5 pt-4 dark:border-border">
               <Link
                 href={`/messages?request=${request.id}`}

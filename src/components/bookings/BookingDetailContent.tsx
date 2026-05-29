@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BookingCompleteAction } from "@/components/bookings/BookingCompleteAction";
+import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBookingGuidanceNote";
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
 import { BookingReviewBanner } from "@/components/messages/BookingReviewBanner";
 import { UserSafetyActions } from "@/components/trust/UserSafetyActions";
@@ -115,6 +116,9 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   const canCancel =
     booking?.displayStatus === "upcoming" || booking?.displayStatus === "active";
 
+  const showConfirmedGuidance =
+    booking?.displayStatus === "upcoming" || booking?.displayStatus === "active";
+
   const breadcrumbTitle = booking
     ? b.careForPet.replace("{name}", booking.petName)
     : b.detailTitle;
@@ -169,6 +173,13 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
               {bookingStatusLabel(booking.displayStatus)}
             </span>
           </div>
+
+          {showConfirmedGuidance ? (
+            <ConfirmedBookingGuidanceNote
+              className="mt-5"
+              messagesHref={messagesHrefForBooking(booking.requestId)}
+            />
+          ) : null}
 
           <dl className="mt-6 grid gap-4 border-t border-black/5 pt-6 sm:grid-cols-2">
             <div>
