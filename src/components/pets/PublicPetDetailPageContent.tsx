@@ -122,6 +122,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           shortBio={buildPublicPetShortBio(pet)}
           quickFacts={buildPublicPetQuickFacts(pet)}
           isOwnPet={isOwnPet}
+          notListedPublicly={notListedPublicly}
         />
 
         <PublicCareColumnsCard columns={buildPublicPetCareColumns(pet)} />

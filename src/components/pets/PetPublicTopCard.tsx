@@ -1,11 +1,9 @@
 "use client";
 
 import { AppImage } from "@/components/ui/AppImage";
-import { CopyPublicPetLinkButton } from "@/components/pets/CopyPublicPetLinkButton";
-import { PublicProfileChips } from "@/components/public/PublicProfileChips";
-import { SendRequestButton } from "@/components/requests/SendRequestButton";
+import { PetPublicProfileActions } from "@/components/pets/PetPublicProfileActions";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
-import { Button } from "@/components/ui/Button";
+import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import type { PublicPetQuickFact } from "@/lib/public-pet-display";
 import { PUBLIC_CARD_MINT } from "@/lib/public-layout";
 import { speciesEmoji } from "@/lib/pet-data";
@@ -19,6 +17,7 @@ type PetPublicTopCardProps = {
   shortBio: string | null;
   quickFacts: PublicPetQuickFact[];
   isOwnPet: boolean;
+  notListedPublicly?: boolean;
 };
 
 function QuickFactIcon({ type }: { type: PublicPetQuickFact["icon"] }) {
@@ -52,6 +51,7 @@ export function PetPublicTopCard({
   shortBio,
   quickFacts,
   isOwnPet,
+  notListedPublicly = false,
 }: PetPublicTopCardProps) {
   return (
     <section className={PUBLIC_CARD_MINT}>
@@ -67,11 +67,13 @@ export function PetPublicTopCard({
               sizes="(max-width: 1024px) 100vw, 240px"
               className="h-full w-full object-cover"
             />
-            <FavoriteButton
-              target={{ type: "pet", id: pet.id }}
-              className="absolute right-2 top-2"
-              compact
-            />
+            {!isOwnPet ? (
+              <FavoriteButton
+                target={{ type: "pet", id: pet.id }}
+                className="absolute right-2 top-2"
+                compact
+              />
+            ) : null}
           </div>
         </div>
 
@@ -98,40 +100,11 @@ export function PetPublicTopCard({
           ) : null}
         </div>
 
-        <div className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-brand-teal/10 bg-surface/80 p-4 lg:w-[220px]">
-          {isOwnPet ? (
-            <Button href={`/pets/${pet.id}/edit`} size="sm" className="w-full justify-center">
-              Edit pet
-            </Button>
-          ) : (
-            <SendRequestButton
-              variant="pet-care"
-              target={{
-                kind: "pet",
-                petId: pet.id,
-                petOwnerId: pet.ownerId,
-                label: pet.name,
-                availabilityDates: pet.availabilityDates,
-              }}
-              size="md"
-              className="w-full justify-center"
-            />
-          )}
-          <CopyPublicPetLinkButton
-            petId={pet.id}
-            size="sm"
-            variant="outline"
-            className="w-full justify-center"
-            label="Copy public link"
-          />
-          <div className="flex items-center justify-center gap-2 rounded-xl border border-black/5 bg-cream/50 py-2">
-            <FavoriteButton target={{ type: "pet", id: pet.id }} />
-            <span className="text-sm font-medium text-foreground">Save pet</span>
-          </div>
-          <p className="text-center text-[0.65rem] leading-snug text-muted">
-            Exact address is hidden until booking is accepted.
-          </p>
-        </div>
+        <PetPublicProfileActions
+          pet={pet}
+          isOwner={isOwnPet}
+          notListedPublicly={notListedPublicly}
+        />
       </div>
     </section>
   );

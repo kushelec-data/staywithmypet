@@ -348,6 +348,18 @@ export const en = {
     bookedDaysCount: "Booked days this month",
     loadingSummary: "Loading…",
   },
+  petPublicProfile: {
+    editPet: "Edit pet",
+    copyPublicLink: "Copy public link",
+    viewPublicProfile: "View public profile",
+    previewListing: "Preview listing",
+    savePet: "Save pet",
+    share: "Share",
+    linkCopied: "Link copied",
+    shareText: "Check out {name} on Stay With My Pet",
+    shareFallbackPrompt: "Copy this pet's public link:",
+    privacyNote: "Exact address is hidden until booking is accepted.",
+  },
   bookingCalendar: {
     alreadyBooked: "Already booked",
     booked: "Booked",

@@ -350,6 +350,18 @@ export const et = {
     bookedDaysCount: "Broneeritud päevi sel kuul",
     loadingSummary: "Laen…",
   },
+  petPublicProfile: {
+    editPet: "Muuda lemmikut",
+    copyPublicLink: "Kopeeri avalik link",
+    viewPublicProfile: "Vaata avalikku profiili",
+    previewListing: "Eelvaate kuulutus",
+    savePet: "Salvesta lemmik",
+    share: "Jaga",
+    linkCopied: "Link kopeeritud",
+    shareText: "Vaata lemmikut {name} Stay With My Pet platvormil",
+    shareFallbackPrompt: "Kopeeri lemmiku avalik link:",
+    privacyNote: "Täpne aadress on peidetud kuni broneering on kinnitatud.",
+  },
   bookingCalendar: {
     alreadyBooked: "Juba broneeritud",
     booked: "Broneeritud",
