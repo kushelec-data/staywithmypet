@@ -1,6 +1,6 @@
 "use client";
 
-import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
+import { DashboardCalendarView } from "@/components/calendar/DashboardCalendarView";
 import { AccountCard } from "@/components/account/AccountCard";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +12,6 @@ import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { resolvedAvailability } from "@/lib/profile-details";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { createClient } from "@/lib/supabase";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -129,23 +128,14 @@ export function CalendarPageContent() {
                   {parentAvailabilityDates.length === 0 ? (
                     <p className="text-sm text-muted">{copy.noAvailabilityDates}</p>
                   ) : null}
-                  <div className="rounded-2xl border-2 border-brand-teal/25 bg-surface/90 p-3 shadow-sm ring-1 ring-black/5 sm:p-4">
-                    <AvailabilityCalendar
-                      selectedDates={parentAvailabilityDates}
-                      onChange={() => {}}
-                      readOnly
-                      petId={selectedPet.id}
-                      viewRole="pet-parent"
-                    />
-                  </div>
-                  <p className="text-sm text-muted">
-                    <Link
-                      href={`/pets/${selectedPet.id}/edit`}
-                      className="font-medium text-brand-teal underline-offset-2 hover:underline"
-                    >
-                      {copy.editPetAvailability}
-                    </Link>
-                  </p>
+                  <DashboardCalendarView
+                    key={selectedPet.id}
+                    availabilityDates={parentAvailabilityDates}
+                    petId={selectedPet.id}
+                    viewRole="pet-parent"
+                    editHref={`/pets/${selectedPet.id}/edit`}
+                    editLabel={copy.editPetAvailability}
+                  />
                 </>
               ) : null}
             </>
@@ -156,23 +146,14 @@ export function CalendarPageContent() {
           {friendAvailabilityDates.length === 0 ? (
             <p className="text-sm text-muted">{copy.noAvailabilityDates}</p>
           ) : null}
-          <div className="rounded-2xl border-2 border-brand-teal/25 bg-surface/90 p-3 shadow-sm ring-1 ring-black/5 sm:p-4">
-            <AvailabilityCalendar
-              selectedDates={friendAvailabilityDates}
-              onChange={() => {}}
-              readOnly
-              petFriendId={user.id}
-              viewRole="pet-friend"
-            />
-          </div>
-          <p className="text-sm text-muted">
-            <Link
-              href="/profile/edit?step=availability"
-              className="font-medium text-brand-teal underline-offset-2 hover:underline"
-            >
-              {copy.editMyAvailability}
-            </Link>
-          </p>
+          <DashboardCalendarView
+            key={user.id}
+            availabilityDates={friendAvailabilityDates}
+            petFriendId={user.id}
+            viewRole="pet-friend"
+            editHref="/profile/edit?step=availability"
+            editLabel={copy.editMyAvailability}
+          />
         </div>
       ) : (
         <p className="text-sm text-muted">{copy.pageDescription}</p>

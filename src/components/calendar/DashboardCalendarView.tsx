@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
 import { CalendarInsightsPanel } from "@/components/calendar/CalendarInsightsPanel";
 import { CalendarLegendPanel } from "@/components/calendar/CalendarLegendPanel";
 import { AccountCard } from "@/components/account/AccountCard";
 import { useCalendarBookings } from "@/hooks/useCalendarBookings";
 import {
-  monthCursorFromDate,
   resolveInitialMonthCursor,
   type CalendarViewRole,
   type MonthCursor,
@@ -34,6 +33,10 @@ export function DashboardCalendarView({
     resolveInitialMonthCursor(availabilityDates, availabilityDates),
   );
 
+  useEffect(() => {
+    setMonthCursor(resolveInitialMonthCursor(availabilityDates, availabilityDates));
+  }, [petId, petFriendId, availabilityDates]);
+
   const { bookings, blockingBookedDateSet, loading } = useCalendarBookings({
     petId,
     petFriendId,
@@ -43,16 +46,6 @@ export function DashboardCalendarView({
     month: monthCursor.month,
     enabled: Boolean(petId || petFriendId),
   });
-
-  const monthTitle = useMemo(
-    () =>
-      monthCursorFromDate(
-        new Date(monthCursor.year, monthCursor.month, 1),
-      ),
-    [monthCursor],
-  );
-
-  void monthTitle;
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)_minmax(0,260px)] lg:gap-6">

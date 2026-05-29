@@ -51,8 +51,10 @@ export type BookingCalendarProps = {
   monthCursor?: MonthCursor;
   onMonthCursorChange?: (cursor: MonthCursor) => void;
   showLegend?: boolean;
+  showViewOnlyHint?: boolean;
   showSelectedChips?: boolean;
   className?: string;
+  maxWidthClass?: string;
   /** Smaller grid for sidebar mini calendars. */
   compact?: boolean;
   /** @deprecated Ignored — one soft palette site-wide. */
@@ -77,8 +79,10 @@ export function BookingCalendar({
   monthCursor: monthCursorProp,
   onMonthCursorChange,
   showLegend = true,
+  showViewOnlyHint = true,
   showSelectedChips,
   className = "",
+  maxWidthClass = "max-w-lg",
   compact = false,
   variant: _variant = "default",
   highContrast: _highContrast = false,
@@ -250,7 +254,7 @@ export function BookingCalendar({
           className={
             compact
               ? "min-w-0 w-full"
-              : "mx-auto w-full min-w-[min(100%,260px)] max-w-lg px-0.5 sm:px-0"
+              : `mx-auto w-full min-w-[min(100%,240px)] ${maxWidthClass} px-0.5 sm:px-0`
           }
         >
           <div
@@ -443,7 +447,7 @@ export function BookingCalendar({
           </ul>
         </div>
       ) : mode === "availability-readonly" ? (
-        compact ? null : (
+        compact || !showViewOnlyHint ? null : (
           <p className="text-xs text-muted">{t.bookingCalendar.viewOnlyHint}</p>
         )
       ) : mode === "availability-select" ? (

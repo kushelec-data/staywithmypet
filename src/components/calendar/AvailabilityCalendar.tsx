@@ -1,7 +1,7 @@
 "use client";
 
 import { BookingCalendar } from "@/components/calendar/BookingCalendar";
-import type { CalendarViewRole } from "@/lib/booking-calendar";
+import type { CalendarViewRole, MonthCursor } from "@/lib/booking-calendar";
 
 export type AvailabilityCalendarProps = {
   selectedDates: string[];
@@ -11,6 +11,12 @@ export type AvailabilityCalendarProps = {
   petFriendId?: string | null;
   viewRole?: CalendarViewRole;
   readOnly?: boolean;
+  showLegend?: boolean;
+  showViewOnlyHint?: boolean;
+  monthCursor?: MonthCursor;
+  onMonthCursorChange?: (cursor: MonthCursor) => void;
+  maxWidthClass?: string;
+  className?: string;
 };
 
 export function AvailabilityCalendar({
@@ -21,6 +27,12 @@ export function AvailabilityCalendar({
   petFriendId,
   viewRole = "pet-parent",
   readOnly,
+  showLegend,
+  showViewOnlyHint,
+  monthCursor,
+  onMonthCursorChange,
+  maxWidthClass,
+  className,
 }: AvailabilityCalendarProps) {
   return (
     <BookingCalendar
@@ -33,6 +45,12 @@ export function AvailabilityCalendar({
       disabled={disabled}
       petId={petId}
       petFriendId={petFriendId}
+      showLegend={showLegend}
+      showViewOnlyHint={showViewOnlyHint}
+      monthCursor={monthCursor}
+      onMonthCursorChange={onMonthCursorChange}
+      maxWidthClass={maxWidthClass}
+      className={className}
     />
   );
 }

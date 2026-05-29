@@ -10,8 +10,8 @@ import {
   upcomingBookingsForInsights,
 } from "@/lib/calendar-insights";
 import type { CalendarBooking, MonthCursor } from "@/lib/booking-calendar";
-import { formatDate } from "@/lib/date-format";
-import { formatDateRange } from "@/lib/date-format";
+import { monthCursorToDate } from "@/lib/booking-calendar";
+import { formatDate, formatDateRange } from "@/lib/date-format";
 
 type CalendarInsightsPanelProps = {
   availabilityDates: string[];
@@ -41,10 +41,17 @@ export function CalendarInsightsPanel({
   const nextAvailable = nextAvailableDate(availabilityDates, blockingBookedDateSet);
   const upcoming = upcomingBookingsForInsights(bookings);
   const bookedCount = bookedDaysCountInMonth(bookings, monthCursor.year, monthCursor.month);
+  const viewingMonth = monthCursorToDate(monthCursor).toLocaleString(locale, {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <AccountCard className={`flex flex-col p-5 sm:p-6 ${className}`}>
       <h2 className="font-heading text-base font-semibold text-foreground">{copy.insightsTitle}</h2>
+      <p className="mt-1 text-xs text-muted">
+        {copy.viewingMonth}: <span className="font-medium text-foreground">{viewingMonth}</span>
+      </p>
 
       <dl className="mt-4 space-y-4">
         <div>
