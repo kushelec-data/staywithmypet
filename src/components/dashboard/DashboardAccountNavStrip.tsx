@@ -1,16 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
-import { isSidebarLinkActive, sidebarNavForActiveMode } from "@/lib/account-nav";
-import { accountSidebarLabel } from "@/lib/nav-i18n";
-import {
-  ACCOUNT_SIDEBAR_ICON_CLASS,
-  accountSidebarIconForHref,
-} from "@/lib/account-sidebar-icons";
+import { AccountSidebarNavLink } from "@/components/account/AccountSidebarNavLink";
+import { sidebarSectionsForActiveMode } from "@/lib/account-nav";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
-import { DASHBOARD_NAV_ACTIVE_CLASS, DASHBOARD_NAV_INACTIVE_CLASS } from "@/lib/dashboard-theme";
 
 type DashboardAccountNavStripProps = {
   activeMode: ProfileActiveMode | null | undefined;
@@ -21,39 +15,27 @@ export function DashboardAccountNavStrip({ activeMode }: DashboardAccountNavStri
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
-  const items = sidebarNavForActiveMode(activeMode);
+  const sections = sidebarSectionsForActiveMode(activeMode);
 
   return (
     <nav
       className="-mx-1 mb-4 overflow-x-auto overscroll-x-contain pb-1 lg:hidden [-webkit-overflow-scrolling:touch]"
       aria-label="Account navigation"
     >
-      <ul className="flex w-max min-w-full gap-2 px-1">
-        {items.map((item) => {
-          const active = isSidebarLinkActive(pathname, item.href, searchParams);
-          const Icon = accountSidebarIconForHref(item.href);
-          return (
+      <ul className="flex w-max min-w-full items-center gap-2 px-1">
+        {sections.flatMap((section) =>
+          section.items.map((item) => (
             <li key={item.href} className="shrink-0">
-              <Link
-                href={item.href}
-                className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
-                  active
-                    ? DASHBOARD_NAV_ACTIVE_CLASS
-                    : `border border-[#E5E2D8] bg-[#F8F6F1] text-muted ${DASHBOARD_NAV_INACTIVE_CLASS}`
-                }`}
-              >
-                <Icon
-                  className={`h-3.5 w-3.5 shrink-0 ${
-                    active ? ACCOUNT_SIDEBAR_ICON_CLASS.active : ACCOUNT_SIDEBAR_ICON_CLASS.inactive
-                  }`}
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-                {accountSidebarLabel(item.href, item.label, t.navbar)}
-              </Link>
+              <AccountSidebarNavLink
+                item={item}
+                pathname={pathname}
+                searchParams={searchParams}
+                navbarT={t.navbar}
+                variant="strip"
+              />
             </li>
-          );
-        })}
+          )),
+        )}
       </ul>
     </nav>
   );

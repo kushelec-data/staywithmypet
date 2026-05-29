@@ -27,6 +27,11 @@ export const et = {
   navbar: {
     searchPets: "Otsi lemmikloomi",
     findCare: "Leia abi",
+    findPetFriends: "Leia lemmikloomasõpru",
+    findPets: "Leia lemmikloomi",
+    accountSection: "Konto",
+    marketplaceSection: "Turg",
+    marketplaceSearchTooltip: "Avab turu otsingu",
     howItWorks: "Kuidas see töötab",
     pricing: "Hinnakiri",
     faq: "KKK",

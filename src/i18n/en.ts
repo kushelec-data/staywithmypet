@@ -27,6 +27,11 @@ export const en = {
   navbar: {
     searchPets: "Search pets",
     findCare: "Find care",
+    findPetFriends: "Find Pet Friends",
+    findPets: "Find Pets",
+    accountSection: "Account",
+    marketplaceSection: "Marketplace",
+    marketplaceSearchTooltip: "Opens marketplace search",
     howItWorks: "How it works",
     pricing: "Pricing",
     faq: "FAQ",

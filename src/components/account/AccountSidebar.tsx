@@ -1,32 +1,29 @@
 "use client";
 
-import Link from "next/link";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { isSidebarLinkActive } from "@/lib/account-nav";
-import { accountSidebarLabel } from "@/lib/nav-i18n";
-import type { AccountNavItem } from "@/lib/legacy/nav";
+import { AccountSidebarNavLink } from "@/components/account/AccountSidebarNavLink";
+import type { AccountSidebarSection } from "@/lib/account-nav";
 import type { Dictionary } from "@/i18n/translations";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { profileInitials, profileUsername } from "@/lib/profile-utils";
 import {
   ACCOUNT_CARD_CLASS,
   ACCOUNT_COLORS,
-  ACCOUNT_NAV_ACTIVE_CLASS,
   ACCOUNT_NAV_INACTIVE_CLASS,
 } from "@/lib/account-ui";
 import {
   ACCOUNT_SIDEBAR_ICON_CLASS,
   ACCOUNT_SIDEBAR_MODE_SWITCH_ICON,
-  accountSidebarIconForHref,
 } from "@/lib/account-sidebar-icons";
+
 type AccountSidebarProps = {
   profile: ProfileRow | null;
   displayName: string;
   email: string | null;
   authLoading: boolean;
   profileLoading: boolean;
-  sidebarNav: AccountNavItem[];
+  sidebarSections: AccountSidebarSection[];
   pathname: string;
   searchParams: ReadonlyURLSearchParams;
   navbarT: Dictionary["navbar"];
@@ -38,13 +35,17 @@ type AccountSidebarProps = {
   onLogout: () => void;
 };
 
+function sectionTitle(id: AccountSidebarSection["id"], navbarT: Dictionary["navbar"]): string {
+  return id === "marketplace" ? navbarT.marketplaceSection : navbarT.accountSection;
+}
+
 export function AccountSidebar({
   profile,
   displayName,
   email,
   authLoading,
   profileLoading,
-  sidebarNav,
+  sidebarSections,
   pathname,
   searchParams,
   navbarT,
@@ -84,32 +85,33 @@ export function AccountSidebar({
         {email ? <p className="mt-1 text-xs text-muted/80">{email}</p> : null}
       </div>
 
-      <nav className="mt-6" aria-label="Account">
-        <ul className="space-y-1">
-          {sidebarNav.map((item) => {
-            const active = isSidebarLinkActive(pathname, item.href, searchParams);
-            const Icon = accountSidebarIconForHref(item.href);
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    active ? ACCOUNT_NAV_ACTIVE_CLASS : ACCOUNT_NAV_INACTIVE_CLASS
-                  }`}
-                >
-                  <Icon
-                    className={`h-4 w-4 shrink-0 ${
-                      active ? ACCOUNT_SIDEBAR_ICON_CLASS.active : ACCOUNT_SIDEBAR_ICON_CLASS.inactive
-                    }`}
-                    strokeWidth={1.75}
-                    aria-hidden
-                  />
-                  {accountSidebarLabel(item.href, item.label, navbarT)}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="mt-6 space-y-3" aria-label="Account">
+        {sidebarSections.map((section) => {
+          if (section.items.length === 0) return null;
+
+          return (
+            <div
+              key={section.id}
+              className={section.id === "marketplace" ? "border-t border-[#E5E2D8] pt-3" : undefined}
+            >
+              <p className="px-3 pb-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#5f6f63]">
+                {sectionTitle(section.id, navbarT)}
+              </p>
+              <ul className="space-y-1">
+                {section.items.map((item) => (
+                  <li key={item.href}>
+                    <AccountSidebarNavLink
+                      item={item}
+                      pathname={pathname}
+                      searchParams={searchParams}
+                      navbarT={navbarT}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
       </nav>
 
       <div className="mt-4 border-t border-[#E5E2D8] pt-3">

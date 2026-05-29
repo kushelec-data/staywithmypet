@@ -5,16 +5,21 @@ type ModeNavItem = AccountNavItem & {
   modes: ProfileActiveMode[];
 };
 
-const sidebarItems: ModeNavItem[] = [
+const MARKETPLACE_PATHS = new Set(["/find-care", "/find-pets"]);
+
+export function isMarketplaceNavHref(href: string): boolean {
+  return MARKETPLACE_PATHS.has(href.split("?")[0].split("#")[0]);
+}
+
+/** In-account sidebar links (dashboard area). */
+const accountSidebarItems: ModeNavItem[] = [
   { href: "/dashboard", label: "Dashboard", modes: ["pet_parent", "pet_friend"] },
   { href: "/dashboard/calendar", label: "Calendar", modes: ["pet_parent", "pet_friend"] },
   { href: "/pets", label: "My pets", modes: ["pet_parent"] },
   { href: "/pets/new", label: "Add pet", modes: ["pet_parent"] },
-  { href: "/find-care", label: "Find Pet Friends", modes: ["pet_parent"] },
   { href: "/requests?direction=incoming", label: "Requests", modes: ["pet_parent"] },
   { href: "/dashboard/bookings", label: "Bookings", modes: ["pet_parent", "pet_friend"] },
   { href: "/messages", label: "Messages", modes: ["pet_parent", "pet_friend"] },
-  { href: "/find-pets", label: "Search pets", modes: ["pet_friend"] },
   { href: "/saved", label: "Saved pets", modes: ["pet_friend"] },
   { href: "/requests?direction=outgoing", label: "Requests", modes: ["pet_friend"] },
   { href: "/profile/edit", label: "Edit Profile", modes: ["pet_parent", "pet_friend"] },
@@ -22,10 +27,24 @@ const sidebarItems: ModeNavItem[] = [
   { href: "/change-password", label: "Change password", modes: ["pet_parent", "pet_friend"] },
 ];
 
+/** Marketplace search — leaves the account shell. */
+const marketplaceSidebarItems: ModeNavItem[] = [
+  { href: "/find-care", label: "Find Pet Friends", modes: ["pet_parent"] },
+  { href: "/find-pets", label: "Find Pets", modes: ["pet_friend"] },
+];
+
+export type AccountSidebarSectionId = "account" | "marketplace";
+
+export type AccountSidebarSection = {
+  id: AccountSidebarSectionId;
+  items: AccountNavItem[];
+};
+
 const headerItems: ModeNavItem[] = [
   { href: "/requests?direction=incoming", label: "Requests", modes: ["pet_parent"] },
   { href: "/find-care", label: "Find Pet Friends", modes: ["pet_parent"] },
   { href: "/requests?direction=outgoing", label: "Requests", modes: ["pet_friend"] },
+  { href: "/find-pets", label: "Find Pets", modes: ["pet_friend"] },
   { href: "/saved", label: "Saved", modes: ["pet_parent", "pet_friend"] },
 ];
 
@@ -73,13 +92,29 @@ export function isSidebarLinkActive(
   return pathname === path;
 }
 
+function itemsForMode(items: ModeNavItem[], activeMode: ProfileActiveMode): AccountNavItem[] {
+  return items
+    .filter((item) => item.modes.includes(activeMode))
+    .map(({ href, label }) => ({ href, label }));
+}
+
+export function sidebarSectionsForActiveMode(
+  activeMode: ProfileActiveMode | null | undefined,
+): AccountSidebarSection[] {
+  if (!activeMode) {
+    return [{ id: "account", items: [{ href: "/dashboard", label: "Dashboard" }] }];
+  }
+
+  return [
+    { id: "account", items: itemsForMode(accountSidebarItems, activeMode) },
+    { id: "marketplace", items: itemsForMode(marketplaceSidebarItems, activeMode) },
+  ];
+}
+
 export function sidebarNavForActiveMode(
   activeMode: ProfileActiveMode | null | undefined,
 ): AccountNavItem[] {
-  if (!activeMode) return [{ href: "/dashboard", label: "Dashboard" }];
-  return sidebarItems
-    .filter((item) => item.modes.includes(activeMode))
-    .map(({ href, label }) => ({ href, label }));
+  return sidebarSectionsForActiveMode(activeMode).flatMap((section) => section.items);
 }
 
 export function headerNavForActiveMode(activeMode: ProfileActiveMode | null | undefined): AccountNavItem[] {

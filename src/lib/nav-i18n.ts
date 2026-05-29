@@ -38,8 +38,8 @@ export function getPrimaryNavLinksForUser(
   const mode = resolveActiveMode(profile.role, profile.active_mode);
   const searchLink =
     mode === "pet_friend"
-      ? { href: "/find-pets" as const, label: t.searchPets }
-      : { href: "/find-care" as const, label: t.findCare };
+      ? { href: "/find-pets" as const, label: t.findPets }
+      : { href: "/find-care" as const, label: t.findPetFriends };
 
   const withoutSearch = links.filter(
     (item) => item.href !== "/find-pets" && item.href !== "/find-care",
@@ -73,5 +73,7 @@ export function getAuthNavLinks(t: Dictionary["navbar"]) {
 /** Translate account sidebar labels where i18n keys exist. */
 export function accountSidebarLabel(href: string, fallbackLabel: string, t: Dictionary["navbar"]): string {
   if (href === "/dashboard/calendar") return t.calendar;
+  if (href === "/find-care") return t.findPetFriends;
+  if (href === "/find-pets") return t.findPets;
   return fallbackLabel;
 }

@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
-import { headerNavForActiveMode, sidebarNavForActiveMode } from "@/lib/account-nav";
+import { headerNavForActiveMode, sidebarSectionsForActiveMode } from "@/lib/account-nav";
 import { resolveActiveMode, sidebarModeActionForProfile } from "@/lib/profile-mode";
 import { searchHrefForActiveMode } from "@/lib/role-mode-search";
 import { performActiveModeSwitch } from "@/lib/switch-active-mode";
@@ -82,7 +82,7 @@ export function DashboardShell({
   const resolvedActiveMode = profile
     ? resolveActiveMode(profile.role, profile.active_mode)
     : null;
-  const sidebarNav = sidebarNavForActiveMode(resolvedActiveMode);
+  const sidebarSections = sidebarSectionsForActiveMode(resolvedActiveMode);
   const headerNav = headerNavForActiveMode(resolvedActiveMode);
   const modeAction = sidebarModeActionForProfile(profile);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -197,7 +197,7 @@ export function DashboardShell({
           email={email}
           authLoading={authLoading}
           profileLoading={profileLoading}
-          sidebarNav={sidebarNav}
+          sidebarSections={sidebarSections}
           pathname={pathname}
           searchParams={searchParams}
           navbarT={t.navbar}
