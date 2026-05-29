@@ -23,6 +23,11 @@ const MAIN_DASHBOARD_PX = 68;
 const MAIN_DEFAULT_PX = 80;
 const THUMB_PX = 36;
 
+function availabilityManageLabel(pet: PetIntroDisplay): string | null {
+  if (pet.availabilityDates.length === 0) return null;
+  return pet.isActive ? "Availability active" : "Availability configured";
+}
+
 export function PetIntroCard({
   pet,
   editHref,
@@ -74,13 +79,17 @@ export function PetIntroCard({
           <p className="text-xs text-muted">Care details not added yet.</p>
         ) : null}
 
-        {pet.availabilityDates.length > 0 ? (
+        {isPublic && pet.availabilityDates.length > 0 ? (
           <AvailabilityDateChips
             dates={pet.availabilityDates}
             label="Available"
             className="pt-0.5"
             tone={isDashboard ? "dashboard" : "default"}
           />
+        ) : null}
+
+        {!isPublic && availabilityManageLabel(pet) ? (
+          <p className="pt-0.5 text-xs font-medium text-[#2E6B3F]">{availabilityManageLabel(pet)}</p>
         ) : null}
 
         {showManageLinks ? (

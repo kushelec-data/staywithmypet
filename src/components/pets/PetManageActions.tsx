@@ -18,7 +18,7 @@ export function PetManageActions({ petId, editHref }: PetManageActionsProps) {
       <Button href={publicPetHref(petId)} variant="outline" size="sm">
         Public profile
       </Button>
-      <CopyPublicPetLinkButton petId={petId} />
+      <CopyPublicPetLinkButton petId={petId} iconOnly />
     </div>
   );
 }
