@@ -3,6 +3,10 @@
 import { useLanguage } from "@/context/LanguageContext";
 import { formatInboxTime, type ConversationSummary } from "@/lib/messaging";
 import { requestStatusBadgeClasses, requestStatusLabel } from "@/lib/requests";
+import {
+  ACCOUNT_LIST_ITEM_ACTIVE_CLASS,
+  ACCOUNT_LIST_ITEM_INACTIVE_CLASS,
+} from "@/lib/account-ui";
 
 type ConversationListProps = {
   conversations: ConversationSummary[];
@@ -48,10 +52,8 @@ function ConversationListItem({
       <button
         type="button"
         onClick={onSelect}
-        className={`flex w-full items-center gap-2.5 rounded-2xl px-2.5 py-2 text-left transition-colors ${
-          active
-            ? "bg-mint/70 shadow-sm ring-1 ring-brand-teal/25 dark:bg-mint/25 dark:ring-brand-teal/35"
-            : "hover:bg-[#fffaf2]/80 dark:hover:bg-[#35322d]"
+        className={`flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition-colors ${
+          active ? ACCOUNT_LIST_ITEM_ACTIVE_CLASS : ACCOUNT_LIST_ITEM_INACTIVE_CLASS
         }`}
       >
         <ConversationThumb url={thumbUrl} alt={displayName} name={conversation.otherPartyName} />

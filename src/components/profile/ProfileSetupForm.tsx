@@ -353,7 +353,7 @@ export function ProfileSetupForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card-elevated space-y-6 rounded-3xl p-6 sm:p-8">
+    <form onSubmit={handleSubmit} className="account-card space-y-6 p-6 sm:p-8">
       {success ? (
         <p className="rounded-xl bg-mint/50 px-3 py-2 text-sm font-medium text-brand-teal" role="status">
           {success}

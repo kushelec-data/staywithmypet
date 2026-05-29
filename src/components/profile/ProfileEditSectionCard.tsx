@@ -39,7 +39,7 @@ export function ProfileEditSectionCard({
   return (
     <section
       id={id}
-      className={`card-elevated scroll-mt-24 rounded-3xl p-6 sm:p-8 ${
+      className={`account-card scroll-mt-24 p-6 sm:p-8 ${
         frozen ? "opacity-[0.92]" : ""
       }`}
     >

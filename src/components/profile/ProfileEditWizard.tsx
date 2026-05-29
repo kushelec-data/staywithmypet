@@ -116,8 +116,8 @@ export function ProfileEditWizard({
               onClick={() => goToIndex(index)}
               className={`flex min-w-[9.5rem] shrink-0 cursor-pointer flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-left transition-colors md:min-w-0 ${
                 selected
-                  ? "border-brand-teal/50 bg-mint/35 shadow-sm ring-1 ring-brand-teal/25"
-                  : "border-black/10 bg-surface hover:border-brand-teal/35 hover:bg-mint/20"
+                  ? "border-[#2E6B3F]/40 bg-[#DDEEDF] shadow-sm ring-1 ring-[#E5E2D8]"
+                  : "border-[#E5E2D8] bg-[#F8F6F1] hover:border-[#2E6B3F]/30 hover:bg-[#DDEEDF]/60"
               }`}
             >
               <span className="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -127,7 +127,7 @@ export function ProfileEditWizard({
               <span
                 className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                   step.complete
-                    ? "bg-brand-teal/15 text-brand-teal"
+                    ? "bg-[#DDEEDF] text-[#2E6B3F]"
                     : "bg-black/5 text-muted"
                 }`}
               >

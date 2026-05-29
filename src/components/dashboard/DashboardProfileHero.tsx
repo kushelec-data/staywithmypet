@@ -60,7 +60,7 @@ export function DashboardProfileHero({
   }, [profile.id]);
 
   return (
-    <section className={`${DASHBOARD_CARD_CLASS} overflow-hidden rounded-3xl`}>
+    <section className={`${DASHBOARD_CARD_CLASS} overflow-hidden`}>
       <div
         className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
         style={{

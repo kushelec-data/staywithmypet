@@ -1,6 +1,7 @@
 "use client";
 
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountLayout } from "@/components/account/AccountLayout";
+import { ACCOUNT_ALERT_ERROR_CLASS } from "@/lib/account-ui";
 import { OwnerCard } from "@/components/owners/OwnerCard";
 import { PetCard } from "@/components/pets/PetCard";
 import { useAuth } from "@/context/AuthContext";
@@ -61,12 +62,12 @@ export function SavedPageContent() {
   const isEmpty = savedPets.length === 0 && savedFriends.length === 0;
 
   return (
-    <DashboardShell
+    <AccountLayout
       title="My saved pets & Pet Friends"
       description="Pets and people you have favorited for quick access."
     >
       {loadError ? (
-        <p className="mb-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+        <p className={`mb-4 ${ACCOUNT_ALERT_ERROR_CLASS}`} role="alert">
           {loadError}
         </p>
       ) : null}
@@ -100,6 +101,6 @@ export function SavedPageContent() {
           ) : null}
         </div>
       )}
-    </DashboardShell>
+    </AccountLayout>
   );
 }

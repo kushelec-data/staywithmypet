@@ -234,7 +234,8 @@ body {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28);
 }
 
-/* Dashboard — unified three-column palette */
+/* Account area — unified layout palette (dashboard, messages, bookings, …) */
+.account-area,
 .dashboard-area {
   --dashboard-primary: #2e6b3f;
   --dashboard-primary-hover: #255a34;
@@ -249,6 +250,7 @@ body {
   --success-text: var(--dashboard-primary);
 }
 
+.dark .account-area,
 .dark .dashboard-area {
   --dashboard-primary: #3d8250;
   --dashboard-primary-hover: #4a9460;
@@ -257,101 +259,74 @@ body {
   --dashboard-card-border: rgba(140, 190, 150, 0.22);
 }
 
+.account-card,
 .dashboard-card {
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-card-border);
+  border-radius: 20px;
   box-shadow: 0 1px 2px rgba(46, 107, 63, 0.05);
 }
 
+.dark .account-card,
 .dark .dashboard-card {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
-.dashboard-card-inner {
-  background: var(--dashboard-light);
-  border: 1px solid var(--dashboard-card-border);
-}
-
-.dashboard-nav-active {
-  background: var(--dashboard-light);
-  color: var(--dashboard-primary);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--dashboard-primary) 14%, var(--dashboard-card-border));
-}
-
-.dashboard-nav-inactive:hover {
-  background: color-mix(in srgb, var(--dashboard-light) 70%, var(--dashboard-card-bg));
-  color: var(--dashboard-primary);
-}
-
-.dashboard-link {
-  color: var(--dashboard-primary);
-  font-weight: 600;
-  transition: opacity 0.2s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .dashboard-link:hover {
-    opacity: 0.82;
-  }
-}
-
-.dashboard-tag {
-  border: 1px solid var(--dashboard-card-border);
-  background: var(--dashboard-light);
-  color: var(--dashboard-primary);
-}
-
-.dashboard-progress-track {
-  background: var(--dashboard-card-border);
-}
-
-.dashboard-progress-fill {
-  background: var(--dashboard-primary);
-}
-
-.dashboard-score-high {
-  color: var(--dashboard-primary);
-}
-
-.dashboard-callout {
-  border: 1px solid var(--dashboard-card-border);
-  background: color-mix(in srgb, var(--dashboard-light) 65%, var(--dashboard-card-bg));
-}
-
-.dashboard-status-complete {
-  background: var(--dashboard-light);
-  color: var(--dashboard-primary);
-}
-
+.account-area .card-elevated,
 .dashboard-area .card-elevated {
   background: var(--dashboard-card-bg);
   border: 1px solid var(--dashboard-card-border);
+  border-radius: 20px;
   box-shadow: 0 1px 2px rgba(46, 107, 63, 0.05);
 }
 
+.dark .account-area .card-elevated,
 .dark .dashboard-area .card-elevated {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
+.account-area .swmp-tab-chip-active,
+.dashboard-area .swmp-tab-chip-active {
+  border-radius: 9999px;
+  background: var(--dashboard-primary);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(46, 107, 63, 0.2);
+}
+
+.account-area .swmp-tab-chip-inactive,
+.dashboard-area .swmp-tab-chip-inactive {
+  border-radius: 9999px;
+  border: 1px solid var(--dashboard-card-border);
+  background: var(--dashboard-card-bg);
+  color: var(--dashboard-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .account-area .swmp-tab-chip-inactive:hover,
+  .dashboard-area .swmp-tab-chip-inactive:hover {
+    background: var(--dashboard-light);
+    border-color: var(--dashboard-card-border);
+  }
+}
+
 .swmp-tab-chip-active {
   border-radius: 9999px;
-  background: var(--brand-teal);
+  background: #2e6b3f;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(38, 92, 52, 0.2);
+  box-shadow: 0 1px 4px rgba(46, 107, 63, 0.2);
 }
 
 .swmp-tab-chip-inactive {
   border-radius: 9999px;
-  border: 1px solid var(--swmp-warm-border);
-  background: var(--swmp-warm-surface);
-  color: var(--brand-teal);
+  border: 1px solid #e5e2d8;
+  background: #f8f6f1;
+  color: #2e6b3f;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .swmp-tab-chip-inactive:hover {
-    background: color-mix(in srgb, var(--mint) 45%, var(--swmp-warm-surface));
-    border-color: color-mix(in srgb, var(--brand-teal) 25%, var(--swmp-warm-border));
+    background: #ddeedf;
+    border-color: #e5e2d8;
   }
 }
 

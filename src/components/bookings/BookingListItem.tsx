@@ -16,6 +16,7 @@ import {
   type BookingTab,
 } from "@/lib/bookings";
 import type { ReviewDisplay } from "@/lib/reviews";
+import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 
 type BookingListItemProps = {
   booking: Booking;
@@ -113,7 +114,7 @@ export function BookingListItem({
 
   return (
     <li>
-      <article className="overflow-hidden rounded-2xl border border-black/[0.06] bg-surface shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)]">
+      <article className={`${ACCOUNT_CARD_CLASS} overflow-hidden transition-shadow hover:shadow-[0_2px_8px_rgba(46,107,63,0.08)]`}>
         <div className="flex flex-col gap-4 p-5 sm:gap-5 sm:p-6">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -129,7 +130,7 @@ export function BookingListItem({
             </span>
           </header>
 
-          <div className="grid gap-3 border-t border-black/5 pt-4 sm:grid-cols-2 sm:gap-x-6">
+          <div className="grid gap-3 border-t border-[#E5E2D8] pt-4 sm:grid-cols-2 sm:gap-x-6">
             <MetaRow icon={<PetIcon />} label={b.petLabel} value={booking.petName} />
             <MetaRow icon={<UserIcon />} label={b.withLabel} value={booking.otherPartyName} />
             <MetaRow icon={<CalendarIcon />} label={b.datesLabel} value={booking.dateLabel} />
@@ -151,7 +152,7 @@ export function BookingListItem({
             </p>
           ) : null}
 
-          <div className="flex flex-col gap-2 border-t border-black/5 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <div className="flex flex-col gap-2 border-t border-[#E5E2D8] pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <Link href={bookingDetailsHref(booking.id)} className="w-full sm:w-auto">
               <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto">
                 {b.viewDetails}

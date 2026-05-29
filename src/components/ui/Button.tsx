@@ -9,9 +9,9 @@ const variants: Record<ButtonVariant, string> = {
   secondary:
     "bg-lavender text-foreground shadow-sm hover:bg-pastel-blue/50 border border-black/5",
   outline:
-    "border border-black/10 bg-surface text-foreground shadow-sm hover:border-brand-teal/30 hover:bg-mint/40",
-  ghost: "text-muted hover:bg-mint/50 hover:text-foreground",
-  soft: "bg-mint/60 text-brand-teal shadow-sm hover:bg-mint",
+    "border border-[#E5E2D8] bg-[#F8F6F1] text-foreground shadow-sm hover:border-[#2E6B3F]/30 hover:bg-[#DDEEDF]",
+  ghost: "text-muted hover:bg-[#DDEEDF]/80 hover:text-[#2E6B3F]",
+  soft: "border border-[#E5E2D8] bg-[#DDEEDF] text-[#2E6B3F] shadow-sm hover:bg-[#DDEEDF]",
 };
 
 type BaseProps = {

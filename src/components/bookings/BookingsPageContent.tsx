@@ -2,7 +2,13 @@
 
 import { BookingListItem } from "@/components/bookings/BookingListItem";
 import { BookingsEmptyState } from "@/components/bookings/BookingsEmptyState";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountCard } from "@/components/account/AccountCard";
+import { AccountLayout } from "@/components/account/AccountLayout";
+import { AccountTabs } from "@/components/account/AccountTabs";
+import {
+  ACCOUNT_ALERT_ERROR_CLASS,
+  ACCOUNT_ALERT_SUCCESS_CLASS,
+} from "@/lib/account-ui";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -110,47 +116,38 @@ export function BookingsPageContent() {
   };
 
   return (
-    <DashboardShell
+    <AccountLayout
       title={t.bookings.pageTitle}
       description={t.bookings.pageDescription}
       hideCompleteProfileBanner
     >
-      <div className="mb-4 flex flex-wrap gap-2">
-        {TABS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              tab === key
-                ? "bg-brand-teal text-white"
-                : "bg-mint/40 text-brand-teal hover:bg-mint/60"
-            }`}
-          >
-            {tabLabels[key]}
-          </button>
-        ))}
-      </div>
+      <AccountTabs
+        tabs={TABS.map((key) => ({ id: key, label: tabLabels[key] }))}
+        activeId={tab}
+        onChange={setTab}
+        className="mb-4"
+        aria-label={t.bookings.pageTitle}
+      />
 
       <p className="mb-4 text-sm text-muted">{t.bookings.tabHelp}</p>
 
       {loadError ? (
-        <p className="mb-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+        <p className={`mb-4 ${ACCOUNT_ALERT_ERROR_CLASS}`} role="alert">
           {loadError}
         </p>
       ) : null}
       {actionError ? (
-        <p className="mb-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+        <p className={`mb-4 ${ACCOUNT_ALERT_ERROR_CLASS}`} role="alert">
           {actionError}
         </p>
       ) : null}
       {actionSuccess ? (
-        <p className="mb-4 rounded-xl bg-mint/50 px-3 py-2 text-sm text-brand-teal" role="status">
+        <p className={`mb-4 ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
           {actionSuccess}
         </p>
       ) : null}
 
-      <section className="card-elevated rounded-3xl p-4 sm:p-6 lg:p-8">
+      <AccountCard className="p-4 sm:p-6 lg:p-8">
         {loading ? (
           <p className="px-2 py-8 text-center text-sm text-muted sm:py-12">{t.bookings.loading}</p>
         ) : bookings.length === 0 ? (
@@ -172,7 +169,7 @@ export function BookingsPageContent() {
             ))}
           </ul>
         )}
-      </section>
-    </DashboardShell>
+      </AccountCard>
+    </AccountLayout>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountLayout } from "@/components/account/AccountLayout";
+import { ACCOUNT_MESSAGES_PANEL_CLASS } from "@/lib/account-ui";
 import { ConversationList } from "@/components/messages/ConversationList";
 import { ChatPanel } from "@/components/messages/ChatPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +14,7 @@ import {
   type ConversationSummary,
 } from "@/lib/messaging";
 import { createClient } from "@/lib/supabase";
+import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -155,18 +157,18 @@ export function MessagesPageContent() {
   const showMobileChat = Boolean(selectedId && selectedConversation);
 
   return (
-    <DashboardShell
+    <AccountLayout
       title={t.messages.pageTitle}
       description={t.messages.pageDescription}
       hideCompleteProfileBanner
     >
-      <div className="flex h-[min(78dvh,720px)] min-h-[min(320px,65dvh)] w-full max-w-full min-w-0 flex-col gap-3 overflow-hidden bg-[#f8f5ef] sm:min-h-[420px] lg:flex-row lg:gap-4 dark:bg-[#1c1b19]">
+      <div className="flex h-[min(78dvh,720px)] min-h-[min(320px,65dvh)] w-full max-w-full min-w-0 flex-col gap-3 overflow-hidden sm:min-h-[420px] lg:flex-row lg:gap-4">
         <aside
-          className={`flex w-full min-w-0 shrink-0 flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-[#f5f1e8] shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:border-white/10 dark:bg-[#2a2824] dark:shadow-[0_2px_12px_rgba(0,0,0,0.35)] lg:w-[340px] ${
+          className={`${ACCOUNT_MESSAGES_PANEL_CLASS} w-full shrink-0 lg:w-[340px] ${
             showMobileChat ? "hidden lg:flex" : "flex"
           }`}
         >
-          <div className="shrink-0 border-b border-black/[0.06] px-4 py-3 dark:border-white/10">
+          <div className="shrink-0 border-b border-[#E5E2D8] px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">{t.messages.conversations}</h2>
           </div>
 
@@ -193,18 +195,12 @@ export function MessagesPageContent() {
                 {t.messages.emptyDescription}
               </p>
               <div className="mt-6 flex w-full max-w-xs flex-col gap-2">
-                <Link
-                  href="/dashboard/requests?direction=incoming"
-                  className="rounded-full bg-brand-teal px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-teal/20 hover:bg-brand-teal-hover"
-                >
+                <Button href="/dashboard/requests?direction=incoming" size="sm" className="w-full">
                   {t.messages.viewRequests}
-                </Link>
-                <Link
-                  href="/find-care"
-                  className="rounded-full border border-brand-teal/30 px-4 py-2.5 text-sm font-semibold text-brand-teal hover:bg-mint/40"
-                >
+                </Button>
+                <Button href="/find-care" variant="outline" size="sm" className="w-full">
                   {t.messages.findFriends}
-                </Link>
+                </Button>
               </div>
             </div>
           ) : (
@@ -219,7 +215,7 @@ export function MessagesPageContent() {
         </aside>
 
         <section
-          className={`min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-[#fffaf2] shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:border-white/10 dark:bg-[#252320] dark:shadow-[0_2px_12px_rgba(0,0,0,0.35)] ${
+          className={`${ACCOUNT_MESSAGES_PANEL_CLASS} min-h-0 min-w-0 flex-1 ${
             showMobileChat ? "flex" : "hidden lg:flex"
           }`}
         >
@@ -242,6 +238,6 @@ export function MessagesPageContent() {
           )}
         </section>
       </div>
-    </DashboardShell>
+    </AccountLayout>
   );
 }

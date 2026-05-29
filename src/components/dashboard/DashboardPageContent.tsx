@@ -11,7 +11,7 @@ import {
   DashboardInfoCard,
 } from "@/components/dashboard/DashboardInfoCard";
 import { DashboardProfileHero } from "@/components/dashboard/DashboardProfileHero";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -253,7 +253,7 @@ export function DashboardPageContent() {
   );
 
   return (
-    <DashboardShell
+    <AccountLayout
       title="Dashboard"
       description="Your account at a glance."
       hideCompleteProfileBanner
@@ -343,6 +343,6 @@ export function DashboardPageContent() {
           <DashboardVetClinicsCard profile={profile} />
         </section>
       </div>
-    </DashboardShell>
+    </AccountLayout>
   );
 }

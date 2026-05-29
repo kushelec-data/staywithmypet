@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { NewPetForm } from "@/components/pets/NewPetForm";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -37,12 +37,12 @@ export function NewPetPageContent() {
   }
 
   return (
-    <DashboardShell
+    <AccountLayout
       title="Create pet profile"
       description="Add your pet's details, care needs, and photos so Pet Friends can find and help."
       hideCompleteProfileBanner
     >
       <NewPetForm />
-    </DashboardShell>
+    </AccountLayout>
   );
 }

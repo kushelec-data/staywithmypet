@@ -1,16 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
-import { headerNavForActiveMode, isSidebarLinkActive, sidebarNavForActiveMode } from "@/lib/account-nav";
+import { headerNavForActiveMode, sidebarNavForActiveMode } from "@/lib/account-nav";
 import { resolveActiveMode, sidebarModeActionForProfile } from "@/lib/profile-mode";
 import { searchHrefForActiveMode } from "@/lib/role-mode-search";
 import { performActiveModeSwitch } from "@/lib/switch-active-mode";
-import { profileInitials, profileUsername } from "@/lib/profile-utils";
 import { createClient } from "@/lib/supabase";
+import { AccountSidebar } from "@/components/account/AccountSidebar";
 import { DashboardAccountNavStrip } from "@/components/dashboard/DashboardAccountNavStrip";
 import { DashboardHeaderNavLink } from "@/components/dashboard/DashboardHeaderNavLink";
 import { DashboardBreadcrumb } from "@/components/dashboard/DashboardBreadcrumb";
@@ -21,15 +20,17 @@ import {
   type DashboardBreadcrumbParent,
 } from "@/lib/dashboard-breadcrumb";
 import { useLanguage } from "@/context/LanguageContext";
-import { accountSidebarLabel } from "@/lib/nav-i18n";
 import {
-  DASHBOARD_CALLOUT_CLASS,
-  DASHBOARD_CARD_CLASS,
-  DASHBOARD_COLORS,
-  DASHBOARD_NAV_ACTIVE_CLASS,
-  DASHBOARD_NAV_INACTIVE_CLASS,
-  DASHBOARD_SCORE_TEXT_CLASS,
-} from "@/lib/dashboard-theme";
+  ACCOUNT_CALLOUT_CLASS,
+  ACCOUNT_CONTENT_STACK,
+  ACCOUNT_LAYOUT_GRID,
+  ACCOUNT_LAYOUT_GRID_WITH_ASIDE,
+  ACCOUNT_LAYOUT_PADDING,
+  ACCOUNT_LAYOUT_SHELL,
+  ACCOUNT_PAGE_DESCRIPTION,
+  ACCOUNT_PAGE_HEADER_EYEBROW,
+  ACCOUNT_PAGE_TITLE,
+} from "@/lib/account-ui";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -47,6 +48,8 @@ type DashboardShellProps = {
   backHref?: string;
   /** Force-hide breadcrumb even on subpages. */
   hideBreadcrumb?: boolean;
+  /** Skip default page title block in main column (e.g. full-bleed messages). */
+  hideMainPageHeader?: boolean;
 };
 
 export function DashboardShell({
@@ -59,6 +62,7 @@ export function DashboardShell({
   breadcrumbParent,
   backHref,
   hideBreadcrumb = false,
+  hideMainPageHeader = false,
 }: DashboardShellProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -93,8 +97,6 @@ export function DashboardShell({
   }, [authLoading, user, router]);
 
   const email = user?.email ?? null;
-  const initials = profileInitials(displayName, email);
-  const username = profileUsername(profile, email);
   const onProfileFormPage =
     pathname.startsWith("/profile/setup") || pathname.startsWith("/profile/edit");
   const showCompleteProfile =
@@ -107,10 +109,12 @@ export function DashboardShell({
     !onProfileFormPage;
 
   const autoBreadcrumb = dashboardBreadcrumbFromPath(pathname, searchParams);
-  const showBreadcrumb = !hideBreadcrumb && pathname !== DASHBOARD_PATH;
+  const isDashboardHome = pathname === DASHBOARD_PATH;
+  const showBreadcrumb = !hideBreadcrumb && !isDashboardHome;
   const crumbTitle = breadcrumbTitle ?? autoBreadcrumb?.title ?? title;
   const crumbParent = breadcrumbParent ?? autoBreadcrumb?.parent;
-  const showDashboardRightAside = pathname === DASHBOARD_PATH && Boolean(rightAside);
+  const showDashboardRightAside = isDashboardHome && Boolean(rightAside);
+  const showMainPageHeader = !hideMainPageHeader;
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -160,31 +164,9 @@ export function DashboardShell({
   }
 
   return (
-    <div
-      className={`dashboard-area mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8 ${
-        pathname === DASHBOARD_PATH ? "py-4 sm:py-5" : "py-6 sm:py-8"
-      }`}
-    >
-      <div
-        className={`flex flex-wrap items-start justify-between gap-3 sm:items-center ${
-          pathname === DASHBOARD_PATH ? "mb-3" : "mb-6"
-        }`}
-      >
-        <div className="min-w-0 flex-1">
-          <p className={`${DASHBOARD_SCORE_TEXT_CLASS} text-sm font-semibold uppercase tracking-wider`}>
-            Your account
-          </p>
-          {pathname === DASHBOARD_PATH ? (
-            <>
-              <h1 className="font-heading mt-0.5 text-xl font-semibold text-foreground sm:text-2xl">
-                {title}
-              </h1>
-              {description ? (
-                <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p>
-              ) : null}
-            </>
-          ) : null}
-        </div>
+    <div className={`${ACCOUNT_LAYOUT_SHELL} ${ACCOUNT_LAYOUT_PADDING}`}>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:items-center">
+        <p className={ACCOUNT_PAGE_HEADER_EYEBROW}>Your account</p>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {headerNav.map((item) => (
             <DashboardHeaderNavLink key={item.href} item={item} />
@@ -193,7 +175,7 @@ export function DashboardShell({
       </div>
 
       {showCompleteProfile ? (
-        <div className={`${DASHBOARD_CALLOUT_CLASS} mb-4 p-4`}>
+        <div className={`${ACCOUNT_CALLOUT_CLASS} mb-6 p-4`}>
           <p className="font-heading text-sm font-semibold text-foreground">Complete your profile</p>
           <p className="mt-1 text-sm text-muted">
             Add your details so Pet Parents and Pet Friends can trust and connect with you.
@@ -205,93 +187,27 @@ export function DashboardShell({
       ) : null}
 
       <div
-        className={`grid grid-cols-1 ${
-          showDashboardRightAside
-            ? "lg:grid-cols-[220px_minmax(0,1fr)_280px]"
-            : "lg:grid-cols-[220px_1fr]"
-        } ${pathname === DASHBOARD_PATH ? "gap-4 lg:gap-5" : "gap-6 lg:gap-8"}`}
+        className={
+          showDashboardRightAside ? ACCOUNT_LAYOUT_GRID_WITH_ASIDE : ACCOUNT_LAYOUT_GRID
+        }
       >
-        <aside
-          className={`${DASHBOARD_CARD_CLASS} relative z-10 hidden h-fit shrink-0 p-4 lg:sticky lg:top-24 lg:block`}
-        >
-          <div className="flex flex-col items-center text-center">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt=""
-                className="h-20 w-20 rounded-full object-cover ring-2 ring-[#E5E2D8]"
-              />
-            ) : (
-              <div
-                className="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-semibold"
-                style={{ backgroundColor: DASHBOARD_COLORS.light, color: DASHBOARD_COLORS.primary }}
-              >
-                {authLoading || profileLoading ? "…" : initials}
-              </div>
-            )}
-            <p className="mt-3 font-heading font-semibold text-foreground">
-              {authLoading || profileLoading ? "Loading…" : displayName}
-            </p>
-            <p className="text-xs text-muted">@{username}</p>
-            {email ? <p className="mt-1 text-xs text-muted/80">{email}</p> : null}
-          </div>
-
-          <nav className="mt-6" aria-label="Account">
-            <ul className="space-y-1">
-              {sidebarNav.map((item) => {
-                const active = isSidebarLinkActive(pathname, item.href, searchParams);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                        active
-                          ? DASHBOARD_NAV_ACTIVE_CLASS
-                          : DASHBOARD_NAV_INACTIVE_CLASS
-                      }`}
-                    >
-                      {accountSidebarLabel(item.href, item.label, t.navbar)}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-
-          <div className="mt-4 border-t border-[#E5E2D8] pt-3">
-            {modeAction ? (
-              <>
-                <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted">
-                  Switch mode
-                </p>
-                <button
-                  type="button"
-                  disabled={switchingMode !== null}
-                  onClick={() => handleModeSwitch(modeAction.targetMode)}
-                  className={`${DASHBOARD_NAV_INACTIVE_CLASS} mt-1 block w-full cursor-pointer rounded-xl px-3 py-2 text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
-                >
-                  {switchingMode === modeAction.targetMode ? "Switching…" : modeAction.label}
-                </button>
-                {modeError ? (
-                  <p className="mt-1.5 px-3 text-xs text-brand-pink" role="alert">
-                    {modeError}
-                  </p>
-                ) : null}
-              </>
-            ) : null}
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={`w-full ${modeAction ? "mt-2" : ""}`}
-              disabled={loggingOut}
-              onClick={handleLogout}
-            >
-              {loggingOut ? "Logging out…" : "Log out"}
-            </Button>
-          </div>
-        </aside>
+        <AccountSidebar
+          profile={profile}
+          displayName={displayName}
+          email={email}
+          authLoading={authLoading}
+          profileLoading={profileLoading}
+          sidebarNav={sidebarNav}
+          pathname={pathname}
+          searchParams={searchParams}
+          navbarT={t.navbar}
+          modeAction={modeAction}
+          switchingMode={switchingMode}
+          modeError={modeError}
+          loggingOut={loggingOut}
+          onModeSwitch={handleModeSwitch}
+          onLogout={handleLogout}
+        />
 
         <div className="min-w-0">
           <DashboardAccountNavStrip activeMode={resolvedActiveMode} />
@@ -302,13 +218,13 @@ export function DashboardShell({
               backHref={backHref}
             />
           ) : null}
-          {pathname !== DASHBOARD_PATH ? (
+          {showMainPageHeader ? (
             <header className={showBreadcrumb ? "mt-1" : undefined}>
-              <h1 className="font-heading text-2xl font-semibold text-foreground sm:text-3xl">{title}</h1>
-              {description ? <p className="mt-2 max-w-2xl text-sm text-muted sm:text-base">{description}</p> : null}
+              <h1 className={ACCOUNT_PAGE_TITLE}>{title}</h1>
+              {description ? <p className={ACCOUNT_PAGE_DESCRIPTION}>{description}</p> : null}
             </header>
           ) : null}
-          <div className={pathname !== DASHBOARD_PATH ? "mt-6" : undefined}>{children}</div>
+          <div className={showMainPageHeader ? ACCOUNT_CONTENT_STACK : undefined}>{children}</div>
         </div>
 
         {showDashboardRightAside ? (

@@ -9,7 +9,9 @@ import { UserSafetyActions } from "@/components/trust/UserSafetyActions";
 import { VetClinicNearbySection } from "@/components/vet/VetClinicNearbySection";
 import { useProfile } from "@/context/ProfileContext";
 import { BookingReviewsSection } from "@/components/bookings/BookingReviewsSection";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountCard } from "@/components/account/AccountCard";
+import { AccountLayout } from "@/components/account/AccountLayout";
+import { ACCOUNT_LINK_CLASS } from "@/lib/account-ui";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -131,7 +133,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   };
 
   return (
-    <DashboardShell
+    <AccountLayout
       title={b.detailTitle}
       description={b.detailDescription}
       hideCompleteProfileBanner
@@ -141,7 +143,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
       <p className="mb-4">
         <Link
           href={`/dashboard/bookings?tab=${booking?.displayStatus ?? "upcoming"}`}
-          className="text-sm font-semibold text-brand-teal hover:underline"
+          className={`text-sm ${ACCOUNT_LINK_CLASS}`}
         >
           ← {b.backToList}
         </Link>
@@ -154,7 +156,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
           {error}
         </p>
       ) : booking && user ? (
-        <article className="card-elevated rounded-3xl p-5 sm:p-8">
+        <AccountCard className="p-5 sm:p-8">
           {booking.displayStatus === "completed" ? (
             <div className="mb-5">
               <BookingReviewBanner bookingId={booking.id} petName={booking.petName} />
@@ -304,8 +306,8 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
               </Button>
             ) : null}
           </div>
-        </article>
+        </AccountCard>
       ) : null}
-    </DashboardShell>
+    </AccountLayout>
   );
 }

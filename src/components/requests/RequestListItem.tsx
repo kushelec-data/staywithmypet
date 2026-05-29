@@ -11,6 +11,7 @@ import {
   requestStatusBadgeClasses,
   requestStatusLabel,
 } from "@/lib/requests";
+import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 
 type RequestListItemProps = {
   request: CareRequest;
@@ -104,7 +105,7 @@ export function RequestListItem({
 
   return (
     <li>
-      <article className="overflow-hidden rounded-2xl border border-black/[0.06] bg-surface shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:border-border dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
+      <article className={`${ACCOUNT_CARD_CLASS} overflow-hidden transition-shadow hover:shadow-[0_2px_8px_rgba(46,107,63,0.08)]`}>
         <div className="flex flex-col gap-4 p-5 sm:gap-5 sm:p-6">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -118,7 +119,7 @@ export function RequestListItem({
             </span>
           </header>
 
-          <div className="grid gap-3 border-t border-black/5 pt-4 dark:border-border sm:grid-cols-2 sm:gap-x-6">
+          <div className="grid gap-3 border-t border-[#E5E2D8] pt-4 sm:grid-cols-2 sm:gap-x-6">
             <MetaRow icon={<UserIcon />} label={t.requests.from} value={request.senderName} />
             <MetaRow icon={<UserIcon />} label={t.requests.to} value={request.receiverName} />
             <MetaRow icon={<CalendarIcon />} label={t.requests.datesLabel} value={request.dateLabel} />
@@ -128,7 +129,7 @@ export function RequestListItem({
           </div>
 
           {messageText ? (
-            <div className="border-t border-black/5 pt-4 dark:border-border">
+            <div className="border-t border-[#E5E2D8] pt-4">
               <RequestMessagePreview
                 className="max-w-2xl"
                 label={t.requests.message}
@@ -138,13 +139,13 @@ export function RequestListItem({
           ) : null}
 
           {request.status === "accepted" ? (
-            <div className="border-t border-black/5 pt-4 dark:border-border">
+            <div className="border-t border-[#E5E2D8] pt-4">
               <ConfirmedBookingGuidanceNote messagesHref={`/messages?request=${request.id}`} />
             </div>
           ) : null}
 
           {request.status === "completed" ? (
-            <div className="border-t border-black/5 pt-4 dark:border-border">
+            <div className="border-t border-[#E5E2D8] pt-4">
               <Link
                 href={`/messages?request=${request.id}`}
                 className="inline-flex text-sm font-semibold text-brand-teal hover:underline"

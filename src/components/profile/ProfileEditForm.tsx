@@ -638,8 +638,8 @@ export function ProfileEditForm() {
                     disabled={!basicEnabled || saving.basic || anySaving}
                     className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                       selected
-                        ? "border-brand-teal/30 bg-brand-teal text-white"
-                        : "border-black/5 bg-surface text-muted hover:bg-mint/40 hover:text-foreground"
+                        ? "border-[#2E6B3F] bg-[#2E6B3F] text-white"
+                        : "border-[#E5E2D8] bg-[#F8F6F1] text-muted hover:bg-[#DDEEDF] hover:text-[#2E6B3F]"
                     }`}
                   >
                     {lang}

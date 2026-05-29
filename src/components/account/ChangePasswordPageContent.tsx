@@ -1,7 +1,9 @@
 "use client";
 
 import { PasswordPolicyChecklist } from "@/components/auth/PasswordPolicyChecklist";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountCard } from "@/components/account/AccountCard";
+import { AccountLayout } from "@/components/account/AccountLayout";
+import { ACCOUNT_ALERT_SUCCESS_CLASS, ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import { Button } from "@/components/ui/Button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useAuth } from "@/context/AuthContext";
@@ -103,7 +105,7 @@ export function ChangePasswordPageContent() {
   const copy = t.auth.changePasswordPage;
 
   return (
-    <DashboardShell
+    <AccountLayout
       title="Change password"
       description="Manage how you sign in to StayWithMyPet."
       hideCompleteProfileBanner
@@ -113,7 +115,7 @@ export function ChangePasswordPageContent() {
       ) : !user ? (
         <p className="text-sm text-muted">You need to be signed in to change your password.</p>
       ) : !hasEmailPasswordIdentity(user) ? (
-        <div className="card-elevated max-w-lg rounded-3xl p-6 sm:p-8">
+        <AccountCard className="max-w-lg p-6 sm:p-8">
           <p className="text-sm leading-relaxed text-foreground">
             {googleOnlySocialUser(user)
               ? copy.googleOnlyMessage
@@ -136,11 +138,11 @@ export function ChangePasswordPageContent() {
               Open Google account security
             </Button>
           ) : null}
-        </div>
+        </AccountCard>
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="card-elevated max-w-lg space-y-5 rounded-3xl p-6 sm:p-8"
+          className={`${ACCOUNT_CARD_CLASS} max-w-lg space-y-5 p-6 sm:p-8`}
         >
           <div>
             <label htmlFor="user_current_password" className="text-sm font-medium text-foreground">
@@ -198,10 +200,7 @@ export function ChangePasswordPageContent() {
             </p>
           ) : null}
           {success ? (
-            <p
-              className="rounded-xl bg-mint/50 px-3 py-2 text-sm font-medium text-brand-teal"
-              role="status"
-            >
+            <p className={ACCOUNT_ALERT_SUCCESS_CLASS} role="status">
               {success}
             </p>
           ) : null}
@@ -210,6 +209,6 @@ export function ChangePasswordPageContent() {
           </Button>
         </form>
       )}
-    </DashboardShell>
+    </AccountLayout>
   );
 }

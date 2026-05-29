@@ -1,4 +1,5 @@
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountCard } from "@/components/account/AccountCard";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { PawPlaceholder } from "@/components/ui/PawPlaceholder";
 import { Button } from "@/components/ui/Button";
 import type { Metadata } from "next";
@@ -11,11 +12,11 @@ const slots = 6;
 
 export default function GalleryPage() {
   return (
-    <DashboardShell
+    <AccountLayout
       title="Your gallery"
       description="Upload up to 6 photos that appear on your public profile and help others get to know you."
     >
-      <div className="card-elevated rounded-3xl p-6 sm:p-8">
+      <AccountCard className="p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <p className="text-sm text-muted">Add photos to your profile when media upload is connected.</p>
           <Button href="/gallery" variant="secondary" size="sm">
@@ -35,7 +36,7 @@ export default function GalleryPage() {
             </li>
           ))}
         </ul>
-      </div>
-    </DashboardShell>
+      </AccountCard>
+    </AccountLayout>
   );
 }

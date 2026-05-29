@@ -1,7 +1,8 @@
 "use client";
 
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountCard } from "@/components/account/AccountCard";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -82,7 +83,7 @@ export function CalendarPageContent() {
   );
 
   return (
-    <DashboardShell title={copy.pageTitle} description={copy.pageDescription}>
+    <AccountLayout title={copy.pageTitle} description={copy.pageDescription}>
       {activeMode === "pet_parent" ? (
         <div className="space-y-4">
           {loadingPets ? (
@@ -92,13 +93,13 @@ export function CalendarPageContent() {
               {petsError}
             </p>
           ) : pets.length === 0 ? (
-            <div className="card-elevated rounded-2xl border border-dashed border-black/10 p-6 text-center">
+            <AccountCard className="border border-dashed border-[#E5E2D8] p-6 text-center">
               <p className="font-heading font-semibold text-foreground">{copy.noPetsTitle}</p>
               <p className="mt-2 text-sm text-muted">{copy.noPetsDescription}</p>
               <Button href="/pets/new" size="sm" className="mt-4">
                 {copy.addPet}
               </Button>
-            </div>
+            </AccountCard>
           ) : (
             <>
               {pets.length > 1 ? (
@@ -176,6 +177,6 @@ export function CalendarPageContent() {
       ) : (
         <p className="text-sm text-muted">{copy.pageDescription}</p>
       )}
-    </DashboardShell>
+    </AccountLayout>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountCard } from "@/components/account/AccountCard";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { MyPetsList } from "@/components/pets/MyPetsList";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -37,12 +38,12 @@ export function MyPetsPageContent() {
   }
 
   return (
-    <DashboardShell
+    <AccountLayout
       title="My pets"
       description="Manage your pet profiles and care listings."
       hideCompleteProfileBanner
     >
-      <div className="card-elevated rounded-3xl p-6 sm:p-8">
+      <AccountCard className="p-6 sm:p-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-lg font-semibold text-foreground">My pets</h2>
           <Button href="/pets/new" size="sm">
@@ -50,7 +51,7 @@ export function MyPetsPageContent() {
           </Button>
         </div>
         <MyPetsList userId={user.id} />
-      </div>
-    </DashboardShell>
+      </AccountCard>
+    </AccountLayout>
   );
 }

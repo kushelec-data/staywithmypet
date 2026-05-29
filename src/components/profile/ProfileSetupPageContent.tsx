@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { ProfileSetupForm } from "@/components/profile/ProfileSetupForm";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -25,11 +25,11 @@ export function ProfileSetupPageContent() {
   }
 
   return (
-    <DashboardShell
+    <AccountLayout
       title="Set up your profile"
       description="Tell the community who you are so Pet Parents and Pet Friends can connect with you."
     >
       <ProfileSetupForm submitLabel="Save and go to dashboard" hideRolePicker />
-    </DashboardShell>
+    </AccountLayout>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { useAuth } from "@/context/AuthContext";
@@ -31,7 +31,7 @@ export function ProfileEditPageContent() {
   }
 
   return (
-    <DashboardShell
+    <AccountLayout
       title={pe.pageTitle}
       description={pe.pageDescription}
       breadcrumbTitle={pe.pageTitle}
@@ -46,6 +46,6 @@ export function ProfileEditPageContent() {
         ) : null}
       </div>
       <ProfileEditForm />
-    </DashboardShell>
+    </AccountLayout>
   );
 }

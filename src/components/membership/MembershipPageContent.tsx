@@ -2,7 +2,14 @@
 
 import { useMemo, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountCard } from "@/components/account/AccountCard";
+import { AccountLayout } from "@/components/account/AccountLayout";
+import {
+  ACCOUNT_ALERT_SUCCESS_CLASS,
+  ACCOUNT_PAGE_HEADER_EYEBROW,
+  ACCOUNT_STATUS_BADGE_CLASS,
+  ACCOUNT_CARD_CLASS,
+} from "@/lib/account-ui";
 import {
   activeModeToPricingTab,
   MembershipPlans,
@@ -274,13 +281,13 @@ export function MembershipPageContent({
     : membershipInactiveHeadline(planMode);
 
   return (
-    <DashboardShell
+    <AccountLayout
       title={pageTitle}
       description={pageSubtitle}
       hideCompleteProfileBanner
     >
       {dualActive ? (
-        <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-brand-teal/15 px-3 py-1 text-xs font-semibold text-brand-teal">
+        <p className={`mb-4 inline-flex items-center gap-2 px-3 py-1 text-xs ${ACCOUNT_STATUS_BADGE_CLASS}`}>
           Dual member — both roles active
         </p>
       ) : null}
@@ -300,15 +307,13 @@ export function MembershipPageContent({
         </div>
       ) : null}
 
-      <div className="card-elevated mb-6 rounded-3xl border border-brand-teal/20 bg-mint/30 p-5 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-brand-teal">
-          {pageTitle}
-        </p>
+      <AccountCard className="mb-6 p-5 sm:p-6">
+        <p className={ACCOUNT_PAGE_HEADER_EYEBROW}>{pageTitle}</p>
         <p className="font-heading mt-2 text-2xl font-semibold text-foreground">
           {loading ? "Loading…" : statusHeadline}
         </p>
         {!loading && isActive && activePlanName ? (
-          <p className="mt-1 text-sm font-medium text-brand-teal">{activePlanName} plan</p>
+          <p className="mt-1 text-sm font-medium text-[#2E6B3F]">{activePlanName} plan</p>
         ) : null}
         {!loading && isActive && activeMembership ? (
           <dl className="mt-3 grid gap-1 text-sm text-muted sm:grid-cols-3">
@@ -341,13 +346,10 @@ export function MembershipPageContent({
             ? `Your ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} membership unlocks messaging and bookings in this mode.`
             : `Choose a ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} plan below to pay securely with Stripe (TEST mode). Browse for free until you upgrade.`}
         </p>
-      </div>
+      </AccountCard>
 
       {checkoutBanner ? (
-        <p
-          className="mb-4 rounded-2xl border border-brand-teal/30 bg-mint/40 px-4 py-3 text-sm text-foreground"
-          role="status"
-        >
+        <p className={`mb-4 px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
           {checkoutBanner}
         </p>
       ) : null}
@@ -372,6 +374,6 @@ export function MembershipPageContent({
         enableCheckout={!isActive && stripeCheckoutReady}
         planCheckoutErrors={stripePlanErrorsByRole?.[modeRole]}
       />
-    </DashboardShell>
+    </AccountLayout>
   );
 }

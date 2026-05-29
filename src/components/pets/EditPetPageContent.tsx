@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountLayout } from "@/components/account/AccountLayout";
 import { NewPetForm } from "@/components/pets/NewPetForm";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -41,12 +41,12 @@ export function EditPetPageContent({ petId }: EditPetPageContentProps) {
   }
 
   return (
-    <DashboardShell
+    <AccountLayout
       title="Edit pet profile"
       description="Update your pet's details, care needs, and photos."
       hideCompleteProfileBanner
     >
       <NewPetForm petId={petId} />
-    </DashboardShell>
+    </AccountLayout>
   );
 }

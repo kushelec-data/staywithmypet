@@ -50,7 +50,7 @@ export function MyPetsList({ userId }: MyPetsListProps) {
 
   if (pets.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-black/10 bg-mint/20 px-6 py-12 text-center">
+      <div className="account-card flex flex-col items-center gap-4 border border-dashed border-[#E5E2D8] px-6 py-12 text-center">
         <p className="text-sm text-muted">No pets added yet</p>
         <Button href="/pets/new" size="sm">
           Add your pet
