@@ -1,4 +1,5 @@
 import {
+  formatLivingTypeLabel,
   formatPetTypeLabel,
   profileCalendarSelectedDates,
   resolvedAvailability,
@@ -12,6 +13,7 @@ import {
   formatPreferredCareLocationLabel,
 } from "@/lib/pet-care-labels";
 import { formatPreferredPetWeightSizes } from "@/lib/pet-weight";
+import { formatListWithOtherDisplay } from "@/lib/other-option";
 
 function joinNatural(items: string[], max = 4): string | null {
   const slice = items.filter(Boolean).slice(0, max);
@@ -43,8 +45,9 @@ export function buildLivingSituationSummary(
   const living = resolvedLivingSituation(details);
   const lines: string[] = [];
 
-  if (!options.publicSafe && living.living_type) {
-    lines.push(living.living_type);
+  const livingLabel = formatLivingTypeLabel(living.living_type, living.living_type_other);
+  if (!options.publicSafe && livingLabel) {
+    lines.push(livingLabel);
   } else if (options.publicSafe && living.living_type) {
     lines.push("Pet-friendly home");
   }
@@ -81,7 +84,10 @@ export function buildPetCarePreferencesSummary(details: ProfileDetails): Profile
   const care = resolvedPetCarePreferences(details);
   const lines: string[] = [];
 
-  const typeComfort = formatPetTypesWillingComfort(care.pet_types_willing_to_care_for ?? []);
+  const typeComfort = formatPetTypesWillingComfort(
+    care.pet_types_willing_to_care_for ?? [],
+    care.pet_types_willing_other,
+  );
   if (typeComfort.length) {
     lines.push(...typeComfort.slice(0, 3));
   }
@@ -92,7 +98,10 @@ export function buildPetCarePreferencesSummary(details: ProfileDetails): Profile
     lines.push(`${labels.join(", ")} weight range${sizes.length > 1 ? "s" : ""}`);
   }
 
-  const careTypes = care.available_care_types ?? [];
+  const careTypes = formatListWithOtherDisplay(
+    care.available_care_types ?? [],
+    care.available_care_types_other,
+  );
   if (careTypes.length) {
     lines.push(joinNatural(careTypes, 4) ?? "");
   }
@@ -107,7 +116,9 @@ export function buildPetCarePreferencesSummary(details: ProfileDetails): Profile
     lines.push(experienceLabel);
   }
 
-  const borrowed = (care.pet_types_previously_borrowed ?? []).map(formatPetTypeLabel);
+  const borrowed = (care.pet_types_previously_borrowed ?? []).map((t) =>
+    formatPetTypeLabel(t, care.pet_types_previously_borrowed_other),
+  );
   if (borrowed.length) {
     lines.push(`Previously cared for ${joinNatural(borrowed, 4)}`);
   }

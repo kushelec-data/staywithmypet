@@ -61,6 +61,7 @@ import {
   petParentFormFromDetailsRaw,
   type PetParentProfileFormInput,
 } from "@/lib/profile-parent-form";
+import { isOtherOptionValue, validateOtherOptionFields } from "@/lib/other-option";
 import type { ProfileRole } from "@/lib/profile-setup";
 import {
   saveBasicProfileSection,
@@ -460,6 +461,23 @@ export function ProfileEditForm() {
   async function handleSavePetFriend() {
     if (!user) return;
 
+    const otherError = validateOtherOptionFields([
+      { selected: petFriendForm.petTypesWilling, otherText: petFriendForm.petTypesWillingOther, fieldLabel: "pet type" },
+      { selected: petFriendForm.availableCareTypes, otherText: petFriendForm.availableCareTypesOther, fieldLabel: "care type" },
+      {
+        selected: petFriendForm.petTypesPreviouslyBorrowed,
+        otherText: petFriendForm.petTypesPreviouslyBorrowedOther,
+        fieldLabel: "pet type",
+      },
+      ...(isOtherOptionValue(petFriendForm.livingType)
+        ? [{ selected: ["other"], otherText: petFriendForm.livingTypeOther, fieldLabel: "living type" }]
+        : []),
+    ]);
+    if (otherError) {
+      setErrors((prev) => ({ ...prev, petFriend: otherError }));
+      return;
+    }
+
     setSaving((prev) => ({ ...prev, petFriend: true }));
     setErrors((prev) => ({ ...prev, petFriend: null }));
     setSuccess((prev) => ({ ...prev, petFriend: null }));
@@ -479,6 +497,15 @@ export function ProfileEditForm() {
 
   async function handleSavePetParent() {
     if (!user) return;
+
+    const otherError = validateOtherOptionFields([
+      { selected: petParentForm.preferredPetTypes, otherText: petParentForm.preferredPetTypesOther, fieldLabel: "pet type" },
+      { selected: petParentForm.preferredCareTypes, otherText: petParentForm.preferredCareTypesOther, fieldLabel: "care type" },
+    ]);
+    if (otherError) {
+      setErrors((prev) => ({ ...prev, petParent: otherError }));
+      return;
+    }
 
     setSaving((prev) => ({ ...prev, petParent: true }));
     setErrors((prev) => ({ ...prev, petParent: null }));

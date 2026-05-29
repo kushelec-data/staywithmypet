@@ -8,11 +8,20 @@ import {
   FORM_FIELD_LEGEND_CLASS,
   FORM_FIELD_OPTION_LABEL_CLASS,
 } from "@/lib/form-field-styles";
+import { isOtherOptionValue } from "@/lib/other-option";
 
 const CHIP_SELECTED =
   `border-brand-teal/35 bg-mint/55 shadow-sm ring-1 ring-brand-teal/15 ${FORM_FIELD_CHIP_VALUE_SELECTED_CLASS}`;
 const CHIP_UNSELECTED =
   `border-black/5 bg-surface hover:border-brand-teal/25 hover:bg-mint/40 ${FORM_FIELD_CHIP_VALUE_CLASS}`;
+
+type OtherFieldConfig = {
+  text: string;
+  onTextChange: (value: string) => void;
+  label: string;
+  placeholder: string;
+  inputId: string;
+};
 
 type ChipMultiSelectProps = {
   label: string;
@@ -21,6 +30,7 @@ type ChipMultiSelectProps = {
   onToggle: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  otherField?: OtherFieldConfig;
 };
 
 function normalizeOptions(
@@ -39,8 +49,18 @@ export function ProfileChipMultiSelect({
   onToggle,
   disabled,
   className = "sm:col-span-2",
+  otherField,
 }: ChipMultiSelectProps) {
   const items = normalizeOptions(options);
+  const showOtherInput = Boolean(otherField) && selected.some(isOtherOptionValue);
+
+  function handleToggle(value: string) {
+    if (otherField && isOtherOptionValue(value) && selected.includes(value)) {
+      otherField.onTextChange("");
+    }
+    onToggle(value);
+  }
+
   return (
     <div className={className}>
       <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
@@ -52,7 +72,7 @@ export function ProfileChipMultiSelect({
               key={opt.value}
               type="button"
               disabled={disabled}
-              onClick={() => onToggle(opt.value)}
+              onClick={() => handleToggle(opt.value)}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
                 isOn ? CHIP_SELECTED : CHIP_UNSELECTED
               }`}
@@ -62,6 +82,52 @@ export function ProfileChipMultiSelect({
           );
         })}
       </div>
+      {showOtherInput && otherField ? (
+        <OtherOptionTextInput
+          id={otherField.inputId}
+          label={otherField.label}
+          placeholder={otherField.placeholder}
+          value={otherField.text}
+          onChange={otherField.onTextChange}
+          disabled={disabled}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+export function OtherOptionTextInput({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  disabled,
+  className = "mt-3",
+}: {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label htmlFor={id} className="form-field-label">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        required
+        disabled={disabled}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="input-field mt-1"
+      />
     </div>
   );
 }

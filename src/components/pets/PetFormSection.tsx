@@ -5,6 +5,8 @@ import {
   FORM_FIELD_CHIP_VALUE_SELECTED_CLASS,
   FORM_FIELD_LABEL_CLASS,
 } from "@/lib/form-field-styles";
+import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
+import { isOtherOptionValue } from "@/lib/other-option";
 
 type PetFormSectionProps = {
   title: string;
@@ -28,9 +30,32 @@ type ChipGroupProps = {
   selected: string[];
   onToggle: (value: string) => void;
   disabled?: boolean;
+  otherField?: {
+    text: string;
+    onTextChange: (value: string) => void;
+    label: string;
+    placeholder: string;
+    inputId: string;
+  };
 };
 
-export function PetFormChipGroup({ label, options, selected, onToggle, disabled }: ChipGroupProps) {
+export function PetFormChipGroup({
+  label,
+  options,
+  selected,
+  onToggle,
+  disabled,
+  otherField,
+}: ChipGroupProps) {
+  const showOtherInput = Boolean(otherField) && selected.some(isOtherOptionValue);
+
+  function handleToggle(value: string) {
+    if (otherField && isOtherOptionValue(value) && selected.includes(value)) {
+      otherField.onTextChange("");
+    }
+    onToggle(value);
+  }
+
   return (
     <div className="sm:col-span-2">
       <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
@@ -42,7 +67,7 @@ export function PetFormChipGroup({ label, options, selected, onToggle, disabled 
               key={option}
               type="button"
               disabled={disabled}
-              onClick={() => onToggle(option)}
+              onClick={() => handleToggle(option)}
               className={`rounded-full border px-3 py-1.5 transition-colors ${
                 isOn
                   ? `border-brand-teal/30 bg-brand-teal text-white ${FORM_FIELD_CHIP_VALUE_SELECTED_CLASS}`
@@ -54,6 +79,16 @@ export function PetFormChipGroup({ label, options, selected, onToggle, disabled 
           );
         })}
       </div>
+      {showOtherInput && otherField ? (
+        <OtherOptionTextInput
+          id={otherField.inputId}
+          label={otherField.label}
+          placeholder={otherField.placeholder}
+          value={otherField.text}
+          onChange={otherField.onTextChange}
+          disabled={disabled}
+        />
+      ) : null}
     </div>
   );
 }

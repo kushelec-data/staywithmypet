@@ -54,6 +54,7 @@ export const petCareTypeOptions = [
   "Feeding only",
   "Play visits",
   "Overnight care / 24h stay",
+  "Other",
 ] as const;
 
 export const estoniaLocationSuggestions = [

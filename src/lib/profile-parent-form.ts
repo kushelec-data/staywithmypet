@@ -1,4 +1,5 @@
 import { parseProfileDetails, type ProfileDetails } from "@/lib/profile-details";
+import { strFromOtherField } from "@/lib/other-option";
 
 /** `profiles.details.pet_parent_profile` */
 export type PetParentProfileDetails = {
@@ -6,7 +7,9 @@ export type PetParentProfileDetails = {
   care_needs_notes?: string | null;
   home_location_notes?: string | null;
   preferred_pet_types?: string[];
+  preferred_pet_types_other?: string | null;
   preferred_care_types?: string[];
+  preferred_care_types_other?: string | null;
 };
 
 export type PetParentProfileFormInput = {
@@ -14,7 +17,9 @@ export type PetParentProfileFormInput = {
   careNeedsNotes: string;
   homeLocationNotes: string;
   preferredPetTypes: string[];
+  preferredPetTypesOther: string;
   preferredCareTypes: string[];
+  preferredCareTypesOther: string;
 };
 
 export const emptyPetParentProfileForm = (): PetParentProfileFormInput => ({
@@ -22,7 +27,9 @@ export const emptyPetParentProfileForm = (): PetParentProfileFormInput => ({
   careNeedsNotes: "",
   homeLocationNotes: "",
   preferredPetTypes: [],
+  preferredPetTypesOther: "",
   preferredCareTypes: [],
+  preferredCareTypesOther: "",
 });
 
 function strFrom(value: unknown): string {
@@ -57,7 +64,9 @@ export function parsePetParentProfileDetails(raw: unknown): PetParentProfileDeta
     care_needs_notes,
     home_location_notes,
     preferred_pet_types,
+    preferred_pet_types_other: strFromOtherField(o.preferred_pet_types_other) || null,
     preferred_care_types,
+    preferred_care_types_other: strFromOtherField(o.preferred_care_types_other) || null,
   };
 }
 
@@ -70,7 +79,9 @@ export function petParentFormFromDetails(details: ProfileDetails): PetParentProf
     careNeedsNotes: parent?.care_needs_notes ?? "",
     homeLocationNotes: parent?.home_location_notes ?? "",
     preferredPetTypes: [...(parent?.preferred_pet_types ?? [])],
+    preferredPetTypesOther: parent?.preferred_pet_types_other ?? "",
     preferredCareTypes: [...(parent?.preferred_care_types ?? [])],
+    preferredCareTypesOther: parent?.preferred_care_types_other ?? "",
   };
 }
 
@@ -84,7 +95,9 @@ function buildPetParentProfileDetails(input: PetParentProfileFormInput): PetPare
     care_needs_notes: input.careNeedsNotes.trim() || null,
     home_location_notes: input.homeLocationNotes.trim() || null,
     preferred_pet_types: input.preferredPetTypes,
+    preferred_pet_types_other: input.preferredPetTypesOther.trim() || null,
     preferred_care_types: input.preferredCareTypes,
+    preferred_care_types_other: input.preferredCareTypesOther.trim() || null,
   };
 }
 

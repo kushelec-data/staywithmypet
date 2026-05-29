@@ -67,6 +67,8 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
     availability: str(record, "availability"),
     careLocation: str(record, "care_location"),
     careTypes: pickCareTypesFromRow(record, details(record)),
+    careTypesOther: strOptDetails(record, "care_types_other") ?? "",
+    genderOther: strOptDetails(record, "gender_other") ?? "",
     location: str(record, "location"),
     availabilityDates: normalizeAvailabilityDates(
       record.availability_dates ?? details(record).availability_dates,

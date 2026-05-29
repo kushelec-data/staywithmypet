@@ -5,6 +5,7 @@ import { pickCareTypesFromRow, normalizeCareTypes } from "@/lib/pet-care-type";
 import { formatNearbyLocation } from "@/lib/location-public";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { speciesDisplayLabel, speciesEmoji, type PetSpecies } from "@/lib/pet-data";
+import { formatListWithOtherDisplay } from "@/lib/other-option";
 import { pickPrimaryPhotoUrl, sortPetPhotoUrls } from "@/lib/pet-photos";
 import {
   normalizePetWeightStorageValue,
@@ -109,12 +110,12 @@ function formatTraitList(parts: string[]): string {
   return `${unique.slice(0, -1).join(", ").toLowerCase()}, and ${unique[unique.length - 1].toLowerCase()}`;
 }
 
-function formatCareTypes(types: string[]): string {
-  const labels = types.map((t) => t.trim()).filter(Boolean);
+function formatCareTypes(types: string[], otherCustom?: string | null): string {
+  const labels = formatListWithOtherDisplay(types, otherCustom).map((t) => t.trim()).filter(Boolean);
   if (!labels.length) return "";
-  if (labels.length === 1) return labels[0].toLowerCase();
-  if (labels.length === 2) return `${labels[0].toLowerCase()} and ${labels[1].toLowerCase()}`;
-  return `${labels.slice(0, -1).join(", ").toLowerCase()}, and ${labels[labels.length - 1].toLowerCase()}`;
+  if (labels.length === 1) return labels[0]!.toLowerCase();
+  if (labels.length === 2) return `${labels[0]!.toLowerCase()} and ${labels[1]!.toLowerCase()}`;
+  return `${labels.slice(0, -1).join(", ").toLowerCase()}, and ${labels[labels.length - 1]!.toLowerCase()}`;
 }
 
 function resolveAgeLabel(row: PetIntroRow, details: Record<string, unknown>): string | null {
@@ -203,6 +204,7 @@ export function buildPetCareSummary(row: PetIntroRow): string {
   if (challenging) traitParts.push(challenging);
 
   const careTypes = pickCareTypesFromRow(row, details);
+  const careTypesOther = strFrom(details.care_types_other);
   const dates = normalizeAvailabilityDates(
     row.availability_dates ?? details.availability_dates,
   );
@@ -225,7 +227,7 @@ export function buildPetCareSummary(row: PetIntroRow): string {
   const extras: string[] = [];
 
   if (careTypes.length) {
-    let need = `Needs ${formatCareTypes(careTypes)} support`;
+    let need = `Needs ${formatCareTypes(careTypes, careTypesOther)} support`;
     if (dates.length) need += " on selected dates";
     else if (availabilityNotes) need += ` (${availabilityNotes})`;
     extras.push(need);

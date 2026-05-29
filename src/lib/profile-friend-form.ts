@@ -9,6 +9,7 @@ import {
   type LivingSituationDetails,
 } from "@/lib/profile-details";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
+import { strFromOtherField } from "@/lib/other-option";
 import { normalizePreferredPetSizesList } from "@/lib/pet-weight";
 import {
   normalizeExperienceLevelValue,
@@ -24,20 +25,24 @@ import {
 
 export type PetFriendProfileFormInput = {
   petTypesWilling: string[];
+  petTypesWillingOther: string;
   preferredPetSizes: string[];
   experienceLevel: string;
   petTypesPreviouslyBorrowed: string[];
+  petTypesPreviouslyBorrowedOther: string;
   willingSpecialMedicalNeeds: boolean | null;
   willingBehavioralQuirks: boolean | null;
   willingSeniors: boolean | null;
   willingPuppiesKittens: boolean | null;
   availableCareTypes: string[];
+  availableCareTypesOther: string;
   preferredCareLocation: string;
   preferredDaysTimes: string[];
   durationOfCarePreferred: string;
   availabilityNotes: string;
   availabilitySelectedDates: string[];
   livingType: string;
+  livingTypeOther: string;
   hasPetsAtHome: boolean | null;
   petsAtHomeNotes: string;
   hasChildren: boolean | null;
@@ -47,20 +52,24 @@ export type PetFriendProfileFormInput = {
 
 export const emptyPetFriendProfileForm = (): PetFriendProfileFormInput => ({
   petTypesWilling: [],
+  petTypesWillingOther: "",
   preferredPetSizes: [],
   experienceLevel: experienceLevelOptions[0].value,
   petTypesPreviouslyBorrowed: [],
+  petTypesPreviouslyBorrowedOther: "",
   willingSpecialMedicalNeeds: null,
   willingBehavioralQuirks: null,
   willingSeniors: null,
   willingPuppiesKittens: null,
   availableCareTypes: [],
+  availableCareTypesOther: "",
   preferredCareLocation: preferredCareLocationOptions[2].value,
   preferredDaysTimes: [],
   durationOfCarePreferred: durationOfCareOptions[durationOfCareOptions.length - 1],
   availabilityNotes: "",
   availabilitySelectedDates: [],
   livingType: livingTypeOptions[0],
+  livingTypeOther: "",
   hasPetsAtHome: null,
   petsAtHomeNotes: "",
   hasChildren: null,
@@ -96,15 +105,18 @@ export function petFriendFormFromDetails(
 
   return {
     petTypesWilling: [...(care?.pet_types_willing_to_care_for ?? [])],
+    petTypesWillingOther: care?.pet_types_willing_other ?? "",
     preferredPetSizes: normalizePreferredPetSizesList([...(care?.preferred_pet_sizes ?? [])]),
     experienceLevel:
       normalizeExperienceLevelValue(care?.experience_level) ?? experienceLevelOptions[0].value,
     petTypesPreviouslyBorrowed: [...(care?.pet_types_previously_borrowed ?? [])],
+    petTypesPreviouslyBorrowedOther: care?.pet_types_previously_borrowed_other ?? "",
     willingSpecialMedicalNeeds: care?.willing_special_medical_needs ?? null,
     willingBehavioralQuirks: care?.willing_behavioral_quirks ?? null,
     willingSeniors: care?.willing_seniors ?? null,
     willingPuppiesKittens: care?.willing_puppies_kittens ?? null,
     availableCareTypes: [...(care?.available_care_types ?? [])],
+    availableCareTypesOther: care?.available_care_types_other ?? "",
     preferredCareLocation:
       normalizePreferredCareLocationValue(care?.preferred_care_location) ??
       preferredCareLocationOptions[2].value,
@@ -114,6 +126,7 @@ export function petFriendFormFromDetails(
     availabilityNotes: avail?.notes ?? "",
     availabilitySelectedDates: dates,
     livingType: living?.living_type ?? livingTypeOptions[0],
+    livingTypeOther: living?.living_type_other ?? "",
     hasPetsAtHome: living?.has_pets_at_home ?? null,
     petsAtHomeNotes: living?.pets_at_home_notes ?? "",
     hasChildren: living?.has_children ?? null,
@@ -132,14 +145,17 @@ export function petFriendFormFromDetailsRaw(
 function buildPetCarePreferences(input: PetFriendProfileFormInput): PetCarePreferences {
   return {
     pet_types_willing_to_care_for: input.petTypesWilling,
+    pet_types_willing_other: input.petTypesWillingOther.trim() || null,
     preferred_pet_sizes: input.preferredPetSizes,
     experience_level: input.experienceLevel.trim() || null,
     pet_types_previously_borrowed: input.petTypesPreviouslyBorrowed,
+    pet_types_previously_borrowed_other: input.petTypesPreviouslyBorrowedOther.trim() || null,
     willing_special_medical_needs: input.willingSpecialMedicalNeeds,
     willing_behavioral_quirks: input.willingBehavioralQuirks,
     willing_seniors: input.willingSeniors,
     willing_puppies_kittens: input.willingPuppiesKittens,
     available_care_types: input.availableCareTypes,
+    available_care_types_other: input.availableCareTypesOther.trim() || null,
     preferred_care_location: input.preferredCareLocation.trim() || null,
   };
 }
@@ -147,6 +163,7 @@ function buildPetCarePreferences(input: PetFriendProfileFormInput): PetCarePrefe
 function buildLivingSituation(input: PetFriendProfileFormInput): LivingSituationDetails {
   return {
     living_type: input.livingType.trim() || null,
+    living_type_other: input.livingTypeOther.trim() || null,
     has_pets_at_home: input.hasPetsAtHome,
     pets_at_home_notes: input.petsAtHomeNotes.trim() || null,
     has_children: input.hasChildren,

@@ -2,6 +2,7 @@ import {
   formatExperienceLevelLabel,
   formatPetTypesWillingComfort,
 } from "@/lib/pet-care-labels";
+import { formatListWithOtherDisplay } from "@/lib/other-option";
 import {
   formatPetTypeLabel,
   resolvedPetCarePreferences,
@@ -16,7 +17,10 @@ export function buildPetFriendPreferenceChips(details: ProfileDetails | null | u
   const chips: string[] = [];
   const types = new Set(care.pet_types_willing_to_care_for ?? []);
 
-  for (const comfort of formatPetTypesWillingComfort(care.pet_types_willing_to_care_for ?? [])) {
+  for (const comfort of formatPetTypesWillingComfort(
+    care.pet_types_willing_to_care_for ?? [],
+    care.pet_types_willing_other,
+  )) {
     if (chips.length >= 5) break;
     if (!chips.includes(comfort)) chips.push(comfort);
   }
@@ -47,7 +51,10 @@ export function buildPetFriendPreferenceChips(details: ProfileDetails | null | u
     chips.push("Medical needs OK");
   }
 
-  for (const careType of care.available_care_types ?? []) {
+  for (const careType of formatListWithOtherDisplay(
+    care.available_care_types ?? [],
+    care.available_care_types_other,
+  )) {
     if (chips.length >= 5) break;
     const label = careType.replace(/\s+/g, " ").trim();
     if (label && !chips.includes(label)) chips.push(label);

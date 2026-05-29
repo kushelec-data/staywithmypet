@@ -20,6 +20,8 @@ import {
   preferredDaysTimesOptions,
 } from "@/lib/profile-friend-options";
 import { PET_WEIGHT_CATEGORY_OPTIONS } from "@/lib/pet-weight";
+import { OTHER_FIELD_COPY, isOtherOptionValue } from "@/lib/other-option";
+import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
 import { ArrowLeftRight, Dog, Heart, Home, MapPin, Sparkles } from "lucide-react";
 
 type PetFriendProfileFormSectionsProps = {
@@ -85,6 +87,13 @@ export function PetFriendProfileFormSections({
             selected={form.petTypesWilling}
             onToggle={(v) => toggleInList(form, onChange, "petTypesWilling", v)}
             disabled={disabled}
+            otherField={{
+              text: form.petTypesWillingOther,
+              onTextChange: (petTypesWillingOther) => patch(form, onChange, { petTypesWillingOther }),
+              label: OTHER_FIELD_COPY.petType.label,
+              placeholder: OTHER_FIELD_COPY.petType.placeholder,
+              inputId: "pet_types_willing_other",
+            }}
           />
           <ProfileChipMultiSelect
             label="Preferred pet weight"
@@ -99,6 +108,13 @@ export function PetFriendProfileFormSections({
             selected={form.availableCareTypes}
             onToggle={(v) => toggleInList(form, onChange, "availableCareTypes", v)}
             disabled={disabled}
+            otherField={{
+              text: form.availableCareTypesOther,
+              onTextChange: (availableCareTypesOther) => patch(form, onChange, { availableCareTypesOther }),
+              label: OTHER_FIELD_COPY.careType.label,
+              placeholder: OTHER_FIELD_COPY.careType.placeholder,
+              inputId: "available_care_types_other",
+            }}
           />
           <ProfileChipSingleSelect
             label="Pet care experience"
@@ -140,6 +156,14 @@ export function PetFriendProfileFormSections({
             selected={form.petTypesPreviouslyBorrowed}
             onToggle={(v) => toggleInList(form, onChange, "petTypesPreviouslyBorrowed", v)}
             disabled={disabled}
+            otherField={{
+              text: form.petTypesPreviouslyBorrowedOther,
+              onTextChange: (petTypesPreviouslyBorrowedOther) =>
+                patch(form, onChange, { petTypesPreviouslyBorrowedOther }),
+              label: OTHER_FIELD_COPY.petType.label,
+              placeholder: OTHER_FIELD_COPY.petType.placeholder,
+              inputId: "pet_types_previously_borrowed_other",
+            }}
           />
           <ProfileYesNoToggle
             label="Willing to care for special medical needs?"
@@ -248,7 +272,13 @@ export function PetFriendProfileFormSections({
             id="living_type"
             value={form.livingType}
             disabled={disabled}
-            onChange={(e) => patch(form, onChange, { livingType: e.target.value })}
+            onChange={(e) => {
+              const livingType = e.target.value;
+              patch(form, onChange, {
+                livingType,
+                livingTypeOther: isOtherOptionValue(livingType) ? form.livingTypeOther : "",
+              });
+            }}
             className="input-field mt-1"
           >
             {livingTypeOptions.map((o) => (
@@ -257,6 +287,16 @@ export function PetFriendProfileFormSections({
               </option>
             ))}
           </select>
+          {isOtherOptionValue(form.livingType) ? (
+            <OtherOptionTextInput
+              id="living_type_other"
+              label={OTHER_FIELD_COPY.livingType.label}
+              placeholder={OTHER_FIELD_COPY.livingType.placeholder}
+              value={form.livingTypeOther}
+              onChange={(livingTypeOther) => patch(form, onChange, { livingTypeOther })}
+              disabled={disabled}
+            />
+          ) : null}
         </div>
         <ProfileYesNoToggle
           label="Pets at home?"

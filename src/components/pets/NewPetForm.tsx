@@ -36,6 +36,8 @@ import {
 import { validatePetPhotoFiles } from "@/lib/pet-photos";
 import { uploadAndAttachPetPhotos } from "@/lib/pet-photos";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
+import { OTHER_FIELD_COPY, validateOtherOptionFields } from "@/lib/other-option";
+import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -62,6 +64,8 @@ const emptyForm = (): PetProfileFormInput => ({
   availability: "",
   careLocation: petCareLocationOptions[2],
   careTypes: [],
+  careTypesOther: "",
+  genderOther: "",
   location: "",
   availabilityDates: [],
   address: "",
@@ -154,6 +158,22 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     );
     if (!locationText) {
       setError("Please enter an address or location.");
+      return;
+    }
+
+    if (payload.speciesForm === "other" && !payload.breed.trim()) {
+      setError("Please specify what species your pet is.");
+      return;
+    }
+
+    const otherError = validateOtherOptionFields([
+      { selected: payload.careTypes, otherText: payload.careTypesOther, fieldLabel: "care type" },
+      ...(payload.gender === "Other"
+        ? [{ selected: ["other"], otherText: payload.genderOther, fieldLabel: "gender" }]
+        : []),
+    ]);
+    if (otherError) {
+      setError(otherError);
       return;
     }
 
@@ -250,14 +270,19 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="breed" className="form-field-label">
-            Breed
+            {form.speciesForm === "other" ? OTHER_FIELD_COPY.petSpecies.label : "Breed"}
           </label>
           <input
             id="breed"
             value={form.breed}
             onChange={(e) => patch("breed", e.target.value)}
+            required={form.speciesForm === "other"}
             className="input-field mt-1"
-            placeholder="Optional"
+            placeholder={
+              form.speciesForm === "other"
+                ? OTHER_FIELD_COPY.petSpecies.placeholder
+                : "Optional"
+            }
           />
         </div>
         <div>
@@ -279,7 +304,14 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           <select
             id="gender"
             value={form.gender}
-            onChange={(e) => patch("gender", e.target.value)}
+            onChange={(e) => {
+              const gender = e.target.value;
+              setForm((prev) => ({
+                ...prev,
+                gender,
+                genderOther: gender === "Other" ? prev.genderOther : "",
+              }));
+            }}
             className="input-field mt-1"
           >
             {petGenderOptions.map((g) => (
@@ -288,6 +320,16 @@ export function NewPetForm({ petId }: NewPetFormProps) {
               </option>
             ))}
           </select>
+          {form.gender === "Other" ? (
+            <OtherOptionTextInput
+              id="gender_other"
+              label={OTHER_FIELD_COPY.gender.label}
+              placeholder={OTHER_FIELD_COPY.gender.placeholder}
+              value={form.genderOther}
+              onChange={(genderOther) => patch("genderOther", genderOther)}
+              disabled={saving}
+            />
+          ) : null}
         </div>
         <div>
           <label htmlFor="size" className="form-field-label">
@@ -507,6 +549,13 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           selected={form.careTypes}
           onToggle={(v) => toggleList("careTypes", v)}
           disabled={saving}
+          otherField={{
+            text: form.careTypesOther,
+            onTextChange: (careTypesOther) => patch("careTypesOther", careTypesOther),
+            label: OTHER_FIELD_COPY.careType.label,
+            placeholder: OTHER_FIELD_COPY.careType.placeholder,
+            inputId: "pet_care_types_other",
+          }}
         />
         <div className="sm:col-span-2">
           <label htmlFor="location" className="form-field-label">

@@ -29,6 +29,8 @@ export type PetProfileFormInput = {
   availability: string;
   careLocation: string;
   careTypes: string[];
+  careTypesOther: string;
+  genderOther: string;
   location: string;
   availabilityDates: string[];
   address: string;
@@ -70,6 +72,15 @@ export function speciesDisplayLabel(species: string, breed: string | null): stri
   return breed?.trim() || "other";
 }
 
+export function genderDisplayLabel(gender: string | null | undefined, genderOther?: string | null): string {
+  const value = gender?.trim();
+  if (!value) return "";
+  if (value.toLowerCase() === "other") {
+    return genderOther?.trim() || "Other";
+  }
+  return value;
+}
+
 function buildPetDetails(input: PetProfileFormInput): Record<string, unknown> {
   return {
     species_form: input.speciesForm,
@@ -88,6 +99,8 @@ function buildPetDetails(input: PetProfileFormInput): Record<string, unknown> {
     care_location: input.careLocation || null,
     care_type: input.careTypes,
     care_types: input.careTypes,
+    care_types_other: input.careTypesOther.trim() || null,
+    gender_other: input.genderOther.trim() || null,
     availability_dates: input.availabilityDates,
     address: input.address.trim() || null,
     latitude: input.latitude,

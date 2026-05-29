@@ -1,6 +1,10 @@
 import { petTypeOptions } from "@/lib/legacy/search-filters";
+import { isOtherOptionValue } from "@/lib/other-option";
 
-function formatPetTypeLabel(value: string): string {
+function formatPetTypeLabel(value: string, otherCustom?: string | null): string {
+  if (isOtherOptionValue(value)) {
+    return otherCustom?.trim() || "Other";
+  }
   return petTypeOptions.find((o) => o.value === value)?.label ?? value;
 }
 
@@ -102,10 +106,11 @@ export function formatPreferredCareLocationLabel(raw: string | null | undefined)
 }
 
 /** Human-friendly chips for `pet_types_willing_to_care_for`. */
-export function formatPetTypesWillingComfort(types: string[]): string[] {
+export function formatPetTypesWillingComfort(types: string[], otherCustom?: string | null): string[] {
   const normalized = types.filter((t) => t.trim().length > 0);
   const set = new Set(normalized.map((t) => t.trim().toLowerCase()));
   const chips: string[] = [];
+  const otherText = otherCustom?.trim();
 
   if (set.has("dog") && set.has("cat")) {
     chips.push("Comfortable with dogs and cats");
@@ -125,7 +130,15 @@ export function formatPetTypesWillingComfort(types: string[]): string[] {
   for (const type of normalized) {
     const key = type.trim().toLowerCase();
     if (set.has(key)) {
-      chips.push(`Comfortable with ${formatPetTypeLabel(type).toLowerCase()}`);
+      if (isOtherOptionValue(type)) {
+        chips.push(
+          otherText
+            ? `Comfortable with ${otherText.toLowerCase()}`
+            : "Comfortable with other pets",
+        );
+      } else {
+        chips.push(`Comfortable with ${formatPetTypeLabel(type).toLowerCase()}`);
+      }
       set.delete(key);
     }
   }

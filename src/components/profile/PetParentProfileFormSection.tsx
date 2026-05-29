@@ -2,6 +2,7 @@
 
 import { ProfileChipMultiSelect } from "@/components/profile/form/ProfileFormFields";
 import { careTypeOptions, petTypeOptions } from "@/lib/profile-friend-options";
+import { OTHER_FIELD_COPY } from "@/lib/other-option";
 import type { PetParentProfileFormInput } from "@/lib/profile-parent-form";
 
 type PetParentProfileFormSectionProps = {
@@ -107,6 +108,13 @@ export function PetParentProfileFormSection({
         selected={form.preferredPetTypes}
         onToggle={(v) => toggleInList(form, onChange, "preferredPetTypes", v)}
         disabled={disabled}
+        otherField={{
+          text: form.preferredPetTypesOther,
+          onTextChange: (preferredPetTypesOther) => patch(form, onChange, { preferredPetTypesOther }),
+          label: OTHER_FIELD_COPY.petType.label,
+          placeholder: OTHER_FIELD_COPY.petType.placeholder,
+          inputId: "preferred_pet_types_other",
+        }}
       />
 
       <ProfileChipMultiSelect
@@ -115,6 +123,13 @@ export function PetParentProfileFormSection({
         selected={form.preferredCareTypes}
         onToggle={(v) => toggleInList(form, onChange, "preferredCareTypes", v)}
         disabled={disabled}
+        otherField={{
+          text: form.preferredCareTypesOther,
+          onTextChange: (preferredCareTypesOther) => patch(form, onChange, { preferredCareTypesOther }),
+          label: OTHER_FIELD_COPY.careType.label,
+          placeholder: OTHER_FIELD_COPY.careType.placeholder,
+          inputId: "preferred_care_types_other",
+        }}
       />
     </div>
   );

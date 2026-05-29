@@ -40,6 +40,7 @@ export const careTypeOptions = [
   "Feeding only",
   "Play visits",
   "Overnight stays",
+  "Other",
 ] as const;
 
 export const languageOptions = [

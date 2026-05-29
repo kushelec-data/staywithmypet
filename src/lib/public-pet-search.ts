@@ -44,6 +44,8 @@ export type PublicSearchPet = PetIntroDisplay &
     availabilityNotes: string | null;
     personalityTags: string[];
     gender: string | null;
+    genderOther?: string | null;
+    careTypesOther?: string | null;
     spayedNeutered: boolean;
     healthCharacteristics: string | null;
     positiveTraits: string | null;
@@ -228,6 +230,7 @@ function mapRowToPublicSearchPet(
     walkNeeds: strFrom(row.walk_needs) ?? strFrom(details.walk_needs),
     careLocation,
     careTypes: pickCareTypesFromRow(row, details),
+    careTypesOther: strFrom(details.care_types_other),
     availabilityDates: dates,
     locationArea: intro.locationArea,
     ownerLanguages: Array.isArray(owner.languages)
@@ -247,6 +250,7 @@ function mapRowToPublicSearchPet(
       strFrom(row.availability) ?? strFrom(details.availability_notes),
     personalityTags: buildPersonalityTags(row, details),
     gender: strFrom(details.gender) ?? strFrom(row.gender),
+    genderOther: strFrom(details.gender_other),
     spayedNeutered:
       details.spayed_neutered === true ||
       details.is_spayed_neutered === true ||

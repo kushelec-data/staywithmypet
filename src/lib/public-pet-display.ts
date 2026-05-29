@@ -1,7 +1,8 @@
 import { formatDate, formatDateRange } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
-import { speciesDisplayLabel } from "@/lib/pet-data";
+import { speciesDisplayLabel, genderDisplayLabel } from "@/lib/pet-data";
+import { formatListWithOtherDisplay } from "@/lib/other-option";
 
 export type PublicDetailGroup = {
   label: string;
@@ -73,19 +74,22 @@ export function buildPublicPetQuickFacts(pet: PublicSearchPet): PublicPetQuickFa
   if (pet.ageLabel?.trim()) {
     facts.push({ icon: "age", label: pet.ageLabel.trim() });
   }
-  if (pet.gender?.trim()) {
-    facts.push({ icon: "gender", label: pet.gender.trim() });
+  const genderLabel = genderDisplayLabel(pet.gender, pet.genderOther);
+  if (genderLabel) {
+    facts.push({ icon: "gender", label: genderLabel });
   }
   if (pet.spayedNeutered) {
     facts.push({ icon: "health", label: "Spayed / neutered" });
-  } else if (/neutered|spayed/i.test(pet.gender ?? "")) {
-    facts.push({ icon: "health", label: pet.gender!.trim() });
+  } else if (/neutered|spayed/i.test(genderLabel)) {
+    facts.push({ icon: "health", label: genderLabel });
   }
   return facts;
 }
 
 export function buildPublicPetCareColumns(pet: PublicSearchPet): PublicCareColumns {
-  const services = pet.careTypes.map(titleCaseCareLabel).filter(Boolean);
+  const services = formatListWithOtherDisplay(pet.careTypes, pet.careTypesOther)
+    .map(titleCaseCareLabel)
+    .filter(Boolean);
   const walks = pet.walkNeeds?.trim()
     ? [pet.walkNeeds.trim()]
     : ["None"];

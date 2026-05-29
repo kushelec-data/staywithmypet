@@ -12,24 +12,33 @@ import {
   formatPreferredCareLocationLabel,
 } from "@/lib/pet-care-labels";
 import { formatPreferredPetWeightSizes } from "@/lib/pet-weight";
+import {
+  formatListWithOtherDisplay,
+  isOtherOptionValue,
+  strFromOtherField,
+} from "@/lib/other-option";
 
 /** `profiles.details.pet_care_preferences` */
 export type PetCarePreferences = {
   pet_types_willing_to_care_for?: string[];
+  pet_types_willing_other?: string | null;
   preferred_pet_sizes?: string[];
   experience_level?: string | null;
   pet_types_previously_borrowed?: string[];
+  pet_types_previously_borrowed_other?: string | null;
   willing_special_medical_needs?: boolean | null;
   willing_behavioral_quirks?: boolean | null;
   willing_seniors?: boolean | null;
   willing_puppies_kittens?: boolean | null;
   available_care_types?: string[];
+  available_care_types_other?: string | null;
   preferred_care_location?: string | null;
 };
 
 /** `profiles.details.living_situation` */
 export type LivingSituationDetails = {
   living_type?: string | null;
+  living_type_other?: string | null;
   has_pets_at_home?: boolean | null;
   pets_at_home_notes?: string | null;
   has_children?: boolean | null;
@@ -136,14 +145,17 @@ function parsePetCarePreferences(raw: unknown): PetCarePreferences | undefined {
 
   const care: PetCarePreferences = {
     pet_types_willing_to_care_for,
+    pet_types_willing_other: strFromOtherField(o.pet_types_willing_other) || null,
     preferred_pet_sizes,
     experience_level: strFrom(o.experience_level ?? o.experience),
     pet_types_previously_borrowed,
+    pet_types_previously_borrowed_other: strFromOtherField(o.pet_types_previously_borrowed_other) || null,
     willing_special_medical_needs: boolFrom(o.willing_special_medical_needs),
     willing_behavioral_quirks: boolFrom(o.willing_behavioral_quirks),
     willing_seniors: boolFrom(o.willing_seniors),
     willing_puppies_kittens: boolFrom(o.willing_puppies_kittens),
     available_care_types,
+    available_care_types_other: strFromOtherField(o.available_care_types_other) || null,
     preferred_care_location: strFrom(o.preferred_care_location ?? o.care_location),
   };
 
@@ -167,6 +179,7 @@ function parseLivingSituation(raw: unknown): LivingSituationDetails | undefined 
   const o = raw as Record<string, unknown>;
   const living: LivingSituationDetails = {
     living_type: strFrom(o.living_type ?? o.home_type),
+    living_type_other: strFromOtherField(o.living_type_other) || null,
     has_pets_at_home: boolFrom(o.has_pets_at_home ?? o.has_other_pets),
     pets_at_home_notes: strFrom(o.pets_at_home_notes),
     has_children: boolFrom(o.has_children),
@@ -271,16 +284,19 @@ export function resolvedPetCarePreferences(details: ProfileDetails): PetCarePref
       nested?.pet_types_willing_to_care_for?.length
         ? nested.pet_types_willing_to_care_for
         : details.pet_types ?? [],
+    pet_types_willing_other: nested?.pet_types_willing_other ?? null,
     preferred_pet_sizes:
       nested?.preferred_pet_sizes?.length ? nested.preferred_pet_sizes : details.pet_sizes ?? [],
     experience_level: nested?.experience_level ?? details.experience ?? null,
     pet_types_previously_borrowed: nested?.pet_types_previously_borrowed ?? [],
+    pet_types_previously_borrowed_other: nested?.pet_types_previously_borrowed_other ?? null,
     willing_special_medical_needs: nested?.willing_special_medical_needs ?? null,
     willing_behavioral_quirks: nested?.willing_behavioral_quirks ?? null,
     willing_seniors: nested?.willing_seniors ?? null,
     willing_puppies_kittens: nested?.willing_puppies_kittens ?? null,
     available_care_types:
       nested?.available_care_types?.length ? nested.available_care_types : details.care_types ?? [],
+    available_care_types_other: nested?.available_care_types_other ?? null,
     preferred_care_location:
       nested?.preferred_care_location ?? details.care_location ?? null,
   };
@@ -290,6 +306,7 @@ export function resolvedLivingSituation(details: ProfileDetails): LivingSituatio
   const nested = details.living_situation;
   return {
     living_type: nested?.living_type ?? details.home_type ?? null,
+    living_type_other: nested?.living_type_other ?? null,
     has_pets_at_home: nested?.has_pets_at_home ?? details.has_other_pets ?? null,
     pets_at_home_notes: nested?.pets_at_home_notes ?? null,
     has_children: nested?.has_children ?? details.has_children ?? null,
@@ -466,8 +483,29 @@ export function mergeDetailsGooglePlace(
   return base;
 }
 
-export function formatPetTypeLabel(value: string): string {
+export function formatPetTypeLabel(value: string, otherCustom?: string | null): string {
+  if (isOtherOptionValue(value)) {
+    return otherCustom?.trim() || "Other";
+  }
   return petTypeOptions.find((o) => o.value === value)?.label ?? value;
+}
+
+export function formatLivingTypeLabel(
+  value: string | null | undefined,
+  otherCustom?: string | null,
+): string | null {
+  if (!value?.trim()) return null;
+  if (isOtherOptionValue(value)) {
+    return otherCustom?.trim() || "Other";
+  }
+  return value.trim();
+}
+
+export function formatCareTypeLabel(value: string, otherCustom?: string | null): string {
+  if (isOtherOptionValue(value)) {
+    return otherCustom?.trim() || "Other";
+  }
+  return value.trim();
 }
 
 export function formatYesNo(value: boolean | null | undefined): string {
@@ -489,12 +527,18 @@ export function carePreferenceDisplayGroups(details: ProfileDetails): {
   const locationLabel = formatPreferredCareLocationLabel(care.preferred_care_location);
   if (locationLabel) experience.push(locationLabel);
   for (const t of care.pet_types_previously_borrowed ?? []) {
-    const label = formatPetTypeLabel(t);
+    const label = formatPetTypeLabel(t, care.pet_types_previously_borrowed_other);
     if (label) experience.push(`Previously cared for ${label.toLowerCase()}`);
   }
   return {
-    petTypes: formatPetTypesWillingComfort(care.pet_types_willing_to_care_for ?? []),
-    careTypes: care.available_care_types ?? [],
+    petTypes: formatPetTypesWillingComfort(
+      care.pet_types_willing_to_care_for ?? [],
+      care.pet_types_willing_other,
+    ),
+    careTypes: formatListWithOtherDisplay(
+      care.available_care_types ?? [],
+      care.available_care_types_other,
+    ),
     petSizes: formatPreferredPetWeightSizes(care.preferred_pet_sizes ?? []),
     experience,
   };
