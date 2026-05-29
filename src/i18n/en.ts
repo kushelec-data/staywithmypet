@@ -102,6 +102,44 @@ export const en = {
       reviews: "Reviews & ratings",
       safeChat: "Safe requests & chat",
     },
+    storyCarousel: {
+      ariaLabel: "Featured community stories",
+      dotsLabel: "Story slides",
+      goToSlide: "Go to story {n}: {title}",
+      slides: [
+        {
+          title: "No girlfriend? Invite your furry friend.",
+          text: "Share a walk, a cuddle, or a cozy afternoon with a pet nearby.",
+          cta: "Find pets nearby",
+          badge: "Companionship",
+          imageAlt: "Person relaxing with a friendly dog for companionship",
+        },
+        {
+          title: "New in the city?",
+          text: "Meet friendly pets and kind people around you.",
+          cta: "Start exploring",
+          imageAlt: "Friendly pet and neighbor meeting in the city",
+        },
+        {
+          title: "Lonely walks? Walk together.",
+          text: "Turn your daily walk into time with a happy dog.",
+          cta: "Search walking buddies",
+          imageAlt: "Two people walking a happy dog together",
+        },
+        {
+          title: "Busy day? Find gentle help.",
+          text: "Pet Parents can request caring Pet Friends for visits, walks, and companionship.",
+          cta: "Find care",
+          imageAlt: "Pet Friend providing gentle care during a visit",
+        },
+        {
+          title: "Pets need people. People need pets.",
+          text: "A trusted community for responsible pet sharing.",
+          cta: "Join the community",
+          imageAlt: "Person gently petting their cat on a cozy sofa at home",
+        },
+      ],
+    },
   },
   search: {
     title: "Find a Pet or a Pet Friend Near You",
