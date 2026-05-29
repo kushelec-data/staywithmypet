@@ -57,7 +57,7 @@ export function PetParentProfileFormSection({
       </p>
 
       <div>
-        <label htmlFor="own_pets_summary" className="text-sm font-medium text-foreground">
+        <label htmlFor="own_pets_summary" className="form-field-label">
           {labels.ownPetsSummary}
         </label>
         <textarea
@@ -72,7 +72,7 @@ export function PetParentProfileFormSection({
       </div>
 
       <div>
-        <label htmlFor="care_needs_notes" className="text-sm font-medium text-foreground">
+        <label htmlFor="care_needs_notes" className="form-field-label">
           {labels.careNeeds}
         </label>
         <textarea
@@ -87,7 +87,7 @@ export function PetParentProfileFormSection({
       </div>
 
       <div>
-        <label htmlFor="home_location_notes" className="text-sm font-medium text-foreground">
+        <label htmlFor="home_location_notes" className="form-field-label">
           {labels.homeLocationNotes}
         </label>
         <textarea

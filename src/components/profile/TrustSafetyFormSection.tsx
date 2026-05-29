@@ -4,6 +4,7 @@ import { ProfileCollapsibleSection } from "@/components/profile/ProfileCollapsib
 import { PhoneCountryFields } from "@/components/profile/PhoneCountryFields";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
+import { FORM_FIELD_LABEL_CLASS } from "@/lib/form-field-styles";
 import { useState } from "react";
 
 export type TrustSafetyFormValues = {
@@ -103,7 +104,7 @@ export function TrustSafetyFormSection({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label htmlFor="emergency-name" className="text-sm font-medium text-foreground">
+            <label htmlFor="emergency-name" className={FORM_FIELD_LABEL_CLASS}>
               {ts.emergencyNameLabel}
             </label>
             <input
@@ -129,7 +130,7 @@ export function TrustSafetyFormSection({
             />
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="emergency-relationship" className="text-sm font-medium text-foreground">
+            <label htmlFor="emergency-relationship" className={FORM_FIELD_LABEL_CLASS}>
               {ts.emergencyRelationshipLabel}
             </label>
             <input

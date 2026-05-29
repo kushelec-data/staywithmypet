@@ -570,7 +570,7 @@ export function ProfileEditForm() {
           {profile?.role_chosen_at ? <ProfileRoleStatusCard profile={profile} /> : null}
 
           <div>
-            <label htmlFor="display_name" className="text-sm font-medium text-foreground">
+            <label htmlFor="display_name" className="form-field-label">
               {pe.basic.displayName}
             </label>
             <input
@@ -587,7 +587,7 @@ export function ProfileEditForm() {
           </div>
 
           <div>
-            <label htmlFor="location" className="text-sm font-medium text-foreground">
+            <label htmlFor="location" className="form-field-label">
               {pe.basic.location}
             </label>
             <GooglePlacesInput
@@ -626,7 +626,7 @@ export function ProfileEditForm() {
           </div>
 
           <div>
-            <span className="text-sm font-medium text-foreground">{pe.basic.languages}</span>
+            <span className="form-field-label">{pe.basic.languages}</span>
             <div className="mt-2 flex flex-wrap gap-2">
               {languageOptions.map((lang) => {
                 const selected = languages.includes(lang);
@@ -636,10 +636,10 @@ export function ProfileEditForm() {
                     type="button"
                     onClick={() => toggleLanguage(lang)}
                     disabled={!basicEnabled || saving.basic || anySaving}
-                    className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                    className={`rounded-full border px-3 py-1.5 transition-colors ${
                       selected
-                        ? "border-[#2E6B3F] bg-[#2E6B3F] text-white"
-                        : "border-[#E5E2D8] bg-[#F8F6F1] text-muted hover:bg-[#DDEEDF] hover:text-[#2E6B3F]"
+                        ? "border-[#2E6B3F] bg-[#2E6B3F] text-sm font-semibold text-white"
+                        : "border-[#E5E2D8] bg-[#F8F6F1] text-sm font-medium text-[#333333] hover:bg-[#DDEEDF] hover:text-[#2E6B3F]"
                     }`}
                   >
                     {lang}
@@ -650,7 +650,7 @@ export function ProfileEditForm() {
           </div>
 
           <div>
-            <label htmlFor="bio" className="text-sm font-medium text-foreground">
+            <label htmlFor="bio" className="form-field-label">
               {pe.basic.bio}
             </label>
             <textarea

@@ -219,7 +219,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
 
       <PetFormSection title="Basic pet details">
         <div className="sm:col-span-2">
-          <label htmlFor="pet_name" className="text-sm font-medium text-foreground">
+          <label htmlFor="pet_name" className="form-field-label">
             Pet name
           </label>
           <input
@@ -232,7 +232,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="species" className="text-sm font-medium text-foreground">
+          <label htmlFor="species" className="form-field-label">
             Animal type
           </label>
           <select
@@ -249,7 +249,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           </select>
         </div>
         <div>
-          <label htmlFor="breed" className="text-sm font-medium text-foreground">
+          <label htmlFor="breed" className="form-field-label">
             Breed
           </label>
           <input
@@ -261,7 +261,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="dob" className="text-sm font-medium text-foreground">
+          <label htmlFor="dob" className="form-field-label">
             Date of birth
           </label>
           <input
@@ -273,7 +273,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="gender" className="text-sm font-medium text-foreground">
+          <label htmlFor="gender" className="form-field-label">
             Gender
           </label>
           <select
@@ -290,7 +290,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           </select>
         </div>
         <div>
-          <label htmlFor="size" className="text-sm font-medium text-foreground">
+          <label htmlFor="size" className="form-field-label">
             Weight category
           </label>
           <select
@@ -307,7 +307,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           </select>
         </div>
         <div>
-          <label htmlFor="energy" className="text-sm font-medium text-foreground">
+          <label htmlFor="energy" className="form-field-label">
             Energy level
           </label>
           <select
@@ -334,9 +334,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           disabled={saving}
         />
         <div className="sm:col-span-2">
-          <span className="text-sm font-medium text-foreground">Requires medication</span>
+          <span className="form-field-label">Requires medication</span>
           <div className="mt-2 flex gap-4">
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
               <input
                 type="radio"
                 name="medication"
@@ -345,7 +345,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
               />
               Yes
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
               <input
                 type="radio"
                 name="medication"
@@ -357,7 +357,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           </div>
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="health" className="text-sm font-medium text-foreground">
+          <label htmlFor="health" className="form-field-label">
             Health characteristics
           </label>
           <textarea
@@ -369,7 +369,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="feeding" className="text-sm font-medium text-foreground">
+          <label htmlFor="feeding" className="form-field-label">
             Feeding schedule
           </label>
           <input
@@ -380,7 +380,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="walk" className="text-sm font-medium text-foreground">
+          <label htmlFor="walk" className="form-field-label">
             Walk needs
           </label>
           <select
@@ -397,7 +397,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="eating" className="text-sm font-medium text-foreground">
+          <label htmlFor="eating" className="form-field-label">
             Eating habits
           </label>
           <textarea
@@ -409,7 +409,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="positive" className="text-sm font-medium text-foreground">
+          <label htmlFor="positive" className="form-field-label">
             Positive traits
           </label>
           <textarea
@@ -421,7 +421,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="challenging" className="text-sm font-medium text-foreground">
+          <label htmlFor="challenging" className="form-field-label">
             Challenging traits
           </label>
           <textarea
@@ -433,7 +433,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="notes" className="text-sm font-medium text-foreground">
+          <label htmlFor="notes" className="form-field-label">
             Additional notes
           </label>
           <textarea
@@ -458,7 +458,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
 
       <PetFormSection title="Availability and care location">
         <div className="sm:col-span-2">
-          <p className="text-sm font-medium text-foreground">Available dates</p>
+          <p className="form-field-label">Available dates</p>
           <p className="mt-1 text-xs text-muted">
             Select days or ranges when your pet can be cared for. Add free-text notes below if needed.
           </p>
@@ -473,7 +473,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           </div>
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="availability" className="text-sm font-medium text-foreground">
+          <label htmlFor="availability" className="form-field-label">
             Availability notes
           </label>
           <textarea
@@ -486,7 +486,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div className="sm:col-span-2">
-          <span className="text-sm font-medium text-foreground">Care location preference</span>
+          <span className="form-field-label">Care location preference</span>
           <div className="mt-2 space-y-2">
             {petCareLocationOptions.map((opt) => (
               <label key={opt} className="flex items-center gap-2 text-sm">
@@ -509,7 +509,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           disabled={saving}
         />
         <div className="sm:col-span-2">
-          <label htmlFor="location" className="text-sm font-medium text-foreground">
+          <label htmlFor="location" className="form-field-label">
             Location / address
           </label>
           <GooglePlacesInput

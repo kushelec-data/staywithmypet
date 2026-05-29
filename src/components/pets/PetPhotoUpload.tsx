@@ -43,7 +43,7 @@ export function PetPhotoUpload({ files, onChange, disabled, optional }: PetPhoto
   return (
     <div className="sm:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium text-foreground">Photos & videos</span>
+        <span className="form-field-label">Photos & videos</span>
         <span className="text-xs text-muted">
           {files.length}/{MAX_PET_PHOTOS}
         </span>

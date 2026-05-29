@@ -1,11 +1,18 @@
 "use client";
 
 import type { ReactNode } from "react";
+import {
+  FORM_FIELD_CHIP_VALUE_CLASS,
+  FORM_FIELD_CHIP_VALUE_SELECTED_CLASS,
+  FORM_FIELD_LABEL_CLASS,
+  FORM_FIELD_LEGEND_CLASS,
+  FORM_FIELD_OPTION_LABEL_CLASS,
+} from "@/lib/form-field-styles";
 
 const CHIP_SELECTED =
-  "border-brand-teal/35 bg-mint/55 text-brand-teal shadow-sm ring-1 ring-brand-teal/15";
+  `border-brand-teal/35 bg-mint/55 shadow-sm ring-1 ring-brand-teal/15 ${FORM_FIELD_CHIP_VALUE_SELECTED_CLASS}`;
 const CHIP_UNSELECTED =
-  "border-black/5 bg-surface text-muted hover:border-brand-teal/25 hover:bg-mint/40 hover:text-foreground";
+  `border-black/5 bg-surface hover:border-brand-teal/25 hover:bg-mint/40 ${FORM_FIELD_CHIP_VALUE_CLASS}`;
 
 type ChipMultiSelectProps = {
   label: string;
@@ -36,7 +43,7 @@ export function ProfileChipMultiSelect({
   const items = normalizeOptions(options);
   return (
     <div className={className}>
-      <span className="text-sm font-medium text-foreground">{label}</span>
+      <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
       <div className="mt-2 flex flex-wrap gap-2">
         {items.map((opt) => {
           const isOn = selected.includes(opt.value);
@@ -46,7 +53,7 @@ export function ProfileChipMultiSelect({
               type="button"
               disabled={disabled}
               onClick={() => onToggle(opt.value)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
                 isOn ? CHIP_SELECTED : CHIP_UNSELECTED
               }`}
             >
@@ -78,7 +85,7 @@ export function ProfileChipSingleSelect({
 }: ChipSingleSelectProps) {
   return (
     <div className={className}>
-      <span className="text-sm font-medium text-foreground">{label}</span>
+      <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
       <div className="mt-2 flex flex-wrap gap-2">
         {options.map((opt) => {
           const isOn = value === opt.value;
@@ -89,7 +96,7 @@ export function ProfileChipSingleSelect({
               disabled={disabled}
               aria-pressed={isOn}
               onClick={() => onChange(opt.value)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
                 isOn ? CHIP_SELECTED : CHIP_UNSELECTED
               }`}
             >
@@ -120,9 +127,9 @@ export function ProfileYesNoToggle({
 }) {
   return (
     <fieldset className="sm:col-span-1">
-      <legend className="text-sm font-medium text-foreground">{label}</legend>
+      <legend className={FORM_FIELD_LEGEND_CLASS}>{label}</legend>
       <div className="mt-2 flex gap-3">
-        <label className="flex items-center gap-2 text-sm text-muted">
+        <label className={FORM_FIELD_OPTION_LABEL_CLASS}>
           <input
             type="radio"
             name={label}
@@ -133,7 +140,7 @@ export function ProfileYesNoToggle({
           />
           Yes
         </label>
-        <label className="flex items-center gap-2 text-sm text-muted">
+        <label className={FORM_FIELD_OPTION_LABEL_CLASS}>
           <input
             type="radio"
             name={label}

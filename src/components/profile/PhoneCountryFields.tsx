@@ -1,5 +1,6 @@
 "use client";
 
+import { FORM_FIELD_LABEL_CLASS } from "@/lib/form-field-styles";
 import { EU_PHONE_COUNTRIES } from "@/lib/phone-eu";
 import type { ReactNode } from "react";
 
@@ -29,7 +30,7 @@ export function PhoneCountryFields({
 
   return (
     <div>
-      <span className="text-sm font-medium text-foreground">{label}</span>
+      <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
       <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <select
           id={selectId}

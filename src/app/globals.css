@@ -370,14 +370,43 @@ body {
     radial-gradient(ellipse 80% 50% at 50% 100%, rgba(195, 232, 210, 0.35), transparent 50%);
 }
 
+.form-field-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5f6f63;
+}
+
+.dark .form-field-label {
+  color: #9aab9e;
+}
+
 .input-field {
   width: 100%;
   border-radius: 0.75rem;
   border: 1px solid var(--border);
   background: var(--surface);
   padding: 0.625rem 1rem;
-  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #2a2a2a;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dark .input-field {
+  color: var(--foreground);
+}
+
+textarea.input-field {
+  font-weight: 500;
+}
+
+select.input-field {
+  font-weight: 500;
 }
 
 .input-field:focus {

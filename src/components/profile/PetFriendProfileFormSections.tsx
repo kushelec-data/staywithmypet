@@ -183,7 +183,7 @@ export function PetFriendProfileFormSections({
             disabled={disabled}
           />
           <div className="sm:col-span-1">
-            <label htmlFor="duration_of_care" className="text-sm font-medium text-foreground">
+            <label htmlFor="duration_of_care" className="form-field-label">
               Duration of care preferred
             </label>
             <select
@@ -218,7 +218,7 @@ export function PetFriendProfileFormSections({
             </div>
           ) : null}
           <div className="sm:col-span-2">
-            <label htmlFor="availability_notes" className="text-sm font-medium text-foreground">
+            <label htmlFor="availability_notes" className="form-field-label">
               Additional availability notes
             </label>
             <textarea
@@ -241,7 +241,7 @@ export function PetFriendProfileFormSections({
           description="Your home environment for Pet Parents."
         >
         <div className="sm:col-span-1">
-          <label htmlFor="living_type" className="text-sm font-medium text-foreground">
+          <label htmlFor="living_type" className="form-field-label">
             Living type
           </label>
           <select
@@ -266,7 +266,7 @@ export function PetFriendProfileFormSections({
         />
         {form.hasPetsAtHome ? (
           <div className="sm:col-span-2">
-            <label htmlFor="pets_at_home_notes" className="text-sm font-medium text-foreground">
+            <label htmlFor="pets_at_home_notes" className="form-field-label">
               Pets at home (optional detail)
             </label>
             <input

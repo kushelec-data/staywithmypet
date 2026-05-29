@@ -66,7 +66,7 @@ export function ProfileAvatarUpload({
       )}
 
       <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">Profile photo</p>
+        <p className="form-field-label">Profile photo</p>
         <p className="mt-1 text-xs text-muted">JPG, PNG, or WebP · max 5 MB</p>
         <input
           ref={inputRef}

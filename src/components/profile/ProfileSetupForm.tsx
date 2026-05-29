@@ -394,7 +394,7 @@ export function ProfileSetupForm({
         ) : null}
 
         <div className="sm:col-span-2">
-          <label htmlFor="display_name" className="text-sm font-medium text-foreground">
+          <label htmlFor="display_name" className="form-field-label">
             Display name
           </label>
           <input
@@ -415,7 +415,7 @@ export function ProfileSetupForm({
           </div>
         ) : (
           <fieldset className="sm:col-span-2">
-            <legend className="text-sm font-medium text-foreground">Your role</legend>
+            <legend className="form-field-label">Your role</legend>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               {roleOptions.map((option) => (
                 <label
@@ -443,7 +443,7 @@ export function ProfileSetupForm({
         )}
 
         <div className="sm:col-span-2">
-          <label htmlFor="location" className="text-sm font-medium text-foreground">
+          <label htmlFor="location" className="form-field-label">
             Location
           </label>
           <GooglePlacesInput
@@ -484,7 +484,7 @@ export function ProfileSetupForm({
 
         {availabilityUx.showPersonalAvailabilityEditor && !showFriendProfileSections ? (
           <div className="sm:col-span-2 rounded-2xl border border-black/5 bg-mint/15 p-4 sm:p-5">
-          <p className="text-sm font-medium text-foreground">My availability</p>
+          <p className="form-field-label">My availability</p>
           <p className="mt-1 text-xs text-muted">
             Tap the days you are available to help care for pets as a Pet Friend.
           </p>
@@ -505,7 +505,7 @@ export function ProfileSetupForm({
         {availabilityUx.showPetCareDates &&
         (!availabilityUx.showPersonalAvailabilityEditor || (profile?.role ?? role) === "both") ? (
           <div className="sm:col-span-2 rounded-2xl border border-black/5 bg-mint/15 p-4 sm:p-5">
-            <p className="text-sm font-medium text-foreground">Pet care availability</p>
+            <p className="form-field-label">Pet care availability</p>
             <p className="mt-1 text-xs text-muted">
               Set when each pet needs care on{" "}
               <a href="/pets" className="font-semibold text-brand-teal hover:text-brand-pink">
@@ -517,7 +517,7 @@ export function ProfileSetupForm({
         ) : null}
 
         <div className="sm:col-span-2">
-          <span className="text-sm font-medium text-foreground">Languages</span>
+          <span className="form-field-label">Languages</span>
           <div className="mt-2 flex flex-wrap gap-2">
             {languageOptions.map((lang) => {
               const selected = languages.includes(lang);
@@ -526,10 +526,10 @@ export function ProfileSetupForm({
                   key={lang}
                   type="button"
                   onClick={() => toggleLanguage(lang)}
-                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`rounded-full border px-3 py-1.5 transition-colors ${
                     selected
-                      ? "border-brand-teal/30 bg-brand-teal text-white"
-                      : "border-black/5 bg-surface text-muted hover:bg-mint/40 hover:text-foreground"
+                      ? "border-brand-teal/30 bg-brand-teal text-sm font-semibold text-white"
+                      : "border-black/5 bg-surface text-sm font-medium text-[#333333] hover:bg-mint/40 hover:text-foreground"
                   }`}
                 >
                   {lang}
@@ -540,7 +540,7 @@ export function ProfileSetupForm({
         </div>
 
         <div className="sm:col-span-2">
-          <label htmlFor="bio" className="text-sm font-medium text-foreground">
+          <label htmlFor="bio" className="form-field-label">
             Bio
           </label>
           <textarea

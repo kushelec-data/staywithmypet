@@ -73,7 +73,7 @@ export function ProfileGalleryUpload({
 
   return (
     <div className="sm:col-span-2">
-      <p className="text-sm font-medium text-foreground">Profile photos</p>
+      <p className="form-field-label">Profile photos</p>
       <p className="mt-1 text-xs text-muted">
         Upload up to {MAX_PROFILE_GALLERY_PHOTOS} photos. Choose one as your main profile photo.
       </p>
