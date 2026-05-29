@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountLayout } from "@/components/account/AccountLayout";
+import { ACCOUNT_BODY_TEXT } from "@/lib/account-ui";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { useAuth } from "@/context/AuthContext";
@@ -37,7 +38,7 @@ export function ProfileEditPageContent() {
       breadcrumbTitle={pe.pageTitle}
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">
+        <p className={ACCOUNT_BODY_TEXT}>
           {pe.signedInAs}{" "}
           <span className="font-medium text-foreground">{user.email}</span>
         </p>

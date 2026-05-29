@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
+import { ACCOUNT_EMPTY_STATE_TITLE } from "@/lib/account-ui";
 import type { BookingTab } from "@/lib/bookings";
 
 type BookingsEmptyStateProps = {
@@ -29,7 +30,7 @@ export function BookingsEmptyState({ tab }: BookingsEmptyStateProps) {
       >
         📅
       </div>
-      <h3 className="font-heading text-xl font-bold text-foreground">{b.emptyTitle}</h3>
+      <h3 className={ACCOUNT_EMPTY_STATE_TITLE}>{b.emptyTitle}</h3>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">{message}</p>
       <div className="mt-8 flex w-full max-w-sm flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
         <Link

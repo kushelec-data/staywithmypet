@@ -3,6 +3,7 @@
 import { ProfileEditStepPanel } from "@/components/profile/ProfileEditStepPanel";
 import { Button } from "@/components/ui/Button";
 import type { ProfileEditSectionKey } from "@/lib/profile-edit-sections";
+import { ACCOUNT_BODY_TEXT, ACCOUNT_SECTION_TITLE } from "@/lib/account-ui";
 import { Check, ArrowLeft, ArrowRight, Pencil } from "lucide-react";
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
@@ -139,7 +140,7 @@ export function ProfileEditWizard({
               <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                 {stepLabel}
               </span>
-              <span className="text-sm font-medium leading-snug text-foreground">{step.title}</span>
+              <span className={`leading-snug ${ACCOUNT_SECTION_TITLE} text-sm`}>{step.title}</span>
               <span
                 className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                   step.complete
@@ -161,7 +162,7 @@ export function ProfileEditWizard({
         aria-labelledby={`profile-edit-tab-${activeStep.id}`}
       >
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-          <p className="text-sm text-muted">{activeStep.description}</p>
+          <p className={ACCOUNT_BODY_TEXT}>{activeStep.description}</p>
           <Button
             type="button"
             variant="primary"

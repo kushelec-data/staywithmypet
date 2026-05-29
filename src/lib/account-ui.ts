@@ -29,6 +29,34 @@ export const ACCOUNT_PAGE_TITLE =
 
 export const ACCOUNT_PAGE_DESCRIPTION = "mt-2 max-w-2xl text-sm text-muted sm:text-base";
 
+export const ACCOUNT_BREADCRUMB_CLASS = "text-sm text-muted";
+
+export const ACCOUNT_BREADCRUMB_CURRENT_CLASS = "font-medium text-foreground";
+
+export const ACCOUNT_BREADCRUMB_SEPARATOR_CLASS = "text-muted/50";
+
+/** In-card section title — matches Edit Profile step sections. */
+export const ACCOUNT_SECTION_TITLE = "font-heading text-lg font-semibold text-foreground";
+
+export const ACCOUNT_SECTION_DESCRIPTION = "mt-1 text-sm text-muted";
+
+/** Uppercase field/label style — same as Edit Profile form labels. */
+export const ACCOUNT_FIELD_LABEL_CLASS = "form-field-label";
+
+export const ACCOUNT_CARD_PADDING = "p-6 sm:p-8";
+
+export const ACCOUNT_CARD_PADDING_COMPACT = "p-5 sm:p-6";
+
+export const ACCOUNT_BODY_TEXT = "text-sm text-muted";
+
+export const ACCOUNT_BODY_VALUE = "text-sm font-medium text-foreground";
+
+export const ACCOUNT_EMPTY_STATE_TITLE =
+  "font-heading text-lg font-semibold text-foreground";
+
+export const ACCOUNT_LIST_ITEM_TITLE =
+  "font-heading text-base font-semibold leading-snug text-foreground";
+
 export const ACCOUNT_CONTENT_STACK = "mt-6 space-y-4 sm:space-y-5";
 
 /** Shared card surface — radius 20px per design spec. */

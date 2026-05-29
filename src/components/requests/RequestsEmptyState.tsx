@@ -1,5 +1,6 @@
 "use client";
 
+import { ACCOUNT_EMPTY_STATE_TITLE } from "@/lib/account-ui";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -19,7 +20,7 @@ export function RequestsEmptyState({ isIncoming }: RequestsEmptyStateProps) {
       >
         📬
       </div>
-      <h3 className="font-heading text-xl font-bold text-foreground">{r.emptyTitle}</h3>
+      <h3 className={ACCOUNT_EMPTY_STATE_TITLE}>{r.emptyTitle}</h3>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
         {isIncoming ? r.receivedEmpty : r.sentEmpty}
       </p>

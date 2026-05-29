@@ -1,14 +1,17 @@
 import Link from "next/link";
 import type React from "react";
 import {
+  ACCOUNT_BODY_TEXT,
+  ACCOUNT_BODY_VALUE,
+  ACCOUNT_FIELD_LABEL_CLASS,
+  ACCOUNT_SECTION_TITLE,
   DASHBOARD_CARD_CLASS,
   DASHBOARD_LINK_CLASS,
   DASHBOARD_TAG_CLASS,
 } from "@/lib/dashboard-theme";
 
-/** Matches sidebar panels (`DashboardInfoCard` titleStyle="panel"). */
-export const DASHBOARD_PANEL_SECTION_LABEL =
-  "text-[0.65rem] font-semibold uppercase tracking-wider text-muted";
+/** Matches Edit Profile / account section labels. */
+export const DASHBOARD_PANEL_SECTION_LABEL = ACCOUNT_FIELD_LABEL_CLASS;
 
 type DashboardInfoCardProps = {
   title: string;
@@ -37,7 +40,7 @@ export function DashboardInfoCard({
         {isPanel ? (
           <p className={DASHBOARD_PANEL_SECTION_LABEL}>{title}</p>
         ) : (
-          <h2 className="font-heading text-base font-semibold text-foreground">{title}</h2>
+          <h2 className={ACCOUNT_SECTION_TITLE}>{title}</h2>
         )}
         {editHref ? (
           <Link
@@ -79,7 +82,7 @@ export function DashboardEmptyState({
   actionLabel?: string;
 }) {
   return (
-    <p className="text-sm text-muted">
+    <p className={ACCOUNT_BODY_TEXT}>
       {message}
       {actionHref && actionLabel ? (
         <>
@@ -96,10 +99,10 @@ export function DashboardEmptyState({
 export function DashboardDetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid grid-cols-1 gap-1 sm:grid-cols-[minmax(8.5rem,36%)_minmax(0,1fr)] sm:items-start sm:gap-x-4">
-      <dt className="text-xs font-semibold uppercase tracking-wider text-muted sm:pt-0.5">
+      <dt className={`${ACCOUNT_FIELD_LABEL_CLASS} sm:pt-0.5`}>
         {label}
       </dt>
-      <dd className="min-w-0 text-sm leading-snug break-words text-foreground">{value}</dd>
+      <dd className={`min-w-0 leading-snug break-words ${ACCOUNT_BODY_VALUE}`}>{value}</dd>
     </div>
   );
 }

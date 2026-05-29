@@ -1,7 +1,8 @@
 "use client";
 
 import { AccountLayout } from "@/components/account/AccountLayout";
-import { ACCOUNT_MESSAGES_PANEL_CLASS } from "@/lib/account-ui";
+import { ACCOUNT_EMPTY_STATE_TITLE, ACCOUNT_MESSAGES_PANEL_CLASS } from "@/lib/account-ui";
+import { Button } from "@/components/ui/Button";
 import { ConversationList } from "@/components/messages/ConversationList";
 import { ChatPanel } from "@/components/messages/ChatPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -14,7 +15,6 @@ import {
   type ConversationSummary,
 } from "@/lib/messaging";
 import { createClient } from "@/lib/supabase";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -188,7 +188,7 @@ export function MessagesPageContent() {
               <p className="text-3xl" aria-hidden>
                 💬
               </p>
-              <h3 className="mt-3 font-heading text-lg font-bold text-foreground">
+              <h3 className={`mt-3 ${ACCOUNT_EMPTY_STATE_TITLE}`}>
                 {t.messages.emptyTitle}
               </h3>
               <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted">

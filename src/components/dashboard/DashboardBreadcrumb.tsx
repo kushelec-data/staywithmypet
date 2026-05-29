@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import type { DashboardBreadcrumbParent } from "@/lib/dashboard-breadcrumb";
-import { DASHBOARD_LINK_CLASS } from "@/lib/dashboard-theme";
+import {
+  ACCOUNT_BREADCRUMB_CLASS,
+  ACCOUNT_BREADCRUMB_CURRENT_CLASS,
+  ACCOUNT_BREADCRUMB_SEPARATOR_CLASS,
+  ACCOUNT_LINK_CLASS,
+} from "@/lib/account-ui";
 
 export type DashboardBreadcrumbProps = {
   title: string;
@@ -46,11 +51,11 @@ export function DashboardBreadcrumb({
           </span>
         </button>
 
-        <ol className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-muted">
+        <ol className={`flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 ${ACCOUNT_BREADCRUMB_CLASS}`}>
           <li className="shrink-0">
             <Link
               href={DASHBOARD_PATH}
-              className={DASHBOARD_LINK_CLASS}
+              className={ACCOUNT_LINK_CLASS}
             >
               Dashboard
             </Link>
@@ -58,12 +63,12 @@ export function DashboardBreadcrumb({
 
           {parent ? (
             <>
-              <li aria-hidden className="shrink-0 text-muted/50">
+              <li aria-hidden className={`shrink-0 ${ACCOUNT_BREADCRUMB_SEPARATOR_CLASS}`}>
                 /
               </li>
               <li className="min-w-0 truncate">
                 {parent.href ? (
-                  <Link href={parent.href} className={DASHBOARD_LINK_CLASS}>
+                  <Link href={parent.href} className={ACCOUNT_LINK_CLASS}>
                     {parent.label}
                   </Link>
                 ) : (
@@ -73,10 +78,13 @@ export function DashboardBreadcrumb({
             </>
           ) : null}
 
-          <li aria-hidden className="shrink-0 text-muted/50">
+          <li aria-hidden className={`shrink-0 ${ACCOUNT_BREADCRUMB_SEPARATOR_CLASS}`}>
             /
           </li>
-          <li className="min-w-0 truncate font-medium text-foreground" aria-current="page">
+          <li
+            className={`min-w-0 truncate ${ACCOUNT_BREADCRUMB_CURRENT_CLASS}`}
+            aria-current="page"
+          >
             {title}
           </li>
         </ol>

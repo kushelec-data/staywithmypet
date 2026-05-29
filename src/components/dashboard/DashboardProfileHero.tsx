@@ -88,7 +88,7 @@ export function DashboardProfileHero({
             >
               {roleLabel}
             </p>
-            <h2 className="break-words text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            <h2 className="break-words text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               {displayName}
             </h2>
             <p className="mt-0.5 truncate text-sm text-muted">{locationLabel}</p>

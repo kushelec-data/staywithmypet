@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
+import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
@@ -112,11 +113,17 @@ function PlanCard({
     Boolean(checkoutRole) &&
     Boolean(onChoosePlan);
 
+  const isAccount = variant === "account";
+
   return (
     <article
-      className={`card-elevated relative mx-auto flex h-full w-full max-w-md flex-col rounded-3xl bg-surface p-5 sm:max-w-none sm:p-6 lg:p-8 ${
-        plan.popular || isCurrent ? "ring-2 ring-brand-teal/40 shadow-lg shadow-brand-teal/10" : ""
-      }`}
+      className={`relative mx-auto flex h-full w-full max-w-md flex-col sm:max-w-none ${
+        isAccount
+          ? `${ACCOUNT_CARD_CLASS} p-5 sm:p-6`
+          : `card-elevated rounded-3xl bg-surface p-5 sm:p-6 lg:p-8 ${
+              plan.popular || isCurrent ? "ring-2 ring-brand-teal/40 shadow-lg shadow-brand-teal/10" : ""
+            }`
+      } ${isAccount && (plan.popular || isCurrent) ? "ring-2 ring-[#2E6B3F]/25" : ""}`}
     >
       {plan.popular && !isCurrent ? (
         <span className="absolute -top-3 left-1/2 z-10 w-[calc(100%-1.5rem)] max-w-[18rem] -translate-x-1/2 rounded-full bg-brand-teal px-3 py-1.5 text-center text-[0.65rem] font-semibold leading-tight tracking-normal text-white shadow-sm sm:w-auto sm:max-w-none sm:whitespace-nowrap sm:px-5 sm:text-xs">
@@ -129,12 +136,26 @@ function PlanCard({
         </span>
       ) : null}
       <h3
-        className={`font-heading text-lg font-semibold capitalize text-foreground sm:text-xl ${plan.popular || isCurrent ? "pt-1 sm:pt-2" : ""}`}
+        className={`font-heading font-semibold capitalize text-foreground ${
+          isAccount ? "text-base" : "text-lg sm:text-xl"
+        } ${plan.popular || isCurrent ? "pt-1 sm:pt-2" : ""}`}
       >
         {plan.name}
       </h3>
-      <p className="mt-2 font-heading text-3xl font-bold text-brand-teal sm:mt-3 sm:text-4xl">{plan.price}</p>
-      <ul className="mt-4 flex-1 space-y-2.5 text-sm leading-relaxed text-muted sm:mt-6 sm:space-y-3">
+      <p
+        className={`mt-2 font-heading font-bold ${
+          isAccount
+            ? "text-2xl text-[#2E6B3F]"
+            : "text-3xl text-brand-teal sm:mt-3 sm:text-4xl"
+        }`}
+      >
+        {plan.price}
+      </p>
+      <ul
+        className={`mt-4 flex-1 space-y-2.5 leading-relaxed text-muted sm:mt-5 sm:space-y-3 ${
+          isAccount ? "text-sm" : "text-sm"
+        }`}
+      >
         {plan.features.map((feature) => (
           <li key={feature} className="flex gap-2">
             <span className="text-success shrink-0" aria-hidden>
@@ -168,8 +189,8 @@ function PlanCard({
           <Button
             type="button"
             variant={plan.popular ? "primary" : "secondary"}
-            className="mt-6 w-full sm:mt-8"
-            size="lg"
+            className={`mt-5 w-full sm:mt-6 ${isAccount ? "" : "sm:mt-8"}`}
+            size={isAccount ? "sm" : "lg"}
             disabled={isCurrent || (!canCheckout && !isCurrent)}
             onClick={() => {
               if (canCheckout && onChoosePlan) onChoosePlan(plan);
@@ -313,8 +334,8 @@ export function MembershipPlans({
       ) : null}
 
       <div
-        className={`grid grid-cols-1 items-stretch gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8 ${
-          showRoleTabs ? "mt-8 sm:mt-10 lg:mt-10" : "mt-0"
+        className={`grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 ${
+          showRoleTabs ? "mt-8 sm:mt-10 lg:mt-10" : variant === "account" ? "mt-0" : "mt-0"
         }`}
       >
         {plans.map((plan) => (

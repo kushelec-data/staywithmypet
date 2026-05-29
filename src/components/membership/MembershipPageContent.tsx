@@ -6,9 +6,13 @@ import { AccountCard } from "@/components/account/AccountCard";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import {
   ACCOUNT_ALERT_SUCCESS_CLASS,
-  ACCOUNT_PAGE_HEADER_EYEBROW,
-  ACCOUNT_STATUS_BADGE_CLASS,
+  ACCOUNT_BODY_TEXT,
+  ACCOUNT_BODY_VALUE,
   ACCOUNT_CARD_CLASS,
+  ACCOUNT_CARD_PADDING_COMPACT,
+  ACCOUNT_FIELD_LABEL_CLASS,
+  ACCOUNT_SECTION_TITLE,
+  ACCOUNT_STATUS_BADGE_CLASS,
 } from "@/lib/account-ui";
 import {
   activeModeToPricingTab,
@@ -69,40 +73,40 @@ function RoleMembershipSummary({
   const title = membershipRoleTitle(role);
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-surface/80 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-brand-teal">{title}</p>
-      <p className="font-heading mt-1 text-lg font-semibold text-foreground">
+    <div className={`${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}>
+      <p className={ACCOUNT_FIELD_LABEL_CLASS}>{title}</p>
+      <p className={`mt-1 ${ACCOUNT_SECTION_TITLE}`}>
         {isActive && planName
           ? `Your ${title} membership is active`
           : `No active ${title} membership`}
       </p>
       {isActive && membership ? (
-        <dl className="mt-2 space-y-1 text-sm text-muted">
+        <dl className="mt-3 space-y-2">
           {planName ? (
             <div className="flex justify-between gap-2">
-              <dt>Plan</dt>
-              <dd className="font-medium text-foreground">{planName}</dd>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Plan</dt>
+              <dd className={ACCOUNT_BODY_VALUE}>{planName}</dd>
             </div>
           ) : null}
           {membership.start_date ? (
             <div className="flex justify-between gap-2">
-              <dt>Started</dt>
-              <dd>{formatMembershipDate(membership.start_date)}</dd>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Started</dt>
+              <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.start_date)}</dd>
             </div>
           ) : null}
           {membership.end_date ? (
             <div className="flex justify-between gap-2">
-              <dt>Ends</dt>
-              <dd>{formatMembershipDate(membership.end_date)}</dd>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Ends</dt>
+              <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.end_date)}</dd>
             </div>
           ) : null}
           <div className="flex justify-between gap-2">
-            <dt>Auto-renew</dt>
-            <dd>{membership.auto_renew ? "On" : "Off"}</dd>
+            <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Auto-renew</dt>
+            <dd className={ACCOUNT_BODY_VALUE}>{membership.auto_renew ? "On" : "Off"}</dd>
           </div>
         </dl>
       ) : (
-        <p className="mt-1 text-sm text-muted">Browse for free; upgrade to unlock paid features.</p>
+        <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>Browse for free; upgrade to unlock paid features.</p>
       )}
     </div>
   );
@@ -307,41 +311,41 @@ export function MembershipPageContent({
         </div>
       ) : null}
 
-      <AccountCard className="mb-6 p-5 sm:p-6">
-        <p className={ACCOUNT_PAGE_HEADER_EYEBROW}>{pageTitle}</p>
-        <p className="font-heading mt-2 text-2xl font-semibold text-foreground">
+      <AccountCard className={`mb-6 ${ACCOUNT_CARD_PADDING_COMPACT}`}>
+        <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
+        <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>
           {loading ? "Loading…" : statusHeadline}
         </p>
         {!loading && isActive && activePlanName ? (
-          <p className="mt-1 text-sm font-medium text-[#2E6B3F]">{activePlanName} plan</p>
+          <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>{activePlanName} plan</p>
         ) : null}
         {!loading && isActive && activeMembership ? (
-          <dl className="mt-3 grid gap-1 text-sm text-muted sm:grid-cols-3">
+          <dl className="mt-4 grid gap-3 sm:grid-cols-3">
             {activeMembership.start_date ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide">Started</dt>
-                <dd className="font-medium text-foreground">
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Started</dt>
+                <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
                   {formatMembershipDate(activeMembership.start_date)}
                 </dd>
               </div>
             ) : null}
             {activeMembership.end_date ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide">Ends</dt>
-                <dd className="font-medium text-foreground">
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Ends</dt>
+                <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
                   {formatMembershipDate(activeMembership.end_date)}
                 </dd>
               </div>
             ) : null}
             <div>
-              <dt className="text-xs uppercase tracking-wide">Auto-renew</dt>
-              <dd className="font-medium text-foreground">
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Auto-renew</dt>
+              <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
                 {activeMembership.auto_renew ? "On" : "Off"}
               </dd>
             </div>
           </dl>
         ) : null}
-        <p className="mt-2 text-sm text-muted">
+        <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
           {isActive
             ? `Your ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} membership unlocks messaging and bookings in this mode.`
             : `Choose a ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} plan below to pay securely with Stripe (TEST mode). Browse for free until you upgrade.`}

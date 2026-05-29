@@ -15,8 +15,8 @@ import {
   type Booking,
   type BookingTab,
 } from "@/lib/bookings";
+import { ACCOUNT_CARD_CLASS, ACCOUNT_LIST_ITEM_TITLE } from "@/lib/account-ui";
 import type { ReviewDisplay } from "@/lib/reviews";
-import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 
 type BookingListItemProps = {
   booking: Booking;
@@ -118,7 +118,7 @@ export function BookingListItem({
         <div className="flex flex-col gap-4 p-5 sm:gap-5 sm:p-6">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h3 className="font-heading text-lg font-bold leading-snug text-foreground">
+              <h3 className={ACCOUNT_LIST_ITEM_TITLE}>
                 {b.careForPet.replace("{name}", booking.petName)}
               </h3>
               <p className="mt-1 text-xs text-muted">

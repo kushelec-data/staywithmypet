@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
+import { ACCOUNT_CARD_CLASS, ACCOUNT_SECTION_DESCRIPTION, ACCOUNT_SECTION_TITLE } from "@/lib/account-ui";
 import { Check, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -55,8 +55,8 @@ export function ProfileEditSectionCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="font-heading text-lg font-semibold text-foreground">{title}</h2>
-          <p className="mt-1 text-sm text-muted">{description}</p>
+          <h2 className={ACCOUNT_SECTION_TITLE}>{title}</h2>
+          <p className={ACCOUNT_SECTION_DESCRIPTION}>{description}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <Button
