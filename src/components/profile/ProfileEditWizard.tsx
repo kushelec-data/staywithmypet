@@ -3,6 +3,7 @@
 import { ProfileEditStepPanel } from "@/components/profile/ProfileEditStepPanel";
 import { Button } from "@/components/ui/Button";
 import type { ProfileEditSectionKey } from "@/lib/profile-edit-sections";
+import { Check, Pencil } from "lucide-react";
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
 export type ProfileEditWizardStep = {
@@ -29,6 +30,8 @@ type ProfileEditWizardLabels = {
   saveChanges: string;
   saving: string;
   tabsLabel: string;
+  editingModeEnabled: string;
+  editingModeHint: string;
 };
 
 type ProfileEditWizardProps = {
@@ -41,9 +44,14 @@ type ProfileEditWizardProps = {
 function focusFirstEditableField(container: HTMLElement | null) {
   if (!container) return;
   const selector =
-    'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])';
+    'input:not([type="hidden"]):not([disabled]):not([readonly]), textarea:not([disabled]), select:not([disabled])';
   const el = container.querySelector<HTMLElement>(selector);
-  el?.focus({ preventScroll: true });
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    const end = el.value.length;
+    el.setSelectionRange(end, end);
+  }
 }
 
 export function ProfileEditWizard({
@@ -82,7 +90,9 @@ export function ProfileEditWizard({
 
   useEffect(() => {
     if (!activeStep?.isEditing) return;
-    const id = window.requestAnimationFrame(() => focusFirstEditableField(panelRef.current));
+    const id = window.requestAnimationFrame(() => {
+      window.setTimeout(() => focusFirstEditableField(panelRef.current), 0);
+    });
     return () => window.cancelAnimationFrame(id);
   }, [activeStep?.isEditing, activeStep?.id]);
 
@@ -152,7 +162,9 @@ export function ProfileEditWizard({
             size="sm"
             onClick={activeStep.onEdit}
             disabled={activeStep.isEditing || activeStep.saving}
+            className="shrink-0 border-[#E5E2D8] bg-[#F8F6F1] font-semibold text-foreground shadow-sm hover:bg-[#F8F6F1] hover:border-[#2E6B3F]/25"
           >
+            <Pencil className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             {labels.edit}
           </Button>
         </div>
@@ -161,6 +173,8 @@ export function ProfileEditWizard({
           isEditing={activeStep.isEditing}
           error={activeStep.error}
           success={activeStep.success}
+          editingModeTitle={activeStep.isEditing ? labels.editingModeEnabled : undefined}
+          editingModeHint={activeStep.isEditing ? labels.editingModeHint : undefined}
         >
           {activeStep.content}
         </ProfileEditStepPanel>
@@ -182,10 +196,11 @@ export function ProfileEditWizard({
             type="button"
             variant="primary"
             size="sm"
-            className="w-full sm:w-auto"
+            className="w-full min-w-[10.5rem] bg-[#2E6B3F] shadow-md shadow-[#2E6B3F]/25 hover:bg-[#255A34] sm:w-auto"
             disabled={!activeStep.isEditing || activeStep.saving}
             onClick={() => activeStep.onSave()}
           >
+            <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
             {activeStep.saving ? labels.saving : labels.saveChanges}
           </Button>
         </div>

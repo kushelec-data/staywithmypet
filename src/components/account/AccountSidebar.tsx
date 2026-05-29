@@ -15,6 +15,11 @@ import {
   ACCOUNT_NAV_ACTIVE_CLASS,
   ACCOUNT_NAV_INACTIVE_CLASS,
 } from "@/lib/account-ui";
+import {
+  ACCOUNT_SIDEBAR_ICON_CLASS,
+  ACCOUNT_SIDEBAR_MODE_SWITCH_ICON,
+  accountSidebarIconForHref,
+} from "@/lib/account-sidebar-icons";
 type AccountSidebarProps = {
   profile: ProfileRow | null;
   displayName: string;
@@ -83,14 +88,22 @@ export function AccountSidebar({
         <ul className="space-y-1">
           {sidebarNav.map((item) => {
             const active = isSidebarLinkActive(pathname, item.href, searchParams);
+            const Icon = accountSidebarIconForHref(item.href);
             return (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                     active ? ACCOUNT_NAV_ACTIVE_CLASS : ACCOUNT_NAV_INACTIVE_CLASS
                   }`}
                 >
+                  <Icon
+                    className={`h-4 w-4 shrink-0 ${
+                      active ? ACCOUNT_SIDEBAR_ICON_CLASS.active : ACCOUNT_SIDEBAR_ICON_CLASS.inactive
+                    }`}
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
                   {accountSidebarLabel(item.href, item.label, navbarT)}
                 </Link>
               </li>
@@ -109,8 +122,13 @@ export function AccountSidebar({
               type="button"
               disabled={switchingMode !== null}
               onClick={() => onModeSwitch(modeAction.targetMode)}
-              className={`${ACCOUNT_NAV_INACTIVE_CLASS} mt-1 block w-full cursor-pointer rounded-xl px-3 py-2 text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`${ACCOUNT_NAV_INACTIVE_CLASS} mt-1 flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
             >
+              <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
+                className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                strokeWidth={1.75}
+                aria-hidden
+              />
               {switchingMode === modeAction.targetMode ? "Switching…" : modeAction.label}
             </button>
             {modeError ? (

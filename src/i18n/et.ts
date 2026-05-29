@@ -415,6 +415,8 @@ export const et = {
       previous: "Eelmine",
       nextStep: "Järgmine",
       tabsLabel: "Profiili sammud",
+      editingModeEnabled: "Muutmisrežiim on sisse lülitatud",
+      editingModeHint: "Saad nüüd neid välju muuta.",
     },
     basic: {
       title: "Põhiprofiil",

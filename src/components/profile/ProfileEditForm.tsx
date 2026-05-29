@@ -755,6 +755,8 @@ export function ProfileEditForm() {
         saveChanges: pe.saveChanges,
         saving: pe.saving,
         tabsLabel: pe.wizard.tabsLabel,
+        editingModeEnabled: pe.wizard.editingModeEnabled,
+        editingModeHint: pe.wizard.editingModeHint,
       }}
     />
   );

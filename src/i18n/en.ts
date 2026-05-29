@@ -412,6 +412,8 @@ export const en = {
       previous: "Previous",
       nextStep: "Next",
       tabsLabel: "Profile steps",
+      editingModeEnabled: "Editing mode enabled",
+      editingModeHint: "You can now edit these fields.",
     },
     basic: {
       title: "Basic Profile",

@@ -415,6 +415,18 @@ select.input-field {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-teal) 25%, transparent);
 }
 
+.profile-edit-panel--editing .input-field:focus,
+.profile-edit-panel--editing .input-field:focus-visible {
+  border-color: #2e6b3f;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #2e6b3f 28%, transparent);
+}
+
+.profile-edit-panel--editing button:not(:disabled):focus-visible,
+.profile-edit-panel--editing [role="radio"]:focus-visible {
+  outline: 2px solid #2e6b3f;
+  outline-offset: 2px;
+}
+
 .dark .bg-mesh {
   background-image:
     radial-gradient(ellipse 80% 50% at 0% 0%, rgba(42, 53, 64, 0.5), transparent 55%),
