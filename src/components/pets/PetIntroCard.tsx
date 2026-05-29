@@ -4,6 +4,11 @@ import Link from "next/link";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
 import { speciesEmoji } from "@/lib/pet-data";
 import { publicPetHref } from "@/lib/public-pet";
+import {
+  DASHBOARD_CARD_INNER_CLASS,
+  DASHBOARD_COLORS,
+  DASHBOARD_LINK_CLASS,
+} from "@/lib/dashboard-theme";
 
 type PetIntroCardProps = {
   pet: PetIntroDisplay;
@@ -36,7 +41,11 @@ export function PetIntroCard({
   const lines = compactOverview ? pet.compactLines.slice(0, 2) : pet.compactLines;
 
   return (
-    <article className="flex gap-2.5 rounded-xl border border-black/5 bg-surface/90 p-2.5 sm:items-center">
+    <article
+      className={`flex gap-2.5 rounded-xl p-2.5 sm:items-center ${
+        isDashboard ? DASHBOARD_CARD_INNER_CLASS : "border border-black/5 bg-surface/90"
+      }`}
+    >
       <PetCompactPhotos pet={pet} dashboard={isDashboard} />
 
       <div className="min-w-0 flex-1 space-y-0.5">
@@ -70,6 +79,7 @@ export function PetIntroCard({
             dates={pet.availabilityDates}
             label="Available"
             className="pt-0.5"
+            tone={isDashboard ? "dashboard" : "default"}
           />
         ) : null}
 
@@ -77,14 +87,14 @@ export function PetIntroCard({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 pt-0.5">
             <Link
               href={publicHref}
-              className="text-xs font-semibold text-brand-teal hover:text-brand-pink"
+              className={isDashboard ? `${DASHBOARD_LINK_CLASS} text-xs` : "text-xs font-semibold text-brand-teal hover:text-brand-pink"}
             >
               Public profile →
             </Link>
             {editLink ? (
               <Link
                 href={editLink}
-                className="text-xs font-semibold text-brand-teal hover:text-brand-pink"
+                className={isDashboard ? `${DASHBOARD_LINK_CLASS} text-xs` : "text-xs font-semibold text-brand-teal hover:text-brand-pink"}
               >
                 Edit pet →
               </Link>
@@ -111,8 +121,14 @@ function PetCompactPhotos({ pet, dashboard }: { pet: PetIntroDisplay; dashboard?
   return (
     <div className="flex shrink-0 items-center gap-1">
       <div
-        className="relative overflow-hidden rounded-lg bg-mint/25 ring-1 ring-black/5"
-        style={{ width: mainPx, height: mainPx }}
+        className={`relative overflow-hidden rounded-lg ring-1 ${
+          dashboard ? "ring-[#E5E2D8]" : "bg-mint/25 ring-black/5"
+        }`}
+        style={{
+          width: mainPx,
+          height: mainPx,
+          ...(dashboard ? { backgroundColor: DASHBOARD_COLORS.light } : {}),
+        }}
       >
         <AppImage
           src={mainUrl}

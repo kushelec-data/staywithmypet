@@ -22,6 +22,14 @@ import {
 } from "@/lib/dashboard-breadcrumb";
 import { useLanguage } from "@/context/LanguageContext";
 import { accountSidebarLabel } from "@/lib/nav-i18n";
+import {
+  DASHBOARD_CALLOUT_CLASS,
+  DASHBOARD_CARD_CLASS,
+  DASHBOARD_COLORS,
+  DASHBOARD_NAV_ACTIVE_CLASS,
+  DASHBOARD_NAV_INACTIVE_CLASS,
+  DASHBOARD_SCORE_TEXT_CLASS,
+} from "@/lib/dashboard-theme";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -153,7 +161,7 @@ export function DashboardShell({
 
   return (
     <div
-      className={`mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8 ${
+      className={`dashboard-area mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8 ${
         pathname === DASHBOARD_PATH ? "py-4 sm:py-5" : "py-6 sm:py-8"
       }`}
     >
@@ -163,7 +171,9 @@ export function DashboardShell({
         }`}
       >
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand-teal">Your account</p>
+          <p className={`${DASHBOARD_SCORE_TEXT_CLASS} text-sm font-semibold uppercase tracking-wider`}>
+            Your account
+          </p>
           {pathname === DASHBOARD_PATH ? (
             <>
               <h1 className="font-heading mt-0.5 text-xl font-semibold text-foreground sm:text-2xl">
@@ -183,7 +193,7 @@ export function DashboardShell({
       </div>
 
       {showCompleteProfile ? (
-        <div className="mb-4 card-elevated rounded-2xl border border-brand-teal/20 bg-mint/30 p-4">
+        <div className={`${DASHBOARD_CALLOUT_CLASS} mb-4 p-4`}>
           <p className="font-heading text-sm font-semibold text-foreground">Complete your profile</p>
           <p className="mt-1 text-sm text-muted">
             Add your details so Pet Parents and Pet Friends can trust and connect with you.
@@ -201,16 +211,21 @@ export function DashboardShell({
             : "lg:grid-cols-[220px_1fr]"
         } ${pathname === DASHBOARD_PATH ? "gap-4 lg:gap-5" : "gap-6 lg:gap-8"}`}
       >
-        <aside className="card-elevated relative z-10 hidden h-fit shrink-0 rounded-2xl p-4 lg:sticky lg:top-24 lg:block">
+        <aside
+          className={`${DASHBOARD_CARD_CLASS} relative z-10 hidden h-fit shrink-0 p-4 lg:sticky lg:top-24 lg:block`}
+        >
           <div className="flex flex-col items-center text-center">
             {profile?.avatar_url ? (
               <img
                 src={profile.avatar_url}
                 alt=""
-                className="h-20 w-20 rounded-full object-cover ring-2 ring-mint/50"
+                className="h-20 w-20 rounded-full object-cover ring-2 ring-[#E5E2D8]"
               />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-lavender/60 text-2xl font-semibold text-brand-teal">
+              <div
+                className="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-semibold"
+                style={{ backgroundColor: DASHBOARD_COLORS.light, color: DASHBOARD_COLORS.primary }}
+              >
                 {authLoading || profileLoading ? "…" : initials}
               </div>
             )}
@@ -231,8 +246,8 @@ export function DashboardShell({
                       href={item.href}
                       className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                         active
-                          ? "bg-mint/60 text-brand-teal shadow-sm ring-1 ring-brand-teal/15"
-                          : "text-muted hover:bg-mint/40 hover:text-foreground"
+                          ? DASHBOARD_NAV_ACTIVE_CLASS
+                          : DASHBOARD_NAV_INACTIVE_CLASS
                       }`}
                     >
                       {accountSidebarLabel(item.href, item.label, t.navbar)}
@@ -243,7 +258,7 @@ export function DashboardShell({
             </ul>
           </nav>
 
-          <div className="mt-4 border-t border-border pt-3">
+          <div className="mt-4 border-t border-[#E5E2D8] pt-3">
             {modeAction ? (
               <>
                 <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted">
@@ -253,7 +268,7 @@ export function DashboardShell({
                   type="button"
                   disabled={switchingMode !== null}
                   onClick={() => handleModeSwitch(modeAction.targetMode)}
-                  className="mt-1 block w-full cursor-pointer rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-mint/40 hover:text-brand-teal disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`${DASHBOARD_NAV_INACTIVE_CLASS} mt-1 block w-full cursor-pointer rounded-xl px-3 py-2 text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {switchingMode === modeAction.targetMode ? "Switching…" : modeAction.label}
                 </button>

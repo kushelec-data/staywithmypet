@@ -1,6 +1,7 @@
 import { DashboardEmptyState, DashboardInfoCard } from "@/components/dashboard/DashboardInfoCard";
 import { AvailabilityDateChips } from "@/components/ui/AvailabilityDateChips";
 import type { ProfileSummaryLines } from "@/lib/profile-summaries";
+import { DASHBOARD_TAG_CLASS } from "@/lib/dashboard-theme";
 
 type ProfileSummaryCardProps = {
   summary: ProfileSummaryLines;
@@ -25,7 +26,7 @@ export function ProfileSummaryCard({
               {summary.lines.map((line) => (
                 <li
                   key={line}
-                  className="rounded-full border border-brand-teal/20 bg-mint/40 px-2.5 py-0.5 text-xs font-semibold text-brand-teal"
+                  className={`${DASHBOARD_TAG_CLASS} px-2.5 py-0.5 text-xs`}
                 >
                   {line}
                 </li>
@@ -37,6 +38,7 @@ export function ProfileSummaryCard({
               dates={summary.calendarDates}
               label=""
               locale={summary.locale}
+              tone="dashboard"
             />
           ) : null}
         </div>

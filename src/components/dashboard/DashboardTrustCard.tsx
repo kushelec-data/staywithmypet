@@ -12,11 +12,16 @@ import { parseEmergencyContactFromProfile, isProfileVerified } from "@/lib/trust
 import {
   buildTrustBreakdown,
   trustInputFromProfileSnapshot,
-  trustScoreBarClass,
-  trustScoreTierClass,
   type TrustCheck,
   type TrustCheckId,
 } from "@/lib/trust-score";
+import {
+  DASHBOARD_CARD_INNER_CLASS,
+  DASHBOARD_PROGRESS_FILL_CLASS,
+  DASHBOARD_PROGRESS_TRACK_CLASS,
+  dashboardProgressFillClass,
+  dashboardScoreTextClass,
+} from "@/lib/dashboard-theme";
 import type { ProfileRow } from "@/lib/profile-utils";
 
 type DashboardTrustCardProps = {
@@ -51,32 +56,28 @@ export function DashboardTrustCard({
   });
 
   return (
-    <DashboardInfoCard
-      title={ts.formSectionTitle}
-      titleStyle="panel"
-      className="!bg-swmp-warm-surface/80"
-    >
+    <DashboardInfoCard title={ts.formSectionTitle} titleStyle="panel">
       {verified ? (
         <div className="mb-2">
-          <VerifiedBadge />
+          <VerifiedBadge tone="dashboard" />
         </div>
       ) : null}
-      <div className="rounded-xl bg-surface/90 px-2.5 py-2">
+      <div className={`${DASHBOARD_CARD_INNER_CLASS} px-2.5 py-2`}>
         <p className={DASHBOARD_PANEL_SECTION_LABEL}>{ts.trustScoreTitle}</p>
         <p
-          className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${trustScoreTierClass(displayPercent)}`}
+          className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${dashboardScoreTextClass(displayPercent)}`}
         >
           {displayPercent}%
         </p>
         <div
-          className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/5"
+          className={`${DASHBOARD_PROGRESS_TRACK_CLASS} mt-2 h-1.5 overflow-hidden`}
           role="progressbar"
           aria-valuenow={displayPercent}
           aria-valuemin={0}
           aria-valuemax={100}
         >
           <div
-            className={`h-full rounded-full transition-all duration-700 ease-out ${trustScoreBarClass(displayPercent)}`}
+            className={`h-full ${DASHBOARD_PROGRESS_FILL_CLASS} transition-all duration-700 ease-out ${dashboardProgressFillClass(displayPercent)}`}
             style={{ width: `${displayPercent}%` }}
           />
         </div>

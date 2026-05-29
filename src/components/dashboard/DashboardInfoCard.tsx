@@ -1,5 +1,10 @@
 import Link from "next/link";
 import type React from "react";
+import {
+  DASHBOARD_CARD_CLASS,
+  DASHBOARD_LINK_CLASS,
+  DASHBOARD_TAG_CLASS,
+} from "@/lib/dashboard-theme";
 
 /** Matches sidebar panels (`DashboardInfoCard` titleStyle="panel"). */
 export const DASHBOARD_PANEL_SECTION_LABEL =
@@ -25,7 +30,7 @@ export function DashboardInfoCard({
   const isPanel = titleStyle === "panel";
 
   return (
-    <section className={`swmp-warm-card rounded-2xl p-4 sm:p-5 ${className}`}>
+    <section className={`${DASHBOARD_CARD_CLASS} p-4 sm:p-5 ${className}`}>
       <header
         className={`flex flex-wrap items-start justify-between gap-2 ${isPanel ? "items-center" : ""}`}
       >
@@ -37,9 +42,7 @@ export function DashboardInfoCard({
         {editHref ? (
           <Link
             href={editHref}
-            className={`shrink-0 font-semibold text-brand-teal transition-colors hover:text-brand-pink ${
-              isPanel ? "text-xs" : "text-sm"
-            }`}
+            className={`${DASHBOARD_LINK_CLASS} shrink-0 ${isPanel ? "text-xs" : "text-sm"}`}
           >
             {editLabel}
           </Link>
@@ -57,7 +60,7 @@ export function DashboardTagList({ tags }: { tags: string[] }) {
       {tags.map((tag) => (
         <li
           key={tag}
-          className="rounded-full bg-mint/50 px-3 py-1 text-xs font-medium text-brand-teal"
+          className={`${DASHBOARD_TAG_CLASS} px-3 py-1 text-xs`}
         >
           {tag}
         </li>
@@ -81,7 +84,7 @@ export function DashboardEmptyState({
       {actionHref && actionLabel ? (
         <>
           {" "}
-          <Link href={actionHref} className="font-semibold text-brand-teal hover:text-brand-pink">
+          <Link href={actionHref} className={DASHBOARD_LINK_CLASS}>
             {actionLabel}
           </Link>
         </>

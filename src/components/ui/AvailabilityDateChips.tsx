@@ -1,4 +1,5 @@
 import { formatAvailabilityDates, type DateFormatLocale } from "@/lib/date-format";
+import { DASHBOARD_TAG_CLASS } from "@/lib/dashboard-theme";
 
 export type AvailabilityDateChipsProps = {
   dates: string[] | null | undefined;
@@ -9,12 +10,16 @@ export type AvailabilityDateChipsProps = {
   upcomingOnly?: boolean;
   className?: string;
   emptyLabel?: string;
+  /** Use unified dashboard greens when rendered inside account pages. */
+  tone?: "default" | "dashboard";
 };
 
-const chipPrimary =
+const chipDefault =
   "rounded-full bg-mint/55 px-2.5 py-0.5 text-[0.7rem] font-semibold text-brand-teal dark:bg-mint/20 dark:text-mint";
-const chipOverflow =
+const chipOverflowDefault =
   "rounded-full border border-brand-teal/25 bg-cream/70 px-2.5 py-0.5 text-[0.7rem] font-semibold text-brand-teal dark:border-brand-teal/35 dark:bg-cream/10 dark:text-brand-teal/90";
+const chipDashboard = `${DASHBOARD_TAG_CLASS} px-2.5 py-0.5 text-[0.7rem]`;
+const chipOverflowDashboard = `${DASHBOARD_TAG_CLASS} px-2.5 py-0.5 text-[0.7rem] opacity-90`;
 
 /** Availability date pills (max preview + overflow). */
 export function AvailabilityDateChips({
@@ -25,7 +30,10 @@ export function AvailabilityDateChips({
   upcomingOnly,
   className = "",
   emptyLabel,
+  tone = "default",
 }: AvailabilityDateChipsProps) {
+  const chipPrimary = tone === "dashboard" ? chipDashboard : chipDefault;
+  const chipOverflow = tone === "dashboard" ? chipOverflowDashboard : chipOverflowDefault;
   const { previewLabels, previewIsos, moreCount, totalCount } = formatAvailabilityDates(dates, {
     locale,
     maxPreview,

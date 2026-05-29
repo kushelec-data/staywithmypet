@@ -11,7 +11,14 @@ import {
   type ProfileCompleteness,
   type ProfileCompletenessInput,
 } from "@/lib/profile-completeness";
-import { trustScoreBarClass, trustScoreTierClass } from "@/lib/trust-score";
+import {
+  DASHBOARD_CARD_INNER_CLASS,
+  DASHBOARD_PROGRESS_FILL_CLASS,
+  DASHBOARD_PROGRESS_TRACK_CLASS,
+  DASHBOARD_SCORE_TEXT_CLASS,
+  dashboardProgressFillClass,
+  dashboardScoreTextClass,
+} from "@/lib/dashboard-theme";
 
 type DashboardProfileCompletenessCardProps = {
   profile: ProfileCompletenessInput;
@@ -27,27 +34,23 @@ export function DashboardProfileCompletenessCard({
   const displayPercent = completeness.percent;
 
   return (
-    <DashboardInfoCard
-      title={pc.sectionTitle}
-      titleStyle="panel"
-      className="!bg-swmp-warm-surface/80"
-    >
-      <div className="rounded-xl bg-surface/90 px-2.5 py-2">
+    <DashboardInfoCard title={pc.sectionTitle} titleStyle="panel">
+      <div className={`${DASHBOARD_CARD_INNER_CLASS} px-2.5 py-2`}>
         <p className={DASHBOARD_PANEL_SECTION_LABEL}>{pc.scoreTitle}</p>
         <p
-          className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${trustScoreTierClass(displayPercent)}`}
+          className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${dashboardScoreTextClass(displayPercent)}`}
         >
           {displayPercent}%
         </p>
         <div
-          className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/5"
+          className={`${DASHBOARD_PROGRESS_TRACK_CLASS} mt-2 h-1.5 overflow-hidden`}
           role="progressbar"
           aria-valuenow={displayPercent}
           aria-valuemin={0}
           aria-valuemax={100}
         >
           <div
-            className={`h-full rounded-full transition-all duration-700 ease-out ${trustScoreBarClass(displayPercent)}`}
+            className={`h-full ${DASHBOARD_PROGRESS_FILL_CLASS} transition-all duration-700 ease-out ${dashboardProgressFillClass(displayPercent)}`}
             style={{ width: `${displayPercent}%` }}
           />
         </div>
@@ -64,7 +67,7 @@ export function DashboardProfileCompletenessCard({
         ))}
       </ul>
       {completeness.missing.length === 0 ? (
-        <p className="mt-2 text-xs text-brand-teal">{pc.profileComplete}</p>
+        <p className={`${DASHBOARD_SCORE_TEXT_CLASS} mt-2 text-xs font-medium`}>{pc.profileComplete}</p>
       ) : null}
     </DashboardInfoCard>
   );

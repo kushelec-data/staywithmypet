@@ -49,6 +49,13 @@
   --swmp-warm-surface: #fffaf2;
   --swmp-warm-border: rgba(38, 92, 52, 0.1);
   --swmp-chat-bg: #f7f5ef;
+
+  /* Dashboard palette (also scoped under .dashboard-area) */
+  --dashboard-primary: #2e6b3f;
+  --dashboard-primary-hover: #255a34;
+  --dashboard-light: #ddeedf;
+  --dashboard-card-bg: #f8f6f1;
+  --dashboard-card-border: #e5e2d8;
 }
 
 .dark {
@@ -123,6 +130,10 @@
   --color-swmp-warm-card: var(--swmp-warm-card);
   --color-swmp-warm-surface: var(--swmp-warm-surface);
   --color-swmp-chat: var(--swmp-chat-bg);
+  --color-dashboard-primary: var(--dashboard-primary);
+  --color-dashboard-light: var(--dashboard-light);
+  --color-dashboard-card: var(--dashboard-card-bg);
+  --color-dashboard-card-border: var(--dashboard-card-border);
   --font-sans: var(--font-inter);
   --font-heading: var(--font-poppins);
 }
@@ -221,6 +232,106 @@ body {
 
 .dark .swmp-warm-card {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28);
+}
+
+/* Dashboard — unified three-column palette */
+.dashboard-area {
+  --dashboard-primary: #2e6b3f;
+  --dashboard-primary-hover: #255a34;
+  --dashboard-light: #ddeedf;
+  --dashboard-card-bg: #f8f6f1;
+  --dashboard-card-border: #e5e2d8;
+
+  --brand-teal: var(--dashboard-primary);
+  --brand-teal-hover: var(--dashboard-primary-hover);
+  --mint: var(--dashboard-light);
+  --success-bg: var(--dashboard-light);
+  --success-text: var(--dashboard-primary);
+}
+
+.dark .dashboard-area {
+  --dashboard-primary: #3d8250;
+  --dashboard-primary-hover: #4a9460;
+  --dashboard-light: #2a3d32;
+  --dashboard-card-bg: #1c2620;
+  --dashboard-card-border: rgba(140, 190, 150, 0.22);
+}
+
+.dashboard-card {
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-card-border);
+  box-shadow: 0 1px 2px rgba(46, 107, 63, 0.05);
+}
+
+.dark .dashboard-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.dashboard-card-inner {
+  background: var(--dashboard-light);
+  border: 1px solid var(--dashboard-card-border);
+}
+
+.dashboard-nav-active {
+  background: var(--dashboard-light);
+  color: var(--dashboard-primary);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--dashboard-primary) 14%, var(--dashboard-card-border));
+}
+
+.dashboard-nav-inactive:hover {
+  background: color-mix(in srgb, var(--dashboard-light) 70%, var(--dashboard-card-bg));
+  color: var(--dashboard-primary);
+}
+
+.dashboard-link {
+  color: var(--dashboard-primary);
+  font-weight: 600;
+  transition: opacity 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-link:hover {
+    opacity: 0.82;
+  }
+}
+
+.dashboard-tag {
+  border: 1px solid var(--dashboard-card-border);
+  background: var(--dashboard-light);
+  color: var(--dashboard-primary);
+}
+
+.dashboard-progress-track {
+  background: var(--dashboard-card-border);
+}
+
+.dashboard-progress-fill {
+  background: var(--dashboard-primary);
+}
+
+.dashboard-score-high {
+  color: var(--dashboard-primary);
+}
+
+.dashboard-callout {
+  border: 1px solid var(--dashboard-card-border);
+  background: color-mix(in srgb, var(--dashboard-light) 65%, var(--dashboard-card-bg));
+}
+
+.dashboard-status-complete {
+  background: var(--dashboard-light);
+  color: var(--dashboard-primary);
+}
+
+.dashboard-area .card-elevated {
+  background: var(--dashboard-card-bg);
+  border: 1px solid var(--dashboard-card-border);
+  box-shadow: 0 1px 2px rgba(46, 107, 63, 0.05);
+}
+
+.dark .dashboard-area .card-elevated {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .swmp-tab-chip-active {

@@ -36,6 +36,7 @@ import { resolveActiveMode } from "@/lib/profile-mode";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { DASHBOARD_CALLOUT_CLASS, DASHBOARD_LINK_CLASS } from "@/lib/dashboard-theme";
 
 function ProfileCompleteEmailEffect({ percent }: { percent: number }) {
   const notifiedRef = useRef(false);
@@ -114,7 +115,7 @@ export function DashboardPageContent() {
     return (
       <div className="py-12 text-center text-sm text-muted">
         <p>We couldn&apos;t load your profile.</p>
-        <Link href="/profile/edit" className="mt-2 inline-block font-semibold text-brand-teal">
+        <Link href="/profile/edit" className={`${DASHBOARD_LINK_CLASS} mt-2 inline-block`}>
           Complete your profile
         </Link>
       </div>
@@ -179,6 +180,7 @@ export function DashboardPageContent() {
             label="My availability"
             locale={locale}
             emptyLabel="Not set"
+            tone="dashboard"
           />
         ) : null}
 
@@ -202,7 +204,7 @@ export function DashboardPageContent() {
           </ul>
         )}
 
-        <div className="flex flex-wrap gap-2 border-t border-swmp-warm-border pt-3">
+        <div className="flex flex-wrap gap-2 border-t border-[#E5E2D8] pt-3">
           <Button href="/pets" variant="ghost" size="sm">
             Manage pets
           </Button>
@@ -223,6 +225,7 @@ export function DashboardPageContent() {
             dates={profileCalDates}
             locale={locale}
             emptyLabel="Not set"
+            tone="dashboard"
           />
         ) : null}
         {needsMyAvailability ? (
@@ -273,7 +276,7 @@ export function DashboardPageContent() {
         {showParentNoPetsBanner || showFriendSetupBanner ? (
           <section aria-label="Setup reminders" className="space-y-3">
             {showParentNoPetsBanner ? (
-              <div className="swmp-warm-card rounded-2xl border border-brand-teal/20 bg-mint/30 p-4 sm:p-5">
+              <div className={`${DASHBOARD_CALLOUT_CLASS} p-4 sm:p-5`}>
                 <p className="text-sm text-foreground">
                   You haven&apos;t added any pets yet. Add your first pet so Pet Friends can find you.
                 </p>
@@ -284,7 +287,7 @@ export function DashboardPageContent() {
             ) : null}
 
             {showFriendSetupBanner ? (
-              <div className="swmp-warm-card rounded-2xl border border-brand-teal/20 bg-mint/30 p-4 sm:p-5">
+              <div className={`${DASHBOARD_CALLOUT_CLASS} p-4 sm:p-5`}>
                 <p className="text-sm text-muted">
                   Complete your Pet Friend setup so Pet Parents can request you.
                 </p>
@@ -313,7 +316,7 @@ export function DashboardPageContent() {
                 </p>
                 <Link
                   href="/profile/edit"
-                  className="mt-2 inline-block text-xs font-semibold text-brand-teal hover:text-brand-pink"
+                  className={`${DASHBOARD_LINK_CLASS} mt-2 inline-block text-xs`}
                 >
                   View more →
                 </Link>

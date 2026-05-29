@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { isSidebarLinkActive, sidebarNavForActiveMode } from "@/lib/account-nav";
 import { accountSidebarLabel } from "@/lib/nav-i18n";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
+import { DASHBOARD_NAV_ACTIVE_CLASS, DASHBOARD_NAV_INACTIVE_CLASS } from "@/lib/dashboard-theme";
 
 type DashboardAccountNavStripProps = {
   activeMode: ProfileActiveMode | null | undefined;
@@ -32,8 +33,8 @@ export function DashboardAccountNavStrip({ activeMode }: DashboardAccountNavStri
                 href={item.href}
                 className={`inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
                   active
-                    ? "bg-brand-pink text-white shadow-sm"
-                    : "border border-black/5 bg-surface text-muted hover:bg-mint/40 hover:text-foreground"
+                    ? DASHBOARD_NAV_ACTIVE_CLASS
+                    : `border border-[#E5E2D8] bg-[#F8F6F1] text-muted ${DASHBOARD_NAV_INACTIVE_CLASS}`
                 }`}
               >
                 {accountSidebarLabel(item.href, item.label, t.navbar)}

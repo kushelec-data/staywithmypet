@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { isSidebarLinkActive } from "@/lib/account-nav";
 import type { AccountNavItem } from "@/lib/legacy/nav";
+import { DASHBOARD_NAV_ACTIVE_CLASS, DASHBOARD_NAV_INACTIVE_CLASS } from "@/lib/dashboard-theme";
 
 type DashboardHeaderNavLinkProps = {
   item: AccountNavItem;
@@ -48,8 +49,8 @@ export function DashboardHeaderNavLink({ item }: DashboardHeaderNavLinkProps) {
       title={item.label}
       className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border transition-colors ${
         active
-          ? "border-brand-pink/30 bg-brand-pink-muted text-brand-pink"
-          : "border-black/5 bg-surface text-foreground hover:bg-mint/40"
+          ? `${DASHBOARD_NAV_ACTIVE_CLASS} border-[#E5E2D8]`
+          : `border-[#E5E2D8] bg-[#F8F6F1] text-foreground ${DASHBOARD_NAV_INACTIVE_CLASS}`
       }`}
     >
       {navIcon(item.href)}

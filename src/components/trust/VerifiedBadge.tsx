@@ -1,15 +1,22 @@
 import { useLanguage } from "@/context/LanguageContext";
+import { DASHBOARD_STATUS_BADGE_CLASS } from "@/lib/dashboard-theme";
 
 type VerifiedBadgeProps = {
   className?: string;
+  tone?: "default" | "dashboard";
 };
 
-export function VerifiedBadge({ className = "" }: VerifiedBadgeProps) {
+export function VerifiedBadge({ className = "", tone = "default" }: VerifiedBadgeProps) {
   const { t } = useLanguage();
+
+  const toneClass =
+    tone === "dashboard"
+      ? DASHBOARD_STATUS_BADGE_CLASS
+      : "inline-flex items-center gap-1 rounded-full bg-brand-teal/10 px-2.5 py-0.5 text-xs font-semibold text-brand-teal";
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full bg-brand-teal/10 px-2.5 py-0.5 text-xs font-semibold text-brand-teal ${className}`}
+      className={`${toneClass} ${className}`.trim()}
       title={t.trustSafety.verifiedHint}
     >
       <CheckIcon />

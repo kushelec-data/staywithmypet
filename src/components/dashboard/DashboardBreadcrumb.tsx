@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import type { DashboardBreadcrumbParent } from "@/lib/dashboard-breadcrumb";
+import { DASHBOARD_LINK_CLASS } from "@/lib/dashboard-theme";
 
 export type DashboardBreadcrumbProps = {
   title: string;
@@ -37,7 +38,7 @@ export function DashboardBreadcrumb({
         <button
           type="button"
           onClick={handleBack}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-mint/50 hover:text-brand-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-[#DDEEDF] hover:text-[#2E6B3F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E6B3F]"
           aria-label="Go back"
         >
           <span aria-hidden className="text-base leading-none">
@@ -49,7 +50,7 @@ export function DashboardBreadcrumb({
           <li className="shrink-0">
             <Link
               href={DASHBOARD_PATH}
-              className="font-medium transition-colors hover:text-brand-teal"
+              className={DASHBOARD_LINK_CLASS}
             >
               Dashboard
             </Link>
@@ -62,7 +63,7 @@ export function DashboardBreadcrumb({
               </li>
               <li className="min-w-0 truncate">
                 {parent.href ? (
-                  <Link href={parent.href} className="transition-colors hover:text-brand-teal">
+                  <Link href={parent.href} className={DASHBOARD_LINK_CLASS}>
                     {parent.label}
                   </Link>
                 ) : (

@@ -11,6 +11,8 @@ import { resolveActiveMode } from "@/lib/profile-mode";
 import type { DashboardSnapshot } from "@/lib/dashboard-data";
 import type { ProfileRow } from "@/lib/profile-utils";
 
+const DASHBOARD_DIVIDER = "border-[#E5E2D8]";
+
 type DashboardAccountSummaryCardProps = {
   profile: ProfileRow;
   snapshot: DashboardSnapshot;
@@ -83,7 +85,7 @@ export function DashboardAccountSummaryCard({
       ) : null}
 
       {showRequestStats && requestStatLines.length > 0 ? (
-        <div className={showPetStats ? "mt-3 border-t border-black/5 pt-3" : ""}>
+        <div className={showPetStats ? `mt-3 border-t ${DASHBOARD_DIVIDER} pt-3` : ""}>
           <p className={DASHBOARD_PANEL_SECTION_LABEL}>{t.requests.statsSectionLabel}</p>
           <ul className="mt-2 space-y-1 text-xs text-foreground/85">
             {requestStatLines.map((line) => (
@@ -96,7 +98,7 @@ export function DashboardAccountSummaryCard({
       <div
         className={
           showPetStats || (showRequestStats && requestStatLines.length > 0)
-            ? "mt-3 border-t border-black/5 pt-3"
+            ? `mt-3 border-t ${DASHBOARD_DIVIDER} pt-3`
             : ""
         }
       >
