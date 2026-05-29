@@ -1,13 +1,6 @@
 /** Central image paths and alt text (reference site + Photo structure mapping). */
 
 export const IMAGE_ALT = {
-  hero: {
-    story1: "Person relaxing with a friendly dog for companionship",
-    story2: "Friendly pet and neighbor meeting in the city",
-    story3: "Two people walking a happy dog together",
-    story4: "Pet Friend providing gentle care during a visit",
-    story5: "Person gently petting their cat on a cozy sofa at home",
-  },
   about: {
     community: "People forming meaningful connections with pets through shared care",
     foundersStory: "Founders working together on building the Stay With My Pet platform",
@@ -51,15 +44,6 @@ export const IMAGE_ALT = {
 
 export const IMAGES = {
   logo: "/logo.png",
-  hero: {
-    stories: [
-      "/images/hero/story-1.jpg",
-      "/images/hero/story-2.jpg",
-      "/images/hero/story-3.jpg",
-      "/images/hero/story-4.jpg",
-      "/images/pets/mochi.jpg",
-    ] as const,
-  },
   home: {
     caregiverEmily: "/images/home/caregiver-emily.jpg",
     caregiverJosefh: "/images/home/caregiver-josefh.jpg",

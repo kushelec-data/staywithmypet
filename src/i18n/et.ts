@@ -97,49 +97,10 @@ export const et = {
       "Ühendu hoolivate lemmiklooma sõpradega jalutiste, külastuste, päevahoiu ja seltsisoleku jaoks — turvaliselt StayWithMyPet kaudu.",
     findCareCta: "Leia hooldus",
     becomeFriendCta: "Hakka lemmiklooma sõbraks",
-    imageAlt: "Naine jalutab oma koera lehtede kaetud pargitee peal soojas sügises valguses",
     trustCards: {
       verified: "Kinnitatud profiilid",
       reviews: "Arvustused ja hinnangud",
       safeChat: "Turvalised päringud ja vestlus",
-    },
-    storyCarousel: {
-      ariaLabel: "Esiletõstetud kogukonna lood",
-      dotsLabel: "Loo slaidid",
-      goToSlide: "Mine loosse {n}: {title}",
-      slides: [
-        {
-          title: "Pole kaaslast? Kutsu karvane sõber.",
-          text: "Jaga jalutist, kaisutamist või hubast pärastlõunat lähedal oleva lemmikloomaga.",
-          cta: "Leia lemmikloomi lähedal",
-          badge: "Seltskond",
-          imageAlt: "Inimene puhkab sõbraliku koeraga seltsis",
-        },
-        {
-          title: "Uus linnas?",
-          text: "Kohtu sõbralike lemmikloomade ja lahkete inimestega enda ümber.",
-          cta: "Alusta avastamist",
-          imageAlt: "Sõbralik lemmikloom ja naaber kohtuvad linnas",
-        },
-        {
-          title: "Üksildased jalutised? Jaluta koos.",
-          text: "Muuda igapäevane jalutiskäik õnneliku koera ajaks.",
-          cta: "Otsi jalutuskaaslasi",
-          imageAlt: "Kaks inimest jalutavad koos õnneliku koeraga",
-        },
-        {
-          title: "Kiire päev? Leia õrn abi.",
-          text: "Lemmiklooma omanikud saavad paluda hoolivaid sõpru külastusteks, jalutisteks ja seltsiks.",
-          cta: "Leia hooldus",
-          imageAlt: "Lemmiklooma sõber pakub õrna hooldust külastusel",
-        },
-        {
-          title: "Lemmikloomad vajavad inimesi. Inimesed vajavad lemmikloomi.",
-          text: "Usaldusväärne kogukond vastutustundlikuks lemmikloomade jagamiseks.",
-          cta: "Liitu kogukonnaga",
-          imageAlt: "Inimene hellitab oma kassi hubasel diivanil kodus",
-        },
-      ],
     },
   },
   search: {
