@@ -3,8 +3,14 @@
 import { ProfileEditStepPanel } from "@/components/profile/ProfileEditStepPanel";
 import { Button } from "@/components/ui/Button";
 import type { ProfileEditSectionKey } from "@/lib/profile-edit-sections";
-import { Check, Pencil } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, Pencil } from "lucide-react";
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
+
+const PROFILE_EDIT_PRIMARY_BTN_CLASS =
+  "bg-[#2E6B3F] shadow-md shadow-[#2E6B3F]/25 hover:bg-[#255A34]";
+
+const PROFILE_EDIT_SECONDARY_BTN_CLASS =
+  "border-[#E5E2D8] bg-[#F8F6F1] font-semibold text-foreground shadow-sm hover:bg-[#F8F6F1] hover:border-[#2E6B3F]/25";
 
 export type ProfileEditWizardStep = {
   id: ProfileEditSectionKey;
@@ -158,11 +164,11 @@ export function ProfileEditWizard({
           <p className="text-sm text-muted">{activeStep.description}</p>
           <Button
             type="button"
-            variant="outline"
+            variant="primary"
             size="sm"
             onClick={activeStep.onEdit}
             disabled={activeStep.isEditing || activeStep.saving}
-            className="shrink-0 border-[#E5E2D8] bg-[#F8F6F1] font-semibold text-foreground shadow-sm hover:bg-[#F8F6F1] hover:border-[#2E6B3F]/25"
+            className={`shrink-0 ${PROFILE_EDIT_PRIMARY_BTN_CLASS}`}
           >
             <Pencil className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             {labels.edit}
@@ -183,7 +189,14 @@ export function ProfileEditWizard({
       <div className="grid gap-2 border-t border-black/5 pt-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
         <div>
           {!isFirst ? (
-            <Button type="button" variant="outline" size="sm" onClick={() => goToIndex(activeIndex - 1)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={PROFILE_EDIT_SECONDARY_BTN_CLASS}
+              onClick={() => goToIndex(activeIndex - 1)}
+            >
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
               {labels.previous}
             </Button>
           ) : (
@@ -196,7 +209,7 @@ export function ProfileEditWizard({
             type="button"
             variant="primary"
             size="sm"
-            className="w-full min-w-[10.5rem] bg-[#2E6B3F] shadow-md shadow-[#2E6B3F]/25 hover:bg-[#255A34] sm:w-auto"
+            className={`w-full min-w-[10.5rem] sm:w-auto ${PROFILE_EDIT_PRIMARY_BTN_CLASS}`}
             disabled={!activeStep.isEditing || activeStep.saving}
             onClick={() => activeStep.onSave()}
           >
@@ -207,8 +220,15 @@ export function ProfileEditWizard({
 
         <div className="flex justify-end">
           {!isLast ? (
-            <Button type="button" variant="outline" size="sm" onClick={() => goToIndex(activeIndex + 1)}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              className={PROFILE_EDIT_PRIMARY_BTN_CLASS}
+              onClick={() => goToIndex(activeIndex + 1)}
+            >
               {labels.nextStep}
+              <ArrowRight className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             </Button>
           ) : (
             <span />

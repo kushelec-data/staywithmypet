@@ -61,11 +61,11 @@ export function ProfileEditSectionCard({
         <div className="flex shrink-0 flex-wrap gap-2">
           <Button
             type="button"
-            variant="outline"
+            variant="primary"
             size="sm"
             onClick={onEdit}
             disabled={!frozen || saving}
-            className="border-[#E5E2D8] bg-[#F8F6F1] font-semibold text-foreground shadow-sm hover:bg-[#F8F6F1] hover:border-[#2E6B3F]/25"
+            className="min-w-[5.5rem] bg-[#2E6B3F] shadow-md shadow-[#2E6B3F]/25 hover:bg-[#255A34]"
           >
             <Pencil className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             {editLabel}
