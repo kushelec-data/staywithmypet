@@ -1,4 +1,21 @@
-# Boston Terrier run animation
+# Animation assets
+
+## Puppy welcome (homepage hero)
+
+Replace the placeholder files below with a **realistic** transparent puppy clip (3D/Blender-style or filmed motion with alpha — not flat cartoon SVG).
+
+| File | Purpose |
+|------|---------|
+| `puppy-welcome.webm` | One-shot enter/pose clip: transparent VP9/WebM |
+| `puppy-welcome-fallback.webp` | Static frame when video is missing or `prefers-reduced-motion: reduce` |
+
+Used by `src/components/home/PuppyWelcome.tsx` on the homepage hero only.
+
+Until `puppy-welcome.webm` is added, the site shows `puppy-welcome-fallback.webp` after the video element errors or when motion is reduced.
+
+---
+
+## Boston Terrier run animation
 
 Replace the placeholder files below with a **realistic** transparent running-dog clip (3D/Blender-style or filmed motion with alpha — not flat cartoon SVG).
 

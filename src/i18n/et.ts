@@ -107,6 +107,15 @@ export const et = {
       reviews: "Arvustused ja hinnangud",
       safeChat: "Turvalised päringud ja vestlus",
     },
+    puppyWelcome: {
+      ariaLabel: "Sõbralik kutsika tervitusabi",
+      message: "Tere! Tahad minuga tutvuda? 🐾",
+      signUp: "Registreeru",
+      logIn: "Logi sisse",
+      hint: "Liitu üleval",
+      replay: "Taasesita",
+      replayLabel: "Taasesita kutsika tervitus",
+    },
     storyCarousel: {
       ariaLabel: "Esiletõstetud kogukonna lood",
       dotsLabel: "Loo slaidid",

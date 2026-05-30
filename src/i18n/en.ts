@@ -107,6 +107,15 @@ export const en = {
       reviews: "Reviews & ratings",
       safeChat: "Safe requests & chat",
     },
+    puppyWelcome: {
+      ariaLabel: "Friendly puppy welcome assistant",
+      message: "Hi! Want to meet me? 🐾",
+      signUp: "Sign up",
+      logIn: "Log in",
+      hint: "Join up top",
+      replay: "Replay",
+      replayLabel: "Replay puppy welcome",
+    },
     storyCarousel: {
       ariaLabel: "Featured community stories",
       dotsLabel: "Story slides",
