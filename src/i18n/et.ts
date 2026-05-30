@@ -361,6 +361,7 @@ export const et = {
   },
   petPublicProfile: {
     editPet: "Muuda lemmikut",
+    ownerViewingPublicListing: "Vaatad oma lemmiku avalikku kuulutust.",
     copyPublicLink: "Kopeeri avalik link",
     viewPublicProfile: "Vaata avalikku profiili",
     previewListing: "Eelvaate kuulutus",

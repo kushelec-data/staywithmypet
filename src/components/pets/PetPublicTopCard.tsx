@@ -17,7 +17,6 @@ type PetPublicTopCardProps = {
   shortBio: string | null;
   quickFacts: PublicPetQuickFact[];
   isOwnPet: boolean;
-  notListedPublicly?: boolean;
 };
 
 function QuickFactIcon({ type }: { type: PublicPetQuickFact["icon"] }) {
@@ -51,7 +50,6 @@ export function PetPublicTopCard({
   shortBio,
   quickFacts,
   isOwnPet,
-  notListedPublicly = false,
 }: PetPublicTopCardProps) {
   return (
     <section className={PUBLIC_CARD_MINT}>
@@ -100,11 +98,7 @@ export function PetPublicTopCard({
           ) : null}
         </div>
 
-        <PetPublicProfileActions
-          pet={pet}
-          isOwner={isOwnPet}
-          notListedPublicly={notListedPublicly}
-        />
+        <PetPublicProfileActions pet={pet} isOwner={isOwnPet} />
       </div>
     </section>
   );

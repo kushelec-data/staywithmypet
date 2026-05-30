@@ -1,25 +1,18 @@
 "use client";
 
-import { CopyPublicPetLinkButton } from "@/components/pets/CopyPublicPetLinkButton";
 import { SharePublicPetLinkButton } from "@/components/pets/SharePublicPetLinkButton";
 import { SendRequestButton } from "@/components/requests/SendRequestButton";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
-import { publicPetHref } from "@/lib/public-pet";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 
 type PetPublicProfileActionsProps = {
   pet: PublicSearchPet;
   isOwner: boolean;
-  notListedPublicly?: boolean;
 };
 
-export function PetPublicProfileActions({
-  pet,
-  isOwner,
-  notListedPublicly = false,
-}: PetPublicProfileActionsProps) {
+export function PetPublicProfileActions({ pet, isOwner }: PetPublicProfileActionsProps) {
   const { t } = useLanguage();
   const copy = t.petPublicProfile;
 
@@ -27,26 +20,11 @@ export function PetPublicProfileActions({
     <div className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-[#E5E2D8] bg-[#F8F6F1] p-4 lg:w-[220px]">
       {isOwner ? (
         <>
+          <p className="text-center text-sm leading-snug text-muted">
+            {copy.ownerViewingPublicListing}
+          </p>
           <Button href={`/pets/${pet.id}/edit`} size="sm" className="w-full justify-center">
             {copy.editPet}
-          </Button>
-          <CopyPublicPetLinkButton
-            petId={pet.id}
-            size="sm"
-            variant="outline"
-            className="w-full justify-center"
-            label={copy.copyPublicLink}
-            copiedLabel={copy.linkCopied}
-          />
-          <Button
-            href={publicPetHref(pet.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="outline"
-            size="sm"
-            className="w-full justify-center"
-          >
-            {notListedPublicly ? copy.previewListing : copy.viewPublicProfile}
           </Button>
         </>
       ) : (

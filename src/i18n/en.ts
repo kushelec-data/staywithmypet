@@ -359,6 +359,7 @@ export const en = {
   },
   petPublicProfile: {
     editPet: "Edit pet",
+    ownerViewingPublicListing: "You are viewing your pet's public listing.",
     copyPublicLink: "Copy public link",
     viewPublicProfile: "View public profile",
     previewListing: "Preview listing",
