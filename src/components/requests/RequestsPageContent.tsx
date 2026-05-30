@@ -69,6 +69,7 @@ export function RequestsPageContent() {
         : await fetchOutgoingRequests(supabase, user.id);
       setRequests(data);
     } catch (err) {
+      console.error("[request:list] page load failed", err);
       setRequests([]);
       setLoadError(err instanceof Error ? err.message : t.requests.loadError);
     } finally {

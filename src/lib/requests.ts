@@ -17,7 +17,14 @@ import { fetchUserProfile } from "@/lib/profile-load";
 import { isBookingOverlapError } from "@/lib/bookings";
 import { pickSupabaseJoin, profileDisplayName } from "@/lib/profile-display";
 import { isMissingRelationError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
-import { requestListFilterOr } from "@/lib/request-list-filters";
+import {
+  INCOMING_REQUEST_COLUMNS,
+  isIncomingRequest,
+  isOutgoingRequest,
+  OUTGOING_REQUEST_COLUMNS,
+  resolveEffectiveSenderReceiver,
+  type RequestParticipantColumn,
+} from "@/lib/request-list-filters";
 import {
   REQUEST_SELECT,
   REQUEST_SELECT_WITH_RELATIONS,
@@ -149,8 +156,11 @@ const MISSING_PARTICIPANT_LABEL = "Member";
 function collectParticipantProfileIds(rows: RequestRow[]): string[] {
   const ids = new Set<string>();
   for (const row of rows) {
-    if (row.sender_id) ids.add(row.sender_id);
-    if (row.receiver_id) ids.add(row.receiver_id);
+    const { senderId, receiverId } = resolveEffectiveSenderReceiver(row);
+    if (senderId) ids.add(senderId);
+    if (receiverId) ids.add(receiverId);
+    if (row.pet_parent_id) ids.add(row.pet_parent_id);
+    if (row.pet_friend_id) ids.add(row.pet_friend_id);
   }
   return [...ids];
 }
@@ -165,8 +175,7 @@ function mapRequestRow(
     petName: string | null;
   },
 ): CareRequest {
-  const senderId = row.sender_id;
-  const receiverId = row.receiver_id;
+  const { senderId, receiverId } = resolveEffectiveSenderReceiver(row);
   const otherId = direction === "outgoing" ? receiverId : senderId;
   const otherPartyName =
     otherId === senderId ? names.senderName : otherId === receiverId ? names.receiverName : MISSING_PARTICIPANT_LABEL;
@@ -180,8 +189,8 @@ function mapRequestRow(
     careType: row.care_type,
     petId: row.pet_id,
     petName: names.petName,
-    senderId,
-    receiverId,
+    senderId: senderId ?? "",
+    receiverId: receiverId ?? "",
     senderName: names.senderName,
     receiverName: names.receiverName,
     otherPartyName,
@@ -318,42 +327,111 @@ function dedupeRequestRows<T extends { id: string }>(rows: T[]): T[] {
   return out;
 }
 
+function logRequestListQueryError(
+  column: RequestParticipantColumn,
+  userId: string,
+  error: { message: string; code?: string; details?: string; hint?: string },
+): void {
+  console.error("[request:list] Supabase query error", {
+    column,
+    userId,
+    message: error.message,
+    code: error.code,
+    details: error.details,
+    hint: error.hint,
+  });
+}
+
+async function fetchRequestRowsByParticipantColumns(
+  supabase: SupabaseClient,
+  userId: string,
+  columns: readonly RequestParticipantColumn[],
+): Promise<RequestRow[]> {
+  const batches = await Promise.all(
+    columns.map(async (column) => {
+      const { data, error } = await supabase
+        .from("requests")
+        .select(REQUEST_SELECT)
+        .eq(column, userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        logRequestListQueryError(column, userId, error);
+        return [] as RequestRow[];
+      }
+
+      return (data ?? []) as RequestRow[];
+    }),
+  );
+
+  return dedupeRequestRows(batches.flat());
+}
+
+function sortRequestsNewestFirst(rows: RequestRow[]): RequestRow[] {
+  return [...rows].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+}
+
+function filterRowsForDirection(
+  rows: RequestRow[],
+  userId: string,
+  direction: "incoming" | "outgoing",
+): RequestRow[] {
+  const predicate = direction === "incoming" ? isIncomingRequest : isOutgoingRequest;
+  return rows.filter((row) => predicate(row, userId));
+}
+
 async function fetchRequestsForDirection(
   supabase: SupabaseClient,
   userId: string,
   direction: "incoming" | "outgoing",
 ): Promise<CareRequest[]> {
-  const listFilter = requestListFilterOr(userId, direction);
+  const columns = direction === "incoming" ? INCOMING_REQUEST_COLUMNS : OUTGOING_REQUEST_COLUMNS;
+
+  const merged = await fetchRequestRowsByParticipantColumns(supabase, userId, columns);
+  const rows = sortRequestsNewestFirst(filterRowsForDirection(merged, userId, direction));
+
+  console.info(`[request:list] ${direction} loaded`, {
+    userId,
+    merged: merged.length,
+    afterDirectionFilter: rows.length,
+  });
+
+  if (rows.length === 0) {
+    return [];
+  }
 
   const withRelations = await supabase
     .from("requests")
     .select(REQUEST_SELECT_WITH_RELATIONS)
-    .or(listFilter)
+    .in("id", rows.map((r) => r.id))
     .order("created_at", { ascending: false });
 
   if (!withRelations.error) {
-    const rows = dedupeRequestRows((withRelations.data ?? []) as RequestRowWithRelations[]);
-    if (process.env.NODE_ENV === "development") {
-      console.info(`[request:list] ${direction} loaded`, { userId, count: rows.length });
-    }
-    return mapRequestsFromEmbedded(rows, userId, direction);
+    const embedded = dedupeRequestRows((withRelations.data ?? []) as RequestRowWithRelations[]);
+    const order = new Map(rows.map((r, i) => [r.id, i]));
+    embedded.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+    return mapRequestsFromEmbedded(embedded, userId, direction);
   }
 
-  if (!isEmbedQueryError(withRelations.error)) {
-    throw withRelations.error;
+  if (isEmbedQueryError(withRelations.error)) {
+    console.warn("[request:list] embed select failed, using base rows", {
+      direction,
+      message: withRelations.error.message,
+      code: withRelations.error.code,
+    });
+    return enrichRequests(supabase, rows, userId, direction);
   }
 
-  const base = await supabase
-    .from("requests")
-    .select(REQUEST_SELECT)
-    .or(listFilter)
-    .order("created_at", { ascending: false });
-
-  if (base.error) throw base.error;
-  const rows = dedupeRequestRows((base.data ?? []) as RequestRow[]);
-  if (process.env.NODE_ENV === "development") {
-    console.info(`[request:list] ${direction} loaded (base select)`, { userId, count: rows.length });
-  }
+  console.error("[request:list] embed by id failed", {
+    direction,
+    userId,
+    message: withRelations.error.message,
+    code: withRelations.error.code,
+    details: withRelations.error.details,
+    hint: withRelations.error.hint,
+  });
   return enrichRequests(supabase, rows, userId, direction);
 }
 
