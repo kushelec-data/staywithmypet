@@ -99,7 +99,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
         ? [pet.primaryPhotoUrl]
         : [];
   const photoUrl = photos[0] ?? placeholderPetImage(pet.id);
-  const isOwnPet = user?.id === pet.ownerId;
+  const isOwnPet = isOwnerPreview || user?.id === pet.ownerId;
   const about = buildPublicPetAboutText(pet);
 
   return (
