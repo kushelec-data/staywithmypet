@@ -1,5 +1,6 @@
 "use client";
 
+import { clearProfileClientStorage } from "@/lib/profile-session-guard";
 import { createClient } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const signOut = useCallback(async () => {
+    clearProfileClientStorage();
     await supabase.auth.signOut();
     setUser(null);
   }, [supabase]);

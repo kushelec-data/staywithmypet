@@ -10,6 +10,7 @@ import { completeAuthSession } from "@/lib/auth-flow";
 import { formatAuthError } from "@/lib/auth-messages";
 import { DASHBOARD_PATH, resolveLoginReturnPath, resolvePostLoginPath } from "@/lib/auth-routing";
 import { getAuthCallbackUrl } from "@/lib/auth";
+import { PROFILE_SESSION_MISMATCH_PARAM } from "@/lib/profile-session-guard";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { passwordMeetsPolicy } from "@/lib/password-policy";
 import { createClient } from "@/lib/supabase";
@@ -57,7 +58,10 @@ export function AuthForm({ mode }: AuthFormProps) {
     if (searchParams.get("error") === "auth") {
       setError(t.auth.oauthFailed);
     }
-  }, [searchParams, t.auth.oauthFailed]);
+    if (searchParams.get("error") === PROFILE_SESSION_MISMATCH_PARAM) {
+      setError(t.auth.profileSessionMismatch);
+    }
+  }, [searchParams, t.auth.oauthFailed, t.auth.profileSessionMismatch]);
 
   async function finishSession(displayName?: string) {
     await completeAuthSession(supabase, {
@@ -74,6 +78,12 @@ export function AuthForm({ mode }: AuthFormProps) {
     let destination = DASHBOARD_PATH;
     if (sessionUser) {
       const profile = await fetchUserProfile(supabase, sessionUser.id);
+      if (profile && profile.id !== sessionUser.id) {
+        await supabase.auth.signOut();
+        setError(t.auth.profileSessionMismatch);
+        setLoading(false);
+        return;
+      }
       destination = resolvePostLoginPath(profile, searchParams.get("next"));
     }
     await new Promise((resolve) => setTimeout(resolve, 600));

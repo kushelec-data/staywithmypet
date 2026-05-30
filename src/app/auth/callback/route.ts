@@ -27,6 +27,13 @@ export async function GET(request: Request) {
           console.error("[StayWithMyPet] Profile sync after OAuth failed:", profileError);
         }
         const profile = await fetchUserProfile(supabase, user.id);
+        if (profile && profile.id !== user.id) {
+          console.error("[StayWithMyPet] Profile session mismatch after OAuth", {
+            userId: user.id,
+            profileId: profile.id,
+          });
+          return NextResponse.redirect(`${origin}/login?error=profile_session`);
+        }
         destination = resolvePostLoginPath(profile, requestedNext);
       }
 

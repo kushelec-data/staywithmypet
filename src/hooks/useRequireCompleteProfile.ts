@@ -59,7 +59,14 @@ export function useRequireCompleteProfile() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
-  const { profile, isIncomplete, loading: profileLoading, needsRoleOnboarding: rolePending } = useProfile();
+  const {
+    profile,
+    isIncomplete,
+    loading: profileLoading,
+    profileResolved,
+    needsRoleOnboarding: rolePending,
+    sessionError,
+  } = useProfile();
 
   const onRoleOnboardingPage =
     pathname === ROLE_ONBOARDING_PATH || pathname.startsWith(`${ROLE_ONBOARDING_PATH}/`);
@@ -77,6 +84,12 @@ export function useRequireCompleteProfile() {
   useEffect(() => {
     if (authLoading || profileLoading) return;
     if (!user) return;
+    if (sessionError) return;
+
+    if (profileResolved && !profile && !rolePending && !onProfileFormPage && !onRoleOnboardingPage) {
+      router.replace(SETUP_PATH);
+      return;
+    }
 
     if (rolePending && !onRoleOnboardingPage) {
       router.replace(ROLE_ONBOARDING_PATH);
@@ -105,6 +118,9 @@ export function useRequireCompleteProfile() {
   }, [
     authLoading,
     profileLoading,
+    profileResolved,
+    profile,
+    sessionError,
     user,
     rolePending,
     isIncomplete,

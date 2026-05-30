@@ -1306,6 +1306,8 @@ export const et = {
       mismatch: "Paroolid ei kattu.",
     },
     oauthFailed: "Google'iga sisselogimine ebaõnnestus. Proovi uuesti või kasuta e-posti.",
+    profileSessionMismatch:
+      "Sinu seanss ei ühtinud sinu profiiliga. Turvalisuse huvides logisime sind välja. Palun logi uuesti sisse.",
     profileCreateFailed: "Konto loodi, kuid profiili ei õnnestunud salvestada. Võta ühendust toega.",
     signupSuccess: "Konto loodud! Suuname sind juhtpaneelile…",
     loginSuccess: "Tere tulemast tagasi! Suuname sind juhtpaneelile…",

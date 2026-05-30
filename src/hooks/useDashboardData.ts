@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
+import { isProfileOwnedByUser } from "@/lib/profile-session-guard";
 import { DASHBOARD_REFRESH_EVENT } from "@/lib/dashboard-refresh";
 import { fetchDashboardSnapshot, type DashboardSnapshot } from "@/lib/dashboard-data";
 import { resolveActiveMode } from "@/lib/profile-mode";
@@ -53,9 +54,13 @@ export function useDashboardData() {
     const userId = user?.id;
     if (!userId) return;
 
+    const profile = profileRef.current;
+    if (profile && !isProfileOwnedByUser(profile.id, userId)) {
+      return;
+    }
+
     setStatsLoading(true);
     try {
-      const profile = profileRef.current;
       const activeMode = profile
         ? resolveActiveMode(profile.role, profile.active_mode)
         : "pet_parent";
@@ -74,7 +79,14 @@ export function useDashboardData() {
 
   useEffect(() => {
     setProfileTimedOut(false);
-    if (!user?.id) return;
+    if (!user?.id) {
+      setSnapshot(emptySnapshot);
+      statsLoadedForRef.current = null;
+      return;
+    }
+
+    setSnapshot(emptySnapshot);
+    statsLoadedForRef.current = null;
 
     const timer = window.setTimeout(() => {
       setProfileTimedOut(true);

@@ -1,5 +1,9 @@
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
+  assertProfileMatchesUser,
+  isProfileOwnedByUser,
+} from "@/lib/profile-session-guard";
+import {
   initialActiveModeForRole,
   roleAfterModeSwitch,
   type ProfileActiveMode,
@@ -118,6 +122,7 @@ export async function saveUserRole(
   }
 
   const row = data as unknown as ProfileDbRow;
+  assertProfileMatchesUser(row.id, userId);
   const saved = await attachMemberships(supabase, mapProfileRow(row), row);
   console.log("[profile] role saved", saved);
   return saved;
@@ -159,7 +164,12 @@ export async function saveUserActiveMode(
     throw new Error("Mode could not be saved.");
   }
 
-  const saved = mapProfileRow(data as unknown as ProfileDbRow);
+  const row = data as unknown as ProfileDbRow;
+  assertProfileMatchesUser(row.id, userId);
+  if (!isProfileOwnedByUser(currentProfile.id, userId)) {
+    throw new Error("Profile session mismatch");
+  }
+  const saved = mapProfileRow(row);
   const withMemberships = applyMembershipsToProfile(
     saved,
     currentProfile.memberships ?? emptyMembershipsByRole(),

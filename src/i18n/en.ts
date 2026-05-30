@@ -1309,6 +1309,8 @@ export const en = {
       mismatch: "Passwords do not match.",
     },
     oauthFailed: "Google sign-in failed. Please try again or use email.",
+    profileSessionMismatch:
+      "Your session did not match your account profile. For your security, you have been signed out. Please sign in again.",
     profileCreateFailed: "Your account was created but the profile could not be saved. Contact support.",
     signupSuccess: "Account created! Taking you to your dashboard…",
     loginSuccess: "Welcome back! Taking you to your dashboard…",

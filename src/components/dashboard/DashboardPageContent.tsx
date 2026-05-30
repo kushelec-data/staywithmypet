@@ -96,8 +96,13 @@ export function DashboardPageContent() {
   const router = useRouter();
   const { t, locale } = useLanguage();
   const { user, loading: authLoading } = useAuth();
-  const { profile, displayName, loading: profileLoading, needsRoleOnboarding: rolePending } =
-    useProfile();
+  const {
+    profile,
+    displayName,
+    loading: profileLoading,
+    profileResolved,
+    needsRoleOnboarding: rolePending,
+  } = useProfile();
   const { snapshot, waitingForProfile } = useDashboardData();
 
   if (rolePending || waitingForProfile) {
@@ -108,6 +113,11 @@ export function DashboardPageContent() {
 
   if (!user) {
     if (!authLoading) router.replace("/login");
+    return null;
+  }
+
+  if (profileResolved && !profile && !rolePending) {
+    router.replace("/profile/setup");
     return null;
   }
 

@@ -15,6 +15,7 @@ import { DashboardHeaderNavLink } from "@/components/dashboard/DashboardHeaderNa
 import { DashboardBreadcrumb } from "@/components/dashboard/DashboardBreadcrumb";
 import { Button } from "@/components/ui/Button";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
+import { isProfileOwnedByUser } from "@/lib/profile-session-guard";
 import {
   dashboardBreadcrumbFromPath,
   type DashboardBreadcrumbParent,
@@ -95,6 +96,15 @@ export function DashboardShell({
       router.replace("/login");
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (authLoading || profileLoading || !user || !profile) return;
+    if (!isProfileOwnedByUser(profile.id, user.id)) {
+      void signOut().then(() => {
+        window.location.replace("/login?error=profile_session");
+      });
+    }
+  }, [authLoading, profileLoading, user, profile, signOut]);
 
   const email = user?.email ?? null;
   const onProfileFormPage =

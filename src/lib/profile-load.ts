@@ -153,6 +153,14 @@ export async function fetchUserProfile(
 
     if (!error) {
       if (!data) return null;
+      const row = data as unknown as ProfileDbRow;
+      if (row.id !== userId) {
+        console.error("[profile] session mismatch: loaded profile id does not match auth user", {
+          expected: userId,
+          received: row.id,
+        });
+        throw new Error("Profile session mismatch");
+      }
       if (i > 0 && !warnedSelects.has(select)) {
         warnedSelects.add(select);
         if (process.env.NODE_ENV === "development") {
@@ -161,7 +169,6 @@ export async function fetchUserProfile(
           );
         }
       }
-      const row = data as unknown as ProfileDbRow;
       const mapped = mapProfileRow(row);
       return attachMemberships(supabase, mapped, row);
     }
