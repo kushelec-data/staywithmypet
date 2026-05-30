@@ -83,10 +83,10 @@ export function formatNotificationsError(error: unknown): string {
 export function notificationHref(notification: AppNotification): string {
   switch (notification.type) {
     case "request_received":
-      return "/dashboard/requests?direction=incoming";
+      return "/requests?direction=incoming";
     case "request_accepted":
     case "request_declined":
-      return "/dashboard/requests?direction=outgoing";
+      return "/requests?direction=outgoing";
     case "new_message":
       return notification.relatedConversationId
         ? `/messages?conversation=${notification.relatedConversationId}`
@@ -98,7 +98,7 @@ export function notificationHref(notification: AppNotification): string {
         ? `/dashboard/bookings/${notification.relatedBookingId}`
         : "/dashboard/bookings?tab=completed";
     default:
-      return "/dashboard/requests";
+      return "/requests?direction=incoming";
   }
 }
 

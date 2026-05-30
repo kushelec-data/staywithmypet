@@ -3,8 +3,6 @@
 import {
   triggerBookingCompletedEmails,
   triggerProfileCompletedEmail,
-  triggerRequestReceivedEmail,
-  triggerRequestSentEmail,
   triggerRequestStatusEmails,
   triggerWelcomeEmailsForRole,
   triggerWelcomeForModeSwitch,
@@ -15,6 +13,7 @@ import { fetchUserProfile } from "@/lib/profile-load";
 import type { ProfileRole } from "@/lib/profile-setup";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 import { createClient } from "@/lib/supabase/server";
+import { deliverCareRequestNotifications } from "@/lib/request-delivery";
 import { fetchOwnerPetIntros } from "@/lib/pet-intro";
 
 async function requireUserId(): Promise<string | null> {
@@ -71,12 +70,15 @@ export async function sendRequestReceivedEmailAction(requestId: string): Promise
     .eq("id", requestId)
     .maybeSingle();
 
-  if (!data || data.sender_id !== userId) return;
+  if (!data || data.sender_id !== userId) {
+    console.warn("[request:delivery] email action skipped — sender mismatch or missing row", {
+      requestId,
+      userId,
+    });
+    return;
+  }
 
-  await Promise.all([
-    triggerRequestSentEmail(requestId),
-    triggerRequestReceivedEmail(requestId),
-  ]);
+  await deliverCareRequestNotifications(requestId.trim(), userId);
 }
 
 export async function sendRequestStatusEmailsAction(

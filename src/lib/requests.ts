@@ -17,6 +17,7 @@ import { fetchUserProfile } from "@/lib/profile-load";
 import { isBookingOverlapError } from "@/lib/bookings";
 import { pickSupabaseJoin, profileDisplayName } from "@/lib/profile-display";
 import { isMissingRelationError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
+import { requestListFilterOr } from "@/lib/request-list-filters";
 import {
   REQUEST_SELECT,
   REQUEST_SELECT_WITH_RELATIONS,
@@ -306,25 +307,36 @@ function isEmbedQueryError(error: unknown): boolean {
   );
 }
 
+function dedupeRequestRows<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    out.push(row);
+  }
+  return out;
+}
+
 async function fetchRequestsForDirection(
   supabase: SupabaseClient,
   userId: string,
   direction: "incoming" | "outgoing",
 ): Promise<CareRequest[]> {
-  const column = direction === "incoming" ? "receiver_id" : "sender_id";
+  const listFilter = requestListFilterOr(userId, direction);
 
   const withRelations = await supabase
     .from("requests")
     .select(REQUEST_SELECT_WITH_RELATIONS)
-    .eq(column, userId)
+    .or(listFilter)
     .order("created_at", { ascending: false });
 
   if (!withRelations.error) {
-    return mapRequestsFromEmbedded(
-      (withRelations.data ?? []) as RequestRowWithRelations[],
-      userId,
-      direction,
-    );
+    const rows = dedupeRequestRows((withRelations.data ?? []) as RequestRowWithRelations[]);
+    if (process.env.NODE_ENV === "development") {
+      console.info(`[request:list] ${direction} loaded`, { userId, count: rows.length });
+    }
+    return mapRequestsFromEmbedded(rows, userId, direction);
   }
 
   if (!isEmbedQueryError(withRelations.error)) {
@@ -334,11 +346,15 @@ async function fetchRequestsForDirection(
   const base = await supabase
     .from("requests")
     .select(REQUEST_SELECT)
-    .eq(column, userId)
+    .or(listFilter)
     .order("created_at", { ascending: false });
 
   if (base.error) throw base.error;
-  return enrichRequests(supabase, (base.data ?? []) as RequestRow[], userId, direction);
+  const rows = dedupeRequestRows((base.data ?? []) as RequestRow[]);
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[request:list] ${direction} loaded (base select)`, { userId, count: rows.length });
+  }
+  return enrichRequests(supabase, rows, userId, direction);
 }
 
 /** Logged-in user's profile id (same as auth.users.id when profile exists). */
@@ -473,6 +489,15 @@ export async function createCareRequest(
     throw error;
   }
 
+  console.info("[request:delivery] inserted", {
+    requestId,
+    senderId: payload.sender_id,
+    receiverId: payload.receiver_id,
+    petParentId: payload.pet_parent_id,
+    petFriendId: payload.pet_friend_id,
+    status: payload.status,
+  });
+
   return { requestId };
 }
 
@@ -590,13 +615,8 @@ export async function countIncomingRequests(
   userId: string,
 ): Promise<number> {
   try {
-    const { count, error } = await supabase
-      .from("requests")
-      .select("id", { count: "exact", head: true })
-      .eq("receiver_id", userId);
-
-    if (error) return 0;
-    return count ?? 0;
+    const rows = await fetchIncomingRequests(supabase, userId);
+    return rows.length;
   } catch {
     return 0;
   }
@@ -608,13 +628,8 @@ export async function countRequestsSent(
   userId: string,
 ): Promise<number> {
   try {
-    const { count, error } = await supabase
-      .from("requests")
-      .select("id", { count: "exact", head: true })
-      .eq("sender_id", userId);
-
-    if (error) return 0;
-    return count ?? 0;
+    const rows = await fetchOutgoingRequests(supabase, userId);
+    return rows.length;
   } catch {
     return 0;
   }

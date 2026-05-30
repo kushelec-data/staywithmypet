@@ -300,7 +300,9 @@ export function SendRequestButton({
         selectedDates: values.selectedDates,
       });
       const { sendRequestReceivedEmailAction } = await import("@/app/actions/email-events");
-      void sendRequestReceivedEmailAction(requestId.trim());
+      void sendRequestReceivedEmailAction(requestId.trim()).catch((deliveryErr) => {
+        console.error("[request:delivery] post-create delivery failed", deliveryErr);
+      });
       setOpen(false);
       setSuccess(true);
     } catch (err) {
