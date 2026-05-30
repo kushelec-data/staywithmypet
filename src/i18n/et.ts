@@ -108,13 +108,10 @@ export const et = {
       safeChat: "Turvalised päringud ja vestlus",
     },
     puppyWelcome: {
-      ariaLabel: "Sõbralik kutsika tervitusabi",
-      message: "Tere! Tahad minuga tutvuda? 🐾",
+      ariaLabel: "Sõbralik kutsika abi",
+      message: "Tere! Tahad meiega liituda? 🐾",
       signUp: "Registreeru",
-      logIn: "Logi sisse",
-      hint: "Liitu üleval",
-      replay: "Taasesita",
-      replayLabel: "Taasesita kutsika tervitus",
+      dismiss: "Loobu",
     },
     storyCarousel: {
       ariaLabel: "Esiletõstetud kogukonna lood",

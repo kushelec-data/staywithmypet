@@ -1,199 +1,121 @@
 "use client";
 
 import Link from "next/link";
+import { X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { useEffect, useState } from "react";
+
+const PUPPY_IMAGE_SRC = "/animations/puppy-welcome-fallback.webp";
+const AUTO_HIDE_MS = 8000;
 
 type PetMascotCTAProps = {
   className?: string;
 };
 
-const RUN_VIDEO_SRC = "/animations/boston-terrier-run.webm";
-const RUN_POSTER_SRC = "/animations/boston-terrier-run-poster.webp";
-
-function PawIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-      <path
-        d="M16.1 21.4c-2.9.4-5.2-2.6-5.7-6.1-.5-3.7 1.1-6.9 4-7.3 2.9-.4 5.1 2.5 5.7 6.1.5 3.7-1.2 6.9-4 7.3Zm15.8 0c-2.8-.4-4.5-3.6-4-7.3.6-3.6 2.8-6.5 5.7-6.1 2.9.4 4.5 3.6 4 7.3-.5 3.5-2.8 6.5-5.7 6.1Zm-7.9-4c-2.8 0-4.8-3-4.8-6.6S21.2 4 24 4s4.8 3.1 4.8 6.8-2 6.6-4.8 6.6Zm-.1 8.2c6.5 0 12.4 5.5 12.4 11.4 0 4.7-3.7 7-8.5 5.6-1.2-.4-2.5-.8-3.9-.8-1.5 0-2.8.4-4 .8-4.8 1.4-8.4-.9-8.4-5.6 0-5.9 5.9-11.4 12.4-11.4Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function RunningDogMedia() {
-  return (
-    <>
-      <video
-        className="pet-mascot-cta__dog-video"
-        src={RUN_VIDEO_SRC}
-        poster={RUN_POSTER_SRC}
-        muted
-        playsInline
-        loop
-        autoPlay
-        preload="metadata"
-        aria-hidden="true"
-      />
-      <img
-        className="pet-mascot-cta__dog-poster"
-        src={RUN_POSTER_SRC}
-        alt=""
-        width={480}
-        height={320}
-        decoding="async"
-        aria-hidden="true"
-      />
-    </>
-  );
-}
-
 export function PetMascotCTA({ className = "" }: PetMascotCTAProps) {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
+  const copy = t.hero.puppyWelcome;
 
-  if (loading || user) {
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (loading || user || dismissed) return;
+    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(false), AUTO_HIDE_MS);
+    return () => window.clearTimeout(timer);
+  }, [loading, user, dismissed]);
+
+  if (loading || user || dismissed || !visible) {
     return null;
   }
 
+  const dismiss = () => {
+    setDismissed(true);
+    setVisible(false);
+  };
+
   return (
-    <aside aria-label="Join StayWithMyPet" className={`pet-mascot-cta pointer-events-none hidden md:block ${className}`}>
-      <div className="pet-mascot-cta__runner" aria-hidden="true">
-        <RunningDogMedia />
+    <aside
+      aria-label={copy.ariaLabel}
+      className={`pet-assistant pointer-events-none fixed bottom-6 right-4 z-30 hidden md:flex md:flex-col md:items-end ${className}`}
+    >
+      <div className="pet-assistant__bubble pointer-events-auto relative mb-1.5 max-w-[11rem] rounded-2xl border border-border/70 bg-surface/92 px-3 py-2 shadow-lg backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={dismiss}
+          className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border border-border/80 bg-surface text-muted shadow-sm transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+          aria-label={copy.dismiss}
+        >
+          <X className="h-3.5 w-3.5" aria-hidden />
+        </button>
+        <p className="m-0 pr-4 text-xs font-semibold leading-snug text-foreground">{copy.message}</p>
+        <Link
+          href="/signup"
+          className="mt-1.5 inline-block text-xs font-semibold text-brand-teal transition-colors hover:text-brand-teal/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+        >
+          {copy.signUp}
+        </Link>
       </div>
 
-      <Link href="/signup" className="pet-mascot-cta__signup-paw pointer-events-auto" aria-label="Sign up">
-        <PawIcon />
-      </Link>
+      <img
+        className="pet-assistant__puppy h-auto max-h-[140px] w-auto max-w-[140px] object-contain object-bottom"
+        src={PUPPY_IMAGE_SRC}
+        alt=""
+        width={200}
+        height={140}
+        decoding="async"
+        aria-hidden
+      />
 
       <style>{`
-        .pet-mascot-cta {
-          --pet-shadow: rgba(26, 26, 31, 0.14);
-          position: fixed;
-          right: 0;
-          bottom: clamp(4.25rem, 9vh, 6.5rem);
-          left: 0;
-          z-index: 40;
-          height: 0;
-          overflow: visible;
+        .pet-assistant__puppy {
+          filter: drop-shadow(0 6px 12px rgba(26, 26, 31, 0.14));
         }
 
-        .pet-mascot-cta__runner {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: clamp(5.5rem, 9vw, 7.25rem);
-          max-width: 480px;
-          opacity: 0;
-          transform: translate3d(-12rem, 0.08rem, 0);
-          will-change: transform, opacity;
-        }
-
-        .pet-mascot-cta__dog-video,
-        .pet-mascot-cta__dog-poster {
-          display: block;
-          height: auto;
-          width: 100%;
-          object-fit: contain;
-          object-position: left bottom;
-          filter: drop-shadow(0 6px 10px var(--pet-shadow));
-        }
-
-        .pet-mascot-cta__dog-poster {
-          display: none;
-        }
-
-        .pet-mascot-cta__signup-paw {
-          position: absolute;
-          right: clamp(1.25rem, 4vw, 3rem);
-          bottom: 0.2rem;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          height: 1.65rem;
-          width: 1.65rem;
-          border-radius: 999px;
-          color: rgba(239, 125, 131, 0.72);
-          opacity: 0.68;
-          transition:
-            opacity 180ms ease,
-            transform 180ms ease,
-            filter 180ms ease;
-        }
-
-        .pet-mascot-cta__signup-paw:focus-visible {
-          outline: 2px solid var(--brand-teal);
-          outline-offset: 4px;
-        }
-
-        .pet-mascot-cta__signup-paw:hover {
-          opacity: 1;
-          transform: translateY(-1px) scale(1.06);
-          filter: drop-shadow(0 0 10px rgba(239, 125, 131, 0.32));
-        }
-
-        .pet-mascot-cta__signup-paw svg {
-          height: 100%;
-          width: 100%;
-        }
-
-        .dark .pet-mascot-cta__dog-video,
-        .dark .pet-mascot-cta__dog-poster {
+        .dark .pet-assistant__puppy {
           filter:
-            drop-shadow(0 6px 12px rgba(0, 0, 0, 0.32))
-            drop-shadow(0 0 8px rgba(247, 248, 250, 0.06));
-        }
-
-        .dark .pet-mascot-cta__signup-paw {
-          color: rgba(195, 232, 210, 0.62);
-          filter: drop-shadow(0 0 8px rgba(47, 107, 63, 0.22));
-        }
-
-        @keyframes pet-mascot-cross {
-          0%,
-          8% {
-            opacity: 0;
-            transform: translate3d(-12rem, 0.1rem, 0);
-          }
-          10%,
-          34% {
-            opacity: 1;
-          }
-          42% {
-            opacity: 0.95;
-            transform: translate3d(calc(100vw + 12rem), -0.08rem, 0);
-          }
-          43%,
-          100% {
-            opacity: 0;
-            transform: translate3d(calc(100vw + 12rem), -0.08rem, 0);
-          }
+            drop-shadow(0 8px 16px rgba(0, 0, 0, 0.32))
+            drop-shadow(0 0 8px rgba(247, 248, 250, 0.05));
         }
 
         @media (prefers-reduced-motion: no-preference) {
-          .pet-mascot-cta__runner {
-            animation: pet-mascot-cross 31s linear 2.5s infinite both;
+          .pet-assistant__bubble {
+            animation: pet-assistant-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          }
+
+          .pet-assistant__puppy {
+            animation: pet-assistant-float 4.5s ease-in-out infinite;
+          }
+        }
+
+        @keyframes pet-assistant-in {
+          from {
+            opacity: 0;
+            transform: translate3d(0, 0.4rem, 0);
+          }
+          to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+
+        @keyframes pet-assistant-float {
+          0%,
+          100% {
+            transform: translate3d(0, 0, 0);
+          }
+          50% {
+            transform: translate3d(0, -0.2rem, 0);
           }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .pet-mascot-cta__runner {
-            opacity: 1;
+          .pet-assistant__bubble,
+          .pet-assistant__puppy {
             animation: none;
-            transform: translate3d(calc(100vw - clamp(8rem, 16vw, 12rem)), 0.08rem, 0);
-          }
-
-          .pet-mascot-cta__dog-video {
-            display: none;
-          }
-
-          .pet-mascot-cta__dog-poster {
-            display: block;
-          }
-        }
-
-        @media (max-width: 767px) {
-          .pet-mascot-cta {
-            display: none;
           }
         }
       `}</style>

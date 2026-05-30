@@ -1,7 +1,6 @@
 "use client";
 
 import { HeroStoryCarousel } from "@/components/home/HeroStoryCarousel";
-import { PuppyWelcome } from "@/components/home/PuppyWelcome";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { CONTENT_CONTAINER, HEADING_HERO } from "@/lib/layout";
@@ -49,7 +48,6 @@ export function HeroSection() {
       />
 
       <div className={`${CONTENT_CONTAINER} relative py-5 sm:py-10 lg:py-12`}>
-        <PuppyWelcome />
         <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12">
           <div className="min-w-0 text-center lg:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-teal sm:text-sm sm:tracking-[0.2em]">

@@ -108,13 +108,10 @@ export const en = {
       safeChat: "Safe requests & chat",
     },
     puppyWelcome: {
-      ariaLabel: "Friendly puppy welcome assistant",
-      message: "Hi! Want to meet me? 🐾",
+      ariaLabel: "Friendly puppy assistant",
+      message: "Hi! Want to join us? 🐾",
       signUp: "Sign up",
-      logIn: "Log in",
-      hint: "Join up top",
-      replay: "Replay",
-      replayLabel: "Replay puppy welcome",
+      dismiss: "Dismiss",
     },
     storyCarousel: {
       ariaLabel: "Featured community stories",
