@@ -24,6 +24,7 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import type { Dictionary } from "@/i18n/translations";
 import { availabilityUxForProfile } from "@/lib/availability-ux";
+import { DashboardAvailabilityMiniCalendar } from "@/components/dashboard/DashboardAvailabilityMiniCalendar";
 import { AvailabilityDateChips } from "@/components/ui/AvailabilityDateChips";
 import { hasCarePreferences, profileCalendarSelectedDates } from "@/lib/profile-details";
 import {
@@ -228,20 +229,14 @@ export function DashboardPageContent() {
     </DashboardInfoCard>
   ) : (
     <DashboardInfoCard title={locationPetTitle} editHref="/profile/edit">
-      <div className="space-y-2 text-sm">
+      <div className="space-y-3 text-sm">
         <p className="text-foreground">{profile.location?.trim() || "Not set"}</p>
-        {availabilityUx.showMyAvailability ? (
-          <AvailabilityDateChips
-            dates={profileCalDates}
-            locale={locale}
+        {availabilityUx.showMyAvailability && user ? (
+          <DashboardAvailabilityMiniCalendar
+            availabilityDates={profileCalDates}
+            petFriendId={user.id}
             emptyLabel="Not set"
-            tone="dashboard"
           />
-        ) : null}
-        {needsMyAvailability ? (
-          <Button href="/profile/edit" variant="outline" size="sm">
-            Add availability
-          </Button>
         ) : null}
       </div>
     </DashboardInfoCard>

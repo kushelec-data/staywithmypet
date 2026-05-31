@@ -340,6 +340,7 @@ export const en = {
     addPet: "Add pet",
     editPetAvailability: "Edit pet availability",
     editMyAvailability: "Edit my availability",
+    editAvailability: "Edit availability",
     noAvailabilityDates: "No availability dates set yet — bookings still appear when confirmed.",
     legendTitle: "Legend",
     legendIntro: "Dates show your availability and confirmed bookings.",

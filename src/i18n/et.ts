@@ -341,6 +341,7 @@ export const et = {
     addPet: "Lisa lemmikloom",
     editPetAvailability: "Muuda lemmiku saadavust",
     editMyAvailability: "Muuda oma saadavust",
+    editAvailability: "Muuda saadavust",
     noAvailabilityDates:
       "Saadavuse kuupäevi pole veel määratud — kinnitatud broneeringud kuvatakse siiski.",
     legendTitle: "Legend",

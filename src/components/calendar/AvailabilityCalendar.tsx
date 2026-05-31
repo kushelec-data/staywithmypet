@@ -17,6 +17,7 @@ export type AvailabilityCalendarProps = {
   onMonthCursorChange?: (cursor: MonthCursor) => void;
   maxWidthClass?: string;
   className?: string;
+  compact?: boolean;
 };
 
 export function AvailabilityCalendar({
@@ -33,6 +34,7 @@ export function AvailabilityCalendar({
   onMonthCursorChange,
   maxWidthClass,
   className,
+  compact,
 }: AvailabilityCalendarProps) {
   return (
     <BookingCalendar
@@ -51,6 +53,7 @@ export function AvailabilityCalendar({
       onMonthCursorChange={onMonthCursorChange}
       maxWidthClass={maxWidthClass}
       className={className}
+      compact={compact}
     />
   );
 }
