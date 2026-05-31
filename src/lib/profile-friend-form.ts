@@ -148,7 +148,7 @@ function buildPetCarePreferences(input: PetFriendProfileFormInput): PetCarePrefe
     pet_types_willing_to_care_for: normalizePetTypeList(input.petTypesWilling),
     pet_types_willing_other: input.petTypesWillingOther.trim() || null,
     preferred_pet_sizes: input.preferredPetSizes,
-    experience_level: input.experienceLevel.trim() || null,
+    experience_level: normalizeExperienceLevelValue(input.experienceLevel) ?? null,
     pet_types_previously_borrowed: normalizePetTypeList(input.petTypesPreviouslyBorrowed),
     pet_types_previously_borrowed_other: input.petTypesPreviouslyBorrowedOther.trim() || null,
     willing_special_medical_needs: input.willingSpecialMedicalNeeds,

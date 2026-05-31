@@ -54,21 +54,6 @@ export const petFriendSearchExperienceOptions = [
     label: "Experienced with pets",
     aliases: ["Experienced sitter", "Very experienced", "Experienced"],
   },
-  {
-    value: "seniors",
-    label: "Comfortable with senior pets",
-    aliases: ["senior pets", "seniors"],
-  },
-  {
-    value: "puppies_kittens",
-    label: "Comfortable with puppies/kittens",
-    aliases: ["puppies", "kittens", "puppies/kittens"],
-  },
-  {
-    value: "energetic",
-    label: "Confident with energetic pets",
-    aliases: ["energetic", "high energy pets"],
-  },
 ] as const;
 
 export const petFriendSearchHomeOptions = [

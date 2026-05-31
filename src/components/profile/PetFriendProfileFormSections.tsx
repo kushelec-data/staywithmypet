@@ -123,7 +123,7 @@ export function PetFriendProfileFormSections({
               icon:
                 o.value === "first_time" ? (
                   <Heart className="h-3.5 w-3.5" />
-                ) : o.value === "energetic" ? (
+                ) : o.value === "experienced" ? (
                   <Sparkles className="h-3.5 w-3.5" />
                 ) : (
                   <Dog className="h-3.5 w-3.5" />

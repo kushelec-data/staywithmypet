@@ -10,10 +10,10 @@ export const experienceLevelOptions = [
   { value: "first_time", label: "First-time Pet Friend" },
   { value: "some_experience", label: "Some pet care experience" },
   { value: "experienced", label: "Experienced with pets" },
-  { value: "seniors", label: "Comfortable with senior pets" },
-  { value: "puppies_kittens", label: "Comfortable with puppies/kittens" },
-  { value: "energetic", label: "Confident with energetic pets" },
 ] as const satisfies readonly LabeledOption[];
+
+/** Retired `experience_level` values — kept for DB reads; never shown or offered in UI. */
+const DEPRECATED_EXPERIENCE_LEVELS = new Set(["seniors", "puppies_kittens", "energetic"]);
 
 /** Stored in `profiles.details.pet_care_preferences.preferred_care_location`. */
 export const preferredCareLocationOptions = [
@@ -38,9 +38,6 @@ const EXPERIENCE_LEGACY_TO_VALUE: Record<string, string> = {
   "Experienced with pets": "experienced",
   Experienced: "experienced",
   "Very experienced": "experienced",
-  "Comfortable with senior pets": "seniors",
-  "Comfortable with puppies/kittens": "puppies_kittens",
-  "Confident with energetic pets": "energetic",
 };
 
 const CARE_LOCATION_BY_VALUE = new Map<string, string>(
@@ -67,18 +64,23 @@ export function normalizeExperienceLevelValue(
 ): string | null {
   if (!raw?.trim()) return null;
   const t = raw.trim();
+  if (DEPRECATED_EXPERIENCE_LEVELS.has(t)) return null;
   if (EXPERIENCE_BY_VALUE.has(t)) return t;
-  if (EXPERIENCE_LEGACY_TO_VALUE[t]) return EXPERIENCE_LEGACY_TO_VALUE[t];
+  const legacy = EXPERIENCE_LEGACY_TO_VALUE[t];
+  if (legacy) {
+    if (DEPRECATED_EXPERIENCE_LEVELS.has(legacy)) return null;
+    if (EXPERIENCE_BY_VALUE.has(legacy)) return legacy;
+  }
   const byNorm = experienceLevelOptions.find((o) => normKey(o.label) === normKey(t));
   if (byNorm) return byNorm.value;
-  return t;
+  return null;
 }
 
 export function formatExperienceLevelLabel(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null;
   const value = normalizeExperienceLevelValue(raw);
-  if (value && EXPERIENCE_BY_VALUE.has(value)) return EXPERIENCE_BY_VALUE.get(value)!;
-  return raw.trim();
+  if (!value || !EXPERIENCE_BY_VALUE.has(value)) return null;
+  return EXPERIENCE_BY_VALUE.get(value)!;
 }
 
 export function normalizePreferredCareLocationValue(
