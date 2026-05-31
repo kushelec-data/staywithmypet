@@ -4,9 +4,9 @@ import type { ProfileRow } from "@/lib/profile-utils";
 
 export type RoleModeSearchPage = "pets" | "care";
 
-/** Primary search destination after switching to or browsing in a mode. */
-export function searchHrefForActiveMode(mode: ProfileActiveMode): string {
-  return mode === "pet_friend" ? "/find-pets" : "/find-care";
+/** Landing page after switching active_mode (sidebar or role guard). */
+export function searchHrefForActiveMode(_mode: ProfileActiveMode): string {
+  return "/dashboard";
 }
 
 export function requiredActiveModeForSearchPage(page: RoleModeSearchPage): ProfileActiveMode {

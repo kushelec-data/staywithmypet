@@ -251,6 +251,8 @@ export const et = {
     requestWith: "Päring: {name}",
     browsePets: "Leia lemmikuid",
     browseFriends: "Leia lemmikloomasõber",
+    viewPets: "Vaata lemmikuid",
+    viewPet: "Vaata lemmikut",
     emptyTitle: "Päringuid pole veel",
     emptyDescription:
       "Sirvi kuulutusi ja saada hoolduspäring — või oota, kuni keegi sinuga ühendust võtab.",

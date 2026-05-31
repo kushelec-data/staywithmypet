@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import { headerNavForActiveMode, sidebarSectionsForActiveMode } from "@/lib/account-nav";
 import { resolveActiveMode, sidebarModeActionForProfile } from "@/lib/profile-mode";
-import { searchHrefForActiveMode } from "@/lib/role-mode-search";
+import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import { performActiveModeSwitch } from "@/lib/switch-active-mode";
 import { createClient } from "@/lib/supabase";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
@@ -14,7 +14,6 @@ import { DashboardAccountNavStrip } from "@/components/dashboard/DashboardAccoun
 import { DashboardHeaderNavLink } from "@/components/dashboard/DashboardHeaderNavLink";
 import { DashboardBreadcrumb } from "@/components/dashboard/DashboardBreadcrumb";
 import { Button } from "@/components/ui/Button";
-import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import { isProfileOwnedByUser } from "@/lib/profile-session-guard";
 import {
   dashboardBreadcrumbFromPath,
@@ -162,7 +161,7 @@ export function DashboardShell({
       if (isMembershipRoute) {
         router.refresh();
       } else {
-        router.push(searchHrefForActiveMode(targetMode));
+        router.push(DASHBOARD_PATH);
         router.refresh();
       }
     } catch (err) {

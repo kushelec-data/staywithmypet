@@ -3,11 +3,10 @@
 import { RoleModeGuardModal } from "@/components/role-mode/RoleModeGuardModal";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
-import { resolveActiveMode } from "@/lib/profile-mode";
+import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import {
   isSearchBlockedForProfile,
   requiredActiveModeForSearchPage,
-  searchHrefForActiveMode,
   type RoleModeSearchPage,
 } from "@/lib/role-mode-search";
 import { performActiveModeSwitch } from "@/lib/switch-active-mode";
@@ -48,7 +47,7 @@ export function RoleModeSearchGuard({ page, children }: RoleModeSearchGuardProps
         setProfileRow,
         refreshProfile,
       });
-      router.push(searchHrefForActiveMode(targetMode));
+      router.push(DASHBOARD_PATH);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not switch mode.");
@@ -58,12 +57,7 @@ export function RoleModeSearchGuard({ page, children }: RoleModeSearchGuardProps
   }
 
   function handleCancel() {
-    if (!profile) {
-      router.push("/");
-      return;
-    }
-    const mode = resolveActiveMode(profile.role, profile.active_mode);
-    router.push(searchHrefForActiveMode(mode));
+    router.push(profile ? DASHBOARD_PATH : "/");
   }
 
   return (

@@ -251,6 +251,8 @@ export const en = {
     requestWith: "Request with {name}",
     browsePets: "Find Pets",
     browseFriends: "Find Pet Friends",
+    viewPets: "View pets",
+    viewPet: "View pet",
     emptyTitle: "No requests yet",
     emptyDescription:
       "Browse listings and send a care request—or wait for someone to reach out to you.",

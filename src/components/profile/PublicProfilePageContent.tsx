@@ -133,6 +133,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
           profile={profile}
           reviewsAvg={ratingAvg}
           reviewsCount={ratingCount}
+          ownerPets={showPublicPetsSection(profile) ? pets : []}
         />
 
         {profile.profilePhotos.length > 0 ? (
