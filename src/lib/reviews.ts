@@ -12,23 +12,31 @@ export const PET_FRIEND_REVIEW_TAGS = [
   "Reliable",
   "Friendly",
   "Good communication",
+  "Sent updates",
   "On time",
   "Caring",
+  "Followed instructions",
 ] as const;
 
 export const PET_EXPERIENCE_REVIEW_TAGS = [
   "Calm",
-  "Energetic",
-  "Easy walks",
   "Friendly",
-  "Needs medication",
+  "Easy to care for",
+  "Energetic",
   "Shy",
+  "Needs medication",
+  "Good on walks",
 ] as const;
 
 export type PetFriendReviewTag = (typeof PET_FRIEND_REVIEW_TAGS)[number];
 export type PetExperienceReviewTag = (typeof PET_EXPERIENCE_REVIEW_TAGS)[number];
 
+export const REVIEW_TEXT_MIN = 10;
 export const REVIEW_TEXT_MAX = 500;
+
+export function isPetExperienceReviewType(reviewType: ReviewType): boolean {
+  return reviewType === REVIEW_TYPE_FRIEND_PET;
+}
 
 const REVIEW_SELECT =
   "id, booking_id, request_id, reviewer_id, reviewee_id, pet_id, rating, text, tags, review_type, created_at" as const;
@@ -203,8 +211,11 @@ export async function submitReview(
   userId: string,
   input: SubmitReviewInput,
 ): Promise<void> {
-  const trimmedText = input.text?.trim() || null;
-  if (trimmedText && trimmedText.length > REVIEW_TEXT_MAX) {
+  const trimmedText = input.text?.trim() || "";
+  if (trimmedText.length < REVIEW_TEXT_MIN) {
+    throw new Error("Please write a few words about your experience.");
+  }
+  if (trimmedText.length > REVIEW_TEXT_MAX) {
     throw new Error(`Review text must be at most ${REVIEW_TEXT_MAX} characters.`);
   }
 
@@ -214,7 +225,7 @@ export async function submitReview(
     reviewee_id: input.revieweeId,
     pet_id: input.petId,
     rating: input.rating,
-    text: trimmedText,
+    text: trimmedText || null,
     tags: input.tags,
     review_type: input.reviewType,
   };

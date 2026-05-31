@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/Button";
 import { StarRatingPicker } from "@/components/reviews/StarRatingPicker";
 import { useLanguage } from "@/context/LanguageContext";
 import {
+  isPetExperienceReviewType,
   REVIEW_TEXT_MAX,
-  REVIEW_TYPE_FRIEND_PET,
-  REVIEW_TYPE_PARENT_FRIEND,
+  REVIEW_TEXT_MIN,
   tagsForReviewType,
   type ReviewType,
 } from "@/lib/reviews";
@@ -45,9 +45,12 @@ export function LeaveReviewModal({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const title =
-    reviewType === REVIEW_TYPE_PARENT_FRIEND ? r.modalTitleFriend : r.modalTitlePet;
+  const reviewingPet = isPetExperienceReviewType(reviewType);
+  const title = reviewingPet ? r.modalTitlePet : r.modalTitleFriend;
   const tagOptions = tagsForReviewType(reviewType);
+  const tagsLabel = reviewingPet ? r.petTagsLabel : r.friendTagsLabel;
+  const tagsHint = reviewingPet ? r.petTagsHint : r.friendTagsHint;
+  const textPlaceholder = reviewingPet ? r.textPlaceholderPet : r.textPlaceholderFriend;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -78,6 +81,10 @@ export function LeaveReviewModal({
       return;
     }
     const trimmed = text.trim();
+    if (trimmed.length < REVIEW_TEXT_MIN) {
+      setLocalError(r.textRequired);
+      return;
+    }
     if (trimmed.length > REVIEW_TEXT_MAX) {
       setLocalError(r.textTooLong.replace("{max}", String(REVIEW_TEXT_MAX)));
       return;
@@ -85,7 +92,7 @@ export function LeaveReviewModal({
     setLocalError(null);
     onSubmit({
       rating,
-      text: trimmed || null,
+      text: trimmed,
       tags: selectedTags,
     });
   }
@@ -111,7 +118,8 @@ export function LeaveReviewModal({
           />
 
           <div>
-            <p className="text-sm font-semibold text-foreground">{r.tagsLabel}</p>
+            <p className="text-sm font-semibold text-foreground">{tagsLabel}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">{tagsHint}</p>
             <ul className="mt-2 flex flex-wrap gap-2">
               {tagOptions.map((tag) => {
                 const active = selectedTags.includes(tag);
@@ -143,11 +151,13 @@ export function LeaveReviewModal({
               id="review-text"
               name="text"
               rows={3}
+              minLength={REVIEW_TEXT_MIN}
               maxLength={REVIEW_TEXT_MAX}
+              required
               disabled={submitting}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={r.textPlaceholder}
+              placeholder={textPlaceholder}
               className="mt-2 w-full resize-none rounded-xl border border-black/10 bg-cream/30 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
             />
             <p className="mt-1 text-right text-xs text-muted">
