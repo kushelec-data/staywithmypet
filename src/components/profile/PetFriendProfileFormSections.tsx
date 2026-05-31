@@ -96,7 +96,7 @@ export function PetFriendProfileFormSections({
             }}
           />
           <ProfileChipMultiSelect
-            label="Preferred pet weight"
+            label="Preferred pet size"
             options={PET_WEIGHT_CATEGORY_OPTIONS}
             selected={form.preferredPetSizes}
             onToggle={(v) => toggleInList(form, onChange, "preferredPetSizes", v)}

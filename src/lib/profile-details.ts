@@ -575,4 +575,4 @@ export function carePreferenceTags(details: ProfileDetails): string[] {
   return [...g.petTypes, ...g.careTypes, ...g.petSizes, ...g.experience];
 }
 
-export { careTypeOptions, petTypeOptions, sizeOptions };
+export { careTypeOptions, formatPetTypeLabel, petTypeOptions, sizeOptions };
