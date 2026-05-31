@@ -34,20 +34,18 @@ type SceneVariant =
   | "reviews";
 
 const PET_PARENT_SCENE_VARIANTS: SceneVariant[] = [
-  "add-pet",
   "pet-friends",
   "care-request",
-  "chat",
   "booking",
+  "chat",
   "reviews",
 ];
 
 const PET_FRIEND_SCENE_VARIANTS: SceneVariant[] = [
   "profile",
   "pet-cards",
-  "care-request",
-  "chat",
   "spend-time",
+  "chat",
   "reviews",
 ];
 
@@ -98,6 +96,10 @@ type ExplainerVideoMockProps = {
     muteLabel: string;
     goToScene: string;
   };
+  /** When false, playback pauses on the first scene (orchestrated dual-card sections). */
+  isPlaybackActive?: boolean;
+  /** Fired once when all scenes have played (for alternating cards). */
+  onSequenceComplete?: () => void;
 };
 
 function sceneVariantsFor(variant: ExplainerVariant): SceneVariant[] {
@@ -117,6 +119,7 @@ function SceneBackground({
   emoji,
   isActive,
   prefersReducedMotion,
+  journeyVariant,
 }: {
   src: string;
   fallback: string;
@@ -126,6 +129,7 @@ function SceneBackground({
   emoji: string;
   isActive: boolean;
   prefersReducedMotion: boolean;
+  journeyVariant: ExplainerVariant;
 }) {
   const [imageSrc, setImageSrc] = useState(src);
   const [exhausted, setExhausted] = useState(false);
@@ -160,10 +164,27 @@ function SceneBackground({
         }}
       />
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/45 to-black/20"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/88 via-black/55 to-black/30"
         aria-hidden
       />
-      <div className="pointer-events-none absolute inset-0 bg-black/25" aria-hidden />
+      <div className="pointer-events-none absolute inset-0 bg-black/35" aria-hidden />
+      {journeyVariant === "pet-parent" ? (
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-teal/25 via-transparent to-transparent"
+          aria-hidden
+        />
+      ) : (
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-bl from-brand-pink/20 via-transparent to-amber-500/10"
+          aria-hidden
+        />
+      )}
+      <div
+        className={`pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full blur-2xl ${
+          journeyVariant === "pet-parent" ? "bg-brand-teal/35" : "bg-brand-pink/30"
+        }`}
+        aria-hidden
+      />
     </div>
   );
 }
@@ -173,24 +194,32 @@ function SceneCaption({
   caption,
   isActive,
   animate,
+  journeyVariant,
 }: {
   title: string;
   caption: string;
   isActive: boolean;
   animate: boolean;
+  journeyVariant: ExplainerVariant;
 }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-0 z-20 px-3 pt-3 sm:px-4 sm:pt-4 ${
+      className={`absolute inset-x-3 bottom-[4.25rem] z-20 sm:inset-x-4 sm:bottom-[4.75rem] ${
         animate && isActive ? "motion-safe:hero-story-text-in" : ""
       }`}
       key={isActive ? title : undefined}
     >
-      <div className="max-w-[95%] rounded-2xl border border-white/10 bg-black/35 px-3 py-2.5 shadow-lg backdrop-blur-sm sm:max-w-[90%] sm:px-4 sm:py-3">
-        <p className="line-clamp-2 font-heading text-base font-bold leading-tight text-white drop-shadow-lg sm:text-lg">
+      <div
+        className={`rounded-2xl border px-3 py-2.5 shadow-xl backdrop-blur-md sm:px-4 sm:py-3 ${
+          journeyVariant === "pet-parent"
+            ? "border-brand-teal/30 bg-black/72"
+            : "border-brand-pink/25 bg-black/72"
+        }`}
+      >
+        <p className="line-clamp-2 font-heading text-base font-bold leading-tight text-white sm:text-lg">
           {title}
         </p>
-        <p className="mt-0.5 line-clamp-2 text-xs font-semibold leading-snug text-white/95 drop-shadow-lg sm:text-sm">
+        <p className="mt-1 line-clamp-2 text-xs font-medium leading-snug text-white/90 sm:text-sm">
           {caption}
         </p>
       </div>
@@ -428,6 +457,7 @@ function ChatOverlay({
     <div className="absolute inset-x-3 bottom-12 z-20 flex flex-col gap-2 sm:inset-x-5 sm:bottom-14">
       {messages.map((msg, index) => {
         const isMe = msg.from === "me";
+        const isPhoto = msg.text.startsWith("[Photo]");
         return (
           <div
             key={`${msg.text}-${index}`}
@@ -436,18 +466,35 @@ function ChatOverlay({
             }`}
             style={animate && isActive ? { animationDelay: `${index * 220}ms` } : undefined}
           >
-            <div
-              className={`max-w-[88%] rounded-2xl px-3 py-2 text-xs font-medium leading-snug shadow-md sm:text-sm ${
-                isMe
-                  ? "rounded-br-md bg-brand-teal text-white"
-                  : "rounded-bl-md border border-white/40 bg-white/95 text-foreground"
-              }`}
-            >
-              {!isMe ? (
-                <MessageCircle className="mb-1 h-3 w-3 text-brand-teal/70" strokeWidth={2} aria-hidden />
-              ) : null}
-              {msg.text}
-            </div>
+            {isPhoto ? (
+              <div className="max-w-[72%] overflow-hidden rounded-2xl rounded-br-md border-2 border-white/50 bg-white/95 p-1 shadow-lg">
+                <div className="relative aspect-[4/3] w-[7.5rem] overflow-hidden rounded-xl bg-mint/30 sm:w-[8.5rem]">
+                  <AppImage
+                    src={IMAGES.pets.luna}
+                    alt=""
+                    seed={`explainer-photo-${index}`}
+                    fallbackCaption="Walk update"
+                    fallbackEmoji="📷"
+                    sizes="120px"
+                    className="object-cover"
+                  />
+                </div>
+                <p className="px-2 py-1 text-[10px] font-semibold text-muted">Photo update · walk</p>
+              </div>
+            ) : (
+              <div
+                className={`max-w-[88%] rounded-2xl px-3 py-2 text-xs font-medium leading-snug shadow-md sm:text-sm ${
+                  isMe
+                    ? "rounded-br-md bg-brand-teal text-white"
+                    : "rounded-bl-md border border-white/40 bg-white/95 text-foreground"
+                }`}
+              >
+                {!isMe ? (
+                  <MessageCircle className="mb-1 h-3 w-3 text-brand-teal/70" strokeWidth={2} aria-hidden />
+                ) : null}
+                {msg.text}
+              </div>
+            )}
           </div>
         );
       })}
@@ -548,6 +595,9 @@ function SpendTimeOverlay({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-foreground">{label}</p>
           <p className="mt-0.5 text-xs font-medium text-muted">Park walk · 45 min · Photo update sent</p>
+          <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-brand-pink/10 px-2 py-0.5 text-[10px] font-semibold text-brand-pink">
+            <span aria-hidden>📷</span> Update shared with Pet Parent
+          </p>
         </div>
         <MapPin className="h-5 w-5 shrink-0 text-brand-teal" strokeWidth={2} aria-hidden />
       </div>
@@ -664,10 +714,16 @@ function SceneOverlays({
   }
 }
 
-export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMockProps) {
+export function ExplainerVideoMock({
+  variant,
+  copy,
+  controls,
+  isPlaybackActive = true,
+  onSequenceComplete,
+}: ExplainerVideoMockProps) {
   const sceneCount = copy.scenes.length;
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(isPlaybackActive);
   const [sceneProgress, setSceneProgress] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [ended, setEnded] = useState(false);
@@ -702,6 +758,22 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  useEffect(() => {
+    if (!isPlaybackActive) {
+      setIsPlaying(false);
+      setActiveIndex(0);
+      setSceneProgress(0);
+      elapsedRef.current = 0;
+      setEnded(false);
+      return;
+    }
+    setActiveIndex(0);
+    setSceneProgress(0);
+    elapsedRef.current = 0;
+    setEnded(false);
+    setIsPlaying(true);
+  }, [isPlaybackActive]);
+
   const goToScene = useCallback(
     (index: number) => {
       setActiveIndex(Math.max(0, Math.min(sceneCount - 1, index)));
@@ -718,7 +790,7 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
   }, [goToScene]);
 
   useEffect(() => {
-    if (!isPlaying || prefersReducedMotion || ended) return;
+    if (!isPlaybackActive || !isPlaying || prefersReducedMotion || ended) return;
 
     const interval = setInterval(() => {
       elapsedRef.current += TICK_MS;
@@ -732,6 +804,7 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
           if (prev >= sceneCount - 1) {
             setEnded(true);
             setIsPlaying(false);
+            onSequenceComplete?.();
             return prev;
           }
           return prev + 1;
@@ -740,12 +813,26 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
     }, TICK_MS);
 
     return () => clearInterval(interval);
-  }, [isPlaying, prefersReducedMotion, ended, activeIndex, sceneCount]);
+  }, [
+    isPlaybackActive,
+    isPlaying,
+    prefersReducedMotion,
+    ended,
+    activeIndex,
+    sceneCount,
+    onSequenceComplete,
+  ]);
 
   useEffect(() => {
     elapsedRef.current = 0;
     setSceneProgress(0);
   }, [activeIndex]);
+
+  useEffect(() => {
+    if (!isPlaybackActive || !prefersReducedMotion || !onSequenceComplete) return;
+    const timeout = window.setTimeout(() => onSequenceComplete(), SCENE_DURATION_MS);
+    return () => window.clearTimeout(timeout);
+  }, [isPlaybackActive, prefersReducedMotion, onSequenceComplete]);
 
   const overallProgress = ((activeIndex + (ended ? 1 : sceneProgress)) / sceneCount) * 100;
 
@@ -754,7 +841,11 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
       <div
         role="region"
         aria-label={copy.ariaLabel}
-        className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-br from-cream/95 via-mint/30 to-cream/80 shadow-lg shadow-brand-teal/10 ring-1 ring-black/5 dark:from-cream/20 dark:via-mint/15 dark:to-surface/80"
+        className={`relative w-full overflow-hidden rounded-3xl shadow-lg ring-1 ring-black/5 ${
+          variant === "pet-parent"
+            ? "bg-gradient-to-br from-mint/40 via-cream/90 to-brand-teal/10 shadow-brand-teal/15"
+            : "bg-gradient-to-br from-cream/80 via-surface to-brand-pink/10 shadow-brand-pink/10"
+        } ${!isPlaybackActive ? "opacity-90" : ""}`}
       >
         <div className="relative h-[min(360px,62vw)] w-full sm:h-[min(400px,48vw)]" aria-live="polite">
           {scenes.map((scene, index) => {
@@ -776,6 +867,7 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
                   emoji={scene.emoji}
                   isActive={isActive}
                   prefersReducedMotion={prefersReducedMotion}
+                  journeyVariant={variant}
                 />
 
                 <SceneCaption
@@ -783,6 +875,7 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
                   caption={scene.caption}
                   isActive={isActive}
                   animate={animateOverlays}
+                  journeyVariant={variant}
                 />
 
                 <SceneOverlays
@@ -872,10 +965,13 @@ export function ExplainerVideoMock({ variant, copy, controls }: ExplainerVideoMo
   );
 }
 
+type ActiveJourneyCard = "pet-parent" | "pet-friend";
+
 export function HowItWorksExplainerSection({ tightTop = false }: { tightTop?: boolean }) {
   const { t } = useLanguage();
   const section = t.howItWorksPage.explainerSection;
   const explainer = t.howItWorksPage.explainer;
+  const [activeCard, setActiveCard] = useState<ActiveJourneyCard>("pet-parent");
 
   const cards = [
     {
@@ -915,35 +1011,60 @@ export function HowItWorksExplainerSection({ tightTop = false }: { tightTop?: bo
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-5 sm:gap-6 md:mt-8 lg:grid-cols-2 lg:gap-8">
-          {cards.map((card) => (
+          {cards.map((card) => {
+            const isActiveCard = activeCard === card.key;
+            return (
             <article
               key={card.key}
               id={card.id}
-              className={`scroll-mt-24 flex min-w-0 flex-col rounded-3xl border p-4 shadow-lg sm:p-6 ${
+              className={`scroll-mt-24 flex min-w-0 flex-col rounded-3xl border p-4 shadow-lg transition-[opacity,box-shadow] duration-500 sm:p-6 ${
                 card.accent === "parent"
-                  ? "border-brand-teal/20 bg-gradient-to-br from-mint/30 via-cream/80 to-surface shadow-brand-teal/15 ring-1 ring-brand-teal/10 dark:border-border"
-                  : "border-brand-pink/15 bg-gradient-to-br from-cream/60 via-surface to-mint/20 shadow-black/10 ring-1 ring-black/5 dark:border-border"
+                  ? "border-brand-teal/25 bg-gradient-to-br from-mint/35 via-cream/85 to-surface"
+                  : "border-brand-pink/20 bg-gradient-to-br from-amber-50/80 via-surface to-brand-pink/5"
+              } ${
+                isActiveCard
+                  ? card.accent === "parent"
+                    ? "shadow-brand-teal/20 ring-2 ring-brand-teal/35"
+                    : "shadow-brand-pink/15 ring-2 ring-brand-pink/30"
+                  : "opacity-[0.82] ring-1 ring-black/5"
               }`}
             >
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                      card.accent === "parent"
+                        ? "bg-brand-teal/15 text-brand-teal"
+                        : "bg-brand-pink/15 text-brand-pink"
+                    }`}
+                    aria-hidden
+                  >
+                    {card.accent === "parent" ? (
+                      <PawPrint className="h-5 w-5" strokeWidth={2} />
+                    ) : (
+                      <User className="h-5 w-5" strokeWidth={2} />
+                    )}
+                  </span>
+                  <h3 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">{card.title}</h3>
+                </div>
                 <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-                    card.accent === "parent" ? "bg-brand-teal/15 text-brand-teal" : "bg-brand-pink/15 text-brand-pink"
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
+                    card.accent === "parent"
+                      ? "bg-brand-teal/15 text-brand-teal"
+                      : "bg-brand-pink/15 text-brand-pink"
                   }`}
-                  aria-hidden
                 >
-                  {card.accent === "parent" ? (
-                    <PawPrint className="h-5 w-5" strokeWidth={2} />
-                  ) : (
-                    <User className="h-5 w-5" strokeWidth={2} />
-                  )}
+                  {card.accent === "parent" ? explainer.parentJourneyBadge : explainer.friendJourneyBadge}
                 </span>
-                <h3 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">{card.title}</h3>
               </div>
 
               <ExplainerVideoMock
                 variant={card.variant}
                 copy={card.copy}
+                isPlaybackActive={isActiveCard}
+                onSequenceComplete={() =>
+                  setActiveCard(card.key === "pet-parent" ? "pet-friend" : "pet-parent")
+                }
                 controls={{
                   play: explainer.play,
                   pause: explainer.pause,
@@ -966,7 +1087,8 @@ export function HowItWorksExplainerSection({ tightTop = false }: { tightTop?: bo
                 {card.ctaLabel}
               </Link>
             </article>
-          ))}
+          );
+          })}
         </div>
       </div>
     </section>

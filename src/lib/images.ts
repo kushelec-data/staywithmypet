@@ -82,20 +82,20 @@ export const IMAGES = {
     tipsFirstStay: "/images/how-it-works/tips-first-stay.jpg",
   },
   video: {
+    /** Pet Parent journey — booking, requests, calendar (distinct from friend). */
     petParent: [
       "/images/video/pet-cards.jpg",
-      "/images/pets/luna.jpg",
       "/images/video/care-request.jpg",
-      "/images/video/chat.jpg",
       "/images/video/booking-calendar.jpg",
+      "/images/video/chat.jpg",
       "/images/video/reviews.jpg",
     ] as const,
+    /** Pet Friend journey — walks, pets nearby, updates (distinct posters). */
     petFriend: [
-      "/images/pets/luna.jpg",
+      "/images/how-it-works/meet-enjoy.jpg",
       "/images/video/pet-cards.jpg",
-      "/images/video/care-request.jpg",
+      "/images/pets/luna.jpg",
       "/images/video/chat.jpg",
-      "/images/video/new-city-dog.jpg",
       "/images/video/reviews.jpg",
     ] as const,
   },
