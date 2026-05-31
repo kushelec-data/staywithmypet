@@ -525,8 +525,9 @@ export function carePreferenceDisplayGroups(details: ProfileDetails): {
   const locationLabel = formatPreferredCareLocationLabel(care.preferred_care_location);
   if (locationLabel) experience.push(locationLabel);
   for (const t of care.pet_types_previously_borrowed ?? []) {
+    if (typeof t !== "string" || !t.trim()) continue;
     const label = formatPetTypeLabel(t, care.pet_types_previously_borrowed_other);
-    if (label) experience.push(`Previously cared for ${label.toLowerCase()}`);
+    if (label.trim()) experience.push(`Previously cared for ${label.toLowerCase()}`);
   }
   return {
     petTypes: formatPetTypesWillingComfort(

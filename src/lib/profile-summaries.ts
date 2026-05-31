@@ -1,6 +1,6 @@
+import { formatPetTypeLabel } from "@/lib/pet-type-options";
 import {
   formatLivingTypeLabel,
-  formatPetTypeLabel,
   profileCalendarSelectedDates,
   resolvedAvailability,
   resolvedLivingSituation,
@@ -116,9 +116,10 @@ export function buildPetCarePreferencesSummary(details: ProfileDetails): Profile
     lines.push(experienceLabel);
   }
 
-  const borrowed = (care.pet_types_previously_borrowed ?? []).map((t) =>
-    formatPetTypeLabel(t, care.pet_types_previously_borrowed_other),
-  );
+  const borrowed = (care.pet_types_previously_borrowed ?? [])
+    .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+    .map((t) => formatPetTypeLabel(t, care.pet_types_previously_borrowed_other))
+    .filter((label) => label.trim().length > 0);
   if (borrowed.length) {
     lines.push(`Previously cared for ${joinNatural(borrowed, 4)}`);
   }

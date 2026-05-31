@@ -26,11 +26,13 @@ const LEGACY_VALUE_ALIASES: Record<string, string> = {
 const LEGACY_DISPLAY_LABELS: Record<string, string> = {
   "small-mammal": "Rodent",
   small_mammal: "Rodent",
-  "small mammal": "Small mammal",
+  "small mammal": "Rodent",
 };
 
-export function normalizePetTypeValue(value: string): string {
+export function normalizePetTypeValue(value: string | null | undefined): string {
+  if (value == null || typeof value !== "string") return "";
   const key = value.trim().toLowerCase();
+  if (!key) return "";
   return LEGACY_VALUE_ALIASES[key] ?? key;
 }
 
@@ -45,13 +47,18 @@ export function normalizePetTypeList(values: string[]): string[] {
   return out;
 }
 
-export function formatPetTypeLabel(value: string, otherCustom?: string | null): string {
-  if (isOtherOptionValue(value)) {
+export function formatPetTypeLabel(value: string | null | undefined, otherCustom?: string | null): string {
+  if (value == null || typeof value !== "string") {
     return otherCustom?.trim() || "Other";
   }
-  const key = value.trim().toLowerCase();
-  const normalized = normalizePetTypeValue(value);
+  const trimmed = value.trim();
+  if (!trimmed) return otherCustom?.trim() || "Other";
+  if (isOtherOptionValue(trimmed)) {
+    return otherCustom?.trim() || "Other";
+  }
+  const key = trimmed.toLowerCase();
+  const normalized = normalizePetTypeValue(trimmed);
   const fromOptions = PET_TYPE_OPTIONS.find((o) => o.value === normalized)?.label;
   if (fromOptions) return fromOptions;
-  return LEGACY_DISPLAY_LABELS[key] ?? value;
+  return LEGACY_DISPLAY_LABELS[key] ?? trimmed;
 }

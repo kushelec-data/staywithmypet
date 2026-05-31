@@ -3,12 +3,8 @@ import {
   formatPetTypesWillingComfort,
 } from "@/lib/pet-care-labels";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
-import { normalizePetTypeValue } from "@/lib/pet-type-options";
-import {
-  formatPetTypeLabel,
-  resolvedPetCarePreferences,
-  type ProfileDetails,
-} from "@/lib/profile-details";
+import { formatPetTypeLabel, normalizePetTypeValue } from "@/lib/pet-type-options";
+import { resolvedPetCarePreferences, type ProfileDetails } from "@/lib/profile-details";
 
 const SMALL_PET_TYPES = new Set(["rabbit", "bird", "rodent", "fish", "reptile", "other"]);
 
@@ -36,7 +32,8 @@ export function buildPetFriendPreferenceChips(details: ProfileDetails | null | u
   if (care.willing_puppies_kittens === true) chips.push("Puppy friendly");
 
   if (types.has("rabbit") && !chips.includes("Small pets OK")) {
-    chips.push(`Good with ${formatPetTypeLabel("rabbit").toLowerCase()}`);
+    const rabbitLabel = formatPetTypeLabel("rabbit");
+    if (rabbitLabel) chips.push(`Good with ${rabbitLabel.toLowerCase()}`);
   }
 
   const experienceLabel = formatExperienceLevelLabel(care.experience_level);
