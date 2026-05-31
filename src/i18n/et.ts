@@ -452,10 +452,7 @@ export const et = {
       statusIncomplete: "Täitmata",
       previous: "Eelmine",
       nextStep: "Järgmine",
-      goToDashboard: "Mine töölauale",
-      goToDashboardNext: "Mine töölauale →",
-      finalStepSavedRedirect:
-        "Profiil on edukalt salvestatud. Sind suunatakse nüüd töölauale.",
+      finalStepSavedRedirect: "Profiil on edukalt salvestatud. Suunan töölauale...",
       tabsLabel: "Profiili sammud",
       editingModeEnabled: "Muutmisrežiim on sisse lülitatud",
       editingModeHint: "Saad nüüd neid välju muuta.",

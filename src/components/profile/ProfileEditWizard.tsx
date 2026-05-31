@@ -33,8 +33,6 @@ type ProfileEditWizardLabels = {
   statusIncomplete: string;
   previous: string;
   nextStep: string;
-  goToDashboard: string;
-  goToDashboardNext: string;
   edit: string;
   saveChanges: string;
   saving: string;
@@ -47,7 +45,6 @@ type ProfileEditWizardProps = {
   steps: ProfileEditWizardStep[];
   activeIndex: number;
   onActiveIndexChange: (index: number) => void;
-  onGoToDashboard: () => void;
   labels: ProfileEditWizardLabels;
 };
 
@@ -68,7 +65,6 @@ export function ProfileEditWizard({
   steps,
   activeIndex,
   onActiveIndexChange,
-  onGoToDashboard,
   labels,
 }: ProfileEditWizardProps) {
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -223,20 +219,8 @@ export function ProfileEditWizard({
           </Button>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2">
-          {isLast ? (
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              className={PROFILE_EDIT_PRIMARY_BTN_CLASS}
-              disabled={activeStep.saving}
-              onClick={onGoToDashboard}
-            >
-              {labels.goToDashboardNext}
-              <ArrowRight className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            </Button>
-          ) : (
+        <div className="flex justify-end">
+          {!isLast ? (
             <Button
               type="button"
               variant="primary"
@@ -247,23 +231,11 @@ export function ProfileEditWizard({
               {labels.nextStep}
               <ArrowRight className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             </Button>
+          ) : (
+            <span />
           )}
         </div>
       </div>
-
-      {isLast && activeStep.success ? (
-        <div className="flex flex-wrap justify-center gap-2 pt-1">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className={PROFILE_EDIT_SECONDARY_BTN_CLASS}
-            onClick={onGoToDashboard}
-          >
-            {labels.goToDashboard}
-          </Button>
-        </div>
-      ) : null}
     </div>
   );
 }

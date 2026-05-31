@@ -330,14 +330,6 @@ export function ProfileEditForm() {
     }
   }
 
-  const goToDashboard = useCallback(() => {
-    if (dashboardRedirectRef.current) {
-      clearTimeout(dashboardRedirectRef.current);
-      dashboardRedirectRef.current = null;
-    }
-    router.push("/dashboard");
-  }, [router]);
-
   useEffect(() => {
     return () => {
       if (dashboardRedirectRef.current) clearTimeout(dashboardRedirectRef.current);
@@ -379,7 +371,7 @@ export function ProfileEditForm() {
       dashboardRedirectRef.current = setTimeout(() => {
         dashboardRedirectRef.current = null;
         router.push("/dashboard");
-      }, 1750);
+      }, 2000);
     }
   }
 
@@ -804,15 +796,12 @@ export function ProfileEditForm() {
       steps={wizardSteps}
       activeIndex={activeStepIndex}
       onActiveIndexChange={setActiveStepIndex}
-      onGoToDashboard={goToDashboard}
       labels={{
         stepNumber: pe.wizard.stepNumber,
         statusCompleted: pe.wizard.statusCompleted,
         statusIncomplete: pe.wizard.statusIncomplete,
         previous: pe.wizard.previous,
         nextStep: pe.wizard.nextStep,
-        goToDashboard: pe.wizard.goToDashboard,
-        goToDashboardNext: pe.wizard.goToDashboardNext,
         edit: pe.edit,
         saveChanges: pe.saveChanges,
         saving: pe.saving,
