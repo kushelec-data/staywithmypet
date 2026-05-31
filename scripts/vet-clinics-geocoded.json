@@ -1,0 +1,272 @@
+﻿[
+  {
+    "name": "Evidensia Fahle Animal Clinic",
+    "city": "Tallinn",
+    "address": "Tartu mnt 82",
+    "query": "Tartu mnt 82, Tallinn, Estonia",
+    "lat": 59.425512,
+    "lng": 24.780319,
+    "display_name": "82, Tartu mnt, Juhkentali, Kesklinna linnaosa, Tallinn, Harju maakond, 10112, Eesti"
+  },
+  {
+    "name": "Evidensia Timmu Animal Clinic",
+    "city": "Tallinn",
+    "address": "Mustamäe tee 44/1",
+    "query": "Mustamäe tee 44/1, Tallinn, Estonia",
+    "lat": 59.417422,
+    "lng": 24.692882,
+    "display_name": "44/1, Mustamäe tee, Lilleküla, Kristiine linnaosa, Tallinn, Harju maakond, 10621, Eesti"
+  },
+  {
+    "name": "Evidensia Billy Animal Clinic",
+    "city": "Tallinn",
+    "address": "Ehitajate tee 103a",
+    "query": "Ehitajate tee 103a, Tallinn, Estonia",
+    "lat": 59.41235,
+    "lng": 24.660664,
+    "display_name": "Billy loomakliinik, 103a, Ehitajate tee, Väike-Õismäe, Haabersti linnaosa, Tallinn, Harju maakond, 12615, Eesti"
+  },
+  {
+    "name": "Evidensia Västriku Animal Clinic",
+    "city": "Tallinn",
+    "address": "Västriku 2a",
+    "query": "Västriku 2a, Tallinn, Estonia",
+    "lat": 59.415256,
+    "lng": 24.728642,
+    "display_name": "2A, Västriku, Tondi, Kristiine linnaosa, Tallinn, Harju maakond, 11312, Eesti"
+  },
+  {
+    "name": "Evidensia Emergency Clinic",
+    "city": "Tallinn",
+    "address": "Mustamäe tee 44/2",
+    "query": "Mustamäe tee 44/2, Tallinn, Estonia",
+    "lat": 59.417296,
+    "lng": 24.692088,
+    "display_name": "44/2, Mustamäe tee, Lilleküla, Kristiine linnaosa, Tallinn, Harju maakond, 10621, Eesti"
+  },
+  {
+    "name": "PetCity Rannamõisa 24/7 Clinic",
+    "city": "Tallinn",
+    "address": "Rannamõisa tee 8",
+    "query": "Rannamõisa tee 8, Tallinn, Estonia",
+    "lat": 59.428728,
+    "lng": 24.625339,
+    "display_name": "8, Rannamõisa tee, Pikaliiva, Haabersti linnaosa, Tallinn, Harju maakond, 13516, Eesti"
+  },
+  {
+    "name": "PetCity Ülemiste Clinic",
+    "city": "Tallinn",
+    "address": "Suur-Sõjamäe 4",
+    "query": "Suur-Sõjamäe 4, Tallinn, Estonia",
+    "lat": 59.421566,
+    "lng": 24.795831,
+    "display_name": "Rimi, 4, Suur-Sõjamäe, Ülemiste, Lasnamäe linnaosa, Tallinn, Harju maakond, 11415, Eesti"
+  },
+  {
+    "name": "PetCity Tähesaju Clinic",
+    "city": "Tallinn",
+    "address": "Mustakivi tee 17",
+    "query": "Mustakivi tee 17, Tallinn, Estonia",
+    "lat": 59.442844,
+    "lng": 24.862164,
+    "display_name": "Peetri pizza, 17, Mustakivi tee, Mustakivi, Lasnamäe linnaosa, Tallinn, Harju maakond, 13912, Eesti"
+  },
+  {
+    "name": "NordicVet",
+    "city": "Tallinn",
+    "address": "Koskla 16",
+    "query": "Koskla 16, Tallinn, Estonia",
+    "lat": 59.42576,
+    "lng": 24.718779,
+    "display_name": "16, Koskla, Lilleküla, Kristiine linnaosa, Tallinn, Harju maakond, 10615, Eesti"
+  },
+  {
+    "name": "Miki Animal Clinic",
+    "city": "Tallinn",
+    "address": "J. Kunderi 37",
+    "query": "J. Kunderi 37, Tallinn, Estonia",
+    "lat": 59.431575,
+    "lng": 24.774128,
+    "display_name": "Juhan Kunderi, Torupilli, Kesklinna linnaosa, Tallinn, Harju maakond, 10121, Eesti"
+  },
+  {
+    "name": "Haabersti Animal Clinic",
+    "city": "Tallinn",
+    "address": "Õismäe tee 115A",
+    "query": "Õismäe tee 115A, Tallinn, Estonia",
+    "lat": 59.412786,
+    "lng": 24.638967,
+    "display_name": "115a, Õismäe tee, Väike-Õismäe, Haabersti linnaosa, Tallinn, Harju maakond, 13515, Eesti"
+  },
+  {
+    "name": "Univet Animal Clinic",
+    "city": "Tallinn",
+    "address": "Kadaka tee 133",
+    "query": "Kadaka tee 133, Tallinn, Estonia",
+    "lat": 59.412368,
+    "lng": 24.669601,
+    "display_name": "133, Kadaka tee, Kadaka, Mustamäe linnaosa, Tallinn, Harju maakond, 12915, Eesti"
+  },
+  {
+    "name": "Evidensia Viimsi Animal Clinic",
+    "city": "Viimsi",
+    "address": "Paadi tee 3, Haabneeme",
+    "query": "Paadi tee 3, Haabneeme, Viimsi, Estonia",
+    "lat": 59.503773,
+    "lng": 24.826568,
+    "display_name": "3, Paadi tee, Haabneeme alevik, Viimsi vald, Harju maakond, 74001, Eesti"
+  },
+  {
+    "name": "Keila Animal Clinic",
+    "city": "Keila",
+    "address": "Jaama 11e",
+    "query": "Jaama 11e, Keila, Estonia",
+    "lat": 59.308661,
+    "lng": 24.415283,
+    "display_name": "11e, Jaama, Keila linn, Harju maakond, 76605, Eesti"
+  },
+  {
+    "name": "Saue Animal Clinic",
+    "city": "Saue",
+    "address": "Sooja 1",
+    "query": "Sooja 1, Saue, Estonia",
+    "lat": 59.323063,
+    "lng": 24.564926,
+    "display_name": "1, Sooja, Saue linn, Saue, Saue vald, Harju maakond, 76505, Eesti"
+  },
+  {
+    "name": "Laagri Animal Clinic",
+    "city": "Laagri",
+    "address": "Vae 2",
+    "query": "Vae 2, Laagri, Estonia",
+    "lat": 59.351389,
+    "lng": 24.609892,
+    "display_name": "2, Vae, Laagri alevik, Saue vald, Harju maakond, 76401, Eesti"
+  },
+  {
+    "name": "FIK Small Animal Clinic",
+    "city": "Tartu",
+    "address": "Mõisavahe 21",
+    "query": "Mõisavahe 21, Tartu, Estonia",
+    "lat": 58.37002,
+    "lng": 26.775277,
+    "display_name": "Starest, 21, Mõisavahe, Annelinn, Tartu linn, Tartu maakond, 50707, Eesti"
+  },
+  {
+    "name": "Emajõe Animal Clinic",
+    "city": "Tartu",
+    "address": "Emajõe 1a",
+    "query": "Emajõe 1a, Tartu, Estonia",
+    "lat": 58.386618,
+    "lng": 26.719912,
+    "display_name": "1a, Emajõe, Supilinn, Tartu linn, Tartu maakond, 51008, Eesti"
+  },
+  {
+    "name": "Tartu Väikeloomakliinik",
+    "city": "Tartu",
+    "address": "Aleksandri 8b",
+    "query": "Aleksandri 8b, Tartu, Estonia",
+    "lat": 58.375942,
+    "lng": 26.73098,
+    "display_name": "8b, Aleksandri, Uueturu, Kesklinn, Tartu linn, Tartu maakond, 51004, Eesti"
+  },
+  {
+    "name": "PetCity Eedeni loomakliinik",
+    "city": "Tartu",
+    "address": "Kalda tee 1c",
+    "query": "Kalda tee 1c, Tartu, Estonia",
+    "lat": 58.373105,
+    "lng": 26.750233,
+    "display_name": "Eeden, 1c, Kalda tee, Annelinn, Tartu linn, Tartu maakond, 50703, Eesti"
+  },
+  {
+    "name": "PetCity Lõunakeskuse loomakliinik",
+    "city": "Tartu",
+    "address": "Lääne-Ringtee 35",
+    "query": "Lääne-Ringtee 35, Tartu, Estonia",
+    "lat": 58.34231,
+    "lng": 26.732342,
+    "display_name": "Lõunakeskus, Lääne-Ringtee 35, Tartu linn (manual geocode)"
+  },
+  {
+    "name": "Pärnu Small Animal Clinic",
+    "city": "Pärnu",
+    "address": "Tallinna mnt 77",
+    "query": "Tallinna mnt 77, Pärnu, Estonia",
+    "lat": 58.401063,
+    "lng": 24.493221,
+    "display_name": "77, Tallinna mnt, Ülejõe, Pärnu linn, Pärnu maakond, 80034, Eesti"
+  },
+  {
+    "name": "PetCity Pärnu Clinic",
+    "city": "Pärnu",
+    "address": "Aida 7, Pärnu Keskus",
+    "query": "Aida 7, Pärnu, Estonia",
+    "lat": 58.386898,
+    "lng": 24.501691,
+    "display_name": "Pärnu Keskus, 7, Aida, Pärnu linn"
+  },
+  {
+    "name": "Narva Vet Animal Centre",
+    "city": "Narva",
+    "address": "Kreenholmi 9",
+    "query": "Kreenholmi 9, Narva, Estonia",
+    "lat": 59.375692,
+    "lng": 28.181894,
+    "display_name": "9, Kreenholmi, Kerese, Narva linn, Ida-Viru maakond, 20304, Eesti"
+  },
+  {
+    "name": "Pet City Astri Clinic",
+    "city": "Narva",
+    "address": "Tallinna mnt 41",
+    "query": "Tallinna mnt 41, Narva, Estonia",
+    "lat": 59.381451,
+    "lng": 28.175944,
+    "display_name": "Astri keskus, 41, Tallinna mnt, Soldino, Narva linn, Ida-Viru maakond, 20605, Eesti"
+  },
+  {
+    "name": "Jõhvi VetProf Clinic",
+    "city": "Jõhvi",
+    "address": "Keskväljak 8",
+    "query": "Keskväljak 8, Jõhvi, Estonia",
+    "lat": 59.357622,
+    "lng": 27.412749,
+    "display_name": "8, Keskväljak, Jõhvi linn, Jõhvi vald, Ida-Viru maakond, 41536, Eesti"
+  },
+  {
+    "name": "Järve VetProf Clinic",
+    "city": "Kohtla-Järve",
+    "address": "Järveküla tee 64",
+    "query": "Järveküla tee 64, Kohtla-Järve, Estonia",
+    "lat": 59.401668,
+    "lng": 27.294454,
+    "display_name": "64, Järveküla tee, Järve linnaosa, Kohtla-Järve linn, Ida-Viru maakond, 30322, Eesti"
+  },
+  {
+    "name": "Evidensia Rakvere Clinic",
+    "city": "Rakvere",
+    "address": "Vabaduse 14",
+    "query": "Vabaduse 14, Rakvere, Estonia",
+    "lat": 59.340774,
+    "lng": 26.366683,
+    "display_name": "14, Vabaduse, Õpetaja Heinamaa, Rakvere linn, Lääne-Viru maakond, 44308, Eesti"
+  },
+  {
+    "name": "PetCity Rakvere Clinic",
+    "city": "Rakvere",
+    "address": "Haljala tee 4",
+    "query": "Haljala tee 4, Rakvere, Estonia",
+    "lat": 59.364191,
+    "lng": 26.340073,
+    "display_name": "Põhjakeskus, 4, Haljala tee, Tõrremäe, Tõrremäe küla, Rakvere vald, Lääne-Viru maakond, 44415, Eesti"
+  },
+  {
+    "name": "Viljandi Männimäe Animal Clinic",
+    "city": "Viljandi",
+    "address": "Riia mnt 38",
+    "query": "Riia mnt 38, Viljandi, Estonia",
+    "lat": 58.35065,
+    "lng": 25.581222,
+    "display_name": "38, Riia mnt, Männimäe, Viljandi linn, Viljandi maakond, 71009, Eesti"
+  }
+]

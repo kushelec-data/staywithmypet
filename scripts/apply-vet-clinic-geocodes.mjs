@@ -1,17 +1,24 @@
 /**
- * Generates src/data/vet-clinics.ts from scripts/vet-clinics-raw.json (XLSX source).
+ * Regenerate src/data/vet-clinics.ts from raw + vet-clinics-geocoded.json
  */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const raw = readJson(path.join(__dirname, "vet-clinics-raw.json"));
 
 function readJson(file) {
   const text = fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
   return JSON.parse(text);
 }
+
+const raw = readJson(path.join(__dirname, "vet-clinics-raw.json"));
+const geocoded = readJson(path.join(__dirname, "vet-clinics-geocoded.json"));
+
+const MANUAL_COORDS = {
+  "petcity lonakeskuse loomakliinik": { lat: 58.34231, lng: 26.732342 },
+  "petcity parnu clinic": { lat: 58.386898, lng: 24.501691 },
+};
 
 function normKey(s) {
   return s
@@ -21,22 +28,7 @@ function normKey(s) {
     .trim();
 }
 
-const geocodedPath = path.join(__dirname, "vet-clinics-geocoded.json");
-const geoByName = fs.existsSync(geocodedPath)
-  ? new Map(readJson(geocodedPath).map((g) => [normKey(g.name), g]))
-  : new Map();
-
-const MANUAL_COORDS = {
-  "petcity lonakeskuse loomakliinik": { lat: 58.34231, lng: 26.732342 },
-  "petcity parnu clinic": { lat: 58.386898, lng: 24.501691 },
-};
-
-function clinicCoords(name) {
-  const geo = geoByName.get(normKey(name));
-  if (geo?.lat != null && geo?.lng != null) return { lat: geo.lat, lng: geo.lng };
-  const manual = MANUAL_COORDS[normKey(name)];
-  return manual ?? null;
-}
+const geoByName = new Map(geocoded.map((g) => [normKey(g.name), g]));
 
 function formatPhone(raw) {
   const s = String(raw ?? "").trim();
@@ -44,7 +36,6 @@ function formatPhone(raw) {
   let digits;
   if (/e/i.test(s)) {
     digits = String(Math.round(parseFloat(s)));
-    // Excel float noise: Estonian numbers are 7–8 digits after country code
     if (digits.length > 8) digits = digits.slice(0, 8);
   } else {
     digits = s.replace(/\.0+$/, "").replace(/\D/g, "");
@@ -78,17 +69,21 @@ for (const row of rows) {
   const hours = (row[6] ?? "").trim() || undefined;
   if (!name) continue;
   if (!city) city = CITY_OVERRIDES[normKey(name)] ?? "";
-  const coords = clinicCoords(name);
-  const entry = {
+
+  const geo = geoByName.get(normKey(name));
+  const manual = MANUAL_COORDS[normKey(name)];
+  const lat = geo?.lat ?? manual?.lat;
+  const lng = geo?.lng ?? manual?.lng;
+
+  clinics.push({
     clinic_name: name,
     city,
     address,
     phone,
     ...(isEmergency(name, hours) ? { emergency: true } : {}),
     ...(hours ? { opening_hours: hours } : {}),
-    ...(coords ? { latitude: coords.lat, longitude: coords.lng } : {}),
-  };
-  clinics.push(entry);
+    ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
+  });
 }
 
 function esc(s) {
