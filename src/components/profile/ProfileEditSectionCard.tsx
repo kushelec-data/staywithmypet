@@ -112,7 +112,11 @@ export function ProfileEditSectionCard({
       ) : null}
 
       <div
-        className={`mt-5 space-y-5 ${frozen ? "pointer-events-none select-none" : ""}`}
+        className={`mt-5 space-y-5 ${
+          frozen
+            ? "pointer-events-none select-none [&_.profile-collapsible-toggle]:pointer-events-auto [&_.profile-collapsible-toggle]:cursor-pointer"
+            : ""
+        }`}
         aria-disabled={frozen}
       >
         {children}

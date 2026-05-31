@@ -27,7 +27,7 @@ export function ProfileCollapsibleSection({
     >
       <button
         type="button"
-        className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left sm:px-5 sm:py-5"
+        className="profile-collapsible-toggle flex w-full cursor-pointer items-start justify-between gap-3 px-4 py-4 text-left transition-colors hover:bg-black/[0.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E6B3F] sm:px-5 sm:py-5 pointer-events-auto"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}

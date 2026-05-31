@@ -65,7 +65,11 @@ export function ProfileEditStepPanel({
       ) : null}
 
       <div
-        className={`space-y-5 ${frozen ? "pointer-events-none select-none" : ""}`}
+        className={`space-y-5 ${
+          frozen
+            ? "pointer-events-none select-none [&_.profile-collapsible-toggle]:pointer-events-auto [&_.profile-collapsible-toggle]:cursor-pointer"
+            : ""
+        }`}
         aria-disabled={frozen}
       >
         {children}
