@@ -22,6 +22,9 @@ export type ChatMessage = {
   isOwn: boolean;
 };
 
+/** Grace period after a booking is cancelled before chat becomes read-only. */
+export const CANCELLED_BOOKING_CHAT_GRACE_MS = 96 * 60 * 60 * 1000;
+
 export type ConversationSummary = {
   id: string;
   requestId: string;
@@ -36,6 +39,8 @@ export type ConversationSummary = {
   otherPartyAvatarUrl: string | null;
   requestStatus: RequestStatus;
   bookingStatus: BookingStatus | null;
+  /** Set when the linked booking was cancelled (ISO). */
+  bookingCancelledAt: string | null;
   dateLabel: string;
   /** Stable key for merge/dedup when booking dates match */
   dateRangeKey: string;
@@ -57,14 +62,61 @@ function dateRangeKeyFromRequest(req: {
     .join("|");
 }
 
+export function getCancelledBookingChatGraceEndsAt(
+  cancelledAt: string | null | undefined,
+): Date | null {
+  if (!cancelledAt?.trim()) return null;
+  const at = new Date(cancelledAt);
+  if (Number.isNaN(at.getTime())) return null;
+  return new Date(at.getTime() + CANCELLED_BOOKING_CHAT_GRACE_MS);
+}
+
+export function isCancelledBookingChatGraceActive(
+  conversation: ConversationSummary,
+  now: Date = new Date(),
+): boolean {
+  if (conversation.bookingStatus !== "cancelled") return false;
+  const ends = getCancelledBookingChatGraceEndsAt(conversation.bookingCancelledAt);
+  if (!ends) return false;
+  return now < ends;
+}
+
+export function isCancelledBookingChatGraceExpired(
+  conversation: ConversationSummary,
+  now: Date = new Date(),
+): boolean {
+  if (conversation.bookingStatus !== "cancelled") return false;
+  const ends = getCancelledBookingChatGraceEndsAt(conversation.bookingCancelledAt);
+  if (!ends) return true;
+  return now >= ends;
+}
+
+export function formatCancelledBookingChatGraceEnd(
+  cancelledAt: string | null | undefined,
+): string | null {
+  const ends = getCancelledBookingChatGraceEndsAt(cancelledAt);
+  if (!ends) return null;
+  try {
+    return ends.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return ends.toISOString();
+  }
+}
+
 export function isConversationCompleted(conversation: ConversationSummary): boolean {
-  return (
-    conversation.requestStatus === "completed" ||
-    conversation.bookingStatus === "completed" ||
-    conversation.bookingStatus === "cancelled" ||
-    conversation.requestStatus === "cancelled" ||
-    conversation.requestStatus === "declined"
-  );
+  if (conversation.requestStatus === "completed" || conversation.bookingStatus === "completed") {
+    return true;
+  }
+  if (conversation.requestStatus === "cancelled" || conversation.requestStatus === "declined") {
+    return true;
+  }
+  if (conversation.bookingStatus === "cancelled") {
+    return isCancelledBookingChatGraceExpired(conversation);
+  }
+  return false;
 }
 
 export function isConversationActiveBooking(conversation: ConversationSummary): boolean {
@@ -167,7 +219,9 @@ export function canSendInConversation(conversation: ConversationSummary): boolea
   if (conversation.requestStatus === "declined" || conversation.requestStatus === "cancelled") {
     return false;
   }
-  if (conversation.bookingStatus === "cancelled") return false;
+  if (conversation.bookingStatus === "cancelled") {
+    return isCancelledBookingChatGraceActive(conversation);
+  }
   return true;
 }
 
@@ -470,16 +524,20 @@ export async function fetchConversations(
     }
   }
 
-  const bookingByRequest = new Map<string, { id: string; status: BookingStatus }>();
+  const bookingByRequest = new Map<
+    string,
+    { id: string; status: BookingStatus; cancelledAt: string | null }
+  >();
   const { data: bookingRows } = await supabase
     .from("bookings")
-    .select("id, request_id, status")
+    .select("id, request_id, status, cancelled_at")
     .in("request_id", requestIds);
 
   for (const b of bookingRows ?? []) {
     bookingByRequest.set(b.request_id as string, {
       id: b.id as string,
       status: b.status as BookingStatus,
+      cancelledAt: (b.cancelled_at as string | null) ?? null,
     });
   }
 
@@ -527,6 +585,7 @@ export async function fetchConversations(
       otherPartyAvatarUrl: null,
       requestStatus: req.status,
       bookingStatus: booking?.status ?? null,
+      bookingCancelledAt: booking?.cancelledAt ?? null,
       dateLabel: formatDateRange(
         req.date_from,
         req.date_to,
@@ -609,6 +668,62 @@ export async function sendMessage(
 
   const trimmed = body.trim();
   if (!trimmed) throw new Error("Message cannot be empty.");
+
+  const { data: conversationRow, error: conversationError } = await supabase
+    .from("conversations")
+    .select("request_id")
+    .eq("id", conversationId)
+    .maybeSingle();
+
+  if (conversationError) throw conversationError;
+  if (!conversationRow?.request_id) {
+    throw new Error("Conversation not found.");
+  }
+
+  const { data: requestRow, error: requestError } = await supabase
+    .from("requests")
+    .select("status")
+    .eq("id", conversationRow.request_id)
+    .maybeSingle();
+
+  if (requestError) throw requestError;
+  const requestStatus = (requestRow?.status as RequestStatus | undefined) ?? "pending";
+  if (requestStatus === "declined" || requestStatus === "cancelled") {
+    throw new Error("Messaging is closed for this booking.");
+  }
+
+  const { data: bookingRow } = await supabase
+    .from("bookings")
+    .select("status, cancelled_at")
+    .eq("request_id", conversationRow.request_id)
+    .maybeSingle();
+
+  const sendCheck: ConversationSummary = {
+    id: conversationId,
+    requestId: conversationRow.request_id,
+    bookingId: null,
+    petId: null,
+    petName: null,
+    threadTitle: "",
+    petPhotoUrl: null,
+    otherPartyId: otherPartyId ?? "",
+    otherPartyName: "",
+    otherPartyAvatarUrl: null,
+    requestStatus,
+    bookingStatus: (bookingRow?.status as BookingStatus | undefined) ?? null,
+    bookingCancelledAt: (bookingRow?.cancelled_at as string | null) ?? null,
+    dateLabel: "",
+    dateRangeKey: "",
+    careType: null,
+    lastMessagePreview: null,
+    lastMessageAt: null,
+    unreadCount: 0,
+    sortAt: "",
+  };
+
+  if (!canSendInConversation(sendCheck)) {
+    throw new Error("Messaging period has ended for this cancelled booking.");
+  }
 
   if (otherPartyId) {
     const { isUserBlocked, BLOCKED_USER_MESSAGE } = await import("@/lib/trust-safety");

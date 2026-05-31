@@ -608,6 +608,12 @@ export const et = {
     viewBooking: "Vaata broneeringut",
     inputBlocked: "Sõnumid pole saadaval — liige on blokeeritud.",
     inputClosed: "Sõnumid on selle broneeringu jaoks suletud.",
+    cancelledBookingChatGraceBanner:
+      "Broneering tühistati. Saate vestelda kuni {date}.",
+    cancelledBookingChatEndedBanner:
+      "Sõnumid selle tühistatud broneeringu kohta on lõppenud.",
+    inputCancelledGraceEnded:
+      "Sõnumid selle tühistatud broneeringu kohta on lõppenud.",
     reviewBannerTitle: "Kuidas läks?",
     reviewBannerBody: "Broneering lemmikule {name} on lõppenud. Jäta arvustus kogukonna toetamiseks.",
     reviewBannerCta: "Jäta arvustus",

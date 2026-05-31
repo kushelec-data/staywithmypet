@@ -605,6 +605,11 @@ export const en = {
     viewBooking: "View booking",
     inputBlocked: "Messaging is unavailable — this member is blocked.",
     inputClosed: "Messaging is closed for this booking.",
+    cancelledBookingChatGraceBanner:
+      "This booking was cancelled. You can continue chatting until {date}.",
+    cancelledBookingChatEndedBanner:
+      "Messaging period has ended for this cancelled booking.",
+    inputCancelledGraceEnded: "Messaging period has ended for this cancelled booking.",
     reviewBannerTitle: "How did it go?",
     reviewBannerBody: "Your booking for {name} is complete. Leave a review to help the community.",
     reviewBannerCta: "Leave a review",

@@ -8,7 +8,10 @@ import { bookingDetailsHref } from "@/lib/bookings";
 import {
   canSendInConversation,
   fetchMessages,
+  formatCancelledBookingChatGraceEnd,
   formatMessagingError,
+  isCancelledBookingChatGraceActive,
+  isCancelledBookingChatGraceExpired,
   markConversationMessagesRead,
   sendMessage,
   subscribeToConversationMessages,
@@ -73,6 +76,11 @@ export function ChatPanel({
   const prefersSmoothScrollRef = useRef(false);
 
   const canSend = canSendInConversation(conversation) && !blocked;
+  const cancelledBookingGraceActive = isCancelledBookingChatGraceActive(conversation);
+  const cancelledBookingGraceExpired = isCancelledBookingChatGraceExpired(conversation);
+  const cancelledGraceEndLabel = formatCancelledBookingChatGraceEnd(
+    conversation.bookingCancelledAt,
+  );
   const showReviewBanner =
     conversation.requestStatus === "completed" || conversation.bookingStatus === "completed";
 
@@ -211,9 +219,11 @@ export function ChatPanel({
 
   const inputPlaceholder = blocked
     ? m.inputBlocked
-    : !canSendInConversation(conversation)
-      ? m.inputClosed
-      : m.typeMessage;
+    : cancelledBookingGraceExpired
+      ? m.inputCancelledGraceEnded
+      : !canSendInConversation(conversation)
+        ? m.inputClosed
+        : m.typeMessage;
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-[#fffaf2] dark:bg-[#252320]">
@@ -297,6 +307,23 @@ export function ChatPanel({
           </div>
         </div>
       </header>
+
+      {cancelledBookingGraceActive && cancelledGraceEndLabel ? (
+        <p
+          className="shrink-0 border-b border-amber-200/80 bg-amber-50 px-4 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-500/20 dark:bg-amber-950/40 dark:text-amber-100"
+          role="status"
+        >
+          {m.cancelledBookingChatGraceBanner.replace("{date}", cancelledGraceEndLabel)}
+        </p>
+      ) : null}
+      {cancelledBookingGraceExpired ? (
+        <p
+          className="shrink-0 border-b border-black/[0.06] bg-[#f3f0ea] px-4 py-2.5 text-xs leading-relaxed text-muted dark:border-white/10 dark:bg-[#2a2824]"
+          role="status"
+        >
+          {m.cancelledBookingChatEndedBanner}
+        </p>
+      ) : null}
 
       {showReviewBanner && conversation.bookingId ? (
         <BookingReviewBanner bookingId={conversation.bookingId} petName={conversation.petName} />
