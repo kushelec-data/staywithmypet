@@ -30,6 +30,7 @@ import {
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
+import { useRouter } from "next/navigation";
 import {
   finalizeLocationText,
   locationInputDisplayValue,
@@ -77,7 +78,7 @@ import {
 } from "@/lib/phone-eu";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import { createClient } from "@/lib/supabase";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 function profileEditStepFromQuery(step: string | null): ProfileEditSectionKey | null {
   const value = (step ?? "").trim().toLowerCase();
@@ -142,6 +143,8 @@ export function ProfileEditForm() {
   const pe = t.profileEdit;
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
+  const dashboardRedirectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [openAvailabilityPanel, setOpenAvailabilityPanel] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
@@ -321,7 +324,25 @@ export function ProfileEditForm() {
     setEditing((prev) => ({ ...prev, [section]: true }));
     setErrors((prev) => ({ ...prev, [section]: null }));
     setSuccess((prev) => ({ ...prev, [section]: null }));
+    if (dashboardRedirectRef.current) {
+      clearTimeout(dashboardRedirectRef.current);
+      dashboardRedirectRef.current = null;
+    }
   }
+
+  const goToDashboard = useCallback(() => {
+    if (dashboardRedirectRef.current) {
+      clearTimeout(dashboardRedirectRef.current);
+      dashboardRedirectRef.current = null;
+    }
+    router.push("/dashboard");
+  }, [router]);
+
+  useEffect(() => {
+    return () => {
+      if (dashboardRedirectRef.current) clearTimeout(dashboardRedirectRef.current);
+    };
+  }, []);
 
   async function afterSectionSave(section: ProfileEditSectionKey, saved: ProfileRow) {
     setProfileRow(saved);
@@ -347,8 +368,19 @@ export function ProfileEditForm() {
     await refreshProfile();
     notifyDashboardRefresh();
     setEditing((prev) => ({ ...prev, [section]: false }));
-    setSuccess((prev) => ({ ...prev, [section]: pe.sectionSaved }));
+    const isFinalStep = visibleSteps[visibleSteps.length - 1] === section;
+    setSuccess((prev) => ({
+      ...prev,
+      [section]: isFinalStep ? pe.wizard.finalStepSavedRedirect : pe.sectionSaved,
+    }));
     setErrors((prev) => ({ ...prev, [section]: null }));
+    if (isFinalStep) {
+      if (dashboardRedirectRef.current) clearTimeout(dashboardRedirectRef.current);
+      dashboardRedirectRef.current = setTimeout(() => {
+        dashboardRedirectRef.current = null;
+        router.push("/dashboard");
+      }, 1750);
+    }
   }
 
   async function handleSaveBasic() {
@@ -458,7 +490,7 @@ export function ProfileEditForm() {
     }
   }
 
-  async function handleSavePetFriend() {
+  async function handleSavePetFriend(saveAsSection: "petFriend" | "availability" = "petFriend") {
     if (!user) return;
 
     const otherError = validateOtherOptionFields([
@@ -474,24 +506,24 @@ export function ProfileEditForm() {
         : []),
     ]);
     if (otherError) {
-      setErrors((prev) => ({ ...prev, petFriend: otherError }));
+      setErrors((prev) => ({ ...prev, [saveAsSection]: otherError }));
       return;
     }
 
-    setSaving((prev) => ({ ...prev, petFriend: true }));
-    setErrors((prev) => ({ ...prev, petFriend: null }));
-    setSuccess((prev) => ({ ...prev, petFriend: null }));
+    setSaving((prev) => ({ ...prev, [saveAsSection]: true }));
+    setErrors((prev) => ({ ...prev, [saveAsSection]: null }));
+    setSuccess((prev) => ({ ...prev, [saveAsSection]: null }));
     try {
       const saved = await savePetFriendProfileSection(supabase, user.id, petFriendForm, {
         user,
         existingDisplayName: profile?.display_name,
       });
-      await afterSectionSave("petFriend", saved);
+      await afterSectionSave(saveAsSection, saved);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not save Pet Friend profile.";
-      setErrors((prev) => ({ ...prev, petFriend: message }));
+      setErrors((prev) => ({ ...prev, [saveAsSection]: message }));
     } finally {
-      setSaving((prev) => ({ ...prev, petFriend: false }));
+      setSaving((prev) => ({ ...prev, [saveAsSection]: false }));
     }
   }
 
@@ -552,12 +584,12 @@ export function ProfileEditForm() {
     petFriend: {
       title: pe.petFriend.title,
       description: pe.petFriend.description,
-      onSave: () => void handleSavePetFriend(),
+      onSave: () => void handleSavePetFriend("petFriend"),
     },
     availability: {
       title: pe.availability.title,
       description: pe.availability.description,
-      onSave: () => void handleSavePetFriend(),
+      onSave: () => void handleSavePetFriend("availability"),
     },
     petParent: {
       title: pe.petParent.title,
@@ -772,12 +804,15 @@ export function ProfileEditForm() {
       steps={wizardSteps}
       activeIndex={activeStepIndex}
       onActiveIndexChange={setActiveStepIndex}
+      onGoToDashboard={goToDashboard}
       labels={{
         stepNumber: pe.wizard.stepNumber,
         statusCompleted: pe.wizard.statusCompleted,
         statusIncomplete: pe.wizard.statusIncomplete,
         previous: pe.wizard.previous,
         nextStep: pe.wizard.nextStep,
+        goToDashboard: pe.wizard.goToDashboard,
+        goToDashboardNext: pe.wizard.goToDashboardNext,
         edit: pe.edit,
         saveChanges: pe.saveChanges,
         saving: pe.saving,

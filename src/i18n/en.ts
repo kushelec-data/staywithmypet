@@ -449,6 +449,10 @@ export const en = {
       statusIncomplete: "Incomplete",
       previous: "Previous",
       nextStep: "Next",
+      goToDashboard: "Go to dashboard",
+      goToDashboardNext: "Go to dashboard →",
+      finalStepSavedRedirect:
+        "Profile saved successfully. You will now be redirected to your dashboard.",
       tabsLabel: "Profile steps",
       editingModeEnabled: "Editing mode enabled",
       editingModeHint: "You can now edit these fields.",
