@@ -2,10 +2,41 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
+import { useProfile } from "@/context/ProfileContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { PAGE_CONTAINER } from "@/lib/layout";
+import { resolveActiveMode } from "@/lib/profile-mode";
 
 const LOGO_SRC = "/logo.png";
+
+function FooterPrimaryCta() {
+  const { user, loading: authLoading } = useAuth();
+  const { profile } = useProfile();
+  const { t } = useLanguage();
+
+  if (authLoading) return null;
+
+  if (!user) {
+    return (
+      <Button href="/signup" variant="primary" size="lg" className="mt-6 w-full sm:mt-8 sm:w-auto">
+        {t.footer.joinCta}
+      </Button>
+    );
+  }
+
+  const mode = profile
+    ? resolveActiveMode(profile.role, profile.active_mode)
+    : "pet_parent";
+  const href = mode === "pet_friend" ? "/find-pets" : "/find-care";
+  const label = mode === "pet_friend" ? t.navbar.findPets : t.navbar.findPetFriends;
+
+  return (
+    <Button href={href} variant="primary" size="lg" className="mt-6 w-full sm:mt-8 sm:w-auto">
+      {label}
+    </Button>
+  );
+}
 
 export function Footer() {
   const { t } = useLanguage();
@@ -66,9 +97,7 @@ export function Footer() {
                   </li>
                 ))}
               </ul>
-              <Button href="/signup" variant="primary" size="lg" className="mt-6 w-full sm:mt-8 sm:w-auto">
-                {t.footer.joinCta}
-              </Button>
+              <FooterPrimaryCta />
             </div>
 
             <div className="grid min-w-0 grid-cols-2 gap-6 sm:grid-cols-3 sm:gap-10">
