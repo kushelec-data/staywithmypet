@@ -126,6 +126,12 @@ export const IMAGES = {
     photoUpdates: "/images/trust/photo-updates.jpg",
     secureMessaging: "/images/trust/secure-messaging.jpg",
   },
+  onboarding: {
+    /** Primary role-selection panel; add file at public/images/onboarding-pet-care.jpg */
+    petCare: "/images/onboarding-pet-care.jpg",
+    petCareFallback: "/images/how-it-works/pet-parents-section.jpg",
+    petCareFallbackAlt: "/images/trust/real-homes-care.jpg",
+  },
 } as const;
 
 const PROFILE_KEYS = Object.keys(IMAGES.profiles) as (keyof typeof IMAGES.profiles)[];
