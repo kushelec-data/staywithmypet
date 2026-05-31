@@ -651,6 +651,28 @@ export const en = {
       },
     ],
   },
+  readyCta: {
+    guest: {
+      title: "Ready to start?",
+      description: "Browse for free — upgrade when you are ready to connect.",
+      primaryLabel: "Find care",
+      primaryHref: "/find-care",
+      secondaryLabel: "Become a Pet Friend",
+      secondaryHref: "/signup",
+    },
+    petParent: {
+      title: "Ready to find trusted care?",
+      subtitle: "Search for Pet Friends near you and send a care request.",
+      primaryLabel: "Search for Pet Friends",
+      primaryHref: "/find-care",
+    },
+    petFriend: {
+      title: "Ready to help a pet nearby?",
+      subtitle: "Browse pets looking for care and companionship.",
+      primaryLabel: "Find a Pet",
+      primaryHref: "/find-pets",
+    },
+  },
   homeExplore: {
     links: [
       { href: "/how-it-works", title: "How it works", description: "Steps for Pet Friends and Pet Parents." },

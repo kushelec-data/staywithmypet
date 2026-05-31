@@ -4,6 +4,7 @@ import { HomeExploreSection } from "@/sections/HomeExploreSection";
 import { HomeJourneySection } from "@/sections/HomeJourneySection";
 import { SearchSection } from "@/sections/SearchSection";
 import { ServicesSection } from "@/sections/ServicesSection";
+import { HomeReadyCtaSection } from "@/sections/HomeReadyCtaSection";
 import { WhyChooseUsSection } from "@/sections/WhyChooseUsSection";
 
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
       <HomeJourneySection />
       <ServicesSection />
       <WhyChooseUsSection />
+      <HomeReadyCtaSection />
       <HomeExploreSection />
     </div>
   );

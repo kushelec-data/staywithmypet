@@ -1,6 +1,6 @@
 "use client";
 
-import { CtaBanner } from "@/components/ui/CtaBanner";
+import { RoleAwareReadyCta } from "@/components/marketing/RoleAwareReadyCta";
 import { AppImage } from "@/components/ui/AppImage";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
@@ -76,19 +76,7 @@ export function HowItWorksPageClient() {
         </div>
       </section>
 
-      <section className={`border-t border-black/5 ${SECTION_PAD}`}>
-        <div className={CONTENT_CONTAINER}>
-          <CtaBanner
-            withPageShell={false}
-            heading={h.ctaTitle}
-            subtext={h.ctaDescription}
-            primaryLabel={h.findCareCta}
-            primaryHref="/find-care"
-            secondaryLabel={h.becomeFriendCta}
-            secondaryHref="/signup"
-          />
-        </div>
-      </section>
+      <RoleAwareReadyCta withPageShell />
     </div>
   );
 }

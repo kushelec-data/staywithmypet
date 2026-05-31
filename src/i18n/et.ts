@@ -654,6 +654,28 @@ export const et = {
       },
     ],
   },
+  readyCta: {
+    guest: {
+      title: "Valmis alustama?",
+      description: "Sirvi tasuta — uuenda liikmesust, kui oled valmis ühendust looma.",
+      primaryLabel: "Leia hooldus",
+      primaryHref: "/find-care",
+      secondaryLabel: "Hakka lemmikusõbraks",
+      secondaryHref: "/signup",
+    },
+    petParent: {
+      title: "Valmis leidma usaldusväärset hooldust?",
+      subtitle: "Otsi lemmikusõpru enda lähedalt ja saada hoolduse taotlus.",
+      primaryLabel: "Otsi lemmikusõpru",
+      primaryHref: "/find-care",
+    },
+    petFriend: {
+      title: "Valmis lähedal olevale lemmikule appi tulema?",
+      subtitle: "Sirvi lemmikuid, kes otsivad hooldust ja seltsi.",
+      primaryLabel: "Leia lemmik",
+      primaryHref: "/find-pets",
+    },
+  },
   homeExplore: {
     links: [
       { href: "/how-it-works", title: "Kuidas see töötab", description: "Sammud sõpradele ja omanikele." },
