@@ -177,7 +177,6 @@ export function PetAvailabilityModal({
                   petId={petId}
                   petFriendId={petFriendId}
                   showLegend
-                  showSelectedChips={false}
                   variant={variant}
                   className="rounded-2xl"
                   monthCursor={monthCursor}

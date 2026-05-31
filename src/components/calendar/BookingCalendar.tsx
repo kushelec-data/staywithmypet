@@ -1,6 +1,7 @@
 "use client";
 
 import { BookingDateCell } from "@/components/calendar/BookingDateCell";
+import { CalendarInlineLegend } from "@/components/calendar/CalendarInlineLegend";
 import { BookingPopover } from "@/components/calendar/BookingPopover";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCalendarBookings } from "@/hooks/useCalendarBookings";
@@ -13,13 +14,7 @@ import {
   type CalendarViewRole,
   type MonthCursor,
 } from "@/lib/booking-calendar";
-import {
-  filterPastDates,
-  legendSwatchClass,
-  resolveCalendarDay,
-  todayISODate,
-} from "@/lib/calendar-date-state";
-import { formatDate } from "@/lib/date-format";
+import { filterPastDates, resolveCalendarDay, todayISODate } from "@/lib/calendar-date-state";
 import {
   eachISODateInRangeInclusive,
   localISODate,
@@ -52,7 +47,6 @@ export type BookingCalendarProps = {
   onMonthCursorChange?: (cursor: MonthCursor) => void;
   showLegend?: boolean;
   showViewOnlyHint?: boolean;
-  showSelectedChips?: boolean;
   className?: string;
   maxWidthClass?: string;
   /** Smaller grid for sidebar mini calendars. */
@@ -80,14 +74,13 @@ export function BookingCalendar({
   onMonthCursorChange,
   showLegend = true,
   showViewOnlyHint = true,
-  showSelectedChips,
   className = "",
   maxWidthClass = "max-w-lg",
   compact = false,
   variant: _variant = "default",
   highContrast: _highContrast = false,
 }: BookingCalendarProps) {
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
   const availableSet = useMemo(() => new Set(available), [available]);
   const sortedSelected = useMemo(() => normalizeAvailabilityDates(selectedDates), [selectedDates]);
@@ -179,24 +172,10 @@ export function BookingCalendar({
     lastSelectedRef.current = iso;
   }
 
-  function removeChip(iso: string) {
-    if (disabled || !onChange) return;
-    onChange(sortedSelected.filter((d) => d !== iso));
-  }
-
-  function clearAll() {
-    if (disabled || !onChange) return;
-    onChange([]);
-  }
-
   function openBookingDetail(booking: CalendarBooking) {
     if (visibility === "public" || viewRole === "public") return;
     setActiveBooking(booking);
   }
-
-  const chipsVisible =
-    showSelectedChips ??
-    (mode === "availability-select" || mode === "request-select");
 
   if (mode === "request-select" && !available.length) {
     return (
@@ -379,74 +358,9 @@ export function BookingCalendar({
         />
       ) : null}
 
-      {showLegend ? (
-        <ul
-          className={`flex flex-wrap gap-x-3 gap-y-1.5 font-semibold text-foreground/80 ${
-            compact ? "text-[0.65rem]" : "text-xs"
-          }`}
-        >
-          <li className="flex items-center gap-1.5">
-            <span
-              className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("available")}`}
-            />
-            {t.bookingCalendar.legendAvailable}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span
-              className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("past")}`}
-            />
-            {t.bookingCalendar.legendPast}
-          </li>
-          <li className="flex items-center gap-1.5">
-            <span
-              className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("booked")}`}
-            />
-            {t.bookingCalendar.legendBooked}
-          </li>
-          {mode === "availability-readonly" || mode === "request-select" ? (
-            <li className="flex items-center gap-1.5">
-              <span
-                className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("unavailable")}`}
-              />
-              {t.bookingCalendar.legendUnavailable}
-            </li>
-          ) : null}
-          {mode !== "availability-readonly" ? (
-            <li className="flex items-center gap-1.5">
-              <span
-                className={`h-4 w-4 shrink-0 rounded-md ${legendSwatchClass("selected")}`}
-              />
-              {t.bookingCalendar.legendSelected}
-            </li>
-          ) : null}
-        </ul>
-      ) : null}
+      {showLegend ? <CalendarInlineLegend mode={mode} compact={compact} /> : null}
 
-      {chipsVisible && sortedSelected.length > 0 ? (
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-            {t.bookingCalendar.selectedDates}
-          </p>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {sortedSelected.map((iso) => (
-              <li key={iso}>
-                <span className="inline-flex items-center gap-1 rounded-full border border-brand-teal/25 bg-mint/40 px-2.5 py-1 text-xs font-medium text-brand-teal">
-                  {formatDate(iso, locale)}
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => removeChip(iso)}
-                    className="ml-0.5 rounded-full px-1 text-brand-pink hover:bg-brand-pink/15 disabled:opacity-50"
-                    aria-label={`Remove ${iso}`}
-                  >
-                    ×
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : mode === "availability-readonly" ? (
+      {mode === "availability-readonly" ? (
         compact || !showViewOnlyHint ? null : (
           <p className="text-xs text-muted">{t.bookingCalendar.viewOnlyHint}</p>
         )
@@ -454,19 +368,6 @@ export function BookingCalendar({
         <p className="text-xs text-muted">{t.bookingCalendar.tapToAdd}</p>
       ) : mode === "request-select" ? (
         <p className="text-xs text-muted">{t.bookingCalendar.selectFromAvailable}</p>
-      ) : null}
-
-      {chipsVisible && mode !== "availability-readonly" ? (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={disabled || sortedSelected.length === 0}
-            onClick={clearAll}
-            className="rounded-xl border border-black/10 px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-black/5 disabled:opacity-40"
-          >
-            {t.bookingCalendar.clearDates}
-          </button>
-        </div>
       ) : null}
     </div>
   );

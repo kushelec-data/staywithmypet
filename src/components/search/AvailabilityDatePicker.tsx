@@ -64,7 +64,6 @@ export function AvailabilityDatePicker({
       petId={petId}
       petFriendId={petFriendId}
       showLegend
-      showSelectedChips={false}
       className="rounded-2xl"
     />
   );

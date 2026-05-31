@@ -2,24 +2,17 @@
 
 import { AccountCard } from "@/components/account/AccountCard";
 import { useLanguage } from "@/context/LanguageContext";
-import {
-  LEGEND_AVAILABLE_CLASS,
-  LEGEND_BOOKED_CLASS,
-  LEGEND_PAST_CLASS,
-  LEGEND_UNAVAILABLE_CLASS,
-} from "@/lib/calendar-date-state";
-
-const SWATCH = "h-5 w-5 shrink-0 rounded-full";
+import { CalendarLegendSwatch } from "@/components/calendar/CalendarLegendSwatch";
 
 type LegendRowProps = {
-  swatchClass: string;
+  kind: "past" | "booked" | "available" | "unavailable";
   label: string;
 };
 
-function LegendRow({ swatchClass, label }: LegendRowProps) {
+function LegendRow({ kind, label }: LegendRowProps) {
   return (
     <li className="flex items-center gap-3">
-      <span className={`${SWATCH} ${swatchClass}`} aria-hidden />
+      <CalendarLegendSwatch kind={kind} size="panel" />
       <span className="text-sm font-medium text-foreground">{label}</span>
     </li>
   );
@@ -34,10 +27,10 @@ export function CalendarLegendPanel({ className = "" }: { className?: string }) 
       <h2 className="font-heading text-base font-semibold text-foreground">{copy.legendTitle}</h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">{copy.legendIntro}</p>
       <ul className="mt-4 space-y-3" aria-label={copy.legendTitle}>
-        <LegendRow swatchClass={LEGEND_AVAILABLE_CLASS} label={copy.legendAvailable} />
-        <LegendRow swatchClass={LEGEND_BOOKED_CLASS} label={copy.legendBooked} />
-        <LegendRow swatchClass={LEGEND_UNAVAILABLE_CLASS} label={copy.legendUnavailable} />
-        <LegendRow swatchClass={LEGEND_PAST_CLASS} label={copy.legendPast} />
+        <LegendRow kind="available" label={copy.legendAvailable} />
+        <LegendRow kind="booked" label={copy.legendBooked} />
+        <LegendRow kind="unavailable" label={copy.legendUnavailable} />
+        <LegendRow kind="past" label={copy.legendPast} />
       </ul>
     </AccountCard>
   );

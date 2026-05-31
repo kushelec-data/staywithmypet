@@ -82,7 +82,6 @@ export function PetPublicAvailabilityCalendar({
         petId={petId}
         petFriendId={petFriendId}
         showLegend
-        showSelectedChips={selectable}
         compact={compact}
         variant={variant}
         monthCursor={monthCursor}

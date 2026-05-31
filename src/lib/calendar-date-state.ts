@@ -68,12 +68,29 @@ export type ResolvedCalendarDay = {
   title: string;
 };
 
-/** Legend swatches — keep in sync with day cell backgrounds. */
-export const LEGEND_PAST_CLASS = "bg-stone-100 ring-1 ring-stone-200/70";
-export const LEGEND_BOOKED_CLASS = "bg-indigo-200/65 ring-1 ring-indigo-200/70";
-export const LEGEND_AVAILABLE_CLASS = "bg-mint/50 ring-1 ring-emerald-200/60";
-export const LEGEND_UNAVAILABLE_CLASS = "bg-neutral-200/55 ring-1 ring-neutral-300/80";
-export const LEGEND_SELECTED_CLASS = "bg-mint/50 ring-2 ring-brand-teal/45";
+/**
+ * Shared fill/ring for calendar day tiles and legend swatches.
+ * Day cells add text, hover, and cursor classes on top of these.
+ */
+export const CALENDAR_SWATCH = {
+  past: "bg-stone-100 ring-1 ring-stone-200/70",
+  pastCompleted: "bg-stone-200/80 ring-1 ring-stone-200/70",
+  booked: "bg-indigo-200/65 ring-1 ring-indigo-200/70",
+  available: "bg-mint/50 ring-1 ring-emerald-200/60",
+  unavailable: "bg-neutral-200/55 ring-1 ring-neutral-300/80",
+  selected: "bg-mint/45 ring-2 ring-brand-teal ring-offset-1",
+  selectedReadonly: "bg-mint/30 ring-2 ring-brand-teal/40",
+} as const;
+
+/** Tailwind classes for legend swatches (matches day tile fill). */
+export const LEGEND_PAST_CLASS = CALENDAR_SWATCH.past;
+export const LEGEND_BOOKED_CLASS = CALENDAR_SWATCH.booked;
+export const LEGEND_AVAILABLE_CLASS = CALENDAR_SWATCH.available;
+export const LEGEND_UNAVAILABLE_CLASS = CALENDAR_SWATCH.unavailable;
+export const LEGEND_SELECTED_CLASS = CALENDAR_SWATCH.selected;
+
+/** Shared legend swatch dimensions (inline legend + dashboard panel). */
+export const CALENDAR_LEGEND_SWATCH_SHAPE = "h-4 w-4 shrink-0 rounded-md";
 
 /** @deprecated Alias — same palette as default legend classes. */
 export const PASTEL_LEGEND_PAST_CLASS = LEGEND_PAST_CLASS;
@@ -89,44 +106,44 @@ export function legendSwatchClass(
 ): string {
   switch (kind) {
     case "past":
-      return LEGEND_PAST_CLASS;
+      return CALENDAR_SWATCH.past;
     case "booked":
-      return LEGEND_BOOKED_CLASS;
+      return CALENDAR_SWATCH.booked;
     case "available":
-      return LEGEND_AVAILABLE_CLASS;
+      return CALENDAR_SWATCH.available;
     case "unavailable":
-      return LEGEND_UNAVAILABLE_CLASS;
+      return CALENDAR_SWATCH.unavailable;
     case "selected":
-      return LEGEND_SELECTED_CLASS;
+      return CALENDAR_SWATCH.selected;
   }
 }
 
 export const PAST_DAY_CELL =
-  "bg-stone-100 text-stone-600 cursor-not-allowed dark:bg-stone-800/30 dark:text-stone-400";
+  `${CALENDAR_SWATCH.past} text-stone-600 cursor-not-allowed dark:bg-stone-800/30 dark:text-stone-400`;
 
 export const PAST_COMPLETED_CELL =
-  "bg-stone-200/80 text-stone-500 cursor-not-allowed ring-1 ring-stone-200/70 dark:bg-stone-700/40 dark:text-stone-400 dark:ring-stone-600/50";
+  `${CALENDAR_SWATCH.pastCompleted} text-stone-500 cursor-not-allowed dark:bg-stone-700/40 dark:text-stone-400 dark:ring-stone-600/50`;
 
 export const PUBLIC_BOOKED_CELL =
-  "bg-indigo-200/65 text-indigo-950 cursor-not-allowed ring-1 ring-indigo-200/70 dark:bg-indigo-950/25 dark:text-indigo-200 dark:ring-indigo-800/50";
+  `${CALENDAR_SWATCH.booked} text-indigo-950 cursor-not-allowed dark:bg-indigo-950/25 dark:text-indigo-200 dark:ring-indigo-800/50`;
 
 export const AVAILABLE_CELL =
-  "bg-mint/50 text-emerald-900 ring-1 ring-emerald-200/60 hover:bg-mint/65 hover:ring-brand-teal/25 cursor-pointer dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-emerald-800/50";
+  `${CALENDAR_SWATCH.available} text-emerald-900 hover:bg-mint/65 hover:ring-brand-teal/25 cursor-pointer dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-emerald-800/50`;
 
 export const AVAILABLE_TODAY_CELL =
-  "bg-mint/50 text-emerald-900 ring-2 ring-brand-teal/35 ring-offset-1 hover:bg-mint/65 cursor-pointer dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-brand-teal/40";
+  `${CALENDAR_SWATCH.available} text-emerald-900 ring-2 ring-brand-teal/35 ring-offset-1 hover:bg-mint/65 cursor-pointer dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-brand-teal/40`;
 
 export const READONLY_AVAILABLE_CELL =
-  "bg-mint/50 text-emerald-900 ring-1 ring-emerald-200/60 cursor-default dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-emerald-800/50";
+  `${CALENDAR_SWATCH.available} text-emerald-900 cursor-default dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-emerald-800/50`;
 
 export const READONLY_AVAILABLE_TODAY_CELL =
-  "bg-mint/50 text-emerald-900 ring-2 ring-brand-teal/35 ring-offset-1 cursor-default dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-brand-teal/40";
+  `${CALENDAR_SWATCH.available} text-emerald-900 ring-2 ring-brand-teal/35 ring-offset-1 cursor-default dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-brand-teal/40`;
 
 export const SELECTED_CELL =
-  "bg-mint/45 text-brand-teal ring-2 ring-brand-teal ring-offset-1 shadow-sm hover:bg-mint/55 cursor-pointer dark:bg-mint/20 dark:text-brand-teal dark:ring-brand-teal/50";
+  `${CALENDAR_SWATCH.selected} text-brand-teal shadow-sm hover:bg-mint/55 cursor-pointer dark:bg-mint/20 dark:text-brand-teal dark:ring-brand-teal/50`;
 
 export const READONLY_SELECTED_CELL =
-  "bg-mint/30 text-brand-teal ring-2 ring-brand-teal/40 cursor-default dark:bg-mint/15";
+  `${CALENDAR_SWATCH.selectedReadonly} text-brand-teal cursor-default dark:bg-mint/15`;
 
 export const DEFAULT_SELECT_CELL =
   "bg-surface text-foreground ring-1 ring-neutral-200/80 hover:bg-mint/40 hover:ring-brand-teal/25 cursor-pointer dark:ring-neutral-600/80";
@@ -135,7 +152,7 @@ export const DEFAULT_TODAY_SELECT_CELL =
   "bg-surface text-foreground ring-2 ring-brand-teal/35 ring-offset-1 hover:bg-mint/40 cursor-pointer dark:ring-brand-teal/40";
 
 export const UNAVAILABLE_REQUEST_CELL =
-  "bg-neutral-200/55 text-neutral-700 cursor-not-allowed ring-1 ring-neutral-300/80 dark:bg-neutral-800/40 dark:text-neutral-300 dark:ring-neutral-700/60";
+  `${CALENDAR_SWATCH.unavailable} text-neutral-700 cursor-not-allowed dark:bg-neutral-800/40 dark:text-neutral-300 dark:ring-neutral-700/60`;
 
 /** @deprecated Alias — same as UNAVAILABLE_REQUEST_CELL. */
 export const HIGH_CONTRAST_UNAVAILABLE_CELL = UNAVAILABLE_REQUEST_CELL;
