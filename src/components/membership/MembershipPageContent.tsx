@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 import { AccountCard } from "@/components/account/AccountCard";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import {
@@ -42,6 +43,7 @@ import {
   type UserMembership,
 } from "@/lib/membership";
 import { resolveActiveMode } from "@/lib/profile-mode";
+import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
 
 type StripeCheckoutReadiness = {
@@ -123,7 +125,27 @@ export function MembershipPageContent({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const handledReturnRef = useRef<string | null>(null);
+
+  const returnTo = useMemo(
+    () => sanitizeReturnTo(searchParams.get("returnTo")),
+    [searchParams],
+  );
+
+  const replaceMembershipUrl = useCallback(
+    (role: MembershipRole | null) => {
+      router.replace(
+        buildMembershipPagePath({
+          role: role ?? undefined,
+          returnTo,
+        }),
+        { scroll: false },
+      );
+    },
+    [router, returnTo],
+  );
 
   useEffect(() => {
     const success = searchParams.get("success") === "true";
@@ -144,7 +166,7 @@ export function MembershipPageContent({
         if (!cancelledEffect) {
           setCheckoutBanner(t.membershipCheckout.checkoutCancelled);
         }
-        router.replace("/membership", { scroll: false });
+        replaceMembershipUrl(parseCheckoutRole(searchParams.get("role")));
         return;
       }
 
@@ -176,7 +198,7 @@ export function MembershipPageContent({
         if (!cancelledEffect) {
           setCheckoutBanner(t.membershipCheckout.paymentWebhookPending);
         }
-        router.replace("/membership", { scroll: false });
+        replaceMembershipUrl(checkoutRole);
         return;
       }
 
@@ -206,7 +228,7 @@ export function MembershipPageContent({
           ? t.membershipCheckout.paymentSuccess
           : t.membershipCheckout.paymentPending,
       );
-      router.replace("/membership", { scroll: false });
+      replaceMembershipUrl(checkoutRole);
     }
 
     void handleReturn();
@@ -216,7 +238,7 @@ export function MembershipPageContent({
     };
   }, [
     searchParams,
-    router,
+    replaceMembershipUrl,
     refreshProfile,
     t.membershipCheckout,
     membershipWebhookWritable,
@@ -251,6 +273,28 @@ export function MembershipPageContent({
   const stripeCheckout = stripeCheckoutByRole?.[modeRole];
   const stripeCheckoutReady = stripeCheckout?.ready ?? false;
   const stripeConfigMessage = stripeCheckout?.message ?? null;
+
+  const handleCancelPlan = useCallback(async () => {
+    setCancelError(null);
+    setCancelLoading(true);
+    try {
+      const res = await fetch("/api/stripe/billing-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: modeRole, returnTo }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        setCancelError(data.error ?? t.membershipCheckout.cancelUnavailable);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setCancelError(t.membershipCheckout.cancelUnavailable);
+    } finally {
+      setCancelLoading(false);
+    }
+  }, [modeRole, returnTo, t.membershipCheckout.cancelUnavailable]);
 
   const stripePlans = useMemo(() => {
     const parentFeatures = Object.fromEntries(
@@ -352,9 +396,35 @@ export function MembershipPageContent({
         </p>
       </AccountCard>
 
+      {returnTo ? (
+        <p
+          className="mb-4 rounded-2xl border border-[#2E6B3F]/25 bg-[#DDEEDF]/60 px-4 py-3 text-sm text-foreground"
+          role="status"
+        >
+          {t.membershipCheckout.returnToHint}
+        </p>
+      ) : null}
+
       {checkoutBanner ? (
         <p className={`mb-4 px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
           {checkoutBanner}
+        </p>
+      ) : null}
+
+      {isActive && returnTo ? (
+        <div className="mb-6">
+          <Button href={returnTo} variant="primary" size="md">
+            {t.membershipCheckout.continueBooking}
+          </Button>
+        </div>
+      ) : null}
+
+      {cancelError ? (
+        <p
+          className="mb-4 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          role="alert"
+        >
+          {cancelError}
         </p>
       ) : null}
 
@@ -377,6 +447,10 @@ export function MembershipPageContent({
         checkoutRole={modeRole}
         enableCheckout={!isActive && stripeCheckoutReady}
         planCheckoutErrors={stripePlanErrorsByRole?.[modeRole]}
+        checkoutReturnTo={returnTo}
+        cancelPlanLabel={t.membershipCheckout.cancelPlan}
+        cancelPlanLoading={cancelLoading}
+        onCancelPlan={isActive ? handleCancelPlan : undefined}
       />
     </AccountLayout>
   );

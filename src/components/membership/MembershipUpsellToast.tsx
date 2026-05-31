@@ -21,6 +21,8 @@ type MembershipUpsellToastProps = {
   /** Pet or caretaker name for contextual copy. */
   name?: string;
   role: MembershipRole;
+  /** Page to return to after membership checkout (e.g. pet profile). */
+  returnTo?: string | null;
   /** Close an overlay modal (e.g. availability calendar) before navigating. */
   onDismissModal?: () => void;
 };
@@ -31,6 +33,7 @@ export function MembershipUpsellToast({
   variant,
   name,
   role,
+  returnTo,
   onDismissModal,
 }: MembershipUpsellToastProps) {
   const { t } = useLanguage();
@@ -50,7 +53,7 @@ export function MembershipUpsellToast({
   }, [open]);
 
   const { title, body } = membershipUpsellCopy(variant, name, t.membershipUpsell);
-  const upgradeHref = membershipUpsellHref(role);
+  const upgradeHref = membershipUpsellHref(role, returnTo);
 
   const handleUnlock = useCallback(() => {
     onDismissModal?.();

@@ -748,6 +748,12 @@ export const en = {
     paymentWebhookPending:
       "Payment received. Membership will activate after webhook is connected.",
     checkoutCancelled: "Checkout was cancelled. You can choose a plan when you are ready.",
+    returnToHint:
+      "After activating your membership, continue with your pet booking.",
+    continueBooking: "Continue with your pet booking",
+    cancelPlan: "Cancel plan",
+    cancelUnavailable:
+      "Plan cancellation is not available yet. Please contact support.",
   },
   membershipUpsell: {
     oneStepTitle: "🐾 You're one step away!",

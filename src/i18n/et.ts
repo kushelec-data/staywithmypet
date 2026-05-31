@@ -752,6 +752,12 @@ export const et = {
     paymentWebhookPending:
       "Makse laekus. Liikmelisus aktiveerub pärast veebikonkside ühendamist.",
     checkoutCancelled: "Makse katkestati. Saad paketi valida, kui oled valmis.",
+    returnToHint:
+      "Pärast liikmelisuse aktiveerimist jätka oma lemmiklooma broneerimist.",
+    continueBooking: "Jätka lemmiklooma broneerimist",
+    cancelPlan: "Tühista pakett",
+    cancelUnavailable:
+      "Paketi tühistamine pole veel saadaval. Palun võta ühendust toega.",
   },
   membershipUpsell: {
     oneStepTitle: "🐾 Oled ühe sammu kaugusel!",

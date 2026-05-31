@@ -35,6 +35,11 @@ type MembershipPlansProps = {
   enableCheckout?: boolean;
   /** Server-resolved per-plan config errors, e.g. "Missing STRIPE_PRICE_PARENT_3M". */
   planCheckoutErrors?: Record<string, string | null>;
+  /** After checkout, return user to this path (e.g. pet booking page). */
+  checkoutReturnTo?: string | null;
+  cancelPlanLabel?: string;
+  cancelPlanLoading?: boolean;
+  onCancelPlan?: () => void;
 };
 
 function planId(plan: PricingPlan | MembershipPlanDefinition): string {
@@ -80,6 +85,9 @@ function PlanCard({
   checkoutError,
   planConfigError,
   onChoosePlan,
+  cancelPlanLabel,
+  cancelPlanLoading,
+  onCancelPlan,
 }: {
   plan: PricingPlan;
   variant: "marketing" | "account";
@@ -97,6 +105,9 @@ function PlanCard({
   checkoutError?: string | null;
   planConfigError?: string | null;
   onChoosePlan?: (plan: PricingPlan) => void;
+  cancelPlanLabel?: string;
+  cancelPlanLoading?: boolean;
+  onCancelPlan?: () => void;
 }) {
   const isCurrent =
     variant === "account" &&
@@ -112,6 +123,9 @@ function PlanCard({
     Boolean(checkoutUserId) &&
     Boolean(checkoutRole) &&
     Boolean(onChoosePlan);
+
+  const canCancel =
+    variant === "account" && isCurrent && Boolean(onCancelPlan) && Boolean(cancelPlanLabel);
 
   const isAccount = variant === "account";
 
@@ -188,18 +202,28 @@ function PlanCard({
           ) : null}
           <Button
             type="button"
-            variant={plan.popular ? "primary" : "secondary"}
+            variant={canCancel ? "secondary" : plan.popular ? "primary" : "secondary"}
             className={`mt-5 w-full sm:mt-6 ${isAccount ? "" : "sm:mt-8"}`}
             size={isAccount ? "sm" : "lg"}
-            disabled={isCurrent || (!canCheckout && !isCurrent)}
+            disabled={
+              canCancel
+                ? cancelPlanLoading
+                : isCurrent || (!canCheckout && !isCurrent)
+            }
             onClick={() => {
+              if (canCancel && onCancelPlan) {
+                onCancelPlan();
+                return;
+              }
               if (canCheckout && onChoosePlan) onChoosePlan(plan);
             }}
           >
             {isLoading
               ? "Redirecting…"
-              : isCurrent
-                ? activePlanLabel
+              : canCancel
+                ? cancelPlanLoading
+                  ? "…"
+                  : cancelPlanLabel!
                 : canCheckout
                   ? choosePlanLabel
                   : planConfigError ?? checkoutUnavailableLabel}
@@ -236,6 +260,10 @@ export function MembershipPlans({
   checkoutRole,
   enableCheckout = false,
   planCheckoutErrors,
+  checkoutReturnTo,
+  cancelPlanLabel,
+  cancelPlanLoading = false,
+  onCancelPlan,
 }: MembershipPlansProps) {
   const { t } = useLanguage();
   const lockedTab = modeFilter ?? initialTab;
@@ -273,6 +301,7 @@ export function MembershipPlans({
           role: effectiveCheckoutRole,
           planId: planId(plan),
           userId: checkoutUserId,
+          returnTo: checkoutReturnTo ?? undefined,
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
@@ -357,6 +386,9 @@ export function MembershipPlans({
             checkoutError={checkoutError}
             planConfigError={planCheckoutErrors?.[plan.id] ?? null}
             onChoosePlan={enableCheckout ? handleChoosePlan : undefined}
+            cancelPlanLabel={cancelPlanLabel}
+            cancelPlanLoading={cancelPlanLoading}
+            onCancelPlan={onCancelPlan}
           />
         ))}
       </div>

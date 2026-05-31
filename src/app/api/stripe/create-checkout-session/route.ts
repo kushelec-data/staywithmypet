@@ -11,6 +11,8 @@ import {
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
+import { sanitizeReturnTo } from "@/lib/membership-return";
+import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import { getStripe } from "@/lib/stripe";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
@@ -24,6 +26,7 @@ type CheckoutBody = {
   planId?: string;
   plan_id?: string;
   userId?: string;
+  returnTo?: string;
 };
 
 function planExistsForRole(role: MembershipRole, planId: string): boolean {
@@ -61,7 +64,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { role: roleRaw, planId: planIdBody, plan_id: planIdSnake, userId } = body;
+  const { role: roleRaw, planId: planIdBody, plan_id: planIdSnake, userId, returnTo: returnToRaw } =
+    body;
+  const returnTo = sanitizeReturnTo(returnToRaw ?? null);
   const rawPlanId = (planIdBody ?? planIdSnake)?.trim();
   const role = parseMembershipRoleInput(roleRaw);
 
@@ -181,16 +186,25 @@ export async function POST(request: Request) {
     .eq("role", role)
     .maybeSingle();
 
+  const origin =
+    request.headers.get("origin")?.trim().replace(/\/$/, "") ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ||
+    new URL(request.url).origin;
+  const roleQuery = membershipRoleToPageQuery(role);
+  const returnToQuery = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "";
+
   const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
     mode,
     line_items: [{ price: resolvedPriceId!, quantity: 1 }],
     allow_promotion_codes: true,
     client_reference_id: sessionUserId,
     customer_email: user?.email ?? undefined,
-    metadata: checkoutMetadata,
-    success_url:
-      "https://staywithmypet-clean.vercel.app/membership?checkout=success&session_id={CHECKOUT_SESSION_ID}",
-    cancel_url: "https://staywithmypet-clean.vercel.app/membership?checkout=cancelled",
+    metadata: {
+      ...checkoutMetadata,
+      ...(returnTo ? { return_to: returnTo } : {}),
+    },
+    success_url: `${origin}/membership?success=true&session_id={CHECKOUT_SESSION_ID}&role=${roleQuery}${returnToQuery}`,
+    cancel_url: `${origin}/membership?cancelled=true&role=${roleQuery}${returnToQuery}`,
   };
 
   const existingCustomerId = existingMembership?.stripe_customer_id?.trim();

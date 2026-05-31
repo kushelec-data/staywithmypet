@@ -384,6 +384,7 @@ export function SendRequestButton({
         variant={membershipUpsellVariantForRequest(target)}
         name={target.label}
         role={senderMode === "pet_friend" ? "pet_friend" : "pet_parent"}
+        returnTo={returnUrl}
         onClose={closeUpgradeToast}
       />
     </>

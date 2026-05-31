@@ -1,4 +1,5 @@
 import type { MembershipRole } from "@/lib/membership";
+import { buildMembershipUpsellHref as buildMembershipHrefWithReturn } from "@/lib/membership-return";
 import type { Dictionary } from "@/i18n/translations";
 
 export type MembershipUpsellVariant = "searchPet" | "findCare" | "fallback";
@@ -17,8 +18,8 @@ export function membershipRoleToPageQuery(role: MembershipRole): MembershipPageR
   return role === "pet_parent" ? "parent" : "friend";
 }
 
-export function membershipUpsellHref(role: MembershipRole): string {
-  return `/membership?role=${membershipRoleToPageQuery(role)}`;
+export function membershipUpsellHref(role: MembershipRole, returnTo?: string | null): string {
+  return buildMembershipHrefWithReturn(role, returnTo);
 }
 
 export function membershipUpsellVariantForRequest(target: {

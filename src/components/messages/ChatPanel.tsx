@@ -18,7 +18,8 @@ import {
 import { blockUser, formatTrustSafetyError, isUserBlocked } from "@/lib/trust-safety";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { useProfile } from "@/context/ProfileContext";
 import {
@@ -47,6 +48,12 @@ export function ChatPanel({
   onBack,
   onMessageSent,
 }: ChatPanelProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const membershipReturnTo = useMemo(() => {
+    const q = searchParams.toString();
+    return q ? `${pathname}?${q}` : pathname;
+  }, [pathname, searchParams]);
   const { t } = useLanguage();
   const { profile } = useProfile();
   const m = t.messages;
@@ -394,6 +401,7 @@ export function ChatPanel({
               )
             : "pet_parent"
         }
+        returnTo={membershipReturnTo}
         onClose={() => setUpgradeOpen(false)}
       />
     </div>
