@@ -3,19 +3,20 @@ import {
   formatPetTypesWillingComfort,
 } from "@/lib/pet-care-labels";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
+import { normalizePetTypeValue } from "@/lib/pet-type-options";
 import {
   formatPetTypeLabel,
   resolvedPetCarePreferences,
   type ProfileDetails,
 } from "@/lib/profile-details";
 
-const SMALL_PET_TYPES = new Set(["rabbit", "bird", "other", "fish", "reptile"]);
+const SMALL_PET_TYPES = new Set(["rabbit", "bird", "rodent", "fish", "reptile", "other"]);
 
 /** Short preference chips for Pet Friend listing cards (max ~5). */
 export function buildPetFriendPreferenceChips(details: ProfileDetails | null | undefined): string[] {
   const care = resolvedPetCarePreferences(details ?? {});
   const chips: string[] = [];
-  const types = new Set(care.pet_types_willing_to_care_for ?? []);
+  const types = new Set((care.pet_types_willing_to_care_for ?? []).map(normalizePetTypeValue));
 
   for (const comfort of formatPetTypesWillingComfort(
     care.pet_types_willing_to_care_for ?? [],

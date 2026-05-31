@@ -1,4 +1,5 @@
 import { parseProfileDetails, type ProfileDetails } from "@/lib/profile-details";
+import { normalizePetTypeList } from "@/lib/pet-type-options";
 import { strFromOtherField } from "@/lib/other-option";
 
 /** `profiles.details.pet_parent_profile` */
@@ -44,7 +45,7 @@ function strArrFrom(value: unknown): string[] {
 export function parsePetParentProfileDetails(raw: unknown): PetParentProfileDetails | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const o = raw as Record<string, unknown>;
-  const preferred_pet_types = strArrFrom(o.preferred_pet_types);
+  const preferred_pet_types = normalizePetTypeList(strArrFrom(o.preferred_pet_types));
   const preferred_care_types = strArrFrom(o.preferred_care_types);
   const own_pets_summary = strFrom(o.own_pets_summary) || null;
   const care_needs_notes = strFrom(o.care_needs_notes) || null;
@@ -78,7 +79,7 @@ export function petParentFormFromDetails(details: ProfileDetails): PetParentProf
     ownPetsSummary: parent?.own_pets_summary ?? "",
     careNeedsNotes: parent?.care_needs_notes ?? "",
     homeLocationNotes: parent?.home_location_notes ?? "",
-    preferredPetTypes: [...(parent?.preferred_pet_types ?? [])],
+    preferredPetTypes: normalizePetTypeList([...(parent?.preferred_pet_types ?? [])]),
     preferredPetTypesOther: parent?.preferred_pet_types_other ?? "",
     preferredCareTypes: [...(parent?.preferred_care_types ?? [])],
     preferredCareTypesOther: parent?.preferred_care_types_other ?? "",
@@ -94,7 +95,7 @@ function buildPetParentProfileDetails(input: PetParentProfileFormInput): PetPare
     own_pets_summary: input.ownPetsSummary.trim() || null,
     care_needs_notes: input.careNeedsNotes.trim() || null,
     home_location_notes: input.homeLocationNotes.trim() || null,
-    preferred_pet_types: input.preferredPetTypes,
+    preferred_pet_types: normalizePetTypeList(input.preferredPetTypes),
     preferred_pet_types_other: input.preferredPetTypesOther.trim() || null,
     preferred_care_types: input.preferredCareTypes,
     preferred_care_types_other: input.preferredCareTypesOther.trim() || null,

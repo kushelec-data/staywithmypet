@@ -1,4 +1,9 @@
-import { careTypeOptions, petTypeOptions, sizeOptions } from "@/lib/legacy/search-filters";
+import { careTypeOptions, sizeOptions } from "@/lib/legacy/search-filters";
+import {
+  formatPetTypeLabel,
+  normalizePetTypeList,
+  petTypeOptions,
+} from "@/lib/pet-type-options";
 import { formatDateListShort } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import {
@@ -134,13 +139,13 @@ function parsePetCarePreferences(raw: unknown): PetCarePreferences | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const o = raw as Record<string, unknown>;
 
-  const pet_types_willing_to_care_for = strArrFrom(
-    o.pet_types_willing_to_care_for ?? o.pet_types,
+  const pet_types_willing_to_care_for = normalizePetTypeList(
+    strArrFrom(o.pet_types_willing_to_care_for ?? o.pet_types),
   );
   const preferred_pet_sizes = strArrFrom(o.preferred_pet_sizes ?? o.pet_sizes);
   const available_care_types = strArrFrom(o.available_care_types ?? o.care_types);
-  const pet_types_previously_borrowed = strArrFrom(
-    o.pet_types_previously_borrowed ?? o.experience_tags,
+  const pet_types_previously_borrowed = normalizePetTypeList(
+    strArrFrom(o.pet_types_previously_borrowed ?? o.experience_tags),
   );
 
   const care: PetCarePreferences = {
@@ -481,13 +486,6 @@ export function mergeDetailsGooglePlace(
     delete base.google_place_id;
   }
   return base;
-}
-
-export function formatPetTypeLabel(value: string, otherCustom?: string | null): string {
-  if (isOtherOptionValue(value)) {
-    return otherCustom?.trim() || "Other";
-  }
-  return petTypeOptions.find((o) => o.value === value)?.label ?? value;
 }
 
 export function formatLivingTypeLabel(

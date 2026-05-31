@@ -5,7 +5,7 @@ export const petFriendSearchTypeOptions = [
   { value: "cat", label: "Cats", aliases: ["cat"] },
   { value: "rabbit", label: "Rabbits", aliases: ["rabbit"] },
   { value: "bird", label: "Birds", aliases: ["bird"] },
-  { value: "rodent", label: "Rodents", aliases: ["rodent", "small-mammal", "small mammal"] },
+  { value: "rodent", label: "Rodent", aliases: ["rodent", "rodents", "small-mammal", "small mammal"] },
   { value: "fish", label: "Fish", aliases: ["fish"] },
   { value: "reptile", label: "Reptiles", aliases: ["reptile"] },
   { value: "other", label: "Other", aliases: ["other"] },

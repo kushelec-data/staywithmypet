@@ -1,15 +1,7 @@
-export const petAnimalTypes = [
-  { value: "dog", label: "Dog" },
-  { value: "cat", label: "Cat" },
-  { value: "rabbit", label: "Rabbit" },
-  { value: "bird", label: "Bird" },
-  { value: "rodent", label: "Rodent" },
-  { value: "fish", label: "Fish" },
-  { value: "reptile", label: "Reptile" },
-  { value: "other", label: "Other" },
-] as const;
-
+import { PET_TYPE_OPTIONS } from "@/lib/pet-type-options";
 import { PET_WEIGHT_CATEGORY_OPTIONS } from "@/lib/pet-weight";
+
+export const petAnimalTypes = PET_TYPE_OPTIONS;
 
 export const petGenderOptions = ["Male", "Female", "Neutered", "Other"] as const;
 

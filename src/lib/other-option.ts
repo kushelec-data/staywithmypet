@@ -54,8 +54,8 @@ export function strFromOtherField(value: unknown): string {
 
 export const OTHER_FIELD_COPY = {
   petType: {
-    label: "What pet type?",
-    placeholder: "e.g. hamster, turtle, goat",
+    label: "What animal?",
+    placeholder: "e.g. horse, turtle, ferret",
   },
   careType: {
     label: "What care type?",

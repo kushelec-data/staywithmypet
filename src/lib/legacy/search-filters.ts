@@ -1,13 +1,4 @@
-export const petTypeOptions = [
-  { value: "dog", label: "Dog" },
-  { value: "cat", label: "Cat" },
-  { value: "rabbit", label: "Rabbit" },
-  { value: "bird", label: "Bird" },
-  { value: "fish", label: "Fish" },
-  { value: "reptile", label: "Reptile" },
-  { value: "small-mammal", label: "Small mammal" },
-  { value: "other", label: "Other" },
-];
+export { petTypeOptions } from "@/lib/pet-type-options";
 
 /** Preferred pet weight bands (matches `pets.size_label` keys). */
 export const sizeOptions = ["under_5_kg", "5_10_kg", "10_15_kg", "over_15_kg"] as const;

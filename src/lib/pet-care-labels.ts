@@ -1,12 +1,7 @@
-import { petTypeOptions } from "@/lib/legacy/search-filters";
+import { formatPetTypeLabel, normalizePetTypeValue } from "@/lib/pet-type-options";
 import { isOtherOptionValue } from "@/lib/other-option";
 
-function formatPetTypeLabel(value: string, otherCustom?: string | null): string {
-  if (isOtherOptionValue(value)) {
-    return otherCustom?.trim() || "Other";
-  }
-  return petTypeOptions.find((o) => o.value === value)?.label ?? value;
-}
+export { formatPetTypeLabel };
 
 export type LabeledOption = { value: string; label: string };
 
@@ -108,7 +103,7 @@ export function formatPreferredCareLocationLabel(raw: string | null | undefined)
 /** Human-friendly chips for `pet_types_willing_to_care_for`. */
 export function formatPetTypesWillingComfort(types: string[], otherCustom?: string | null): string[] {
   const normalized = types.filter((t) => t.trim().length > 0);
-  const set = new Set(normalized.map((t) => t.trim().toLowerCase()));
+  const set = new Set(normalized.map((t) => normalizePetTypeValue(t)));
   const chips: string[] = [];
   const otherText = otherCustom?.trim();
 
@@ -128,7 +123,7 @@ export function formatPetTypesWillingComfort(types: string[], otherCustom?: stri
   }
 
   for (const type of normalized) {
-    const key = type.trim().toLowerCase();
+    const key = normalizePetTypeValue(type);
     if (set.has(key)) {
       if (isOtherOptionValue(type)) {
         chips.push(

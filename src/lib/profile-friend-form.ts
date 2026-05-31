@@ -1,3 +1,4 @@
+import { normalizePetTypeList } from "@/lib/pet-type-options";
 import {
   mergeDetailsAvailabilityBlock,
   mergeDetailsSelectedAvailabilityDates,
@@ -104,12 +105,12 @@ export function petFriendFormFromDetails(
       : normalizeAvailabilityDates(avail.selected_dates);
 
   return {
-    petTypesWilling: [...(care?.pet_types_willing_to_care_for ?? [])],
+    petTypesWilling: normalizePetTypeList([...(care?.pet_types_willing_to_care_for ?? [])]),
     petTypesWillingOther: care?.pet_types_willing_other ?? "",
     preferredPetSizes: normalizePreferredPetSizesList([...(care?.preferred_pet_sizes ?? [])]),
     experienceLevel:
       normalizeExperienceLevelValue(care?.experience_level) ?? experienceLevelOptions[0].value,
-    petTypesPreviouslyBorrowed: [...(care?.pet_types_previously_borrowed ?? [])],
+    petTypesPreviouslyBorrowed: normalizePetTypeList([...(care?.pet_types_previously_borrowed ?? [])]),
     petTypesPreviouslyBorrowedOther: care?.pet_types_previously_borrowed_other ?? "",
     willingSpecialMedicalNeeds: care?.willing_special_medical_needs ?? null,
     willingBehavioralQuirks: care?.willing_behavioral_quirks ?? null,
@@ -144,11 +145,11 @@ export function petFriendFormFromDetailsRaw(
 
 function buildPetCarePreferences(input: PetFriendProfileFormInput): PetCarePreferences {
   return {
-    pet_types_willing_to_care_for: input.petTypesWilling,
+    pet_types_willing_to_care_for: normalizePetTypeList(input.petTypesWilling),
     pet_types_willing_other: input.petTypesWillingOther.trim() || null,
     preferred_pet_sizes: input.preferredPetSizes,
     experience_level: input.experienceLevel.trim() || null,
-    pet_types_previously_borrowed: input.petTypesPreviouslyBorrowed,
+    pet_types_previously_borrowed: normalizePetTypeList(input.petTypesPreviouslyBorrowed),
     pet_types_previously_borrowed_other: input.petTypesPreviouslyBorrowedOther.trim() || null,
     willing_special_medical_needs: input.willingSpecialMedicalNeeds,
     willing_behavioral_quirks: input.willingBehavioralQuirks,
