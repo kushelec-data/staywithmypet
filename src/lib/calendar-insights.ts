@@ -1,5 +1,5 @@
 import {
-  expandBookingToDates,
+  bookingOccurrenceDates,
   monthBounds,
   type CalendarBooking,
 } from "@/lib/booking-calendar";
@@ -40,7 +40,7 @@ export function bookedDaysCountInMonth(
 
   for (const booking of bookings) {
     if (booking.status === "cancelled") continue;
-    for (const iso of expandBookingToDates(booking)) {
+    for (const iso of bookingOccurrenceDates(booking)) {
       if (iso >= start && iso <= end) dates.add(iso);
     }
   }

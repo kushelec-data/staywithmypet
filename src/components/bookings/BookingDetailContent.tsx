@@ -183,33 +183,27 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
             />
           ) : null}
 
-          <dl className="mt-6 grid gap-4 border-t border-black/5 pt-6 sm:grid-cols-2">
+          <dl className="mt-6 grid gap-3 border-t border-black/5 pt-6 sm:grid-cols-2">
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.petLabel}</dt>
-              <dd className="mt-1 text-sm font-medium">{booking.petName}</dd>
+              <dd className="mt-1 text-sm font-medium text-foreground">{booking.petName}</dd>
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.parentLabel}</dt>
-              <dd className="mt-1 text-sm font-medium">{booking.parentName}</dd>
+              <dd className="mt-1 text-sm font-medium text-foreground">{booking.parentName}</dd>
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.friendLabel}</dt>
-              <dd className="mt-1 text-sm font-medium">{booking.friendName}</dd>
+              <dd className="mt-1 text-sm font-medium text-foreground">{booking.friendName}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.withLabel}</dt>
-              <dd className="mt-1 text-sm font-medium">{booking.otherPartyName}</dd>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.careTypeLabel}</dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">{booking.careType ?? "—"}</dd>
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.datesLabel}</dt>
-              <dd className="mt-1 text-sm font-medium">{booking.dateLabel}</dd>
+              <dd className="mt-1 text-sm font-medium text-foreground">{booking.dateLabel}</dd>
             </div>
-            {booking.careType ? (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.careTypeLabel}</dt>
-                <dd className="mt-1 text-sm font-medium">{booking.careType}</dd>
-              </div>
-            ) : null}
             {booking.displayStatus === "completed" && booking.completedAtLabel ? (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.completedOn}</dt>
@@ -228,15 +222,6 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
             <div className="mt-4 rounded-xl bg-cream/60 px-4 py-3 ring-1 ring-black/[0.04]">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">{b.cancelledReasonLabel}</p>
               <p className="mt-1 text-sm leading-relaxed text-foreground/90">{booking.cancelledReason}</p>
-            </div>
-          ) : null}
-
-          {booking.requestedDates.length > 0 ? (
-            <div className="mt-4 rounded-xl bg-cream/60 px-4 py-3 ring-1 ring-black/[0.04]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">{b.selectedDates}</p>
-              <p className="mt-1 text-sm text-foreground/90">
-                {booking.requestedDatesLabel ?? booking.dateLabel}
-              </p>
             </div>
           ) : null}
 

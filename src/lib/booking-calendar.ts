@@ -1,5 +1,9 @@
 import { formatBookingDates, formatDateRange } from "@/lib/date-format";
-import { eachISODateInRangeInclusive, localISODate, normalizeAvailabilityDates } from "@/lib/pet-availability";
+import {
+  eachISODateInRangeInclusive,
+  localISODate,
+  normalizeAvailabilityDates,
+} from "@/lib/pet-availability";
 import type { BookingStatus } from "@/types/database";
 
 /** Statuses that block new bookings and date selection. */
@@ -58,8 +62,20 @@ export type DayBookingSlice = {
 
 export type CalendarViewRole = "pet-parent" | "pet-friend" | "involved" | "public";
 
-export function expandBookingToDates(booking: Pick<CalendarBooking, "startDate" | "endDate">): string[] {
+/** Actual booked days from request selection; falls back to start–end span when missing. */
+export function bookingOccurrenceDates(
+  booking: Pick<CalendarBooking, "startDate" | "endDate" | "requestedDates">,
+): string[] {
+  const requested = normalizeAvailabilityDates(booking.requestedDates ?? []);
+  if (requested.length) return requested;
   return eachISODateInRangeInclusive(booking.startDate, booking.endDate);
+}
+
+/** @deprecated use bookingOccurrenceDates */
+export function expandBookingToDates(
+  booking: Pick<CalendarBooking, "startDate" | "endDate" | "requestedDates">,
+): string[] {
+  return bookingOccurrenceDates(booking);
 }
 
 export function isBlockingBookingStatus(status: BookingStatus): boolean {
@@ -104,7 +120,7 @@ export function mergeBookingsByDay(
 
   for (const booking of bookings) {
     if (!allowed.has(booking.status)) continue;
-    for (const iso of expandBookingToDates(booking)) {
+    for (const iso of bookingOccurrenceDates(booking)) {
       const list = map.get(iso) ?? [];
       list.push({
         booking,
