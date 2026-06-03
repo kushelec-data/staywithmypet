@@ -14,11 +14,11 @@ import type { ProfileRole } from "@/lib/profile-setup";
 import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
 import {
   isProfileVerified,
-  parseEmergencyContact,
   parseTrustFlagsFromDetails,
 } from "@/lib/trust-safety";
 import { isBioCompleteForProfile } from "@/lib/profile-completeness";
-import { computeTrustScorePercent, trustInputFromProfileSnapshot } from "@/lib/trust-score";
+import { calculateTrustScore } from "@/lib/trust-score";
+import { countReviewsAsReviewee } from "@/lib/bookings-stats";
 
 /** No raw phone numbers on public fetch. */
 const PUBLIC_PROFILE_SELECT = PUBLIC_PROFILE_COLUMNS;
@@ -118,6 +118,7 @@ export function toPublicProfileView(
   options: {
     petsCount?: number;
     completedBookings?: number;
+    reviewsAsRevieweeCount?: number;
   } = {},
 ): PublicProfileView {
   const role = row.role ?? "pet_friend";
@@ -135,8 +136,8 @@ export function toPublicProfileView(
   });
   const trustFlags = parseTrustFlagsFromDetails(row.details);
   const completedBookings = options.completedBookings ?? 0;
-  const reviewsCount = row.rating_count ?? 0;
-  const hasEmergency = Boolean(parseEmergencyContact(row.details));
+  const reviewsAsReviewee =
+    options.reviewsAsRevieweeCount ?? row.rating_count ?? 0;
 
   const phoneVerifiedPublic =
     row.phone_verified === true ||
@@ -144,16 +145,29 @@ export function toPublicProfileView(
 
   const emailVerified = trustFlags.emailVerified;
 
-  const trustInput = trustInputFromProfileSnapshot({
-    emailVerified,
-    phoneVerified: phoneVerifiedPublic,
-    avatarUrl: row.avatar_url,
-    bio: row.bio,
-    completedBookingsCount: completedBookings,
-    reviewsAsRevieweeCount: reviewsCount,
-    hasEmergencyContact: hasEmergency,
-  });
-  const trustPercent = computeTrustScorePercent(trustInput);
+  const trustBreakdown = calculateTrustScore(
+    {
+      avatar_url: row.avatar_url ?? null,
+      bio: row.bio,
+      phone_verified: phoneVerifiedPublic,
+      phone: typeof row.phone === "string" ? row.phone : null,
+      phone_e164: typeof row.phone_e164 === "string" ? row.phone_e164 : null,
+      emergency_contact_name:
+        typeof row.emergency_contact_name === "string" ? row.emergency_contact_name : null,
+      emergency_contact_phone_e164:
+        typeof row.emergency_contact_phone_e164 === "string"
+          ? row.emergency_contact_phone_e164
+          : null,
+      details: row.details,
+    },
+    {
+      emailVerified,
+      completedBookingsCount: completedBookings,
+      reviewsAsRevieweeCount: reviewsAsReviewee,
+      phoneVerified: phoneVerifiedPublic,
+    },
+  );
+  const trustPercent = trustBreakdown.percent;
 
   const trust_badges: PublicTrustBadgeId[] = [];
   if (emailVerified) trust_badges.push("email_verified");
@@ -164,9 +178,9 @@ export function toPublicProfileView(
   ) {
     trust_badges.push("profile_complete");
   }
-  if (reviewsCount > 0) trust_badges.push("reviewed");
+  if (reviewsAsReviewee > 0) trust_badges.push("reviewed");
   if (completedBookings > 0) trust_badges.push("completed_bookings");
-  if (hasEmergency) trust_badges.push("emergency_contact");
+  if (trustBreakdown.hasEmergencyContact) trust_badges.push("emergency_contact");
 
   const flagsForVerified = { emailVerified, phoneVerified: phoneVerifiedPublic };
 
@@ -225,8 +239,15 @@ export async function fetchPublicProfile(
   if (!data) return null;
 
   const pets = await fetchPublicPetsForOwner(supabase, profileId);
-  const completed = await countCompletedBookingsForUser(supabase, profileId);
-  return toPublicProfileView(data, { petsCount: pets.length, completedBookings: completed });
+  const [completed, reviewsAsReviewee] = await Promise.all([
+    countCompletedBookingsForUser(supabase, profileId),
+    countReviewsAsReviewee(supabase, profileId),
+  ]);
+  return toPublicProfileView(data, {
+    petsCount: pets.length,
+    completedBookings: completed,
+    reviewsAsRevieweeCount: reviewsAsReviewee,
+  });
 }
 
 export async function fetchPublicPetsForOwner(

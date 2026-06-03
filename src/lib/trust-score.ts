@@ -1,4 +1,26 @@
 import { isBioCompleteForProfile } from "@/lib/profile-completeness";
+import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
+
+/** Profile fields used for trust scoring (dashboard + public). */
+export type TrustScoreProfileSlice = {
+  avatar_url: string | null;
+  bio: string | null;
+  phone_verified: boolean;
+  phone?: string | null;
+  phone_e164?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone_e164?: string | null;
+  details: unknown;
+};
+
+/** Live stats that affect trust (bookings, reviews, email). */
+export type TrustScoreStats = {
+  emailVerified: boolean;
+  completedBookingsCount: number;
+  reviewsAsRevieweeCount: number;
+  /** When public profile infers phone verification differently than the column alone. */
+  phoneVerified?: boolean;
+};
 
 export type TrustScoreInput = {
   emailVerified: boolean;
@@ -106,6 +128,44 @@ export function percentFromTrustChecks(checks: TrustCheck[]): number {
 /** Weights sum to 100% max. */
 export function computeTrustScorePercent(input: TrustScoreInput): number {
   return percentFromTrustChecks(buildTrustChecks(input, false));
+}
+
+/** Shared display value, e.g. `85%` (label is `trustScoreTitle` in i18n). */
+export function formatTrustScoreDisplay(percent: number): string {
+  const n = Math.min(100, Math.max(0, Math.round(percent)));
+  return `${n}%`;
+}
+
+export function phoneOnFileFromProfile(
+  profile: Pick<TrustScoreProfileSlice, "phone" | "phone_e164">,
+): boolean {
+  return Boolean(profile.phone_e164?.trim() || profile.phone?.trim());
+}
+
+/**
+ * Single entry point for trust score (dashboard, public profile, profile save).
+ */
+export function calculateTrustScore(
+  profile: TrustScoreProfileSlice,
+  stats: TrustScoreStats,
+  options?: { phoneOnFile?: boolean },
+): TrustScoreBreakdown {
+  const phoneOnFile = options?.phoneOnFile ?? phoneOnFileFromProfile(profile);
+  const emergency = parseEmergencyContactFromProfile({
+    emergency_contact_name: profile.emergency_contact_name ?? null,
+    emergency_contact_phone_e164: profile.emergency_contact_phone_e164 ?? null,
+    details: profile.details,
+  });
+  const trustInput = trustInputFromProfileSnapshot({
+    emailVerified: stats.emailVerified,
+    phoneVerified: stats.phoneVerified ?? profile.phone_verified,
+    avatarUrl: profile.avatar_url,
+    bio: profile.bio,
+    completedBookingsCount: stats.completedBookingsCount,
+    reviewsAsRevieweeCount: stats.reviewsAsRevieweeCount,
+    hasEmergencyContact: Boolean(emergency),
+  });
+  return buildTrustBreakdown(trustInput, { phoneOnFile });
 }
 
 export function buildTrustBreakdown(

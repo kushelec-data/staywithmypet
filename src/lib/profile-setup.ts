@@ -40,10 +40,7 @@ import {
   normalizeDialCode,
   normalizeNationalDigits,
 } from "@/lib/phone-eu";
-import {
-  computeTrustScorePercent,
-  trustInputFromProfileSnapshot,
-} from "@/lib/trust-score";
+import { calculateTrustScore } from "@/lib/trust-score";
 
 export type ProfileRole = "pet_parent" | "pet_friend" | "both";
 
@@ -343,16 +340,24 @@ export async function saveUserProfile(
       ? (rowForTrust as Record<string, unknown>).avatar_url
       : null;
 
-  const trustInput = trustInputFromProfileSnapshot({
-    emailVerified: Boolean(context.user.email_confirmed_at),
-    phoneVerified: nextPhoneVerified,
-    avatarUrl: typeof existingAvatar === "string" ? existingAvatar : null,
-    bio: input.bio,
-    completedBookingsCount: completedBookings,
-    reviewsAsRevieweeCount: reviewsCount,
-    hasEmergencyContact: Boolean(emergencyE164),
-  });
-  const trustScore = computeTrustScorePercent(trustInput);
+  const trustScore = calculateTrustScore(
+    {
+      avatar_url: typeof existingAvatar === "string" ? existingAvatar : null,
+      bio: input.bio,
+      phone_verified: nextPhoneVerified,
+      phone: phoneE164 || null,
+      phone_e164: phoneE164 || null,
+      emergency_contact_name: ecName || null,
+      emergency_contact_phone_e164: emergencyE164 || null,
+      details: detailsMerged,
+    },
+    {
+      emailVerified: Boolean(context.user.email_confirmed_at),
+      completedBookingsCount: completedBookings,
+      reviewsAsRevieweeCount: reviewsCount,
+      phoneVerified: nextPhoneVerified,
+    },
+  ).percent;
 
   const canWriteGeo = await profilesGeoColumnsWritable(supabase);
 
@@ -617,16 +622,29 @@ async function computeTrustScoreForUser(
       ? (rowForTrust as Record<string, unknown>).avatar_url
       : null;
 
-  const trustInput = trustInputFromProfileSnapshot({
-    emailVerified: Boolean(context.user.email_confirmed_at),
-    phoneVerified: options.phoneVerified,
-    avatarUrl: typeof existingAvatar === "string" ? existingAvatar : null,
-    bio: options.bioOverride ?? rowForTrust?.bio ?? null,
-    completedBookingsCount: completedBookings,
-    reviewsAsRevieweeCount: reviewsCount,
-    hasEmergencyContact: options.hasEmergencyContact,
-  });
-  return computeTrustScorePercent(trustInput);
+  const row = rowForTrust as Record<string, unknown> | null;
+  return calculateTrustScore(
+    {
+      avatar_url: typeof existingAvatar === "string" ? existingAvatar : null,
+      bio: options.bioOverride ?? rowForTrust?.bio ?? null,
+      phone_verified: options.phoneVerified,
+      phone: typeof row?.phone === "string" ? row.phone : null,
+      phone_e164: typeof row?.phone_e164 === "string" ? row.phone_e164 : null,
+      emergency_contact_name:
+        typeof row?.emergency_contact_name === "string" ? row.emergency_contact_name : null,
+      emergency_contact_phone_e164:
+        typeof row?.emergency_contact_phone_e164 === "string"
+          ? row.emergency_contact_phone_e164
+          : null,
+      details: row?.details ?? null,
+    },
+    {
+      emailVerified: Boolean(context.user.email_confirmed_at),
+      completedBookingsCount: completedBookings,
+      reviewsAsRevieweeCount: reviewsCount,
+      phoneVerified: options.phoneVerified,
+    },
+  ).percent;
 }
 
 async function persistProfilePartial(

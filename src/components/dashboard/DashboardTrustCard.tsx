@@ -8,10 +8,10 @@ import { DashboardCheckRow } from "@/components/dashboard/DashboardCheckRow";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { useLanguage } from "@/context/LanguageContext";
 import type { DashboardSnapshot } from "@/lib/dashboard-data";
-import { parseEmergencyContactFromProfile, isProfileVerified } from "@/lib/trust-safety";
+import { isProfileVerified } from "@/lib/trust-safety";
 import {
-  buildTrustBreakdown,
-  trustInputFromProfileSnapshot,
+  calculateTrustScore,
+  formatTrustScoreDisplay,
   type TrustCheck,
   type TrustCheckId,
 } from "@/lib/trust-score";
@@ -37,19 +37,18 @@ export function DashboardTrustCard({
 }: DashboardTrustCardProps) {
   const { t } = useLanguage();
   const ts = t.trustSafety;
-  const emergency = parseEmergencyContactFromProfile(profile);
   const phoneOnFile = Boolean(profile.phone_e164?.trim() || profile.phone?.trim());
-  const trustInput = trustInputFromProfileSnapshot({
-    emailVerified,
-    phoneVerified: profile.phone_verified,
-    avatarUrl: profile.avatar_url,
-    bio: profile.bio,
-    completedBookingsCount: snapshot.completedBookingsCount,
-    reviewsAsRevieweeCount: snapshot.reviewsCount,
-    hasEmergencyContact: Boolean(emergency),
-  });
-  const breakdown = buildTrustBreakdown(trustInput, { phoneOnFile });
+  const breakdown = calculateTrustScore(
+    profile,
+    {
+      emailVerified,
+      completedBookingsCount: snapshot.completedBookingsCount,
+      reviewsAsRevieweeCount: snapshot.reviewsCount,
+    },
+    { phoneOnFile },
+  );
   const displayPercent = breakdown.percent;
+  const displayScore = formatTrustScoreDisplay(displayPercent);
   const verified = isProfileVerified({
     emailVerified,
     phoneVerified: profile.phone_verified && phoneOnFile,
@@ -67,7 +66,7 @@ export function DashboardTrustCard({
         <p
           className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${dashboardScoreTextClass(displayPercent)}`}
         >
-          {displayPercent}%
+          {displayScore}
         </p>
         <div
           className={`${DASHBOARD_PROGRESS_TRACK_CLASS} mt-2 h-1.5 overflow-hidden`}
