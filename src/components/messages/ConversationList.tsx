@@ -1,8 +1,11 @@
 "use client";
 
 import { useLanguage } from "@/context/LanguageContext";
-import { formatInboxTime, type ConversationSummary } from "@/lib/messaging";
-import { requestStatusBadgeClasses, requestStatusLabel } from "@/lib/requests";
+import {
+  formatInboxTime,
+  resolveConversationStatusDisplay,
+  type ConversationSummary,
+} from "@/lib/messaging";
 import {
   ACCOUNT_LIST_ITEM_ACTIVE_CLASS,
   ACCOUNT_LIST_ITEM_INACTIVE_CLASS,
@@ -46,13 +49,14 @@ function ConversationListItem({
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
   const hasUnread = conversation.unreadCount > 0;
+  const statusDisplay = resolveConversationStatusDisplay(conversation);
 
   return (
     <li>
       <button
         type="button"
         onClick={onSelect}
-        className={`flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition-colors ${
+        className={`flex w-full min-w-0 items-start gap-2.5 px-2.5 py-2 text-left transition-colors ${
           active ? ACCOUNT_LIST_ITEM_ACTIVE_CLASS : ACCOUNT_LIST_ITEM_INACTIVE_CLASS
         }`}
       >
@@ -99,19 +103,19 @@ function ConversationListItem({
           )}
         </span>
 
-        {hasUnread ? (
-          <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#1e5c42] px-1.5 text-[0.625rem] font-bold text-white">
-            {conversation.unreadCount > 9 ? "9+" : conversation.unreadCount}
-          </span>
-        ) : (
-          <span className="mt-1 inline-flex shrink-0 self-end">
-            <span
-              className={`${requestStatusBadgeClasses(conversation.requestStatus)} !px-1.5 !py-0 !text-[0.5625rem]`}
-            >
-              {requestStatusLabel(conversation.requestStatus)}
+        <span className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
+          {hasUnread ? (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#1e5c42] px-1.5 text-[0.625rem] font-bold leading-none text-white">
+              {conversation.unreadCount > 9 ? "9+" : conversation.unreadCount}
             </span>
+          ) : null}
+          <span
+            className={`${statusDisplay.badgeClasses} max-w-[5.5rem] truncate !px-1.5 !py-0 !text-[0.5625rem] sm:max-w-none`}
+            title={statusDisplay.label}
+          >
+            {statusDisplay.label}
           </span>
-        )}
+        </span>
       </button>
     </li>
   );

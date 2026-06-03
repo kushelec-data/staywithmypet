@@ -12,7 +12,8 @@ import {
   formatMessagingError,
   isCancelledBookingChatGraceActive,
   isCancelledBookingChatGraceExpired,
-  markConversationMessagesRead,
+  markConversationFullyRead,
+  resolveConversationStatusDisplay,
   sendMessage,
   subscribeToConversationMessages,
   type ChatMessage,
@@ -32,7 +33,6 @@ import {
 } from "@/lib/membership";
 import { isMembershipRequiredError } from "@/lib/membership-access";
 import { resolveActiveMode } from "@/lib/profile-mode";
-import { requestStatusBadgeClasses, requestStatusLabel } from "@/lib/requests";
 
 type ChatPanelProps = {
   conversation: ConversationSummary;
@@ -40,6 +40,7 @@ type ChatPanelProps = {
   supabase: SupabaseClient;
   onBack: () => void;
   onMessageSent: (preview: string, createdAt: string) => void;
+  onConversationRead?: () => void;
 };
 
 const QUICK_EMOJIS = ["😊", "👍", "🐾", "❤️", "🙏"];
@@ -50,6 +51,7 @@ export function ChatPanel({
   supabase,
   onBack,
   onMessageSent,
+  onConversationRead,
 }: ChatPanelProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -87,6 +89,7 @@ export function ChatPanel({
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
   const thumbInitial = displayName.trim().charAt(0).toUpperCase() || "?";
+  const statusDisplay = resolveConversationStatusDisplay(conversation);
 
   const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const container = scrollContainerRef.current;
@@ -117,7 +120,8 @@ export function ChatPanel({
         if (cancelled) return;
         setMessages(rows);
         setBlocked(isBlocked);
-        await markConversationMessagesRead(supabase, conversationId, userId);
+        await markConversationFullyRead(supabase, conversation, userId);
+        onConversationRead?.();
       } catch (err) {
         if (!cancelled) {
           setMessages([]);
@@ -141,14 +145,16 @@ export function ChatPanel({
         return [...prev, message];
       });
       if (!message.isOwn) {
-        void markConversationMessagesRead(supabase, conversationId, userId);
+        void markConversationFullyRead(supabase, conversation, userId).then(() => {
+          onConversationRead?.();
+        });
       }
     });
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [conversationId, supabase, userId]);
+  }, [conversation, conversationId, supabase, userId, onConversationRead]);
 
   useEffect(() => {
     if (loading) return;
@@ -260,12 +266,12 @@ export function ChatPanel({
           )}
 
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-2">
-              <h2 className="truncate text-sm font-semibold text-foreground">{displayName}</h2>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <h2 className="min-w-0 truncate text-sm font-semibold text-foreground">{displayName}</h2>
               <span
-                className={`${requestStatusBadgeClasses(conversation.requestStatus)} shrink-0 !px-1.5 !py-0 !text-[0.5625rem]`}
+                className={`${statusDisplay.badgeClasses} max-w-full shrink-0 !px-1.5 !py-0 !text-[0.5625rem]`}
               >
-                {requestStatusLabel(conversation.requestStatus)}
+                {statusDisplay.label}
               </span>
             </div>
             <p className="min-w-0 text-[0.6875rem] leading-snug text-[#4b4b4b] dark:text-muted">

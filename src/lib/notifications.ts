@@ -186,6 +186,28 @@ export async function markAllNotificationsRead(
   if (error) throw error;
 }
 
+export async function markNotificationsReadForConversations(
+  supabase: SupabaseClient,
+  conversationIds: string[],
+  userId: string,
+): Promise<void> {
+  const ids = [...new Set(conversationIds.filter(Boolean))];
+  if (!ids.length) return;
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: now })
+    .eq("user_id", userId)
+    .in("related_conversation_id", ids)
+    .is("read_at", null);
+
+  if (error) {
+    if (isMissingRelationError(error)) return;
+    throw error;
+  }
+}
+
 const notificationChannelMarker = (userId: string) => `notifications:${userId}`;
 
 /** Drop stale notification channels before creating a fresh one. */

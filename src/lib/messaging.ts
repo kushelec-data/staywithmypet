@@ -7,7 +7,12 @@ type PetPhotoJoin = {
   is_primary: boolean;
   sort_order: number;
 };
-import { formatRequestDateLabel, type RequestStatus } from "@/lib/requests";
+import {
+  bookingStatusBadgeClasses,
+  bookingStatusLabel,
+  type BookingTab,
+} from "@/lib/bookings";
+import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus } from "@/lib/requests";
 import type { BookingStatus } from "@/types/database";
 import { isMissingColumnError, isPostgrestError } from "@/lib/supabase-errors";
 import { logSupabaseError } from "@/lib/supabase-errors";
@@ -49,7 +54,39 @@ export type ConversationSummary = {
   lastMessageAt: string | null;
   unreadCount: number;
   sortAt: string;
+  /** Conversation row ids represented in inbox (merged threads include all source ids). */
+  conversationIds: string[];
 };
+
+export type ConversationStatusDisplay = {
+  label: string;
+  badgeClasses: string;
+};
+
+/** Dispatched after messages/notifications are marked read for a thread. */
+export const CONVERSATION_READ_EVENT = "swmp:conversation-read";
+
+function conversationIdsFor(summary: Pick<ConversationSummary, "id" | "conversationIds">): string[] {
+  const ids = summary.conversationIds?.length ? summary.conversationIds : [summary.id];
+  return [...new Set(ids)];
+}
+
+/** Single status source for inbox list, chat header, and badges (booking wins when linked). */
+export function resolveConversationStatusDisplay(
+  conversation: ConversationSummary,
+): ConversationStatusDisplay {
+  if (conversation.bookingStatus) {
+    const tab = conversation.bookingStatus as BookingTab;
+    return {
+      label: bookingStatusLabel(tab),
+      badgeClasses: bookingStatusBadgeClasses(tab),
+    };
+  }
+  return {
+    label: requestStatusLabel(conversation.requestStatus),
+    badgeClasses: requestStatusBadgeClasses(conversation.requestStatus),
+  };
+}
 
 function dateRangeKeyFromRequest(req: {
   date_from: string | null;
@@ -77,7 +114,7 @@ export function isCancelledBookingChatGraceActive(
 ): boolean {
   if (conversation.bookingStatus !== "cancelled") return false;
   const ends = getCancelledBookingChatGraceEndsAt(conversation.bookingCancelledAt);
-  if (!ends) return false;
+  if (!ends) return true;
   return now < ends;
 }
 
@@ -87,7 +124,7 @@ export function isCancelledBookingChatGraceExpired(
 ): boolean {
   if (conversation.bookingStatus !== "cancelled") return false;
   const ends = getCancelledBookingChatGraceEndsAt(conversation.bookingCancelledAt);
-  if (!ends) return true;
+  if (!ends) return false;
   return now >= ends;
 }
 
@@ -176,6 +213,9 @@ export function mergeConversationSummaries(
       merged.push({
         ...best,
         unreadCount: bucket.reduce((sum, c) => sum + c.unreadCount, 0),
+        conversationIds: [
+          ...new Set(bucket.flatMap((c) => conversationIdsFor(c))),
+        ],
       });
     }
   }
@@ -216,11 +256,14 @@ export function conversationThreadTitle(petName: string | null, fallbackName: st
 }
 
 export function canSendInConversation(conversation: ConversationSummary): boolean {
-  if (conversation.requestStatus === "declined" || conversation.requestStatus === "cancelled") {
+  if (conversation.requestStatus === "declined") {
     return false;
   }
   if (conversation.bookingStatus === "cancelled") {
     return isCancelledBookingChatGraceActive(conversation);
+  }
+  if (conversation.requestStatus === "cancelled") {
+    return false;
   }
   return true;
 }
@@ -596,6 +639,7 @@ export async function fetchConversations(
       lastMessageAt: last?.created_at ?? null,
       unreadCount: unreadByConversation.get(row.id) ?? 0,
       sortAt,
+      conversationIds: [row.id],
     });
   }
 
@@ -686,7 +730,7 @@ export async function sendMessage(
 
   if (requestError) throw requestError;
   const requestStatus = (requestRow?.status as RequestStatus | undefined) ?? "pending";
-  if (requestStatus === "declined" || requestStatus === "cancelled") {
+  if (requestStatus === "declined") {
     throw new Error("Messaging is closed for this booking.");
   }
 
@@ -717,6 +761,7 @@ export async function sendMessage(
     lastMessageAt: null,
     unreadCount: 0,
     sortAt: "",
+    conversationIds: [conversationId],
   };
 
   if (!canSendInConversation(sendCheck)) {
@@ -783,6 +828,23 @@ export async function markConversationMessagesRead(
     .is("read_at", null);
 
   if (error) throw error;
+}
+
+/** Marks messages read for all conversation rows in a summary and related notifications. */
+export async function markConversationFullyRead(
+  supabase: SupabaseClient,
+  conversation: Pick<ConversationSummary, "id" | "conversationIds">,
+  userId: string,
+): Promise<void> {
+  const ids = conversationIdsFor(conversation);
+  const { markNotificationsReadForConversations } = await import("@/lib/notifications");
+
+  await Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId)));
+  await markNotificationsReadForConversations(supabase, ids, userId);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(CONVERSATION_READ_EVENT));
+  }
 }
 
 export function subscribeToConversationMessages(

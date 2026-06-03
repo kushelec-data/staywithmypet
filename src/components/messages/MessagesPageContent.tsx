@@ -11,6 +11,7 @@ import {
   ensureConversationForAcceptedRequest,
   fetchConversations,
   formatMessagingError,
+  markConversationFullyRead,
   sortConversationSummaries,
   type ConversationSummary,
 } from "@/lib/messaging";
@@ -119,13 +120,31 @@ export function MessagesPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
 
+  const clearUnreadForConversation = useCallback((conv: ConversationSummary) => {
+    const ids = new Set(conv.conversationIds?.length ? conv.conversationIds : [conv.id]);
+    setConversations((prev) =>
+      prev.map((c) => (ids.has(c.id) ? { ...c, unreadCount: 0 } : c)),
+    );
+  }, []);
+
   function selectConversation(id: string) {
     setSelectedId(id);
     urlSyncedRef.current = id;
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
-    );
     router.replace(`/messages?conversation=${id}`, { scroll: false });
+
+    setConversations((prev) => {
+      const conv = prev.find((c) => c.id === id);
+      if (conv) {
+        const ids = new Set(conv.conversationIds?.length ? conv.conversationIds : [conv.id]);
+        if (user) {
+          void markConversationFullyRead(supabase, conv, user.id).catch(() => {
+            /* optimistic UI already cleared; refetch will reconcile */
+          });
+        }
+        return prev.map((c) => (ids.has(c.id) ? { ...c, unreadCount: 0 } : c));
+      }
+      return prev;
+    });
   }
 
   function handleBackToList() {
@@ -218,6 +237,7 @@ export function MessagesPageContent() {
               supabase={supabase}
               onBack={handleBackToList}
               onMessageSent={handleMessageSent}
+              onConversationRead={() => clearUnreadForConversation(selectedConversation)}
             />
           ) : (
             <div className="hidden flex-1 flex-col items-center justify-center px-6 py-8 text-center lg:flex">

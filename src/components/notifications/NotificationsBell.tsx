@@ -14,6 +14,7 @@ import {
   subscribeToNotifications,
   type AppNotification,
 } from "@/lib/notifications";
+import { CONVERSATION_READ_EVENT } from "@/lib/messaging";
 import { createClient } from "@/lib/supabase";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -110,8 +111,14 @@ export function NotificationsBell() {
       void refreshRef.current();
     });
 
+    const onConversationRead = () => {
+      void refreshRef.current();
+    };
+    window.addEventListener(CONVERSATION_READ_EVENT, onConversationRead);
+
     return () => {
       unsubscribe();
+      window.removeEventListener(CONVERSATION_READ_EVENT, onConversationRead);
     };
   }, [userId, supabase]);
 
