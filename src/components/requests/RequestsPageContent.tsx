@@ -20,6 +20,7 @@ import {
   type CareRequest,
   type RequestStatus,
 } from "@/lib/requests";
+import { markRequestNotificationsRead } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -76,6 +77,13 @@ export function RequestsPageContent() {
       setLoading(false);
     }
   }, [supabase, user, isIncoming, t.requests.loadError]);
+
+  useEffect(() => {
+    if (!user) return;
+    void markRequestNotificationsRead(supabase, user.id).catch(() => {
+      /* bell will reconcile on next refresh */
+    });
+  }, [supabase, user?.id, direction]);
 
   useEffect(() => {
     if (authLoading) return;

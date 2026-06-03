@@ -15,6 +15,7 @@ import {
   sortConversationSummaries,
   type ConversationSummary,
 } from "@/lib/messaging";
+import { markMessageNotificationsRead } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -85,6 +86,13 @@ export function MessagesPageContent() {
     },
     [supabase, user?.id, router],
   );
+
+  useEffect(() => {
+    if (!user) return;
+    void markMessageNotificationsRead(supabase, user.id).catch(() => {
+      /* bell will reconcile on next refresh */
+    });
+  }, [supabase, user?.id]);
 
   useEffect(() => {
     if (authLoading) return;

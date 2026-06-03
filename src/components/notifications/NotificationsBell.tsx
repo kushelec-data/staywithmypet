@@ -2,17 +2,26 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import type { Dictionary } from "@/i18n/translations";
 import {
   fetchNotifications,
   fetchUnreadNotificationCount,
   formatNotificationTime,
   formatNotificationsError,
-  isReviewRequestNotification,
+  groupNotificationsByCategory,
   markAllNotificationsRead,
+  markBookingNotificationsRead,
   markNotificationRead,
+  markNotificationsReadForConversations,
+  markNotificationsReadForRequest,
+  notificationActionKind,
+  notificationDedupeKey,
   notificationHref,
+  NOTIFICATIONS_REFRESH_EVENT,
   subscribeToNotifications,
   type AppNotification,
+  type NotificationActionKind,
+  type NotificationCategory,
 } from "@/lib/notifications";
 import { CONVERSATION_READ_EVENT } from "@/lib/messaging";
 import { createClient } from "@/lib/supabase";
@@ -38,6 +47,97 @@ function BellIcon({ className }: { className?: string }) {
   );
 }
 
+function actionLabel(kind: NotificationActionKind, n: Dictionary["notifications"]): string {
+  switch (kind) {
+    case "open_message":
+      return n.actionOpenMessage;
+    case "view_booking":
+      return n.actionViewBooking;
+    case "leave_review":
+      return n.actionLeaveReview;
+    case "view_membership":
+      return n.actionViewMembership;
+    case "view_request":
+    default:
+      return n.actionViewRequest;
+  }
+}
+
+function categoryLabel(category: NotificationCategory, n: Dictionary["notifications"]): string {
+  switch (category) {
+    case "messages":
+      return n.groupMessages;
+    case "bookings":
+      return n.groupBookings;
+    case "reviews":
+      return n.groupReviews;
+    case "membership":
+      return n.groupMembership;
+    case "requests":
+    default:
+      return n.groupRequests;
+  }
+}
+
+type NotificationRowProps = {
+  notification: AppNotification;
+  onOpen: (notification: AppNotification) => void;
+  onAction: (notification: AppNotification) => void;
+  actionText: string;
+  unreadLabel: string;
+};
+
+function NotificationRow({
+  notification,
+  onOpen,
+  onAction,
+  actionText,
+  unreadLabel,
+}: NotificationRowProps) {
+  const unread = notification.readAt == null;
+
+  return (
+    <li className="border-b border-border last:border-b-0">
+      <div
+        className={`flex min-w-0 flex-col gap-2 px-3 py-3 sm:px-4 ${
+          unread ? "bg-mint/30" : "bg-surface"
+        }`}
+      >
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => onOpen(notification)}
+          className="min-w-0 w-full text-left"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <span className="min-w-0 text-sm font-semibold text-foreground">{notification.title}</span>
+            <span className="shrink-0 text-[0.65rem] text-muted">
+              {formatNotificationTime(notification.createdAt)}
+            </span>
+          </div>
+          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted">{notification.body}</p>
+          {unread ? (
+            <span className="mt-1 inline-flex items-center gap-1 text-[0.65rem] font-medium text-brand-teal">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />
+              {unreadLabel}
+            </span>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAction(notification);
+          }}
+          className="inline-flex max-w-full min-w-0 items-center justify-center self-start rounded-full border border-brand-teal/30 bg-brand-teal/10 px-3 py-1.5 text-[0.6875rem] font-semibold text-brand-teal transition hover:bg-brand-teal/20"
+        >
+          <span className="truncate">{actionText}</span>
+        </button>
+      </div>
+    </li>
+  );
+}
+
 export function NotificationsBell() {
   const router = useRouter();
   const pathname = usePathname();
@@ -54,10 +154,11 @@ export function NotificationsBell() {
   const panelRef = useRef<HTMLDivElement>(null);
   const userId = user?.id ?? null;
   const hasUnread = unreadCount > 0;
-  /** Soft green “active” when panel is open or user is on a notification-centric route. */
   const isNavActive =
     pathname === "/messages" || (pathname?.startsWith("/messages/") ?? false);
   const isActive = open || isNavActive;
+
+  const grouped = useMemo(() => groupNotificationsByCategory(items), [items]);
 
   const refresh = useCallback(async () => {
     if (!userId) return;
@@ -111,14 +212,16 @@ export function NotificationsBell() {
       void refreshRef.current();
     });
 
-    const onConversationRead = () => {
+    const onRefresh = () => {
       void refreshRef.current();
     };
-    window.addEventListener(CONVERSATION_READ_EVENT, onConversationRead);
+    window.addEventListener(CONVERSATION_READ_EVENT, onRefresh);
+    window.addEventListener(NOTIFICATIONS_REFRESH_EVENT, onRefresh);
 
     return () => {
       unsubscribe();
-      window.removeEventListener(CONVERSATION_READ_EVENT, onConversationRead);
+      window.removeEventListener(CONVERSATION_READ_EVENT, onRefresh);
+      window.removeEventListener(NOTIFICATIONS_REFRESH_EVENT, onRefresh);
     };
   }, [userId, supabase]);
 
@@ -157,19 +260,43 @@ export function NotificationsBell() {
     }
   }
 
-  async function handleSelect(notification: AppNotification) {
+  async function openNotification(notification: AppNotification) {
     if (!userId) return;
     setOpen(false);
 
     if (!notification.readAt) {
       try {
-        await markNotificationRead(supabase, notification.id, userId);
+        if (notification.type === "new_message" && notification.relatedConversationId) {
+          await markNotificationsReadForConversations(
+            supabase,
+            [notification.relatedConversationId],
+            userId,
+          );
+        } else if (notification.relatedBookingId) {
+          await markBookingNotificationsRead(
+            supabase,
+            userId,
+            notification.relatedBookingId,
+            notification.relatedRequestId,
+          );
+        } else if (notification.relatedRequestId) {
+          await markNotificationsReadForRequest(
+            supabase,
+            userId,
+            notification.relatedRequestId,
+          );
+        } else {
+          await markNotificationRead(supabase, notification.id, userId);
+        }
+        const now = new Date().toISOString();
+        const key = notificationDedupeKey(notification);
         setItems((prev) =>
           prev.map((n) =>
-            n.id === notification.id ? { ...n, readAt: new Date().toISOString() } : n,
+            notificationDedupeKey(n) === key ? { ...n, readAt: n.readAt ?? now } : n,
           ),
         );
-        setUnreadCount((c) => Math.max(0, c - 1));
+        const count = await fetchUnreadNotificationCount(supabase, userId);
+        setUnreadCount(count);
       } catch {
         /* still navigate */
       }
@@ -181,6 +308,7 @@ export function NotificationsBell() {
   if (!userId) return null;
 
   const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
+  const n = t.notifications;
 
   const bellButtonClasses = [
     "relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150",
@@ -199,9 +327,7 @@ export function NotificationsBell() {
         aria-haspopup="true"
         aria-current={isNavActive ? "page" : undefined}
         aria-label={
-          hasUnread
-            ? `${t.notifications.bellLabel} (${unreadCount} unread)`
-            : t.notifications.bellLabel
+          hasUnread ? `${n.bellLabel} (${unreadCount} unread)` : n.bellLabel
         }
       >
         <BellIcon />
@@ -217,70 +343,58 @@ export function NotificationsBell() {
 
       {open ? (
         <div
-          className="absolute right-0 z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
+          className="absolute right-0 z-50 mt-2 flex w-[min(calc(100vw-1.5rem),22rem)] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)] sm:w-[22rem]"
           role="menu"
         >
-          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <h3 className="text-sm font-semibold text-foreground">{t.notifications.title}</h3>
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <h3 className="text-sm font-semibold text-foreground">{n.title}</h3>
             {hasUnread ? (
               <button
                 type="button"
                 onClick={() => void handleMarkAllRead()}
-                className="text-xs font-semibold text-brand-teal hover:underline"
+                className="shrink-0 text-xs font-semibold text-brand-teal hover:underline"
               >
-                {t.notifications.markAllRead}
+                {n.markAllRead}
               </button>
             ) : null}
           </div>
 
           {error ? (
-            <p className="mx-3 my-2 rounded-lg bg-brand-pink-muted/50 px-3 py-2 text-xs text-brand-pink" role="alert">
+            <p
+              className="mx-3 my-2 shrink-0 rounded-lg bg-brand-pink-muted/50 px-3 py-2 text-xs text-brand-pink"
+              role="alert"
+            >
               {error}
             </p>
           ) : null}
 
-          <ul className="max-h-[min(60vh,320px)] overflow-y-auto">
+          <div className="min-h-0 max-h-[min(70dvh,28rem)] overflow-y-auto overscroll-contain">
             {loading ? (
-              <li className="px-4 py-6 text-center text-sm text-muted">{t.notifications.loading}</li>
-            ) : items.length === 0 ? (
-              <li className="px-4 py-8 text-center text-sm text-muted">{t.notifications.empty}</li>
+              <p className="px-4 py-6 text-center text-sm text-muted">{n.loading}</p>
+            ) : grouped.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted">{n.empty}</p>
             ) : (
-              items.map((notification) => {
-                const unread = notification.readAt == null;
-                return (
-                  <li key={notification.id}>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => void handleSelect(notification)}
-                      className={`flex w-full flex-col gap-0.5 border-b border-border px-4 py-3 text-left transition last:border-b-0 ${
-                        unread ? "bg-mint/30 hover:bg-mint/50" : "hover:bg-cream/50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-sm font-semibold text-foreground">{notification.title}</span>
-                        <span className="shrink-0 text-[0.65rem] text-muted">
-                          {formatNotificationTime(notification.createdAt)}
-                        </span>
-                      </div>
-                      <p className="line-clamp-2 text-xs leading-relaxed text-muted">{notification.body}</p>
-                      {isReviewRequestNotification(notification) ? (
-                        <span className="mt-1.5 inline-flex rounded-full bg-brand-teal/10 px-2 py-0.5 text-[0.65rem] font-semibold text-brand-teal">
-                          {t.notifications.leaveReview} →
-                        </span>
-                      ) : null}
-                      {unread ? (
-                        <span className="mt-1 inline-flex items-center gap-1 text-[0.65rem] font-medium text-brand-teal">
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />
-                          {t.notifications.unread}
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })
+              grouped.map((group) => (
+                <section key={group.category} aria-label={categoryLabel(group.category, n)}>
+                  <h4 className="sticky top-0 z-[1] border-b border-border bg-cream/95 px-4 py-2 text-[0.65rem] font-bold uppercase tracking-wide text-muted backdrop-blur-sm">
+                    {categoryLabel(group.category, n)}
+                  </h4>
+                  <ul>
+                    {group.items.map((notification) => (
+                      <NotificationRow
+                        key={notification.id}
+                        notification={notification}
+                        onOpen={(item) => void openNotification(item)}
+                        onAction={(item) => void openNotification(item)}
+                        actionText={actionLabel(notificationActionKind(notification), n)}
+                        unreadLabel={n.unread}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ))
             )}
-          </ul>
+          </div>
         </div>
       ) : null}
     </div>

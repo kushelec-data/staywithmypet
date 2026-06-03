@@ -24,6 +24,7 @@ import {
   messagesHrefForBooking,
   type BookingDetail,
 } from "@/lib/bookings";
+import { markBookingNotificationsRead } from "@/lib/notifications";
 import { fetchReviewsForBooking, type ReviewDisplay } from "@/lib/reviews";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -100,6 +101,15 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
       setBookingReviews([]);
     }
   }, [booking, loadReviews]);
+
+  useEffect(() => {
+    if (!user || !booking) return;
+    void markBookingNotificationsRead(supabase, user.id, booking.id, booking.requestId).catch(
+      () => {
+        /* bell will reconcile on next refresh */
+      },
+    );
+  }, [supabase, user?.id, booking?.id, booking?.requestId]);
 
   async function handleCancel() {
     if (!booking) return;
