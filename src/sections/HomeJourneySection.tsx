@@ -4,5 +4,5 @@ import { HowItWorksExplainerSection } from "@/components/how-it-works/ExplainerV
 
 /** Homepage Pet Parent / Pet Friend journey cards (shared explainer). */
 export function HomeJourneySection() {
-  return <HowItWorksExplainerSection />;
+  return <HowItWorksExplainerSection staticJourney />;
 }
