@@ -100,7 +100,7 @@ export const et = {
     title: "Leia usaldusväärne lemmikloomahooldus inimestelt, kes armastavad loomi",
     subtitle:
       "Ühendu hoolivate lemmiklooma sõpradega jalutiste, külastuste, päevahoiu ja seltsisoleku jaoks — turvaliselt StayWithMyPet kaudu.",
-    findCareCta: "Leia hooldus",
+    findCareCta: "Leia hooldus täna",
     becomeFriendCta: "Hakka lemmiklooma sõbraks",
     trustCards: {
       verified: "Kinnitatud profiilid",

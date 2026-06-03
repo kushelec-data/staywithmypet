@@ -100,7 +100,7 @@ export const en = {
     title: "Find trusted pet care from people who love animals",
     subtitle:
       "Connect with caring Pet Friends for walks, visits, daycare, and companionship — safely through StayWithMyPet.",
-    findCareCta: "Find care",
+    findCareCta: "Find care today",
     becomeFriendCta: "Become a Pet Friend",
     trustCards: {
       verified: "Verified profiles",
