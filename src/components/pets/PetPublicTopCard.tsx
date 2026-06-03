@@ -53,7 +53,7 @@ export function PetPublicTopCard({
 }: PetPublicTopCardProps) {
   return (
     <section className={PUBLIC_CARD_MINT}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
+      <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
         <div className="relative mx-auto w-full max-w-[220px] shrink-0 lg:mx-0">
           <div className="relative aspect-square max-h-[200px] w-full overflow-hidden rounded-2xl bg-mint/20 lg:max-h-[220px] lg:w-[220px]">
             <AppImage

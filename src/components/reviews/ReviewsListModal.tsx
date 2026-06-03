@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountEmptyState } from "@/components/account/AccountEmptyState";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
@@ -83,7 +84,13 @@ export function ReviewsListModal({ open, profileId, displayName, onClose }: Revi
           {loading ? (
             <p className="text-sm text-muted">{r.loading}</p>
           ) : reviews.length === 0 ? (
-            <p className="text-sm text-muted">{r.emptyProfile}</p>
+            <AccountEmptyState
+              className="!px-0 !py-6"
+              icon="⭐"
+              title={r.emptyTitle}
+              description={r.emptyDescription}
+              actions={[{ href: "/bookings", label: r.emptyCtaBookings }]}
+            />
           ) : (
             <ul className="space-y-4">
               {reviews.map((review) => (

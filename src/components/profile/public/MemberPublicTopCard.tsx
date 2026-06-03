@@ -7,6 +7,7 @@ import { placeholderProfileImage } from "@/lib/images";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { SendRequestButton } from "@/components/requests/SendRequestButton";
+import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
@@ -115,11 +116,10 @@ export function MemberPublicTopCard({
         </div>
 
         <div className="min-w-0 flex-1 space-y-2">
-          {profile.is_verified ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <VerifiedBadge />
-            </div>
-          ) : null}
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {profile.is_verified ? <VerifiedBadge /> : null}
+            <ProfileVerificationBadges trustBadges={profile.trust_badges} />
+          </div>
           <h1 className="font-heading text-2xl font-semibold text-foreground sm:text-[1.65rem]">
             {profile.display_name}
           </h1>
@@ -137,7 +137,7 @@ export function MemberPublicTopCard({
           ) : null}
         </div>
 
-        <div className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-brand-teal/10 bg-surface/80 p-4 lg:w-[220px]">
+        <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2 rounded-2xl border border-brand-teal/10 bg-surface/80 p-4 lg:w-[220px]">
           {mainCta}
           <CopyPublicProfileLinkButton
             profileId={profile.id}

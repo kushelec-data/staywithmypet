@@ -1,6 +1,8 @@
 "use client";
 
+import { AccountEmptyState } from "@/components/account/AccountEmptyState";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
+import { useLanguage } from "@/context/LanguageContext";
 import { REVIEWS_SECTION_ID } from "@/components/reviews/ProfileRatingSummary";
 import { Button } from "@/components/ui/Button";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
@@ -24,6 +26,8 @@ export function PublicCompactReviewsCard({
   emptyMessage = "No reviews yet.",
   noteLabel = "note",
 }: PublicCompactReviewsCardProps) {
+  const { t } = useLanguage();
+  const r = t.reviews;
   const [showAll, setShowAll] = useState(false);
   const latest = reviews[0];
   const plural = ratingCount === 1 ? noteLabel : `${noteLabel}s`;
@@ -44,7 +48,13 @@ export function PublicCompactReviewsCard({
       {loading ? (
         <p className="mt-3 text-sm text-muted">Loading reviews…</p>
       ) : ratingCount === 0 ? (
-        <p className="mt-3 text-sm text-muted">{emptyMessage}</p>
+        <AccountEmptyState
+          className="!px-0 !py-6"
+          icon="⭐"
+          title={r.emptyTitle}
+          description={emptyMessage || r.emptyDescription}
+          actions={[{ href: "/bookings", label: r.emptyCtaBookings }]}
+        />
       ) : (
         <>
           <p className="mt-1 text-xs text-muted">

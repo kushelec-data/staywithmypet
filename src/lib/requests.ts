@@ -705,6 +705,24 @@ export async function fetchIncomingRequests(
   return fetchRequestsForDirection(supabase, userId, "incoming");
 }
 
+/** Care requests received for a pet (incoming to the pet parent). */
+export async function countPetCareRequests(
+  supabase: SupabaseClient,
+  petId: string,
+): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from("requests")
+      .select("id", { count: "exact", head: true })
+      .eq("pet_id", petId);
+
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 /** Requests where user is the receiver. */
 export async function countIncomingRequests(
   supabase: SupabaseClient,

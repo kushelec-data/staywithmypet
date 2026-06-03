@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountEmptyState } from "@/components/account/AccountEmptyState";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 import { REVIEWS_SECTION_ID } from "@/components/reviews/ProfileRatingSummary";
 import { useLanguage } from "@/context/LanguageContext";
@@ -54,7 +55,13 @@ export function PublicProfileReviews({
       {loading ? (
         <p className="mt-3 text-sm text-muted">{r.loading}</p>
       ) : reviews.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">{r.emptyProfile}</p>
+        <AccountEmptyState
+          className="!py-8"
+          icon="⭐"
+          title={r.emptyTitle}
+          description={r.emptyDescription}
+          actions={[{ href: "/bookings", label: r.emptyCtaBookings }]}
+        />
       ) : (
         <ul className={compact ? "mt-3 space-y-2.5" : "mt-4 space-y-3"}>
           {reviews.map((review) => (

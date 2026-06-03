@@ -53,6 +53,23 @@ export type PublicProfileView = {
   trust_badges: PublicTrustBadgeId[];
 };
 
+/** Email + profile-complete badges for hero/header (subset of full trust badges). */
+export function heroTrustBadgesFromProfileRow(row: ProfileDbRow): PublicTrustBadgeId[] {
+  const mapped = mapProfileRow(row);
+  const activeMode = resolveActiveMode(row.role ?? "pet_friend", row.active_mode);
+  const completeness = computeProfileCompleteness(mapped, { activeMode });
+  const trustFlags = parseTrustFlagsFromDetails(row.details);
+  const badges: PublicTrustBadgeId[] = [];
+  if (trustFlags.emailVerified) badges.push("email_verified");
+  if (
+    completeness.percent >= 70 ||
+    (Boolean(row.avatar_url?.trim()) && isBioCompleteForProfile(row.bio))
+  ) {
+    badges.push("profile_complete");
+  }
+  return badges;
+}
+
 export type PublicTrustBadgeId =
   | "email_verified"
   | "phone_verified"

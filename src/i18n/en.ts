@@ -363,6 +363,7 @@ export const en = {
     ownerStatsTitle: "Listing overview",
     ownerStatReviews: "Reviews",
     ownerStatSaved: "Saved",
+    ownerStatRequests: "Care requests",
     ownerStatAvailableDates: "Available dates",
     copyPublicLink: "Copy public link",
     viewPublicProfile: "View public profile",
@@ -430,6 +431,10 @@ export const en = {
     submitting: "Submitting…",
     sectionTitle: "Reviews",
     loading: "Loading reviews…",
+    emptyTitle: "No reviews yet",
+    emptyDescription:
+      "Reviews appear after a care booking is completed. Complete stays to build trust in the community.",
+    emptyCtaBookings: "View bookings",
     emptyProfile: "No reviews yet.",
     reviewSingular: "review",
     reviewPlural: "reviews",
@@ -572,6 +577,18 @@ export const en = {
     emergencyPhonePlaceholder: "+372 …",
     emergencyRelationshipLabel: "Relationship",
     emergencyRelationshipPlaceholder: "e.g. Partner, parent",
+  },
+  saved: {
+    pageTitle: "My saved pets & Pet Friends",
+    pageDescription: "Pets and people you have favorited for quick access.",
+    loading: "Loading saved…",
+    emptyTitle: "Nothing saved yet",
+    emptyDescription:
+      "Save pets and Pet Friends while browsing to find them here quickly.",
+    findPets: "Find pets",
+    findFriends: "Find Pet Friends",
+    sectionPets: "Saved pets",
+    sectionFriends: "Saved Pet Friends",
   },
   notifications: {
     bellLabel: "Notifications",

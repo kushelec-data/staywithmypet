@@ -1,6 +1,8 @@
 "use client";
 
+import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
+import { heroTrustBadgesFromProfileRow } from "@/lib/public-profile";
 import { ReviewsListModal } from "@/components/reviews/ReviewsListModal";
 import { Button } from "@/components/ui/Button";
 import { formatActiveMode, resolveActiveMode } from "@/lib/profile-mode";
@@ -40,6 +42,7 @@ export function DashboardProfileHero({
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roleLabel = formatActiveMode(resolveActiveMode(profile.role, profile.active_mode));
   const locationLabel = profile.location?.trim() || "Add location in profile";
+  const heroTrustBadges = heroTrustBadgesFromProfileRow(profile);
 
   useEffect(() => {
     return () => {
@@ -83,6 +86,7 @@ export function DashboardProfileHero({
             </div>
           )}
           <div className="min-w-0">
+            <ProfileVerificationBadges trustBadges={heroTrustBadges} className="mb-1.5" />
             <p
               className={`${DASHBOARD_SCORE_TEXT_CLASS} text-[0.65rem] font-semibold uppercase tracking-wider`}
             >
@@ -100,7 +104,7 @@ export function DashboardProfileHero({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+        <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <Button href="/profile/edit" size="sm">
             Edit profile
           </Button>

@@ -1,8 +1,8 @@
 "use client";
 
+import { AccountEmptyState } from "@/components/account/AccountEmptyState";
 import { AccountLayout } from "@/components/account/AccountLayout";
-import { ACCOUNT_EMPTY_STATE_TITLE, ACCOUNT_MESSAGES_PANEL_CLASS } from "@/lib/account-ui";
-import { Button } from "@/components/ui/Button";
+import { ACCOUNT_MESSAGES_PANEL_CLASS } from "@/lib/account-ui";
 import { ConversationList } from "@/components/messages/ConversationList";
 import { ChatPanel } from "@/components/messages/ChatPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -184,25 +184,16 @@ export function MessagesPageContent() {
           {listLoading ? (
             <p className="px-4 py-10 text-sm text-muted">{t.messages.loading}</p>
           ) : conversations.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-              <p className="text-3xl" aria-hidden>
-                💬
-              </p>
-              <h3 className={`mt-3 ${ACCOUNT_EMPTY_STATE_TITLE}`}>
-                {t.messages.emptyTitle}
-              </h3>
-              <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted">
-                {t.messages.emptyDescription}
-              </p>
-              <div className="mt-6 flex w-full max-w-xs flex-col gap-2">
-                <Button href="/dashboard/requests?direction=incoming" size="sm" className="w-full">
-                  {t.messages.viewRequests}
-                </Button>
-                <Button href="/find-care" variant="outline" size="sm" className="w-full">
-                  {t.messages.findFriends}
-                </Button>
-              </div>
-            </div>
+            <AccountEmptyState
+              className="flex-1 justify-center py-10"
+              icon="💬"
+              title={t.messages.emptyTitle}
+              description={t.messages.emptyDescription}
+              actions={[
+                { href: "/dashboard/requests?direction=incoming", label: t.messages.viewRequests },
+                { href: "/find-care", label: t.messages.findFriends, variant: "outline" },
+              ]}
+            />
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto">
               <ConversationList

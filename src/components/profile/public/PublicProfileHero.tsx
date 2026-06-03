@@ -2,6 +2,7 @@ import { AppImage } from "@/components/ui/AppImage";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { placeholderProfileImage } from "@/lib/images";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
+import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { formatProfileRoleBadge } from "@/lib/profile-mode";
 import type { PublicProfileView } from "@/lib/public-profile";
@@ -45,13 +46,9 @@ export function PublicProfileHero({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               {profile.is_verified ? <VerifiedBadge /> : null}
-              {profile.completenessPercent >= 70 ? (
-                <span className="rounded-full bg-mint/80 px-2 py-0.5 text-[0.65rem] font-medium text-foreground">
-                  {profile.completenessPercent}% complete
-                </span>
-              ) : null}
+              <ProfileVerificationBadges trustBadges={profile.trust_badges} />
             </div>
 
             <h1 className="font-heading mt-1.5 text-xl font-semibold text-foreground sm:text-2xl">

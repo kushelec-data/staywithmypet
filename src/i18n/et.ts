@@ -365,6 +365,7 @@ export const et = {
     ownerStatsTitle: "Kuulutuse ülevaade",
     ownerStatReviews: "Arvustused",
     ownerStatSaved: "Salvestatud",
+    ownerStatRequests: "Hoolduspäringud",
     ownerStatAvailableDates: "Vabad kuupäevad",
     copyPublicLink: "Kopeeri avalik link",
     viewPublicProfile: "Vaata avalikku profiili",
@@ -434,6 +435,10 @@ export const et = {
     submitting: "Saadan…",
     sectionTitle: "Arvustused",
     loading: "Laadin arvustusi…",
+    emptyTitle: "Arvustusi pole veel",
+    emptyDescription:
+      "Arvustused ilmuvad pärast lõpetatud hooldusbroneeringut. Lõpeta hooldusi, et luua usaldust kogukonnas.",
+    emptyCtaBookings: "Vaata broneeringuid",
     emptyProfile: "Arvustusi pole veel.",
     reviewSingular: "arvustus",
     reviewPlural: "arvustust",
@@ -575,6 +580,18 @@ export const et = {
     emergencyPhonePlaceholder: "+372 …",
     emergencyRelationshipLabel: "Suhe",
     emergencyRelationshipPlaceholder: "nt partner, vanem",
+  },
+  saved: {
+    pageTitle: "Minu salvestatud lemmikud ja lemmikusõbrad",
+    pageDescription: "Lemmikud ja inimesed, keda oled lemmikutesse lisanud kiireks juurdepääsuks.",
+    loading: "Laadin salvestatud…",
+    emptyTitle: "Midagi pole veel salvestatud",
+    emptyDescription:
+      "Salvesta lemmikuid ja lemmikusõpru sirvimisel, et neid siit kiiresti leida.",
+    findPets: "Otsi lemmikuid",
+    findFriends: "Otsi lemmikusõpru",
+    sectionPets: "Salvestatud lemmikud",
+    sectionFriends: "Salvestatud lemmikusõbrad",
   },
   notifications: {
     bellLabel: "Teavitused",

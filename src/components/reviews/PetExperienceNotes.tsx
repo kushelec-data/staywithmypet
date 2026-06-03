@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountEmptyState } from "@/components/account/AccountEmptyState";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -70,7 +71,12 @@ export function PetExperienceNotes({ petId, compact = false }: PetExperienceNote
       <p className="mt-1 text-sm text-muted">{r.petExperienceSubtitle}</p>
 
       {reviews.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">{r.emptyProfile}</p>
+        <AccountEmptyState
+          className="!px-0 !py-6"
+          icon="⭐"
+          title={r.emptyTitle}
+          description={r.petExperienceSubtitle}
+        />
       ) : (
         <>
           {tagSummary.length > 0 ? (

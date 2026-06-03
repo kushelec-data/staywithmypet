@@ -21,7 +21,7 @@ export function PetPublicProfileActions({ pet, isOwner }: PetPublicProfileAction
   }
 
   return (
-    <div className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-[#E5E2D8] bg-[#F8F6F1] p-4 lg:w-[220px]">
+    <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2 rounded-2xl border border-[#E5E2D8] bg-[#F8F6F1] p-4 lg:w-[220px]">
       <SendRequestButton
         variant="pet-care"
         target={{
