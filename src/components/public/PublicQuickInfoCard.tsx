@@ -12,9 +12,9 @@ export function PublicQuickInfoCard({ items, title = "Quick info" }: PublicQuick
   return (
     <section className={PUBLIC_CARD}>
       <h2 className={PUBLIC_SECTION_TITLE}>{title}</h2>
-      <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+      <dl className="mt-4 grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-5">
         {items.map((item) => (
-          <div key={item.label} className="min-w-0 border-l border-black/5 pl-3 first:border-l-0 first:pl-0">
+          <div key={item.label} className="min-w-0 break-words border-l border-black/5 pl-3 first:border-l-0 first:pl-0">
             <dt className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted">
               {item.label}
             </dt>

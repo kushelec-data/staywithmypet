@@ -60,18 +60,30 @@ function isDuplicatePublicPetAbout(about: string, shortBio: string | null): bool
   const b = normalizeDisplayText(shortBio);
   if (!a || !b) return false;
   if (a === b) return true;
+  if (a.startsWith(b) || b.startsWith(a)) return true;
   if (a.length >= 24 && b.includes(a)) return true;
   if (b.length >= 24 && a.includes(b)) return true;
   return false;
 }
 
+/** Hero blurb + About body without repeating the same copy. */
+export function resolvePublicPetContent(pet: PublicSearchPet): {
+  shortBio: string | null;
+  about: string | null;
+} {
+  const shortBioCandidate = buildPublicPetShortBio(pet);
+  const about = resolvePublicPetAboutSection(pet, shortBioCandidate);
+  const shortBio =
+    about && shortBioCandidate && isDuplicatePublicPetAbout(about, shortBioCandidate)
+      ? null
+      : shortBioCandidate;
+  return { shortBio, about };
+}
+
 export function buildPublicPetShortBio(pet: PublicSearchPet): string | null {
   const custom = pet.additionalNotes?.trim();
   if (custom) {
-    const trimmed = custom.replace(/\s+/g, " ").trim();
-    if (trimmed.length <= 220) return trimmed;
-    const sentences = trimmed.match(/[^.!?]+[.!?]+/g) ?? [trimmed];
-    return sentences.slice(0, 2).join(" ").trim();
+    return null;
   }
 
   const about = buildPublicPetAutoAboutText(pet);

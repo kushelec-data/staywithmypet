@@ -12,13 +12,12 @@ import { VetClinicNearbySection } from "@/components/vet/VetClinicNearbySection"
 import { Button } from "@/components/ui/Button";
 import { fetchPublicPetProfile } from "@/lib/public-pet";
 import {
-  resolvePublicPetAboutSection,
   buildPublicPetCareColumns,
   buildPublicPetChips,
   buildPublicPetQuickFacts,
   buildPublicPetQuickInfo,
-  buildPublicPetShortBio,
   buildPublicPetSubtitle,
+  resolvePublicPetContent,
 } from "@/lib/public-pet-display";
 import { placeholderPetImage } from "@/lib/images";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
@@ -100,11 +99,10 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
         : [];
   const photoUrl = photos[0] ?? placeholderPetImage(pet.id);
   const isOwnPet = isOwnerPreview || user?.id === pet.ownerId;
-  const shortBio = buildPublicPetShortBio(pet);
-  const about = resolvePublicPetAboutSection(pet, shortBio);
+  const { shortBio, about } = resolvePublicPetContent(pet);
 
   return (
-    <PublicPageShell className="pb-24 lg:pb-8">
+    <PublicPageShell className={isOwnPet ? "pb-8" : "pb-24 lg:pb-8"}>
       {notListedPublicly && isOwnerPreview ? (
         <p
           className="mb-4 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-950"
@@ -114,7 +112,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
         </p>
       ) : null}
 
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-3 sm:space-y-4">
         <PetPublicTopCard
           pet={pet}
           photoUrl={photoUrl}
@@ -134,8 +132,8 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           </section>
         ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-          <div className="min-w-0 space-y-4">
+        <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,280px)] lg:items-start">
+          <div className="min-w-0 space-y-3 sm:space-y-4">
             <PetPublicReviewsBlock
               petId={pet.id}
               fallbackAvg={pet.ratingAvg}
@@ -143,7 +141,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
             />
           </div>
 
-          <aside className="space-y-4">
+          <aside className="min-w-0 space-y-3 sm:space-y-4">
             <PublicCompactAvailabilityCard
               petId={pet.id}
               availableDates={pet.availabilityDates}

@@ -52,9 +52,10 @@ export function PetPublicTopCard({
   isOwnPet,
 }: PetPublicTopCardProps) {
   return (
-    <section className={PUBLIC_CARD_MINT}>
+    <section className={`${PUBLIC_CARD_MINT} min-w-0 overflow-x-hidden`}>
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
-        <div className="relative mx-auto w-full max-w-[220px] shrink-0 lg:mx-0">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 lg:min-w-0 lg:flex-1">
+        <div className="relative mx-auto w-full max-w-[220px] shrink-0 sm:mx-0">
           <div className="relative aspect-square max-h-[200px] w-full overflow-hidden rounded-2xl bg-mint/20 lg:max-h-[220px] lg:w-[220px]">
             <AppImage
               src={photoUrl}
@@ -97,8 +98,11 @@ export function PetPublicTopCard({
             </ul>
           ) : null}
         </div>
+        </div>
 
-        <PetPublicProfileActions pet={pet} isOwner={isOwnPet} />
+        <div className="w-full min-w-0 shrink-0 lg:w-[220px]">
+          <PetPublicProfileActions pet={pet} isOwner={isOwnPet} />
+        </div>
       </div>
     </section>
   );

@@ -48,7 +48,7 @@ export function PetPublicOwnerStatsCard({ pet }: PetPublicOwnerStatsCardProps) {
   }, [supabase, pet.id]);
 
   return (
-    <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2.5 rounded-2xl border border-[#E5E2D8] bg-[#F8F6F1] p-3 lg:max-w-[220px] lg:w-[220px]">
+    <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2.5 rounded-2xl border border-[#E5E2D8] bg-[#F8F6F1] p-3 sm:p-3.5">
       <p className="text-center text-[0.6875rem] font-semibold uppercase tracking-wide text-muted">
         {copy.ownerStatsTitle}
       </p>
