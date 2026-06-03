@@ -53,9 +53,9 @@ export function PetPublicTopCard({
 }: PetPublicTopCardProps) {
   return (
     <section className={PUBLIC_CARD_MINT}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-        <div className="relative mx-auto w-full max-w-[240px] shrink-0 lg:mx-0">
-          <div className="relative aspect-square max-h-[220px] w-full overflow-hidden rounded-2xl bg-mint/20 lg:max-h-[240px] lg:w-[240px]">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
+        <div className="relative mx-auto w-full max-w-[220px] shrink-0 lg:mx-0">
+          <div className="relative aspect-square max-h-[200px] w-full overflow-hidden rounded-2xl bg-mint/20 lg:max-h-[220px] lg:w-[220px]">
             <AppImage
               src={photoUrl}
               alt={pet.name}
@@ -75,19 +75,19 @@ export function PetPublicTopCard({
           </div>
         </div>
 
-        <div className="min-w-0 flex-1 space-y-2">
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-[1.65rem]">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-[1.6rem]">
             {pet.name}
           </h1>
           {subtitle ? <p className="text-sm text-muted">{subtitle}</p> : null}
           <PublicProfileChips chips={chips} />
           {shortBio ? (
-            <p className="line-clamp-3 max-w-prose text-sm leading-relaxed text-foreground/90">
+            <p className="line-clamp-3 max-w-prose text-sm leading-snug text-foreground/90">
               {shortBio}
             </p>
           ) : null}
           {quickFacts.length ? (
-            <ul className="flex flex-wrap gap-3 pt-1">
+            <ul className="flex flex-wrap gap-2.5 pt-0.5">
               {quickFacts.map((fact) => (
                 <li key={fact.label} className="flex items-center gap-1.5 text-xs text-muted">
                   <QuickFactIcon type={fact.icon} />

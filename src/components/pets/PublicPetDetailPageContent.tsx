@@ -12,7 +12,7 @@ import { VetClinicNearbySection } from "@/components/vet/VetClinicNearbySection"
 import { Button } from "@/components/ui/Button";
 import { fetchPublicPetProfile } from "@/lib/public-pet";
 import {
-  buildPublicPetAboutText,
+  resolvePublicPetAboutSection,
   buildPublicPetCareColumns,
   buildPublicPetChips,
   buildPublicPetQuickFacts,
@@ -100,7 +100,8 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
         : [];
   const photoUrl = photos[0] ?? placeholderPetImage(pet.id);
   const isOwnPet = isOwnerPreview || user?.id === pet.ownerId;
-  const about = buildPublicPetAboutText(pet);
+  const shortBio = buildPublicPetShortBio(pet);
+  const about = resolvePublicPetAboutSection(pet, shortBio);
 
   return (
     <PublicPageShell className="pb-24 lg:pb-8">
@@ -119,7 +120,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           photoUrl={photoUrl}
           subtitle={buildPublicPetSubtitle(pet)}
           chips={buildPublicPetChips(pet)}
-          shortBio={buildPublicPetShortBio(pet)}
+          shortBio={shortBio}
           quickFacts={buildPublicPetQuickFacts(pet)}
           isOwnPet={isOwnPet}
         />

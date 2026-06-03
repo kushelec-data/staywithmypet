@@ -1,5 +1,6 @@
 "use client";
 
+import { PetPublicOwnerStatsCard } from "@/components/pets/PetPublicOwnerStatsCard";
 import { SharePublicPetLinkButton } from "@/components/pets/SharePublicPetLinkButton";
 import { SendRequestButton } from "@/components/requests/SendRequestButton";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
@@ -16,13 +17,7 @@ export function PetPublicProfileActions({ pet, isOwner }: PetPublicProfileAction
   const copy = t.petPublicProfile;
 
   if (isOwner) {
-    return (
-      <div className="flex w-full shrink-0 flex-col justify-center lg:w-[220px]">
-        <p className="text-center text-sm leading-snug text-muted">
-          {copy.ownerViewingPublicListing}
-        </p>
-      </div>
-    );
+    return <PetPublicOwnerStatsCard pet={pet} />;
   }
 
   return (

@@ -49,6 +49,8 @@ export type PublicSearchPet = PetIntroDisplay &
     spayedNeutered: boolean;
     healthCharacteristics: string | null;
     positiveTraits: string | null;
+    /** Owner-written description (additional_notes). */
+    additionalNotes: string | null;
   };
 
 export type PetSearchFilterState = {
@@ -258,6 +260,8 @@ function mapRowToPublicSearchPet(
     healthCharacteristics:
       strFrom(row.health_characteristics) ?? strFrom(details.health_characteristics),
     positiveTraits: strFrom(row.positive_traits) ?? strFrom(details.positive_traits),
+    additionalNotes:
+      strFrom(row.additional_notes) ?? strFrom(details.additional_notes),
   };
 }
 

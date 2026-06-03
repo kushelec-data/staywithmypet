@@ -362,6 +362,10 @@ export const et = {
   petPublicProfile: {
     editPet: "Muuda lemmikut",
     ownerViewingPublicListing: "Vaatad oma lemmiku avalikku kuulutust.",
+    ownerStatsTitle: "Kuulutuse ülevaade",
+    ownerStatReviews: "Arvustused",
+    ownerStatSaved: "Salvestatud",
+    ownerStatAvailableDates: "Vabad kuupäevad",
     copyPublicLink: "Kopeeri avalik link",
     viewPublicProfile: "Vaata avalikku profiili",
     previewListing: "Eelvaate kuulutus",

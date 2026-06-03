@@ -360,6 +360,10 @@ export const en = {
   petPublicProfile: {
     editPet: "Edit pet",
     ownerViewingPublicListing: "You are viewing your pet's public listing.",
+    ownerStatsTitle: "Listing overview",
+    ownerStatReviews: "Reviews",
+    ownerStatSaved: "Saved",
+    ownerStatAvailableDates: "Available dates",
     copyPublicLink: "Copy public link",
     viewPublicProfile: "View public profile",
     previewListing: "Preview listing",

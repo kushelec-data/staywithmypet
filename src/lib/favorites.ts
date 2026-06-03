@@ -3,6 +3,7 @@ import { mapDbPetToCard } from "@/lib/pet-data";
 import type { Pet } from "@/lib/pets";
 import { mapPetFriendSearchRow, type SearchProfile } from "@/lib/search-profiles";
 import type { ProfileRole } from "@/lib/profile-setup";
+import { isMissingRelationError, isPostgrestError } from "@/lib/supabase-errors";
 
 export type FavoriteTarget =
   | { type: "pet"; id: string }
@@ -141,4 +142,22 @@ export async function fetchSavedItems(
   );
 
   return { pets, friends };
+}
+
+/** Count Pet Friends who saved this pet; null if favorites table unavailable or denied. */
+export async function countPetSaves(
+  supabase: SupabaseClient,
+  petId: string,
+): Promise<number | null> {
+  const { count, error } = await supabase
+    .from("favorites")
+    .select("id", { count: "exact", head: true })
+    .eq("pet_id", petId);
+
+  if (error) {
+    if (isPostgrestError(error) && isMissingRelationError(error)) return null;
+    return null;
+  }
+
+  return count ?? 0;
 }

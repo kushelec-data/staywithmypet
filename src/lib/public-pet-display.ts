@@ -50,8 +50,31 @@ export function buildPublicPetChips(pet: PublicSearchPet): string[] {
   return [...new Set(chips)];
 }
 
+function normalizeDisplayText(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function isDuplicatePublicPetAbout(about: string, shortBio: string | null): boolean {
+  if (!shortBio?.trim()) return false;
+  const a = normalizeDisplayText(about);
+  const b = normalizeDisplayText(shortBio);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.length >= 24 && b.includes(a)) return true;
+  if (b.length >= 24 && a.includes(b)) return true;
+  return false;
+}
+
 export function buildPublicPetShortBio(pet: PublicSearchPet): string | null {
-  const about = buildPublicPetAboutText(pet);
+  const custom = pet.additionalNotes?.trim();
+  if (custom) {
+    const trimmed = custom.replace(/\s+/g, " ").trim();
+    if (trimmed.length <= 220) return trimmed;
+    const sentences = trimmed.match(/[^.!?]+[.!?]+/g) ?? [trimmed];
+    return sentences.slice(0, 2).join(" ").trim();
+  }
+
+  const about = buildPublicPetAutoAboutText(pet);
   if (about) {
     const trimmed = about.replace(/\s+/g, " ").trim();
     if (trimmed.length <= 220) return trimmed;
@@ -146,11 +169,12 @@ export function buildPublicPetAvailabilityItems(pet: PublicSearchPet): string[] 
   ];
 }
 
-export function buildPublicPetAboutText(pet: PublicSearchPet): string | null {
+/** Auto-generated care summary (not owner-written notes). */
+export function buildPublicPetAutoAboutText(pet: PublicSearchPet): string | null {
   const summary = pet.careSummary?.trim();
   if (!summary) return null;
 
-    const headerBits = [pet.name, pet.breed, pet.speciesLabel, pet.weightDisplayShort, pet.locationArea]
+  const headerBits = [pet.name, pet.breed, pet.speciesLabel, pet.weightDisplayShort, pet.locationArea]
     .filter(Boolean)
     .map((s) => s!.toLowerCase());
 
@@ -163,4 +187,23 @@ export function buildPublicPetAboutText(pet: PublicSearchPet): string | null {
 
   const introMatch = summary.match(/^[^.!?]+[.!?]/);
   return introMatch ? introMatch[0].trim() : summary;
+}
+
+/** About section body: custom description, or auto text when it does not repeat the hero. */
+export function resolvePublicPetAboutSection(
+  pet: PublicSearchPet,
+  shortBio: string | null,
+): string | null {
+  const custom = pet.additionalNotes?.trim();
+  if (custom) return custom;
+
+  const auto = buildPublicPetAutoAboutText(pet);
+  if (!auto) return null;
+  if (isDuplicatePublicPetAbout(auto, shortBio)) return null;
+  return auto;
+}
+
+/** @deprecated use resolvePublicPetAboutSection */
+export function buildPublicPetAboutText(pet: PublicSearchPet): string | null {
+  return buildPublicPetAutoAboutText(pet);
 }
