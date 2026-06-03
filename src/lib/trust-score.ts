@@ -130,12 +130,6 @@ export function computeTrustScorePercent(input: TrustScoreInput): number {
   return percentFromTrustChecks(buildTrustChecks(input, false));
 }
 
-/** Shared display value, e.g. `85%` (label is `trustScoreTitle` in i18n). */
-export function formatTrustScoreDisplay(percent: number): string {
-  const n = Math.min(100, Math.max(0, Math.round(percent)));
-  return `${n}%`;
-}
-
 export function phoneOnFileFromProfile(
   profile: Pick<TrustScoreProfileSlice, "phone" | "phone_e164">,
 ): boolean {

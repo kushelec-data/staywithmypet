@@ -552,7 +552,7 @@ export const en = {
     phoneVerifyCheckbox: "I confirm this phone number is correct",
     phoneVerifyHint: "Add a phone number above to verify it.",
     trustScoreTitle: "Trust score",
-    trustScorePercent: "{n}%",
+    trustScorePercent: "{n}% trust",
     trustScoreHelper: "Complete your profile to build trust with the community.",
     trustBadgeEmail: "Email verified",
     trustBadgePhone: "Phone verified",

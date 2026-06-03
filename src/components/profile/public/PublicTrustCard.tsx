@@ -5,7 +5,6 @@ import { REVIEWS_SECTION_ID } from "@/components/reviews/ProfileRatingSummary";
 import { useLanguage } from "@/context/LanguageContext";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import { formatMemberSince, type PublicProfileView, type PublicTrustBadgeId } from "@/lib/public-profile";
-import { formatTrustScoreDisplay } from "@/lib/trust-score";
 
 type PublicTrustCardProps = {
   profile: PublicProfileView;
@@ -57,8 +56,6 @@ export function PublicTrustCard({
 
   const badges = BADGE_ORDER.filter((id) => profile.trust_badges.includes(id));
 
-  const trustScoreDisplay = formatTrustScoreDisplay(profile.trust_score_percent);
-
   return (
     <section className={`${PUBLIC_CARD} min-w-0 max-w-full`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -68,7 +65,9 @@ export function PublicTrustCard({
 
       <div className="mt-3 min-w-0 max-w-full rounded-xl bg-mint/20 px-3 py-2.5">
         <p className="text-xs font-medium text-muted">{ts.trustScoreTitle}</p>
-        <p className="font-heading text-2xl font-semibold text-brand-teal">{trustScoreDisplay}</p>
+        <p className="font-heading text-2xl font-semibold text-brand-teal">
+          {ts.trustScorePercent.replace("{n}", String(profile.trust_score_percent))}
+        </p>
         <div className="mt-2 flex min-w-0 flex-wrap gap-2 text-[0.7rem] font-semibold">
           <span className="rounded-full bg-surface px-2 py-0.5 text-muted">
             {ts.trustStatsBookings.replace("{n}", String(profile.completed_bookings_count))}

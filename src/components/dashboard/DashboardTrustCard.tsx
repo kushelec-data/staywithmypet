@@ -11,7 +11,6 @@ import type { DashboardSnapshot } from "@/lib/dashboard-data";
 import { isProfileVerified } from "@/lib/trust-safety";
 import {
   calculateTrustScore,
-  formatTrustScoreDisplay,
   type TrustCheck,
   type TrustCheckId,
 } from "@/lib/trust-score";
@@ -48,7 +47,6 @@ export function DashboardTrustCard({
     { phoneOnFile },
   );
   const displayPercent = breakdown.percent;
-  const displayScore = formatTrustScoreDisplay(displayPercent);
   const verified = isProfileVerified({
     emailVerified,
     phoneVerified: profile.phone_verified && phoneOnFile,
@@ -66,7 +64,7 @@ export function DashboardTrustCard({
         <p
           className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${dashboardScoreTextClass(displayPercent)}`}
         >
-          {displayScore}
+          {displayPercent}%
         </p>
         <div
           className={`${DASHBOARD_PROGRESS_TRACK_CLASS} mt-2 h-1.5 overflow-hidden`}

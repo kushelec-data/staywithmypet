@@ -555,7 +555,7 @@ export const et = {
     phoneVerifyCheckbox: "Kinnitan, et see telefoninumber on õige",
     phoneVerifyHint: "Lisa ülal telefoninumber, et seda kinnitada.",
     trustScoreTitle: "Usaldusskoor",
-    trustScorePercent: "{n}%",
+    trustScorePercent: "{n}% usaldus",
     trustScoreHelper: "Täida profiil, et luua usaldust kogukonnas.",
     trustBadgeEmail: "E-post kinnitatud",
     trustBadgePhone: "Telefon kinnitatud",
