@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatDateListShort } from "@/lib/date-format";
-import { formatDateRange, normalizeRequestMessage } from "@/lib/requests";
+import { formatBookingDates } from "@/lib/date-format";
+import { formatRequestDateLabel, normalizeRequestMessage } from "@/lib/requests";
+import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { todayDateInputValue } from "@/lib/request-validation";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { isMissingRelationError, isPostgrestError } from "@/lib/supabase-errors";
@@ -153,9 +154,14 @@ function mapBookingRow(
   const displayStatus = resolveBookingDisplayStatus(row);
   const otherPartyId =
     userId === row.pet_parent_id ? row.pet_friend_id : row.pet_parent_id;
-  const requestedDates = (req?.requested_dates ?? [])
-    .filter((d): d is string => typeof d === "string")
-    .sort();
+  const requestedDates = normalizeAvailabilityDates(req?.requested_dates ?? []);
+  const dateLabel =
+    formatBookingDates(requestedDates) ??
+    formatRequestDateLabel({
+      date_from: req?.date_from ?? row.start_date,
+      date_to: req?.date_to ?? row.end_date,
+      requested_dates: req?.requested_dates ?? null,
+    });
 
   return {
     id: row.id,
@@ -169,12 +175,12 @@ function mapBookingRow(
     careType: req?.care_type?.trim() || null,
     message: req?.message ?? null,
     requestedDates,
-    requestedDatesLabel: formatDateListShort(requestedDates),
+    requestedDatesLabel: dateLabel,
     status: row.status,
     displayStatus,
     startDate: row.start_date,
     endDate: row.end_date,
-    dateLabel: formatDateRange(row.start_date, row.end_date, null, null),
+    dateLabel,
     createdAt: row.created_at,
     createdAtLabel: formatCreatedAt(row.created_at),
     completedAt: row.completed_at,

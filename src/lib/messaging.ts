@@ -7,7 +7,7 @@ type PetPhotoJoin = {
   is_primary: boolean;
   sort_order: number;
 };
-import { formatDateRange, type RequestStatus } from "@/lib/requests";
+import { formatRequestDateLabel, type RequestStatus } from "@/lib/requests";
 import type { BookingStatus } from "@/types/database";
 import { isMissingColumnError, isPostgrestError } from "@/lib/supabase-errors";
 import { logSupabaseError } from "@/lib/supabase-errors";
@@ -238,6 +238,7 @@ type RequestRow = {
   status: RequestStatus;
   date_from: string | null;
   date_to: string | null;
+  requested_dates: string[] | null;
   starts_at: string | null;
   ends_at: string | null;
   care_type: string | null;
@@ -260,7 +261,7 @@ const CONVERSATION_SELECT =
   "id, request_id, pet_parent_id, pet_friend_id, created_at";
 
 const REQUEST_SELECT_EXTENDED =
-  "id, status, date_from, date_to, starts_at, ends_at, care_type, service_type, pet_id, pet_parent_id, pet_friend_id";
+  "id, status, date_from, date_to, requested_dates, starts_at, ends_at, care_type, service_type, pet_id, pet_parent_id, pet_friend_id";
 
 const REQUEST_SELECT_BASE =
   "id, status, starts_at, ends_at, service_type, pet_id, pet_parent_id, pet_friend_id";
@@ -319,6 +320,7 @@ async function fetchRequestForConversation(
         ...row,
         date_from: "date_from" in row ? row.date_from : null,
         date_to: "date_to" in row ? row.date_to : null,
+        requested_dates: "requested_dates" in row ? row.requested_dates : null,
         care_type: "care_type" in row ? row.care_type : null,
         starts_at: row.starts_at ?? null,
         ends_at: row.ends_at ?? null,
@@ -450,6 +452,7 @@ async function fetchRequestsByIds(
       ...r,
       date_from: null,
       date_to: null,
+      requested_dates: null,
       care_type: null,
     }));
   } else {
@@ -586,12 +589,7 @@ export async function fetchConversations(
       requestStatus: req.status,
       bookingStatus: booking?.status ?? null,
       bookingCancelledAt: booking?.cancelledAt ?? null,
-      dateLabel: formatDateRange(
-        req.date_from,
-        req.date_to,
-        req.starts_at,
-        req.ends_at,
-      ),
+      dateLabel: formatRequestDateLabel(req),
       dateRangeKey: dateRangeKeyFromRequest(req),
       careType: req.care_type ?? req.service_type,
       lastMessagePreview: last?.body ?? null,

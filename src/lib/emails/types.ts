@@ -26,6 +26,7 @@ export type EmailTemplateContext = {
   careType?: string;
   dateFrom?: string | null;
   dateTo?: string | null;
+  requestedDates?: string[] | null;
   otherPartyName?: string;
   bookingId?: string;
   packageName?: string;

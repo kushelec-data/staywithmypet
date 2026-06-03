@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatDateRange as formatIsoDateRange } from "@/lib/date-format";
+import { formatBookingDates, formatDateRange as formatIsoDateRange } from "@/lib/date-format";
+import type { DateFormatLocale } from "@/lib/date-format";
 import { ensureConversationForAcceptedRequest } from "@/lib/messaging";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import {
@@ -49,6 +50,7 @@ export type CareRequest = {
   receiverName: string;
   otherPartyName: string;
   dateLabel: string;
+  requestedDates: string[];
   createdAt: string;
   createdAtLabel: string;
   canRespond: boolean;
@@ -71,7 +73,7 @@ export function formatDateRange(
   dateTo: string | null,
   startsAt: string | null,
   endsAt: string | null,
-  locale?: string,
+  locale?: DateFormatLocale,
 ): string {
   const from = dateFrom ?? (startsAt ? startsAt.slice(0, 10) : null);
   const to = dateTo ?? (endsAt ? endsAt.slice(0, 10) : null);
@@ -80,6 +82,21 @@ export function formatDateRange(
   if (from) return `From ${formatIsoDateRange(from, from, locale)}`;
   if (to) return `Until ${formatIsoDateRange(to, to, locale)}`;
   return "Dates to be confirmed";
+}
+
+/** Preferred label for care requests using stored selected dates when available. */
+export function formatRequestDateLabel(
+  row: Pick<RequestRow, "date_from" | "date_to" | "requested_dates"> & {
+    starts_at?: string | null;
+    ends_at?: string | null;
+  },
+  locale?: DateFormatLocale,
+): string {
+  const requestedDates = normalizeAvailabilityDates(row.requested_dates ?? []);
+  if (requestedDates.length) {
+    return formatBookingDates(requestedDates, { locale }) ?? "Dates to be confirmed";
+  }
+  return formatDateRange(row.date_from, row.date_to, row.starts_at ?? null, row.ends_at ?? null, locale);
 }
 
 function formatCreatedAt(createdAt: string): string {
@@ -194,7 +211,8 @@ function mapRequestRow(
     senderName: names.senderName,
     receiverName: names.receiverName,
     otherPartyName,
-    dateLabel: formatDateRange(row.date_from, row.date_to, null, null),
+    requestedDates: normalizeAvailabilityDates(row.requested_dates ?? []),
+    dateLabel: formatRequestDateLabel(row),
     createdAt: row.created_at,
     createdAtLabel: formatCreatedAt(row.created_at),
     canRespond: receiverId === userId && row.status === "pending",

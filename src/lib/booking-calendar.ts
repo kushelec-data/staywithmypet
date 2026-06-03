@@ -1,5 +1,5 @@
-import { formatDateRange } from "@/lib/date-format";
-import { eachISODateInRangeInclusive, localISODate } from "@/lib/pet-availability";
+import { formatBookingDates, formatDateRange } from "@/lib/date-format";
+import { eachISODateInRangeInclusive, localISODate, normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { BookingStatus } from "@/types/database";
 
 /** Statuses that block new bookings and date selection. */
@@ -45,6 +45,7 @@ export type CalendarBooking = {
   careType: string | null;
   startDate: string;
   endDate: string;
+  requestedDates: string[];
   color: CalendarBookingColor;
 };
 
@@ -161,7 +162,12 @@ export function formatBookingDateRange(
   start: string,
   end: string,
   locale?: string,
+  requestedDates?: string[] | null,
 ): string {
+  const dates = normalizeAvailabilityDates(requestedDates ?? []);
+  if (dates.length) {
+    return formatBookingDates(dates, { locale }) ?? formatDateRange(start, end, locale);
+  }
   return formatDateRange(start, end, locale);
 }
 

@@ -20,6 +20,7 @@ type RequestEmailRow = {
   care_type: string | null;
   date_from: string | null;
   date_to: string | null;
+  requested_dates: string[] | null;
 };
 
 type BookingEmailRow = {
@@ -56,7 +57,7 @@ async function loadRequest(requestId: string): Promise<RequestEmailRow | null> {
   const { data, error } = await admin
     .from("requests")
     .select(
-      "id, sender_id, receiver_id, pet_parent_id, pet_friend_id, pet_id, care_type, date_from, date_to",
+      "id, sender_id, receiver_id, pet_parent_id, pet_friend_id, pet_id, care_type, date_from, date_to, requested_dates",
     )
     .eq("id", requestId)
     .maybeSingle();
@@ -130,6 +131,7 @@ function requestContext(
     careType: row.care_type ?? undefined,
     dateFrom: row.date_from,
     dateTo: row.date_to,
+    requestedDates: row.requested_dates,
     otherPartyName,
   };
 }
@@ -138,6 +140,7 @@ function bookingContext(
   row: BookingEmailRow,
   pet: { name: string; typeLabel: string },
   careType: string | null,
+  request?: RequestEmailRow | null,
 ): EmailTemplateContext {
   return {
     petName: pet.name,
@@ -145,6 +148,7 @@ function bookingContext(
     careType: careType ?? undefined,
     dateFrom: row.start_date,
     dateTo: row.end_date,
+    requestedDates: request?.requested_dates ?? null,
     bookingId: row.id,
   };
 }
@@ -284,7 +288,7 @@ export async function triggerBookingConfirmedForRequest(requestId: string): Prom
   const row = await loadRequest(requestId);
   const careType = row?.care_type ?? null;
   const pet = await loadPet(booking.pet_id);
-  const ctx = bookingContext(booking, pet, careType);
+  const ctx = bookingContext(booking, pet, careType, row);
 
   for (const userId of [booking.pet_parent_id, booking.pet_friend_id]) {
     const recipientName = await loadDisplayName(userId);
@@ -306,7 +310,7 @@ export async function triggerBookingCompletedEmails(bookingId: string): Promise<
   const row = await loadRequest(booking.request_id);
   const careType = row?.care_type ?? null;
   const pet = await loadPet(booking.pet_id);
-  const ctx = bookingContext(booking, pet, careType);
+  const ctx = bookingContext(booking, pet, careType, row);
   const reviewAt = new Date(Date.now() + REVIEW_REMINDER_DELAY_MS);
 
   for (const userId of [booking.pet_parent_id, booking.pet_friend_id]) {

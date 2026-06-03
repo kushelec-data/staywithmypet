@@ -4,12 +4,13 @@ import {
   monthBounds,
   type CalendarBooking,
 } from "@/lib/booking-calendar";
+import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { pickPrimaryPhotoUrl } from "@/lib/pet-photos";
 import { isMissingRelationError } from "@/lib/supabase-errors";
 import type { BookingStatus } from "@/types/database";
 
 const BOOKING_CALENDAR_SELECT =
-  "id, pet_id, pet_parent_id, pet_friend_id, status, start_date, end_date, requests ( care_type )";
+  "id, pet_id, pet_parent_id, pet_friend_id, status, start_date, end_date, requests ( care_type, requested_dates )";
 
 type BookingRow = {
   id: string;
@@ -19,15 +20,21 @@ type BookingRow = {
   status: BookingStatus;
   start_date: string;
   end_date: string;
-  requests: { care_type: string | null } | { care_type: string | null }[] | null;
+  requests:
+    | { care_type: string | null; requested_dates: string[] | null }
+    | { care_type: string | null; requested_dates: string[] | null }[]
+    | null;
 };
 
 type PetPhotoJoin = { public_url: string | null; is_primary: boolean; sort_order: number | null };
 
-function pickCareType(requests: BookingRow["requests"]): string | null {
+function pickRequestJoin(requests: BookingRow["requests"]): {
+  care_type: string | null;
+  requested_dates: string[] | null;
+} | null {
   if (!requests) return null;
   const row = Array.isArray(requests) ? requests[0] : requests;
-  return row?.care_type?.trim() || null;
+  return row ?? null;
 }
 
 export async function fetchCalendarBookingsForMonth(
@@ -120,9 +127,12 @@ export async function fetchCalendarBookingsForMonth(
       friendName: friend?.name ?? "Member",
       friendPhotoUrl: friend?.avatarUrl ?? null,
       status: row.status,
-      careType: pickCareType(row.requests),
+      careType: pickRequestJoin(row.requests)?.care_type?.trim() || null,
       startDate: row.start_date,
       endDate: row.end_date,
+      requestedDates: normalizeAvailabilityDates(
+        pickRequestJoin(row.requests)?.requested_dates ?? [],
+      ),
       color: hashBookingColor(row.id),
     };
   });

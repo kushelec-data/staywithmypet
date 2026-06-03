@@ -1,4 +1,4 @@
-import { formatDate, formatDateRange } from "@/lib/date-format";
+import { formatBookingDates, formatDate } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 import { speciesDisplayLabel, genderDisplayLabel } from "@/lib/pet-data";
@@ -108,8 +108,8 @@ export function buildPublicPetAvailabilityChips(pet: PublicSearchPet): string[] 
   const dates = normalizeAvailabilityDates(pet.availabilityDates);
   if (dates.length) {
     chips.push("Next available");
-    if (dates.length === 1) chips.push(formatDate(dates[0]!));
-    else chips.push(formatDateRange(dates[0]!, dates[dates.length - 1]!));
+    const label = formatBookingDates(dates, { includeDayCount: false });
+    if (label) chips.push(label);
   }
   const notes = pet.availabilityNotes?.trim();
   if (notes) chips.push(notes);

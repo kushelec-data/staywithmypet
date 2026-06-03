@@ -11,7 +11,8 @@ import {
 } from "@/lib/calendar-insights";
 import type { CalendarBooking, MonthCursor } from "@/lib/booking-calendar";
 import { monthCursorToDate } from "@/lib/booking-calendar";
-import { formatDate, formatDateRange } from "@/lib/date-format";
+import { formatDate } from "@/lib/date-format";
+import { formatBookingDateRange } from "@/lib/booking-calendar";
 
 type CalendarInsightsPanelProps = {
   availabilityDates: string[];
@@ -83,7 +84,12 @@ export function CalendarInsightsPanel({
                 className="rounded-xl border border-[#E5E2D8] bg-[#F8F6F1] px-3 py-2.5"
               >
                 <p className="text-sm font-medium text-foreground">
-                  {formatDateRange(booking.startDate, booking.endDate, locale)}
+                  {formatBookingDateRange(
+                    booking.startDate,
+                    booking.endDate,
+                    locale,
+                    booking.requestedDates,
+                  )}
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
                   {booking.petName}

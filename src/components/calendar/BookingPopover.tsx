@@ -60,7 +60,12 @@ export function BookingPopover({
 
   if (!open || viewRole === "public") return null;
 
-  const dateLabel = formatBookingDateRange(booking.startDate, booking.endDate);
+  const dateLabel = formatBookingDateRange(
+    booking.startDate,
+    booking.endDate,
+    undefined,
+    booking.requestedDates,
+  );
   const statusLabel =
     displayStatus === "upcoming"
       ? t.bookingCalendar.statusUpcoming

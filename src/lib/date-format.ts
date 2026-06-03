@@ -96,6 +96,61 @@ export function formatDateRange(
   return `${formatDate(start, locale, options)} – ${formatDate(end, locale, options)}`;
 }
 
+/** True when every ISO date in the sorted list forms one contiguous range (no gaps). */
+export function areSelectedDatesConsecutive(dates: string[] | null | undefined): boolean {
+  const sorted = normalizeAvailabilityDates(dates ?? []);
+  if (sorted.length <= 1) return true;
+  const full = eachISODateInRangeInclusive(sorted[0]!, sorted[sorted.length - 1]!);
+  return full.length === sorted.length;
+}
+
+function formatDayCountSuffix(count: number, locale?: DateFormatLocale): string {
+  const loc = resolveDateLocale(locale);
+  if (loc.startsWith("et")) {
+    return count === 1 ? "(1 päev)" : `(${count} päeva)`;
+  }
+  return count === 1 ? "(1 day)" : `(${count} days)`;
+}
+
+export type FormatBookingDatesOptions = {
+  locale?: DateFormatLocale;
+  includeYear?: boolean;
+  /** When false, omits the "(N days)" suffix. Default true. */
+  includeDayCount?: boolean;
+};
+
+/**
+ * Request/booking date summary: consecutive → "Jun 6–10 (5 days)";
+ * non-consecutive → "Jun 6, 7, 12, 14, 25, 26 (6 days)".
+ */
+export function formatBookingDates(
+  selectedDates: string[] | null | undefined,
+  options?: FormatBookingDatesOptions,
+): string | null {
+  const sorted = normalizeAvailabilityDates(selectedDates ?? []);
+  if (!sorted.length) return null;
+
+  const locale = options?.locale;
+  const includeYear = options?.includeYear ?? false;
+  const includeDayCount = options?.includeDayCount ?? true;
+  const count = sorted.length;
+  const suffix = includeDayCount ? ` ${formatDayCountSuffix(count, locale)}` : "";
+
+  if (count === 1) {
+    return `${formatDate(sorted[0]!, locale, { includeYear })}${suffix}`;
+  }
+
+  if (areSelectedDatesConsecutive(sorted)) {
+    const range = formatDateRange(sorted[0]!, sorted[sorted.length - 1]!, locale, {
+      includeYear,
+    });
+    return `${range}${suffix}`;
+  }
+
+  const labels = sorted.map((iso) => formatDate(iso, locale, { includeYear }));
+  return `${labels.join(", ")}${suffix}`;
+}
+
 /** Comma-separated short dates with optional overflow suffix. */
 export function formatDateListShort(
   dates: string[] | null | undefined,
@@ -111,22 +166,12 @@ export function formatDateListShort(
   return `${labels.join(", ")}${more}`;
 }
 
-/** When dates form one contiguous range, compact range; otherwise comma list. */
+/** When dates form one contiguous range, compact range; otherwise comma list (no day count). */
 export function formatAvailabilityRangeOrList(
   dates: string[] | null | undefined,
   locale?: DateFormatLocale,
 ): string | null {
-  const sorted = normalizeAvailabilityDates(dates ?? []);
-  if (!sorted.length) return null;
-
-  if (sorted.length === 1) return formatDate(sorted[0]!, locale);
-
-  const full = eachISODateInRangeInclusive(sorted[0]!, sorted[sorted.length - 1]!);
-  if (full.length === sorted.length) {
-    return formatDateRange(sorted[0]!, sorted[sorted.length - 1]!, locale);
-  }
-
-  return formatDateListShort(sorted, { locale });
+  return formatBookingDates(dates, { locale, includeDayCount: false });
 }
 
 /** Prefix helper for availability summaries, e.g. "Available May 1–5". */

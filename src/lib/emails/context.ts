@@ -1,4 +1,5 @@
-import { formatDateRange } from "@/lib/date-format";
+import { formatBookingDates, formatDateRange } from "@/lib/date-format";
+import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { escapeHtml, safeName } from "@/lib/emails/layout";
 import type { EmailTemplateContext } from "@/lib/emails/types";
 
@@ -18,6 +19,14 @@ export function safeOther(name: string | undefined): string {
 }
 
 export function emailDateRange(ctx: EmailTemplateContext): string {
+  const requested = normalizeAvailabilityDates(ctx.requestedDates ?? []);
+  if (requested.length) {
+    return (
+      formatBookingDates(requested, { locale: "en", includeYear: true }) ??
+      "dates to be confirmed"
+    );
+  }
+
   const from = ctx.dateFrom ?? null;
   const to = ctx.dateTo ?? null;
   if (!from && !to) return "dates to be confirmed";
