@@ -109,7 +109,7 @@ export const en = {
     },
     puppyWelcome: {
       ariaLabel: "Friendly puppy assistant",
-      message: "Hi! Want to join us? 🐾",
+      message: "Hi! Want to join us?",
       signUp: "Sign up",
       dismiss: "Dismiss",
     },

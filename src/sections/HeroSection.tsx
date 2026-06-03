@@ -1,5 +1,6 @@
 "use client";
 
+import { HeroPuppyAssistant } from "@/components/home/HeroPuppyAssistant";
 import { HeroStoryCarousel } from "@/components/home/HeroStoryCarousel";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
@@ -46,6 +47,8 @@ export function HeroSection() {
         className="pointer-events-none absolute -left-10 bottom-2 h-24 w-24 rounded-full bg-mint/30 blur-3xl sm:-left-16 sm:bottom-4 sm:h-48 sm:w-48"
         aria-hidden
       />
+
+      <HeroPuppyAssistant />
 
       <div className={`${CONTENT_CONTAINER} relative py-5 sm:py-10 lg:py-12`}>
         <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12">

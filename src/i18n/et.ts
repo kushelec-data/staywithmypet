@@ -109,7 +109,7 @@ export const et = {
     },
     puppyWelcome: {
       ariaLabel: "Sõbralik kutsika abi",
-      message: "Tere! Tahad meiega liituda? 🐾",
+      message: "Tere! Tahad meiega liituda?",
       signUp: "Registreeru",
       dismiss: "Loobu",
     },
