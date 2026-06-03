@@ -202,7 +202,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
             </div>
             <div className="sm:col-span-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.datesLabel}</dt>
-              <dd className="mt-1 text-sm font-medium text-foreground">{booking.dateLabel}</dd>
+              <dd className="mt-1 break-words text-sm font-medium text-foreground">{booking.dateLabel}</dd>
             </div>
             {booking.displayStatus === "completed" && booking.completedAtLabel ? (
               <div>

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatBookingDates } from "@/lib/date-format";
-import { formatRequestDateLabel, normalizeRequestMessage } from "@/lib/requests";
+import { formatBookingDatesForRow } from "@/lib/date-format";
+import { normalizeRequestMessage } from "@/lib/requests";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { todayDateInputValue } from "@/lib/request-validation";
 import { formatSupabaseError } from "@/lib/profile-load";
@@ -155,13 +155,11 @@ function mapBookingRow(
   const otherPartyId =
     userId === row.pet_parent_id ? row.pet_friend_id : row.pet_parent_id;
   const requestedDates = normalizeAvailabilityDates(req?.requested_dates ?? []);
-  const dateLabel =
-    formatBookingDates(requestedDates) ??
-    formatRequestDateLabel({
-      date_from: req?.date_from ?? row.start_date,
-      date_to: req?.date_to ?? row.end_date,
-      requested_dates: req?.requested_dates ?? null,
-    });
+  const dateLabel = formatBookingDatesForRow({
+    requested_dates: requestedDates,
+    date_from: req?.date_from ?? row.start_date,
+    date_to: req?.date_to ?? row.end_date,
+  });
 
   return {
     id: row.id,

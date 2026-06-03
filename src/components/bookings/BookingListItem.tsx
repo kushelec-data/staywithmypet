@@ -92,7 +92,7 @@ function MetaRow({ icon, label, value }: { icon: ReactNode; label: string; value
       <span className="mt-0.5">{icon}</span>
       <div className="min-w-0">
         <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted">{label}</p>
-        <p className="mt-0.5 text-sm font-medium text-foreground">{value}</p>
+        <p className="mt-0.5 break-words text-sm font-medium text-foreground">{value}</p>
       </div>
     </div>
   );

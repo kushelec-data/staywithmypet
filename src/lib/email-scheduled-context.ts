@@ -41,7 +41,7 @@ export async function hydrateScheduledEmailContext(
 
   const { data: request } = await admin
     .from("requests")
-    .select("care_type, pet_parent_id, pet_friend_id")
+    .select("care_type, pet_parent_id, pet_friend_id, requested_dates, date_from, date_to")
     .eq("id", booking.request_id)
     .maybeSingle();
 
@@ -83,8 +83,9 @@ export async function hydrateScheduledEmailContext(
     petName: (pet?.name as string | undefined)?.trim() || "your pet",
     petType: typeLabel,
     careType: (request?.care_type as string | null) ?? undefined,
-    dateFrom: booking.start_date,
-    dateTo: booking.end_date,
+    dateFrom: (request?.date_from as string | null) ?? booking.start_date,
+    dateTo: (request?.date_to as string | null) ?? booking.end_date,
+    requestedDates: (request?.requested_dates as string[] | null) ?? null,
     bookingId: booking.id,
     otherPartyName:
       profileDisplayName(otherProfile as { display_name: string } | null) ?? "Member",

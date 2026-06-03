@@ -1,4 +1,4 @@
-import { formatBookingDates, formatDateRange } from "@/lib/date-format";
+import { formatBookingDatesForRow } from "@/lib/date-format";
 import {
   eachISODateInRangeInclusive,
   localISODate,
@@ -180,11 +180,10 @@ export function formatBookingDateRange(
   locale?: string,
   requestedDates?: string[] | null,
 ): string {
-  const dates = normalizeAvailabilityDates(requestedDates ?? []);
-  if (dates.length) {
-    return formatBookingDates(dates, { locale }) ?? formatDateRange(start, end, locale);
-  }
-  return formatDateRange(start, end, locale);
+  return formatBookingDatesForRow(
+    { requestedDates, date_from: start, date_to: end },
+    { locale },
+  );
 }
 
 export function mondayIndex(d: Date): number {

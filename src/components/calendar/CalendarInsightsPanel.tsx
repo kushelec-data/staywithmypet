@@ -83,7 +83,7 @@ export function CalendarInsightsPanel({
                 key={booking.id}
                 className="rounded-xl border border-[#E5E2D8] bg-[#F8F6F1] px-3 py-2.5"
               >
-                <p className="text-sm font-medium text-foreground">
+                <p className="break-words text-sm font-medium text-foreground">
                   {formatBookingDateRange(
                     booking.startDate,
                     booking.endDate,

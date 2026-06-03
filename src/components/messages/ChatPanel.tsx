@@ -268,10 +268,10 @@ export function ChatPanel({
                 {requestStatusLabel(conversation.requestStatus)}
               </span>
             </div>
-            <p className="truncate text-[0.6875rem] text-[#4b4b4b] dark:text-muted">
-              {conversation.otherPartyName}
+            <p className="min-w-0 text-[0.6875rem] leading-snug text-[#4b4b4b] dark:text-muted">
+              <span className="font-medium">{conversation.otherPartyName}</span>
               {conversation.dateLabel ? (
-                <span className="text-[#4b4b4b]/80 dark:text-muted/80">
+                <span className="break-words text-[#4b4b4b]/80 dark:text-muted/80">
                   {" "}
                   · {conversation.dateLabel}
                 </span>

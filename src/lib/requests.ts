@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatBookingDates, formatDateRange as formatIsoDateRange } from "@/lib/date-format";
+import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { DateFormatLocale } from "@/lib/date-format";
 import { ensureConversationForAcceptedRequest } from "@/lib/messaging";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
@@ -68,22 +68,6 @@ export type CreateCareRequestInput = {
   selectedDates: string[];
 };
 
-export function formatDateRange(
-  dateFrom: string | null,
-  dateTo: string | null,
-  startsAt: string | null,
-  endsAt: string | null,
-  locale?: DateFormatLocale,
-): string {
-  const from = dateFrom ?? (startsAt ? startsAt.slice(0, 10) : null);
-  const to = dateTo ?? (endsAt ? endsAt.slice(0, 10) : null);
-  if (!from && !to) return "Dates to be confirmed";
-  if (from && to) return formatIsoDateRange(from, to, locale);
-  if (from) return `From ${formatIsoDateRange(from, from, locale)}`;
-  if (to) return `Until ${formatIsoDateRange(to, to, locale)}`;
-  return "Dates to be confirmed";
-}
-
 /** Preferred label for care requests using stored selected dates when available. */
 export function formatRequestDateLabel(
   row: Pick<RequestRow, "date_from" | "date_to" | "requested_dates"> & {
@@ -92,11 +76,7 @@ export function formatRequestDateLabel(
   },
   locale?: DateFormatLocale,
 ): string {
-  const requestedDates = normalizeAvailabilityDates(row.requested_dates ?? []);
-  if (requestedDates.length) {
-    return formatBookingDates(requestedDates, { locale }) ?? "Dates to be confirmed";
-  }
-  return formatDateRange(row.date_from, row.date_to, row.starts_at ?? null, row.ends_at ?? null, locale);
+  return formatBookingDatesForRow(row, { locale });
 }
 
 function formatCreatedAt(createdAt: string): string {

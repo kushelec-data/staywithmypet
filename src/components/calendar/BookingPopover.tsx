@@ -110,7 +110,7 @@ export function BookingPopover({
       <dl className="grid gap-1.5 text-xs">
         <div>
           <dt className="font-semibold uppercase tracking-wide text-muted">{t.bookingCalendar.dates}</dt>
-          <dd className="text-foreground">{dateLabel}</dd>
+          <dd className="break-words text-foreground">{dateLabel}</dd>
         </div>
         {booking.careType ? (
           <div>

@@ -74,10 +74,10 @@ function ConversationListItem({
             ) : null}
           </span>
 
-          <span className="mt-px block line-clamp-1 text-[0.6875rem] leading-tight text-[#4b4b4b] dark:text-muted">
-            {conversation.otherPartyName}
+          <span className="mt-px block min-w-0 text-[0.6875rem] leading-snug text-[#4b4b4b] dark:text-muted">
+            <span className="font-medium">{conversation.otherPartyName}</span>
             {conversation.dateLabel ? (
-              <span className="text-[#4b4b4b]/80 dark:text-muted/80">
+              <span className="break-words text-[#4b4b4b]/80 dark:text-muted/80">
                 {" "}
                 · {conversation.dateLabel}
               </span>

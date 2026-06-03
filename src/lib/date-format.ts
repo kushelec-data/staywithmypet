@@ -123,6 +123,44 @@ export type FormatBookingDatesOptions = {
  * Request/booking date summary: consecutive → "Jun 6–10 (5 days)";
  * non-consecutive → "Jun 6, 7, 12, 14, 25, 26 (6 days)".
  */
+/** Tailwind classes for long booking date strings in cards and headers. */
+export const BOOKING_DATES_TEXT_CLASS = "min-w-0 break-words";
+
+export type BookingDatesRowInput = {
+  requested_dates?: string[] | null;
+  requestedDates?: string[] | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+};
+
+const DATES_TO_BE_CONFIRMED = "Dates to be confirmed";
+
+/**
+ * Preferred label for requests/bookings/emails: uses `requested_dates` when present,
+ * otherwise falls back to stored from/to span (legacy rows only).
+ */
+export function formatBookingDatesForRow(
+  row: BookingDatesRowInput,
+  options?: FormatBookingDatesOptions,
+): string {
+  const requested = normalizeAvailabilityDates(row.requested_dates ?? row.requestedDates ?? []);
+  if (requested.length) {
+    return formatBookingDates(requested, options) ?? DATES_TO_BE_CONFIRMED;
+  }
+
+  const from = row.date_from ?? (row.starts_at ? row.starts_at.slice(0, 10) : null);
+  const to = row.date_to ?? (row.ends_at ? row.ends_at.slice(0, 10) : null);
+  if (!from && !to) return DATES_TO_BE_CONFIRMED;
+  if (from && to) {
+    return formatDateRange(from, to, options?.locale, { includeYear: options?.includeYear });
+  }
+  if (from) return formatDate(from, options?.locale, { includeYear: options?.includeYear });
+  if (to) return formatDate(to, options?.locale, { includeYear: options?.includeYear });
+  return DATES_TO_BE_CONFIRMED;
+}
+
 export function formatBookingDates(
   selectedDates: string[] | null | undefined,
   options?: FormatBookingDatesOptions,
