@@ -1,6 +1,5 @@
 import { HeroSection } from "@/sections/HeroSection";
 import { HomeExploreSection } from "@/sections/HomeExploreSection";
-import { HomeJourneySection } from "@/sections/HomeJourneySection";
 import { SearchSection } from "@/sections/SearchSection";
 import { ServicesSection } from "@/sections/ServicesSection";
 import { HomeReadyCtaSection } from "@/sections/HomeReadyCtaSection";
@@ -11,7 +10,6 @@ export default function HomePage() {
     <div className="overflow-x-hidden">
       <HeroSection />
       <SearchSection />
-      <HomeJourneySection />
       <ServicesSection />
       <WhyChooseUsSection />
       <HomeReadyCtaSection />

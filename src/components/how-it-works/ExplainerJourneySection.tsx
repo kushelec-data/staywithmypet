@@ -2,23 +2,13 @@
 
 import Link from "next/link";
 import { PawPrint, User } from "lucide-react";
-import { ExplainerJourneyStaticCard } from "@/components/how-it-works/ExplainerJourneyStaticCard";
 import { ExplainerVideoMock } from "@/components/how-it-works/ExplainerVideoMock";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState } from "react";
 
 type ActiveJourneyCard = "pet-parent" | "pet-friend";
 
-type HowItWorksExplainerSectionProps = {
-  tightTop?: boolean;
-  /** Homepage: static step cards without video mock playback. */
-  staticJourney?: boolean;
-};
-
-export function HowItWorksExplainerSection({
-  tightTop = false,
-  staticJourney = false,
-}: HowItWorksExplainerSectionProps) {
+export function HowItWorksExplainerSection({ tightTop = false }: { tightTop?: boolean }) {
   const { t } = useLanguage();
   const section = t.howItWorksPage.explainerSection;
   const explainer = t.howItWorksPage.explainer;
@@ -63,27 +53,21 @@ export function HowItWorksExplainerSection({
 
         <div className="mt-6 grid min-w-0 grid-cols-1 gap-5 sm:gap-6 md:mt-8 lg:grid-cols-2 lg:gap-8">
           {cards.map((card) => {
-            const isActiveCard = !staticJourney && activeCard === card.key;
+            const isActiveCard = activeCard === card.key;
             return (
               <article
                 key={card.key}
                 id={card.id}
-                className={`scroll-mt-24 flex min-w-0 flex-col overflow-x-hidden rounded-3xl border p-4 shadow-lg sm:p-6 ${
-                  staticJourney ? "" : "transition-[opacity,box-shadow] duration-500"
-                } ${
+                className={`scroll-mt-24 flex min-w-0 flex-col overflow-x-hidden rounded-3xl border p-4 shadow-lg transition-[opacity,box-shadow] duration-500 sm:p-6 ${
                   card.accent === "parent"
                     ? "border-brand-teal/25 bg-gradient-to-br from-mint/35 via-cream/85 to-surface"
                     : "border-brand-pink/20 bg-gradient-to-br from-amber-50/80 via-surface to-brand-pink/5"
                 } ${
-                  staticJourney
+                  isActiveCard
                     ? card.accent === "parent"
-                      ? "shadow-brand-teal/15 ring-1 ring-brand-teal/25"
-                      : "shadow-brand-pink/10 ring-1 ring-brand-pink/20"
-                    : isActiveCard
-                      ? card.accent === "parent"
-                        ? "shadow-brand-teal/20 ring-2 ring-brand-teal/35"
-                        : "shadow-brand-pink/15 ring-2 ring-brand-pink/30"
-                      : "opacity-[0.82] ring-1 ring-black/5"
+                      ? "shadow-brand-teal/20 ring-2 ring-brand-teal/35"
+                      : "shadow-brand-pink/15 ring-2 ring-brand-pink/30"
+                    : "opacity-[0.82] ring-1 ring-black/5"
                 }`}
               >
                 <div className="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
@@ -117,25 +101,21 @@ export function HowItWorksExplainerSection({
                   </span>
                 </div>
 
-                {staticJourney ? (
-                  <ExplainerJourneyStaticCard accent={card.accent} copy={card.copy} />
-                ) : (
-                  <ExplainerVideoMock
-                    variant={card.variant}
-                    copy={card.copy}
-                    isPlaybackActive={isActiveCard}
-                    onSequenceComplete={() =>
-                      setActiveCard(card.key === "pet-parent" ? "pet-friend" : "pet-parent")
-                    }
-                    controls={{
-                      play: explainer.play,
-                      pause: explainer.pause,
-                      replay: explainer.replay,
-                      muteLabel: explainer.muteLabel,
-                      goToScene: explainer.goToScene,
-                    }}
-                  />
-                )}
+                <ExplainerVideoMock
+                  variant={card.variant}
+                  copy={card.copy}
+                  isPlaybackActive={isActiveCard}
+                  onSequenceComplete={() =>
+                    setActiveCard(card.key === "pet-parent" ? "pet-friend" : "pet-parent")
+                  }
+                  controls={{
+                    play: explainer.play,
+                    pause: explainer.pause,
+                    replay: explainer.replay,
+                    muteLabel: explainer.muteLabel,
+                    goToScene: explainer.goToScene,
+                  }}
+                />
 
                 <p className="mt-4 text-sm leading-relaxed text-muted">{card.description}</p>
 
