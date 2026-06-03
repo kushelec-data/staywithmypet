@@ -673,3 +673,144 @@ select.input-field {
 .swmp-map-popup__cta:hover {
   background: var(--brand-teal-hover);
 }
+
+/* Homepage hero — CSS/SVG signup assistant puppy (no photos) */
+.hero-puppy-assistant {
+  max-width: min(11rem, calc(100vw - 1.25rem));
+}
+
+.hero-puppy-assistant__bubble {
+  flex-shrink: 0;
+}
+
+.hero-puppy-assistant__figure {
+  perspective: 140px;
+  filter: drop-shadow(0 6px 14px rgba(26, 26, 31, 0.12));
+}
+
+.hero-puppy__svg {
+  display: block;
+  overflow: visible;
+  transform: rotateY(-10deg) rotateX(4deg);
+  transform-style: preserve-3d;
+}
+
+.hero-puppy__tail {
+  transform-origin: 24px 76px;
+}
+
+.hero-puppy__head {
+  transform-origin: 60px 58px;
+}
+
+.hero-puppy__ear--left {
+  transform-origin: 40px 38px;
+}
+
+.hero-puppy__ear--right {
+  transform-origin: 80px 38px;
+}
+
+@keyframes hero-puppy-bubble-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.35rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes hero-puppy-bounce {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
+}
+
+@keyframes hero-puppy-tail {
+  from {
+    transform: rotate(-14deg);
+  }
+  to {
+    transform: rotate(18deg);
+  }
+}
+
+@keyframes hero-puppy-head {
+  0%,
+  100% {
+    transform: rotate(0deg) translate3d(0, 0, 0);
+  }
+  35% {
+    transform: rotate(-2.5deg) translate3d(-1px, 0, 0);
+  }
+  65% {
+    transform: rotate(2.5deg) translate3d(1px, 0, 0);
+  }
+}
+
+@keyframes hero-puppy-ear-left {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+
+@keyframes hero-puppy-ear-right {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-puppy-assistant__bubble {
+    animation: hero-puppy-bubble-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .hero-puppy__bounce {
+    animation: hero-puppy-bounce 2.8s ease-in-out infinite;
+  }
+
+  .hero-puppy__tail {
+    animation: hero-puppy-tail 0.45s ease-in-out infinite alternate;
+  }
+
+  .hero-puppy__head {
+    animation: hero-puppy-head 3.2s ease-in-out infinite;
+  }
+
+  .hero-puppy__ear--left {
+    animation: hero-puppy-ear-left 2.4s ease-in-out infinite;
+  }
+
+  .hero-puppy__ear--right {
+    animation: hero-puppy-ear-right 2.6s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-puppy-assistant__bubble,
+  .hero-puppy__bounce,
+  .hero-puppy__tail,
+  .hero-puppy__head,
+  .hero-puppy__ear--left,
+  .hero-puppy__ear--right {
+    animation: none;
+  }
+
+  .hero-puppy__svg {
+    transform: none;
+  }
+}

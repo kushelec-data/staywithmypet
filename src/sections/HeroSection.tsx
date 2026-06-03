@@ -37,7 +37,7 @@ export function HeroSection() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden border-b border-border bg-gradient-to-b from-mint/30 via-background to-cream/40"
+      className="relative isolate overflow-x-hidden overflow-y-hidden border-b border-border bg-gradient-to-b from-mint/30 via-background to-cream/40"
     >
       <div
         className="pointer-events-none absolute -right-12 top-6 h-32 w-32 rounded-full bg-brand-teal/10 blur-3xl sm:-right-20 sm:top-8 sm:h-56 sm:w-56"
@@ -50,9 +50,9 @@ export function HeroSection() {
 
       <HeroPuppyAssistant />
 
-      <div className={`${CONTENT_CONTAINER} relative py-5 sm:py-10 lg:py-12`}>
+      <div className={`${CONTENT_CONTAINER} relative z-[1] py-5 sm:py-10 lg:py-12`}>
         <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12">
-          <div className="min-w-0 text-center lg:text-left">
+          <div className="relative z-[1] min-w-0 text-center lg:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-teal sm:text-sm sm:tracking-[0.2em]">
               {t.hero.eyebrow}
             </p>
