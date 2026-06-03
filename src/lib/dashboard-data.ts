@@ -15,7 +15,9 @@ import {
   countIncomingPendingReply,
   countIncomingRequests,
 } from "@/lib/requests";
+import { fetchFirstBookingNeedingReview } from "@/lib/booking-review-prompt";
 import { countCompletedBookingsForUser } from "@/lib/bookings-stats";
+import type { Booking } from "@/lib/bookings";
 
 export type DashboardPetPreview = {
   id: string;
@@ -41,6 +43,8 @@ export type DashboardSnapshot = {
   membership: string;
   latestPets: DashboardPetPreview[];
   petIntros: PetIntroDisplay[];
+  /** Completed booking awaiting the current user's review, if any. */
+  pendingReviewBooking: Booking | null;
 };
 
 export type DashboardStats = DashboardSnapshot;
@@ -304,6 +308,7 @@ export async function fetchDashboardSnapshot(
     membership,
     latestPets,
     petIntros,
+    pendingReviewBooking,
   ] = await Promise.all([
     q("pets count", 0, () => countPetsOwned(supabase, userId)),
     q("pet_photos count", 0, () => countPetPhotosForOwner(supabase, userId)),
@@ -316,6 +321,9 @@ export async function fetchDashboardSnapshot(
     q("membership", DEFAULT_MEMBERSHIP, () => fetchMembershipLabel(supabase, userId, activeMode)),
     q("latest pets", [] as DashboardPetPreview[], () => fetchLatestOwnedPetPreviews(supabase, userId)),
     q("pet intros", [] as PetIntroDisplay[], () => fetchOwnerPetIntros(supabase, userId)),
+    q("pending review booking", null as Booking | null, () =>
+      fetchFirstBookingNeedingReview(supabase, userId),
+    ),
   ]);
 
   const reviewsCount = reviewsFromTable.count || profileRatings?.rating_count || 0;
@@ -337,6 +345,7 @@ export async function fetchDashboardSnapshot(
     membership,
     latestPets,
     petIntros,
+    pendingReviewBooking,
   };
 }
 

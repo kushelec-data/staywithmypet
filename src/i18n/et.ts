@@ -312,6 +312,10 @@ export const et = {
       openMessages: "Ava sõnumid",
     },
   },
+  dashboardHome: {
+    reviewPromptTitle: "Kuidas kogemus läks?",
+    reviewPromptBody: "Jäta selle broneeringu kohta arvustus.",
+  },
   profileCompleteness: {
     sectionTitle: "Profiili täielikkus",
     scoreTitle: "Täielikkuse skoor",
@@ -451,6 +455,11 @@ export const et = {
     bookingReviewsTitleSingle: "Arvustus",
     typeParentFriend: "Lemmiku omaniku arvustus lemmiku sõbrale",
     typeFriendPet: "Lemmiku sõbra arvustus lemmiku kogemuse kohta",
+    reviewParentRoleHint: "Jaga, kuidas sinu lemmiku sõber hooldas lemmikut {name}.",
+    reviewFriendPetButton: "Arvusta lemmikut",
+    reviewFriendParentHint:
+      "Sinu lemmikukogemuse arvustus on nähtav lemmiku omanikule ({name}).",
+    reviewFriendPetHint: "Kirjelda lemmiku {name} käitumist ja hoolduse vajadusi broneeringu ajal.",
     listModalTitle: "Sinu arvustused",
     viewReviews: "Vaata arvustusi",
     close: "Sulge",

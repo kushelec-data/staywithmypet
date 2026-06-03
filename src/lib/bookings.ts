@@ -219,6 +219,7 @@ export async function fetchBookings(
   userId: string,
   tab: BookingTab,
 ): Promise<Booking[]> {
+  await autoCompleteDueBookings(supabase);
   const rows = await fetchBookingRows(supabase, userId, tab);
   const enriched = await enrichBookings(supabase, rows, userId);
   return enriched.filter((b) => b.displayStatus === tab);
@@ -229,6 +230,7 @@ export async function fetchBookingById(
   userId: string,
   bookingId: string,
 ): Promise<BookingDetail | null> {
+  await autoCompleteDueBookings(supabase);
   const filter = `pet_parent_id.eq.${userId},pet_friend_id.eq.${userId}`;
 
   let row: BookingRowWithRequest | null = null;
@@ -301,6 +303,17 @@ export async function completeBooking(
 ): Promise<void> {
   const { error } = await supabase.rpc("complete_booking", { p_booking_id: bookingId });
   if (error) throw error;
+}
+
+/** Persist completed status when end_date is in the past (idempotent). */
+export async function autoCompleteDueBookings(supabase: SupabaseClient): Promise<void> {
+  const { error } = await supabase.rpc("auto_complete_due_bookings_for_user");
+  if (!error) return;
+  if (isPostgrestError(error) && /auto_complete_due_bookings|Could not find the function/i.test(error.message)) {
+    return;
+  }
+  if (isMissingRelationError(error)) return;
+  throw error;
 }
 
 export function isBookingOverlapError(error: unknown): boolean {

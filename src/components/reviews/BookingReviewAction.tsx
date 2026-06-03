@@ -10,18 +10,29 @@ import {
   revieweeIdForType,
   submitReview,
 } from "@/lib/reviews";
+import { refreshStoredTrustScore } from "@/lib/trust-score-refresh";
 import { createClient } from "@/lib/supabase";
 import { useMemo, useState } from "react";
-
+import { useAuth } from "@/context/AuthContext";
+import { useProfile } from "@/context/ProfileContext";
 type BookingReviewActionProps = {
   booking: Booking;
   userId: string;
   onSubmitted: () => void;
+  /** Override default “Leave review” label. */
+  buttonLabel?: string;
 };
 
-export function BookingReviewAction({ booking, userId, onSubmitted }: BookingReviewActionProps) {
+export function BookingReviewAction({
+  booking,
+  userId,
+  onSubmitted,
+  buttonLabel,
+}: BookingReviewActionProps) {
   const { t } = useLanguage();
   const r = t.reviews;
+  const { user } = useAuth();
+  const { profile, refreshProfile } = useProfile();
   const supabase = useMemo(() => createClient(), []);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +61,12 @@ export function BookingReviewAction({ booking, userId, onSubmitted }: BookingRev
         text: values.text,
         tags: values.tags,
       });
+      if (profile && user) {
+        await refreshStoredTrustScore(supabase, userId, profile, {
+          emailVerified: Boolean(user.email_confirmed_at),
+        });
+        void refreshProfile({ background: true });
+      }
       setOpen(false);
       onSubmitted();
     } catch (err) {
@@ -68,7 +85,7 @@ export function BookingReviewAction({ booking, userId, onSubmitted }: BookingRev
         className="w-full sm:w-auto"
         onClick={() => setOpen(true)}
       >
-        {r.leaveReview}
+        {buttonLabel ?? r.leaveReview}
       </Button>
       <LeaveReviewModal
         open={open}

@@ -312,6 +312,10 @@ export const en = {
       openMessages: "Open messages",
     },
   },
+  dashboardHome: {
+    reviewPromptTitle: "How was your experience?",
+    reviewPromptBody: "Leave a review for this booking.",
+  },
   profileCompleteness: {
     sectionTitle: "Profile completeness",
     scoreTitle: "Completeness score",
@@ -447,6 +451,11 @@ export const en = {
     bookingReviewsTitleSingle: "Review",
     typeParentFriend: "Pet Parent review of Pet Friend",
     typeFriendPet: "Pet Friend review of pet experience",
+    reviewParentRoleHint: "Share how your Pet Friend cared for {name}.",
+    reviewFriendPetButton: "Review pet",
+    reviewFriendParentHint:
+      "Your pet experience review is shared with the Pet Parent ({name}).",
+    reviewFriendPetHint: "Describe {name}'s behaviour and care needs during the booking.",
     listModalTitle: "Your reviews",
     viewReviews: "View reviews",
     close: "Close",

@@ -25,6 +25,7 @@ const emptySnapshot: DashboardSnapshot = {
   membership: "Demo",
   latestPets: [],
   petIntros: [],
+  pendingReviewBooking: null,
 };
 
 function ratingOpts(profile: ProfileRow | null) {
@@ -126,5 +127,6 @@ export function useDashboardData() {
     profileReady,
     waitingForProfile,
     loading: authLoading || waitingForProfile,
+    loadSnapshot,
   };
 }

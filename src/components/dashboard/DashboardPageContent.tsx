@@ -11,6 +11,7 @@ import {
   DashboardInfoCard,
 } from "@/components/dashboard/DashboardInfoCard";
 import { DashboardProfileHero } from "@/components/dashboard/DashboardProfileHero";
+import { DashboardReviewPromptBanner } from "@/components/dashboard/DashboardReviewPromptBanner";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -104,7 +105,7 @@ export function DashboardPageContent() {
     profileResolved,
     needsRoleOnboarding: rolePending,
   } = useProfile();
-  const { snapshot, waitingForProfile } = useDashboardData();
+  const { snapshot, waitingForProfile, loadSnapshot } = useDashboardData();
 
   if (rolePending || waitingForProfile) {
     return (
@@ -277,6 +278,15 @@ export function DashboardPageContent() {
             reviewsCount={reviewsCount}
           />
         </section>
+
+        {snapshot.pendingReviewBooking ? (
+          <section aria-label="Review prompt">
+            <DashboardReviewPromptBanner
+              booking={snapshot.pendingReviewBooking}
+              onReviewDone={() => void loadSnapshot()}
+            />
+          </section>
+        ) : null}
 
         {showParentNoPetsBanner || showFriendSetupBanner ? (
           <section aria-label="Setup reminders" className="space-y-3">

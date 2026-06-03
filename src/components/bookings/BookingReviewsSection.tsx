@@ -1,7 +1,7 @@
 "use client";
 
 import { ReviewCard } from "@/components/reviews/ReviewCard";
-import { BookingReviewAction } from "@/components/reviews/BookingReviewAction";
+import { BookingParticipantReviewButtons } from "@/components/reviews/BookingParticipantReviewButtons";
 import { useLanguage } from "@/context/LanguageContext";
 import type { Booking, BookingDetail } from "@/lib/bookings";
 import { reviewTypeHeading, type ReviewDisplay } from "@/lib/reviews";
@@ -51,7 +51,7 @@ export function BookingReviewsSection({
               />
             </div>
           ) : (
-            <BookingReviewAction
+            <BookingParticipantReviewButtons
               booking={booking}
               userId={userId}
               onSubmitted={onReviewsChange}
