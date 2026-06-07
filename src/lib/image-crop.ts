@@ -3,6 +3,7 @@
 export const CROP_OUTPUT_JPEG_QUALITY = 0.88;
 export const CROP_MAX_OUTPUT_BYTES = 3 * 1024 * 1024;
 export const CROP_MAX_INPUT_BYTES = 12 * 1024 * 1024;
+export const PHOTO_LOAD_ERROR = "Photo could not be loaded. Please try another image.";
 
 export type CropShape = "circle" | "rounded-square";
 
@@ -42,30 +43,50 @@ export function isCropSupportedImageFile(file: File): boolean {
   return DEFAULT_ALLOWED.has(file.type);
 }
 
-export function loadImageElement(source: File | string): Promise<HTMLImageElement> {
+function loadImageFromObjectUrl(objectUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.decoding = "async";
-    let objectUrl: string | null = null;
-    if (typeof source === "string") {
-      img.crossOrigin = "anonymous";
-      img.referrerPolicy = "no-referrer";
-    }
+
     img.onload = () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      URL.revokeObjectURL(objectUrl);
+      if (img.naturalWidth <= 0 || img.naturalHeight <= 0) {
+        reject(new Error(PHOTO_LOAD_ERROR));
+        return;
+      }
       resolve(img);
     };
     img.onerror = () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      reject(new Error("Could not load this photo."));
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error(PHOTO_LOAD_ERROR));
     };
-    if (source instanceof File) {
-      objectUrl = URL.createObjectURL(source);
-      img.src = objectUrl;
-    } else {
-      img.src = source;
-    }
+
+    img.src = objectUrl;
   });
+}
+
+export async function loadImageElement(source: File | string): Promise<HTMLImageElement> {
+  if (source instanceof File) {
+    validateCropSourceFile(source);
+    return loadImageFromObjectUrl(URL.createObjectURL(source));
+  }
+
+  try {
+    const response = await fetch(source, { mode: "cors", credentials: "omit", cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(PHOTO_LOAD_ERROR);
+    }
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) {
+      throw new Error(PHOTO_LOAD_ERROR);
+    }
+    return loadImageFromObjectUrl(URL.createObjectURL(blob));
+  } catch (err) {
+    if (err instanceof Error && err.message === PHOTO_LOAD_ERROR) {
+      throw err;
+    }
+    throw new Error(PHOTO_LOAD_ERROR);
+  }
 }
 
 export function baseCoverScale(
@@ -111,22 +132,24 @@ export function initialCropTransform(
 function drawCroppedImage(
   ctx: CanvasRenderingContext2D,
   options: CropRenderOptions,
+  targetSize: number,
 ): void {
-  const { image, transform, viewportSize, outputSize, shape } = options;
+  const { image, transform, viewportSize, shape } = options;
+  const pixelScale = targetSize / viewportSize;
   const cover = baseCoverScale(image.width, image.height, viewportSize) * transform.scale;
-  const scaledW = image.width * cover;
-  const scaledH = image.height * cover;
-  const drawX = outputSize / 2 - scaledW / 2 + (transform.offsetX * outputSize) / viewportSize;
-  const drawY = outputSize / 2 - scaledH / 2 + (transform.offsetY * outputSize) / viewportSize;
+  const scaledW = image.width * cover * pixelScale;
+  const scaledH = image.height * cover * pixelScale;
+  const drawX = targetSize / 2 - scaledW / 2 + transform.offsetX * pixelScale;
+  const drawY = targetSize / 2 - scaledH / 2 + transform.offsetY * pixelScale;
 
-  ctx.clearRect(0, 0, outputSize, outputSize);
+  ctx.clearRect(0, 0, targetSize, targetSize);
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, outputSize, outputSize);
+  ctx.fillRect(0, 0, targetSize, targetSize);
 
   if (shape === "circle") {
     ctx.save();
     ctx.beginPath();
-    ctx.arc(outputSize / 2, outputSize / 2, outputSize / 2, 0, Math.PI * 2);
+    ctx.arc(targetSize / 2, targetSize / 2, targetSize / 2, 0, Math.PI * 2);
     ctx.clip();
   }
 
@@ -143,21 +166,23 @@ export function renderCropPreviewCanvas(
 ): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not prepare photo preview.");
-  canvas.width = options.viewportSize;
-  canvas.height = options.viewportSize;
-  drawCroppedImage(ctx, options);
+  const size = options.viewportSize;
+  if (canvas.width !== size) canvas.width = size;
+  if (canvas.height !== size) canvas.height = size;
+  drawCroppedImage(ctx, options, size);
 }
 
 export async function renderCroppedImageBlob(
   options: CropRenderOptions,
 ): Promise<Blob> {
   const canvas = document.createElement("canvas");
-  canvas.width = options.outputSize;
-  canvas.height = options.outputSize;
+  const targetSize = options.outputSize;
+  canvas.width = targetSize;
+  canvas.height = targetSize;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not prepare cropped photo.");
 
-  drawCroppedImage(ctx, { ...options, viewportSize: options.viewportSize });
+  drawCroppedImage(ctx, options, targetSize);
 
   const mimeType = options.mimeType ?? "image/jpeg";
   let quality = CROP_OUTPUT_JPEG_QUALITY;
@@ -215,4 +240,11 @@ export function cropOutputMimeType(sourceType: string): "image/jpeg" | "image/we
 
 export function cropOutputSize(shape: CropShape): number {
   return shape === "circle" ? 512 : 800;
+}
+
+export function cropImageDimensions(image: HTMLImageElement): { width: number; height: number } {
+  return {
+    width: image.naturalWidth || image.width,
+    height: image.naturalHeight || image.height,
+  };
 }

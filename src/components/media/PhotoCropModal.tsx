@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/Button";
 import {
   blobToCropFile,
   clampCropTransform,
+  cropImageDimensions,
   cropOutputMimeType,
   cropOutputSize,
   initialCropTransform,
   loadImageElement,
+  PHOTO_LOAD_ERROR,
   renderCropPreviewCanvas,
   renderCroppedImageBlob,
   type CropShape,
@@ -50,13 +52,14 @@ export function PhotoCropModal({
   const dragStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(
     null,
   );
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const bodyScrollLockedRef = useRef(false);
   const prevBodyOverflowRef = useRef("");
 
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [imageReady, setImageReady] = useState(false);
   const [transform, setTransform] = useState<CropTransform>({ scale: 1, offsetX: 0, offsetY: 0 });
   const [localSaving, setLocalSaving] = useState(false);
 
@@ -64,18 +67,23 @@ export function PhotoCropModal({
     ? `${sourceFile.name}:${sourceFile.size}:${sourceFile.lastModified}`
     : (sourceUrl ?? "");
 
-  const previewMaskClass =
-    shape === "circle" ? "rounded-full" : "rounded-3xl";
+  const previewMaskClass = shape === "circle" ? "rounded-full" : "rounded-3xl";
 
   const outputSize = useMemo(() => cropOutputSize(shape), [shape]);
 
-  const updateTransform = useCallback(
-    (next: CropTransform) => {
-      if (!image) return;
-      setTransform(clampCropTransform(image.width, image.height, VIEWPORT_SIZE, next));
-    },
-    [image],
-  );
+  const paintPreview = useCallback(() => {
+    const canvas = previewCanvasRef.current;
+    const img = imageRef.current;
+    if (!canvas || !img || !open) return;
+    renderCropPreviewCanvas(canvas, {
+      image: img,
+      transform,
+      viewportSize: VIEWPORT_SIZE,
+      outputSize,
+      shape,
+      mimeType: cropOutputMimeType(sourceFile?.type ?? "image/jpeg"),
+    });
+  }, [open, outputSize, shape, sourceFile?.type, transform]);
 
   useEffect(() => {
     setMounted(true);
@@ -106,7 +114,8 @@ export function PhotoCropModal({
 
   useEffect(() => {
     if (!open) {
-      setImage(null);
+      imageRef.current = null;
+      setImageReady(false);
       setLoadError(null);
       setLoading(false);
       setTransform({ scale: 1, offsetX: 0, offsetY: 0 });
@@ -117,17 +126,21 @@ export function PhotoCropModal({
 
     let cancelled = false;
     setLoading(true);
+    setImageReady(false);
     setLoadError(null);
 
     void (async () => {
       try {
         const loaded = await loadImageElement(sourceFile ?? sourceUrl!);
         if (cancelled) return;
-        setImage(loaded);
-        setTransform(initialCropTransform(loaded.width, loaded.height, VIEWPORT_SIZE));
+        imageRef.current = loaded;
+        const { width, height } = cropImageDimensions(loaded);
+        setTransform(initialCropTransform(width, height, VIEWPORT_SIZE));
+        setImageReady(true);
       } catch (err) {
         if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : "Could not load this photo.");
+          setLoadError(err instanceof Error ? err.message : PHOTO_LOAD_ERROR);
+          imageRef.current = null;
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -140,17 +153,9 @@ export function PhotoCropModal({
   }, [open, sourceKey, sourceFile, sourceUrl]);
 
   useEffect(() => {
-    const canvas = previewCanvasRef.current;
-    if (!canvas || !image || !open) return;
-    renderCropPreviewCanvas(canvas, {
-      image,
-      transform,
-      viewportSize: VIEWPORT_SIZE,
-      outputSize,
-      shape,
-      mimeType: cropOutputMimeType(sourceFile?.type ?? "image/jpeg"),
-    });
-  }, [image, transform, open, outputSize, shape, sourceFile?.type]);
+    if (!imageReady) return;
+    paintPreview();
+  }, [imageReady, paintPreview]);
 
   function handleDialogCancel(event: SyntheticEvent<HTMLDialogElement>) {
     event.preventDefault();
@@ -159,7 +164,9 @@ export function PhotoCropModal({
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!image || saving || localSaving) return;
+    const img = imageRef.current;
+    if (!img || !imageReady || saving || localSaving || loading) return;
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragStartRef.current = {
       x: event.clientX,
@@ -171,28 +178,47 @@ export function PhotoCropModal({
 
   function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const start = dragStartRef.current;
-    if (!start || !image) return;
-    updateTransform({
-      ...transform,
-      offsetX: start.offsetX + (event.clientX - start.x),
-      offsetY: start.offsetY + (event.clientY - start.y),
-    });
+    const img = imageRef.current;
+    if (!start || !img) return;
+    event.preventDefault();
+    const { width, height } = cropImageDimensions(img);
+    setTransform((current) =>
+      clampCropTransform(width, height, VIEWPORT_SIZE, {
+        scale: current.scale,
+        offsetX: start.offsetX + (event.clientX - start.x),
+        offsetY: start.offsetY + (event.clientY - start.y),
+      }),
+    );
   }
 
   function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
-    if (dragStartRef.current) {
+    if (!dragStartRef.current) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
-      dragStartRef.current = null;
     }
+    dragStartRef.current = null;
+  }
+
+  function handleZoomChange(nextScale: number) {
+    const img = imageRef.current;
+    if (!img) return;
+    const { width, height } = cropImageDimensions(img);
+    setTransform((current) =>
+      clampCropTransform(width, height, VIEWPORT_SIZE, {
+        ...current,
+        scale: nextScale,
+      }),
+    );
   }
 
   async function handleSave() {
-    if (!image || saving || localSaving) return;
+    const img = imageRef.current;
+    if (!img || !imageReady || saving || localSaving) return;
     setLocalSaving(true);
     try {
       const mimeType = cropOutputMimeType(sourceFile?.type ?? "image/jpeg");
       const blob = await renderCroppedImageBlob({
-        image,
+        image: img,
         transform,
         viewportSize: VIEWPORT_SIZE,
         outputSize,
@@ -212,6 +238,8 @@ export function PhotoCropModal({
   if (!mounted || !open) return null;
 
   const busy = saving || localSaving || loading;
+  const showCropArea = imageReady && !loadError;
+  const previewBgClass = loadError ? "bg-brand-pink/10" : loading ? "bg-mint/20" : "bg-white";
 
   const modal = (
     <dialog
@@ -258,34 +286,42 @@ export function PhotoCropModal({
 
           <div className="mt-5 flex flex-col items-center gap-4">
             <div
-              className={`relative touch-none select-none overflow-hidden border border-black/10 bg-[#111] shadow-inner ${previewMaskClass}`}
-              style={{ width: VIEWPORT_SIZE, height: VIEWPORT_SIZE }}
+              className={`relative select-none overflow-hidden border border-black/10 shadow-inner ${previewMaskClass} ${previewBgClass}`}
+              style={{ width: VIEWPORT_SIZE, height: VIEWPORT_SIZE, touchAction: "none" }}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
             >
-              <canvas
-                ref={previewCanvasRef}
-                width={VIEWPORT_SIZE}
-                height={VIEWPORT_SIZE}
-                className="h-full w-full touch-none"
-                aria-hidden
-              />
-              {shape === "circle" ? (
+              {showCropArea ? (
+                <canvas
+                  ref={previewCanvasRef}
+                  width={VIEWPORT_SIZE}
+                  height={VIEWPORT_SIZE}
+                  className="block h-full w-full"
+                  aria-hidden
+                />
+              ) : null}
+              {shape === "circle" && showCropArea ? (
                 <div
                   aria-hidden
                   className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-white/70 ring-inset"
                 />
-              ) : (
+              ) : null}
+              {shape === "rounded-square" && showCropArea ? (
                 <div
                   aria-hidden
                   className="pointer-events-none absolute inset-0 rounded-3xl ring-2 ring-white/70 ring-inset"
                 />
-              )}
+              ) : null}
               {loading ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/35 text-sm font-medium text-white">
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-muted">
                   Loading…
+                </div>
+              ) : null}
+              {loadError ? (
+                <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-brand-pink">
+                  {loadError}
                 </div>
               ) : null}
             </div>
@@ -301,19 +337,11 @@ export function PhotoCropModal({
                 max={3}
                 step={0.01}
                 value={transform.scale}
-                disabled={!image || busy}
-                onChange={(event) =>
-                  updateTransform({ ...transform, scale: Number(event.target.value) })
-                }
+                disabled={!showCropArea || busy}
+                onInput={(event) => handleZoomChange(Number(event.currentTarget.value))}
                 className="mt-2 h-2 w-full cursor-pointer accent-brand-teal"
               />
             </div>
-
-            {loadError ? (
-              <p className="w-full text-center text-sm text-brand-pink" role="alert">
-                {loadError}
-              </p>
-            ) : null}
           </div>
 
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -331,7 +359,7 @@ export function PhotoCropModal({
               type="button"
               size="sm"
               className="w-full sm:w-auto"
-              disabled={!image || busy}
+              disabled={!showCropArea || busy}
               onClick={() => void handleSave()}
             >
               {saving || localSaving ? "Saving…" : "Save"}
