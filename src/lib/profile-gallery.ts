@@ -141,3 +141,52 @@ export async function setMainProfilePhoto(
   }
   return persistGallery(supabase, userId, options.currentPhotos, url);
 }
+
+function storagePathFromPublicUrl(url: string): string | null {
+  const marker = `/storage/v1/object/public/${AVATARS_BUCKET}/`;
+  const index = url.indexOf(marker);
+  if (index === -1) return null;
+  return decodeURIComponent(url.slice(index + marker.length));
+}
+
+export async function replaceProfileGalleryPhoto(
+  supabase: SupabaseClient,
+  userId: string,
+  oldUrl: string,
+  file: File,
+  options: { currentPhotos: string[]; currentAvatarUrl: string | null },
+): Promise<ProfileRow> {
+  validateProfileAvatarFile(file);
+
+  if (!options.currentPhotos.includes(oldUrl)) {
+    throw new Error("Choose a photo from your gallery.");
+  }
+
+  const oldStoragePath = storagePathFromPublicUrl(oldUrl);
+  const ext = avatarFileExtension(file);
+  const storagePath = oldStoragePath ?? `${userId}/gallery/${crypto.randomUUID()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage.from(AVATARS_BUCKET).upload(storagePath, file, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: file.type || undefined,
+  });
+
+  if (uploadError) {
+    throw new Error(formatAvatarStorageError(uploadError.message || "Could not update photo."));
+  }
+
+  const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(storagePath);
+  const publicUrl = urlData.publicUrl;
+  const nextPhotos = options.currentPhotos.map((photo) => (photo === oldUrl ? publicUrl : photo));
+  const nextAvatar =
+    options.currentAvatarUrl === oldUrl ? publicUrl : options.currentAvatarUrl;
+
+  const updated = await persistGallery(supabase, userId, nextPhotos, nextAvatar);
+
+  if (oldStoragePath && oldStoragePath !== storagePath) {
+    await supabase.storage.from(AVATARS_BUCKET).remove([oldStoragePath]);
+  }
+
+  return updated;
+}

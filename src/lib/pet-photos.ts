@@ -238,3 +238,145 @@ export function pickPrimaryPhotoUrl(photos: PhotoRow[] | null | undefined): stri
   const urls = sortPetPhotoUrls(photos);
   return urls[0] ?? null;
 }
+
+export type PetPhotoRecord = {
+  id: string;
+  public_url: string | null;
+  storage_path: string;
+  sort_order: number;
+  is_primary: boolean;
+  media_type: string | null;
+};
+
+export async function fetchPetPhotosForOwner(
+  supabase: SupabaseClient,
+  ownerId: string,
+  petId: string,
+): Promise<PetPhotoRecord[]> {
+  const { data: pet, error: petError } = await supabase
+    .from("pets")
+    .select("id")
+    .eq("id", petId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (petError) {
+    throw new Error(petError.message || "Could not load pet photos.");
+  }
+  if (!pet) {
+    throw new Error("Pet not found.");
+  }
+
+  const withMedia = await supabase
+    .from("pet_photos")
+    .select("id, public_url, storage_path, sort_order, is_primary, media_type")
+    .eq("pet_id", petId)
+    .order("sort_order", { ascending: true });
+
+  if (withMedia.error && /column/i.test(withMedia.error.message)) {
+    const fallback = await supabase
+      .from("pet_photos")
+      .select("id, public_url, storage_path, sort_order, is_primary")
+      .eq("pet_id", petId)
+      .order("sort_order", { ascending: true });
+
+    if (fallback.error) {
+      throw new Error(fallback.error.message || "Could not load pet photos.");
+    }
+
+    return (fallback.data ?? []).map((row) => ({
+      ...row,
+      media_type: null,
+    }));
+  }
+
+  if (withMedia.error) {
+    throw new Error(withMedia.error.message || "Could not load pet photos.");
+  }
+
+  return withMedia.data ?? [];
+}
+
+export async function replacePetPhotoImage(
+  supabase: SupabaseClient,
+  ownerId: string,
+  petId: string,
+  photoId: string,
+  file: File,
+): Promise<void> {
+  if (!IMAGE_TYPES.has(file.type)) {
+    throw new Error("Only image photos can be repositioned.");
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    throw new Error("Each file must be 3 MB or smaller.");
+  }
+
+  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertOwner(ownerId, sessionUserId);
+  assertRateLimit("file_upload", sessionUserId);
+
+  const { data: pet, error: petError } = await supabase
+    .from("pets")
+    .select("id")
+    .eq("id", petId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (petError) {
+    throw new Error(petError.message || "Could not load pet photo.");
+  }
+  if (!pet) {
+    throw new Error("Pet not found.");
+  }
+
+  const { data: photo, error: photoError } = await supabase
+    .from("pet_photos")
+    .select("id, storage_path")
+    .eq("id", photoId)
+    .eq("pet_id", petId)
+    .maybeSingle();
+
+  if (photoError) {
+    throw new Error(photoError.message || "Could not load pet photo.");
+  }
+  if (!photo) {
+    throw new Error("Pet photo not found.");
+  }
+
+  const ext = fileExtension(file);
+  const storagePath = photo.storage_path.endsWith(`.${ext}`)
+    ? photo.storage_path
+    : `${ownerId}/${petId}/${crypto.randomUUID()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage.from(PET_PHOTOS_BUCKET).upload(storagePath, file, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: file.type || undefined,
+  });
+
+  if (uploadError) {
+    throw new Error(uploadError.message || "Could not update pet photo.");
+  }
+
+  const { data: urlData } = supabase.storage.from(PET_PHOTOS_BUCKET).getPublicUrl(storagePath);
+  const publicUrl = urlData.publicUrl;
+
+  const { error: updateError } = await supabase
+    .from("pet_photos")
+    .update({
+      storage_path: storagePath,
+      public_url: publicUrl,
+      media_type: "image",
+    })
+    .eq("id", photoId)
+    .eq("pet_id", petId);
+
+  if (updateError) {
+    throw new Error(updateError.message || "Could not save pet photo.");
+  }
+
+  if (photo.storage_path !== storagePath) {
+    await supabase.storage.from(PET_PHOTOS_BUCKET).remove([photo.storage_path]);
+  }
+}

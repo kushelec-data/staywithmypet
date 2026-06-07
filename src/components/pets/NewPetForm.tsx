@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/Button";
 import { PetFormChipGroup, PetFormSection } from "@/components/pets/PetFormSection";
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
-import { PetPhotoUpload } from "@/components/pets/PetPhotoUpload";
+import { PetPhotoUpload, type ExistingPetPhotoItem } from "@/components/pets/PetPhotoUpload";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import {
@@ -34,7 +34,11 @@ import {
   petWalkNeedsOptions,
 } from "@/lib/pet-form-options";
 import { validatePetPhotoFiles } from "@/lib/pet-photos";
-import { uploadAndAttachPetPhotos } from "@/lib/pet-photos";
+import {
+  fetchPetPhotosForOwner,
+  replacePetPhotoImage,
+  uploadAndAttachPetPhotos,
+} from "@/lib/pet-photos";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { OTHER_FIELD_COPY, validateOtherOptionFields } from "@/lib/other-option";
 import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
@@ -87,6 +91,8 @@ export function NewPetForm({ petId }: NewPetFormProps) {
 
   const [form, setForm] = useState<PetProfileFormInput>(emptyForm);
   const [photos, setPhotos] = useState<File[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<ExistingPetPhotoItem[]>([]);
+  const [replacingExistingPhoto, setReplacingExistingPhoto] = useState(false);
   const [loadingPet, setLoadingPet] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +113,21 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           return;
         }
         setForm(mapPetRecordToFormInput(row));
+        const loadedPhotos = await fetchPetPhotosForOwner(supabase, ownerId, petId!);
+        if (cancelled) return;
+        setExistingPhotos(
+          loadedPhotos
+            .map((photo) => ({
+              id: photo.id,
+              url: photo.public_url?.trim() || "",
+              isPrimary: photo.is_primary,
+              mediaType:
+                photo.media_type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(photo.public_url ?? "")
+                  ? ("video" as const)
+                  : ("image" as const),
+            }))
+            .filter((photo) => photo.url.length > 0),
+        );
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Could not load pet.");
@@ -121,6 +142,34 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       cancelled = true;
     };
   }, [petId, user, supabase]);
+
+  async function handleReplaceExistingPhoto(photoId: string, file: File) {
+    if (!user?.id || !petId) return;
+    setReplacingExistingPhoto(true);
+    setError(null);
+    try {
+      await replacePetPhotoImage(supabase, user.id, petId, photoId, file);
+      const loadedPhotos = await fetchPetPhotosForOwner(supabase, user.id, petId);
+      setExistingPhotos(
+        loadedPhotos
+          .map((photo) => ({
+            id: photo.id,
+            url: photo.public_url?.trim() || "",
+            isPrimary: photo.is_primary,
+            mediaType:
+              photo.media_type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(photo.public_url ?? "")
+                ? ("video" as const)
+                : ("image" as const),
+          }))
+          .filter((photo) => photo.url.length > 0),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update pet photo.");
+      throw err;
+    } finally {
+      setReplacingExistingPhoto(false);
+    }
+  }
 
   function patch<K extends keyof PetProfileFormInput>(key: K, value: PetProfileFormInput[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -234,7 +283,15 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       ) : null}
 
       <PetFormSection title="Pet media" description="Upload up to 6 photos or videos. The first file is the main listing image.">
-        <PetPhotoUpload files={photos} onChange={setPhotos} disabled={saving} optional={isEdit} />
+        <PetPhotoUpload
+          files={photos}
+          onChange={setPhotos}
+          disabled={saving}
+          optional={isEdit}
+          existingPhotos={existingPhotos}
+          replacingExisting={replacingExistingPhoto}
+          onReplaceExistingPhoto={isEdit && petId ? handleReplaceExistingPhoto : undefined}
+        />
       </PetFormSection>
 
       <PetFormSection title="Basic pet details">
