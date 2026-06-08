@@ -1,5 +1,6 @@
 "use client";
 
+import { PhotoLightbox } from "@/components/media/PhotoLightbox";
 import { AppImage } from "@/components/ui/AppImage";
 import { PetPublicProfileActions } from "@/components/pets/PetPublicProfileActions";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
@@ -8,10 +9,12 @@ import type { PublicPetQuickFact } from "@/lib/public-pet-display";
 import { PUBLIC_CARD_MINT } from "@/lib/public-layout";
 import { speciesEmoji } from "@/lib/pet-data";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
+import { useMemo, useState } from "react";
 
 type PetPublicTopCardProps = {
   pet: PublicSearchPet;
   photoUrl: string;
+  photoUrls?: string[];
   subtitle: string;
   chips: string[];
   shortBio: string | null;
@@ -45,12 +48,25 @@ function QuickFactIcon({ type }: { type: PublicPetQuickFact["icon"] }) {
 export function PetPublicTopCard({
   pet,
   photoUrl,
+  photoUrls,
   subtitle,
   chips,
   shortBio,
   quickFacts,
   isOwnPet,
 }: PetPublicTopCardProps) {
+  const galleryUrls = useMemo(() => {
+    const urls = (photoUrls?.length ? photoUrls : [photoUrl]).filter((url) => url.trim());
+    return [...new Set(urls)];
+  }, [photoUrl, photoUrls]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  function openAt(index: number) {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  }
+
   return (
     <section className={`${PUBLIC_CARD_MINT} min-w-0 overflow-x-hidden`}>
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
@@ -66,14 +82,44 @@ export function PetPublicTopCard({
               sizes="(max-width: 1024px) 100vw, 240px"
               className="h-full w-full object-cover"
             />
+            <button
+              type="button"
+              className="absolute inset-0 z-[1] rounded-2xl ring-1 ring-black/5 transition hover:ring-brand-teal/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+              aria-label={`View ${pet.name} photo 1`}
+              onClick={() => openAt(0)}
+            />
             {!isOwnPet ? (
               <FavoriteButton
                 target={{ type: "pet", id: pet.id }}
-                className="absolute right-2 top-2"
+                className="absolute right-2 top-2 z-[2]"
                 compact
               />
             ) : null}
           </div>
+
+          {galleryUrls.length > 1 ? (
+            <ul className="mt-2 flex flex-wrap justify-center gap-1.5 sm:justify-start">
+              {galleryUrls.map((url, index) => (
+                <li key={`${url}-${index}`}>
+                  <button
+                    type="button"
+                    className="relative h-12 w-12 overflow-hidden rounded-lg ring-1 ring-black/5 transition hover:ring-brand-teal/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+                    aria-label={`View ${pet.name} photo ${index + 1}`}
+                    onClick={() => openAt(index)}
+                  >
+                    <AppImage
+                      src={url}
+                      alt=""
+                      seed={`${pet.id}-thumb-${index}`}
+                      fallbackEmoji={speciesEmoji(pet.species)}
+                      sizes="48px"
+                      className="object-cover"
+                    />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         <div className="min-w-0 flex-1 space-y-1.5">
@@ -104,6 +150,14 @@ export function PetPublicTopCard({
           <PetPublicProfileActions pet={pet} isOwner={isOwnPet} />
         </div>
       </div>
+
+      <PhotoLightbox
+        photos={galleryUrls}
+        open={lightboxOpen}
+        initialIndex={lightboxIndex}
+        onClose={() => setLightboxOpen(false)}
+        altPrefix={pet.name}
+      />
     </section>
   );
 }

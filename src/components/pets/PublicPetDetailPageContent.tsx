@@ -116,6 +116,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
         <PetPublicTopCard
           pet={pet}
           photoUrl={photoUrl}
+          photoUrls={photos}
           subtitle={buildPublicPetSubtitle(pet)}
           chips={buildPublicPetChips(pet)}
           shortBio={shortBio}
