@@ -3,6 +3,7 @@ import {
   monthBounds,
   type CalendarBooking,
 } from "@/lib/booking-calendar";
+import { resolveBookingDisplayStatus } from "@/lib/bookings";
 import { todayISODate } from "@/lib/calendar-date-state";
 
 export function nextAvailableDate(
@@ -22,10 +23,15 @@ export function upcomingBookingsForInsights(
   limit = 5,
 ): CalendarBooking[] {
   return bookings
-    .filter(
-      (b) =>
-        (b.status === "upcoming" || b.status === "active") && b.endDate >= today,
-    )
+    .filter((b) => {
+      const displayStatus = resolveBookingDisplayStatus({
+        status: b.status,
+        start_date: b.startDate,
+        end_date: b.endDate,
+        requested_dates: b.requestedDates,
+      });
+      return displayStatus === "upcoming" || displayStatus === "active";
+    })
     .sort((a, b) => a.startDate.localeCompare(b.startDate))
     .slice(0, limit);
 }

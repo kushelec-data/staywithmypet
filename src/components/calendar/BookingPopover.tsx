@@ -35,6 +35,7 @@ export function BookingPopover({
     status: booking.status,
     start_date: booking.startDate,
     end_date: booking.endDate,
+    requested_dates: booking.requestedDates,
   });
 
   useEffect(() => {

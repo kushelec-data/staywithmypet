@@ -10,8 +10,10 @@ type PetPhotoJoin = {
 import {
   bookingStatusBadgeClasses,
   bookingStatusLabel,
+  resolveBookingDisplayStatus,
   type BookingTab,
 } from "@/lib/bookings";
+import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus } from "@/lib/requests";
 import type { BookingStatus } from "@/types/database";
 import { isMissingColumnError, isPostgrestError } from "@/lib/supabase-errors";
@@ -43,7 +45,11 @@ export type ConversationSummary = {
   otherPartyName: string;
   otherPartyAvatarUrl: string | null;
   requestStatus: RequestStatus;
+  /** Persisted booking status from the database. */
   bookingStatus: BookingStatus | null;
+  bookingStartDate: string | null;
+  bookingEndDate: string | null;
+  bookingRequestedDates: string[];
   /** Set when the linked booking was cancelled (ISO). */
   bookingCancelledAt: string | null;
   dateLabel: string;
@@ -71,15 +77,40 @@ function conversationIdsFor(summary: Pick<ConversationSummary, "id" | "conversat
   return [...new Set(ids)];
 }
 
+/** Date-aware booking tab for inbox badges and sorting (DB status unchanged). */
+export function getConversationBookingDisplayStatus(
+  conversation: Pick<
+    ConversationSummary,
+    "bookingStatus" | "bookingStartDate" | "bookingEndDate" | "bookingRequestedDates"
+  >,
+): BookingTab | null {
+  if (!conversation.bookingStatus) return null;
+
+  const requested = normalizeAvailabilityDates(conversation.bookingRequestedDates ?? []);
+  const startDate = conversation.bookingStartDate ?? requested[0] ?? null;
+  const endDate = conversation.bookingEndDate ?? requested[requested.length - 1] ?? null;
+
+  if (!startDate || !endDate) {
+    return conversation.bookingStatus as BookingTab;
+  }
+
+  return resolveBookingDisplayStatus({
+    status: conversation.bookingStatus,
+    start_date: startDate,
+    end_date: endDate,
+    requested_dates: requested,
+  });
+}
+
 /** Single status source for inbox list, chat header, and badges (booking wins when linked). */
 export function resolveConversationStatusDisplay(
   conversation: ConversationSummary,
 ): ConversationStatusDisplay {
-  if (conversation.bookingStatus) {
-    const tab = conversation.bookingStatus as BookingTab;
+  const bookingDisplay = getConversationBookingDisplayStatus(conversation);
+  if (bookingDisplay) {
     return {
-      label: bookingStatusLabel(tab),
-      badgeClasses: bookingStatusBadgeClasses(tab),
+      label: bookingStatusLabel(bookingDisplay),
+      badgeClasses: bookingStatusBadgeClasses(bookingDisplay),
     };
   }
   return {
@@ -144,7 +175,12 @@ export function formatCancelledBookingChatGraceEnd(
 }
 
 export function isConversationCompleted(conversation: ConversationSummary): boolean {
-  if (conversation.requestStatus === "completed" || conversation.bookingStatus === "completed") {
+  const bookingDisplay = getConversationBookingDisplayStatus(conversation);
+  if (
+    conversation.requestStatus === "completed" ||
+    conversation.bookingStatus === "completed" ||
+    bookingDisplay === "completed"
+  ) {
     return true;
   }
   if (conversation.requestStatus === "cancelled" || conversation.requestStatus === "declined") {
@@ -158,7 +194,8 @@ export function isConversationCompleted(conversation: ConversationSummary): bool
 
 export function isConversationActiveBooking(conversation: ConversationSummary): boolean {
   if (isConversationCompleted(conversation)) return false;
-  if (conversation.bookingStatus === "active" || conversation.bookingStatus === "upcoming") {
+  const bookingDisplay = getConversationBookingDisplayStatus(conversation);
+  if (bookingDisplay === "active" || bookingDisplay === "upcoming") {
     return true;
   }
   return conversation.requestStatus === "accepted";
@@ -572,11 +609,17 @@ export async function fetchConversations(
 
   const bookingByRequest = new Map<
     string,
-    { id: string; status: BookingStatus; cancelledAt: string | null }
+    {
+      id: string;
+      status: BookingStatus;
+      cancelledAt: string | null;
+      startDate: string;
+      endDate: string;
+    }
   >();
   const { data: bookingRows } = await supabase
     .from("bookings")
-    .select("id, request_id, status, cancelled_at")
+    .select("id, request_id, status, cancelled_at, start_date, end_date")
     .in("request_id", requestIds);
 
   for (const b of bookingRows ?? []) {
@@ -584,6 +627,8 @@ export async function fetchConversations(
       id: b.id as string,
       status: b.status as BookingStatus,
       cancelledAt: (b.cancelled_at as string | null) ?? null,
+      startDate: b.start_date as string,
+      endDate: b.end_date as string,
     });
   }
 
@@ -617,6 +662,7 @@ export async function fetchConversations(
     const sortAt = last?.created_at ?? row.created_at;
     const petName = req.pet_id ? (petNames.get(req.pet_id) ?? null) : null;
     const booking = bookingByRequest.get(row.request_id);
+    const bookingRequestedDates = normalizeAvailabilityDates(req.requested_dates ?? []);
 
     summaries.push({
       id: row.id,
@@ -631,6 +677,9 @@ export async function fetchConversations(
       otherPartyAvatarUrl: null,
       requestStatus: req.status,
       bookingStatus: booking?.status ?? null,
+      bookingStartDate: booking?.startDate ?? null,
+      bookingEndDate: booking?.endDate ?? null,
+      bookingRequestedDates,
       bookingCancelledAt: booking?.cancelledAt ?? null,
       dateLabel: formatRequestDateLabel(req),
       dateRangeKey: dateRangeKeyFromRequest(req),
@@ -753,6 +802,9 @@ export async function sendMessage(
     otherPartyAvatarUrl: null,
     requestStatus,
     bookingStatus: (bookingRow?.status as BookingStatus | undefined) ?? null,
+    bookingStartDate: null,
+    bookingEndDate: null,
+    bookingRequestedDates: [],
     bookingCancelledAt: (bookingRow?.cancelled_at as string | null) ?? null,
     dateLabel: "",
     dateRangeKey: "",

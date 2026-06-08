@@ -81,16 +81,34 @@ function formatCreatedAt(createdAt: string): string {
   }
 }
 
+/** Effective start/end for display status (requested dates override row span). */
+export function resolveBookingDateBounds(
+  row: Pick<BookingRow, "start_date" | "end_date"> & { requested_dates?: string[] | null },
+): { startDate: string; endDate: string } {
+  const requested = normalizeAvailabilityDates(row.requested_dates ?? []);
+  if (requested.length > 0) {
+    return {
+      startDate: requested[0]!,
+      endDate: requested[requested.length - 1]!,
+    };
+  }
+  return { startDate: row.start_date, endDate: row.end_date };
+}
+
 /** Status for tabs: upcoming | active | completed | cancelled. */
 export function resolveBookingDisplayStatus(
-  row: Pick<BookingRow, "status" | "start_date" | "end_date">,
+  row: Pick<BookingRow, "status" | "start_date" | "end_date"> & {
+    requested_dates?: string[] | null;
+  },
 ): BookingTab {
   if (row.status === "cancelled") return "cancelled";
   if (row.status === "completed") return "completed";
 
   const today = todayDateInputValue();
-  if (row.end_date < today) return "completed";
-  if (row.start_date > today) return "upcoming";
+  const { startDate, endDate } = resolveBookingDateBounds(row);
+
+  if (endDate < today) return "completed";
+  if (startDate > today) return "upcoming";
   return "active";
 }
 
@@ -151,10 +169,15 @@ function mapBookingRow(
   userId: string,
 ): Booking {
   const req = pickRequest(row);
-  const displayStatus = resolveBookingDisplayStatus(row);
+  const requestedDates = normalizeAvailabilityDates(req?.requested_dates ?? []);
+  const displayStatus = resolveBookingDisplayStatus({
+    status: row.status,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    requested_dates: requestedDates,
+  });
   const otherPartyId =
     userId === row.pet_parent_id ? row.pet_friend_id : row.pet_parent_id;
-  const requestedDates = normalizeAvailabilityDates(req?.requested_dates ?? []);
   const dateLabel = formatBookingDatesForRow({
     requested_dates: requestedDates,
     date_from: req?.date_from ?? row.start_date,

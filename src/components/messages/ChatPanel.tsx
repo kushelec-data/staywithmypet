@@ -10,6 +10,7 @@ import {
   fetchMessages,
   formatCancelledBookingChatGraceEnd,
   formatMessagingError,
+  getConversationBookingDisplayStatus,
   isCancelledBookingChatGraceActive,
   isCancelledBookingChatGraceExpired,
   markConversationFullyRead,
@@ -83,8 +84,11 @@ export function ChatPanel({
   const cancelledGraceEndLabel = formatCancelledBookingChatGraceEnd(
     conversation.bookingCancelledAt,
   );
+  const bookingDisplayStatus = getConversationBookingDisplayStatus(conversation);
   const showReviewBanner =
-    conversation.requestStatus === "completed" || conversation.bookingStatus === "completed";
+    conversation.requestStatus === "completed" ||
+    conversation.bookingStatus === "completed" ||
+    bookingDisplayStatus === "completed";
 
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
@@ -266,10 +270,10 @@ export function ChatPanel({
           )}
 
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-1">
               <h2 className="min-w-0 truncate text-sm font-semibold text-foreground">{displayName}</h2>
               <span
-                className={`${statusDisplay.badgeClasses} max-w-full shrink-0 !px-1.5 !py-0 !text-[0.5625rem]`}
+                className={`${statusDisplay.badgeClasses} w-fit max-w-full shrink-0 !px-1.5 !py-0 !text-[0.5625rem]`}
               >
                 {statusDisplay.label}
               </span>
