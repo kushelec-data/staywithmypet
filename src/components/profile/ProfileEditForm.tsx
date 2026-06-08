@@ -606,14 +606,16 @@ export function ProfileEditForm() {
                 email={user.email}
                 avatarUrl={avatarUrl}
                 onAvatarUpdated={handleAvatarUpdated}
-                disabled={!basicEnabled || saving.basic}
+                editable={basicEnabled}
+                disabled={saving.basic}
               />
               <ProfileGalleryUpload
                 userId={user.id}
                 profile={profile}
                 avatarUrl={avatarUrl}
                 onProfileUpdated={handleProfileGalleryUpdated}
-                disabled={!basicEnabled || saving.basic}
+                editable={basicEnabled}
+                disabled={saving.basic}
               />
             </div>
           ) : null}

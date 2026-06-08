@@ -14,6 +14,8 @@ type ProfileAvatarUploadProps = {
   email?: string | null;
   avatarUrl: string | null;
   onAvatarUpdated: (avatarUrl: string) => void;
+  /** When false, only the photo is shown (view mode). */
+  editable?: boolean;
   disabled?: boolean;
 };
 
@@ -28,6 +30,7 @@ export function ProfileAvatarUpload({
   email,
   avatarUrl,
   onAvatarUpdated,
+  editable = true,
   disabled = false,
 }: ProfileAvatarUploadProps) {
   const supabase = useMemo(() => createClient(), []);
@@ -41,7 +44,7 @@ export function ProfileAvatarUpload({
   const shownUrl = previewUrl ?? avatarUrl;
 
   function openCrop(file?: File, url?: string) {
-    if (disabled || uploading) return;
+    if (!editable || disabled || uploading) return;
     setError(null);
     try {
       if (file) validateCropSourceFile(file);
@@ -53,7 +56,7 @@ export function ProfileAvatarUpload({
   }
 
   function handleFileSelected(file: File | undefined) {
-    if (!file || disabled || uploading) return;
+    if (!file || !editable || disabled || uploading) return;
     openCrop(file);
   }
 
@@ -92,47 +95,51 @@ export function ProfileAvatarUpload({
 
         <div className="min-w-0">
           <p className="form-field-label">Profile photo</p>
-          <p className="mt-1 text-xs text-muted">JPG, PNG, or WebP · max 5 MB</p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-            className="sr-only"
-            disabled={disabled || uploading}
-            onChange={(e) => handleFileSelected(e.target.files?.[0])}
-          />
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={disabled || uploading}
-              onClick={() => inputRef.current?.click()}
-            >
-              {uploading ? "Uploading…" : "Upload profile photo"}
-            </Button>
-            {shownUrl ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
+          {editable ? (
+            <>
+              <p className="mt-1 text-xs text-muted">JPG, PNG, or WebP · max 5 MB</p>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                className="sr-only"
                 disabled={disabled || uploading}
-                onClick={() => openCrop(undefined, shownUrl)}
-              >
-                Edit photo
-              </Button>
-            ) : null}
-          </div>
-          {error ? (
-            <p className="mt-2 text-xs text-brand-pink" role="alert">
-              {error}
-            </p>
+                onChange={(e) => handleFileSelected(e.target.files?.[0])}
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled || uploading}
+                  onClick={() => inputRef.current?.click()}
+                >
+                  {uploading ? "Uploading…" : "Upload profile photo"}
+                </Button>
+                {shownUrl ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={disabled || uploading}
+                    onClick={() => openCrop(undefined, shownUrl)}
+                  >
+                    Edit photo
+                  </Button>
+                ) : null}
+              </div>
+              {error ? (
+                <p className="mt-2 text-xs text-brand-pink" role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </>
           ) : null}
         </div>
       </div>
 
       <PhotoCropModal
-        open={Boolean(cropSession)}
+        open={editable && Boolean(cropSession)}
         sourceFile={cropSession?.file}
         sourceUrl={cropSession?.url}
         shape="circle"

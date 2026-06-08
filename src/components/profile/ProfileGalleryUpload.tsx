@@ -20,6 +20,8 @@ type ProfileGalleryUploadProps = {
   profile: ProfileRow | null;
   avatarUrl: string | null;
   onProfileUpdated: (profile: ProfileRow) => void;
+  /** When false, only photos are shown (view mode). */
+  editable?: boolean;
   disabled?: boolean;
 };
 
@@ -34,6 +36,7 @@ export function ProfileGalleryUpload({
   profile,
   avatarUrl,
   onProfileUpdated,
+  editable = true,
   disabled = false,
 }: ProfileGalleryUploadProps) {
   const supabase = useMemo(() => createClient(), []);
@@ -51,7 +54,7 @@ export function ProfileGalleryUpload({
   uploadContextRef.current = { photos, mainUrl };
 
   async function run<T>(fn: () => Promise<T>): Promise<T | undefined> {
-    if (disabled || busy) return;
+    if (!editable || disabled || busy) return;
     setError(null);
     setBusy(true);
     try {
@@ -75,7 +78,7 @@ export function ProfileGalleryUpload({
   }
 
   function queueUploads(fileList: FileList | null) {
-    if (!fileList?.length || slotsLeft <= 0) return;
+    if (!editable || !fileList?.length || slotsLeft <= 0) return;
     setError(null);
 
     const files = Array.from(fileList).slice(0, slotsLeft);
@@ -102,7 +105,7 @@ export function ProfileGalleryUpload({
   }
 
   function openReplaceCrop(url: string) {
-    if (disabled || busy) return;
+    if (!editable || disabled || busy) return;
     setError(null);
     setCropSession({ url, replaceUrl: url });
   }
@@ -147,11 +150,13 @@ export function ProfileGalleryUpload({
 
   return (
     <>
-      <div className="sm:col-span-2">
+      <div className={`sm:col-span-2 ${editable ? "mt-6 border-t border-black/5 pt-6" : "mt-4"}`}>
         <p className="form-field-label">Profile photos</p>
-        <p className="mt-1 text-xs text-muted">
-          Upload up to {MAX_PROFILE_GALLERY_PHOTOS} photos. Choose one as your main profile photo.
-        </p>
+        {editable ? (
+          <p className="mt-1 text-xs text-muted">
+            Upload up to {MAX_PROFILE_GALLERY_PHOTOS} photos. Choose one as your main profile photo.
+          </p>
+        ) : null}
 
         {photos.length > 0 ? (
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -170,89 +175,97 @@ export function ProfileGalleryUpload({
                       Main
                     </span>
                   ) : null}
-                  <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 bg-gradient-to-t from-black/70 to-transparent p-2">
-                    <button
-                      type="button"
-                      disabled={disabled || busy}
-                      className="rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground"
-                      onClick={() => openReplaceCrop(url)}
-                    >
-                      Edit photo
-                    </button>
-                    {!isMain ? (
+                  {editable ? (
+                    <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 bg-gradient-to-t from-black/70 to-transparent p-2">
                       <button
                         type="button"
                         disabled={disabled || busy}
                         className="rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground"
+                        onClick={() => openReplaceCrop(url)}
+                      >
+                        Edit photo
+                      </button>
+                      {!isMain ? (
+                        <button
+                          type="button"
+                          disabled={disabled || busy}
+                          className="rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground"
+                          onClick={() =>
+                            void run(async () => {
+                              const updated = await setMainProfilePhoto(supabase, userId, url, {
+                                currentPhotos: photos,
+                              });
+                              if (updated) onProfileUpdated(updated);
+                            })
+                          }
+                        >
+                          Set main
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={disabled || busy}
+                        className="rounded-lg bg-brand-pink/90 px-2 py-1 text-[0.65rem] font-semibold text-white"
                         onClick={() =>
                           void run(async () => {
-                            const updated = await setMainProfilePhoto(supabase, userId, url, {
+                            const updated = await removeProfileGalleryPhoto(supabase, userId, url, {
                               currentPhotos: photos,
+                              currentAvatarUrl: mainUrl,
                             });
                             if (updated) onProfileUpdated(updated);
                           })
                         }
                       >
-                        Set main
+                        Remove
                       </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      disabled={disabled || busy}
-                      className="rounded-lg bg-brand-pink/90 px-2 py-1 text-[0.65rem] font-semibold text-white"
-                      onClick={() =>
-                        void run(async () => {
-                          const updated = await removeProfileGalleryPhoto(supabase, userId, url, {
-                            currentPhotos: photos,
-                            currentAvatarUrl: mainUrl,
-                          });
-                          if (updated) onProfileUpdated(updated);
-                        })
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
+                    </div>
+                  ) : null}
                 </li>
               );
             })}
           </ul>
         ) : null}
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-          multiple
-          className="sr-only"
-          disabled={disabled || busy || slotsLeft <= 0}
-          onChange={(e) => queueUploads(e.target.files)}
-        />
+        {editable ? (
+          <>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              multiple
+              className="sr-only"
+              disabled={disabled || busy || slotsLeft <= 0}
+              onChange={(e) => queueUploads(e.target.files)}
+            />
 
-        {slotsLeft > 0 ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-4"
-            disabled={disabled || busy}
-            onClick={() => inputRef.current?.click()}
-          >
-            {busy ? "Uploading…" : `Add photos (${slotsLeft} left)`}
-          </Button>
-        ) : (
-          <p className="mt-3 text-xs text-muted">Maximum {MAX_PROFILE_GALLERY_PHOTOS} photos reached.</p>
-        )}
+            {slotsLeft > 0 ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                disabled={disabled || busy}
+                onClick={() => inputRef.current?.click()}
+              >
+                {busy ? "Uploading…" : `Add photos (${slotsLeft} left)`}
+              </Button>
+            ) : (
+              <p className="mt-3 text-xs text-muted">
+                Maximum {MAX_PROFILE_GALLERY_PHOTOS} photos reached.
+              </p>
+            )}
 
-        {error ? (
-          <p className="mt-2 text-xs text-brand-pink" role="alert">
-            {error}
-          </p>
+            {error ? (
+              <p className="mt-2 text-xs text-brand-pink" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </>
         ) : null}
       </div>
 
       <PhotoCropModal
-        open={Boolean(cropSession)}
+        open={editable && Boolean(cropSession)}
         sourceFile={cropSession?.file}
         sourceUrl={cropSession?.url}
         shape="rounded-square"
