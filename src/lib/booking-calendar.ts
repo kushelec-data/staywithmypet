@@ -3,6 +3,7 @@ import {
   eachISODateInRangeInclusive,
   localISODate,
   normalizeAvailabilityDates,
+  parseISODateLocal,
 } from "@/lib/pet-availability";
 import type { BookingStatus } from "@/types/database";
 
@@ -215,16 +216,40 @@ export function shiftMonthCursor(cursor: MonthCursor, delta: number): MonthCurso
   return { year: next.getFullYear(), month: next.getMonth() };
 }
 
+function compareMonthCursor(a: MonthCursor, b: MonthCursor): number {
+  if (a.year !== b.year) return a.year - b.year;
+  return a.month - b.month;
+}
+
+function monthCursorFromIso(iso: string): MonthCursor | null {
+  const [y, m] = iso.split("-").map(Number);
+  if (!y || !m) return null;
+  return { year: y, month: m - 1 };
+}
+
+/** Default visible month: current month, or the month of the next upcoming available/selected date. */
 export function resolveInitialMonthCursor(
   available: string[],
   selected: string[],
   initialMonth?: Date,
+  referenceDate: Date = new Date(),
 ): MonthCursor {
-  const first = available[0] ?? selected[0];
-  if (first) {
-    const [y, m] = first.split("-").map(Number);
-    if (y && m) return { year: y, month: m - 1 };
+  const current = monthCursorFromDate(initialMonth ?? referenceDate);
+  const today = new Date(referenceDate);
+  today.setHours(0, 0, 0, 0);
+
+  const candidates = [...new Set([...available, ...selected])].sort();
+  const firstUpcoming = candidates.find((iso) => {
+    const date = parseISODateLocal(iso);
+    return date !== null && date >= today;
+  });
+
+  if (firstUpcoming) {
+    const target = monthCursorFromIso(firstUpcoming);
+    if (target && compareMonthCursor(target, current) >= 0) {
+      return target;
+    }
   }
-  const base = initialMonth ?? new Date();
-  return { year: base.getFullYear(), month: base.getMonth() };
+
+  return current;
 }
