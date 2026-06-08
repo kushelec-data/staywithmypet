@@ -31,7 +31,7 @@ function HeroTrustBadges({ labels }: { labels: string[] }) {
 }
 
 export function HeroSection() {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const trustCards = TRUST_CARD_KEYS.map((key) => t.hero.trustCards[key]);
 
   return (
@@ -53,13 +53,24 @@ export function HeroSection() {
       <div className={`${CONTENT_CONTAINER} relative z-[1] py-5 sm:py-10 lg:py-12`}>
         <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12">
           <div className="relative z-[1] min-w-0 text-center lg:text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-teal sm:text-sm sm:tracking-[0.2em]">
+            <p
+              key={`${locale}-eyebrow`}
+              className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-teal sm:text-sm sm:tracking-[0.2em]"
+            >
               {t.hero.eyebrow}
             </p>
 
-            <h1 className={`${HEADING_HERO} mx-auto mt-3 max-w-xl sm:mt-4 lg:mx-0`}>{t.hero.title}</h1>
+            <h1
+              key={locale}
+              className={`${HEADING_HERO} mx-auto mt-3 max-w-xl whitespace-pre-line sm:mt-4 lg:mx-0`}
+            >
+              {t.hero.title}
+            </h1>
 
-            <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-muted sm:text-base lg:mx-0">
+            <p
+              key={`${locale}-subtitle`}
+              className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-muted sm:text-base lg:mx-0"
+            >
               {t.hero.subtitle}
             </p>
 

@@ -97,7 +97,7 @@ export const en = {
   },
   hero: {
     eyebrow: "RESPONSIBLE PET SHARING & COMPANIONSHIP",
-    title: "Find trusted pet care from people who love animals",
+    title: "Find trusted pet care\nfrom people who love\nanimals",
     subtitle:
       "Connect with caring Pet Friends for walks, visits, daycare, and companionship — safely through StayWithMyPet.",
     findCareCta: "Find care today",
