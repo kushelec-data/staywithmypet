@@ -659,7 +659,7 @@ export const en = {
     title: "Flexible care, built around your pet",
     subtitle:
       "From walks and home visits to daycare and overnight stays — choose safe, home-based pet care that fits your pet's routine.",
-    cta: "Find a Pet Friend for these care types →",
+    cta: "Find the right Pet Friend →",
     items: [
       { title: "Daycare", description: "Daytime companionship that feels like a second home, not a facility.", icon: "🏠" },
       { title: "Walks", description: "Reliable walks that fit your pet's routine – even when your day doesn't.", icon: "🦮" },

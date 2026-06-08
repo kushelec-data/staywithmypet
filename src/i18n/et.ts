@@ -664,7 +664,7 @@ export const et = {
     title: "Paindlik hooldus sinu lemmiku rütmi järgi",
     subtitle:
       "Jalutistest ja kodukülastustest päevahoiuni ja ööbimiseni — vali turvaline, kodune hooldus.",
-    cta: "Leia nende teenuste jaoks lemmiklooma sõber →",
+    cta: "Leia oma lemmikule sobiv loomasõber →",
     items: [
       { title: "Päevahoid", description: "Päevane selts, mis tundub nagu teine kodu, mitte asutus.", icon: "🏠" },
       { title: "Jalutised", description: "Kindlad jalutised sinu lemmiku rütmi järgi — ka kui sinu päev on kiire.", icon: "🦮" },
