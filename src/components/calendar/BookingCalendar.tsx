@@ -57,7 +57,8 @@ export type BookingCalendarProps = {
   highContrast?: boolean;
 };
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS_FULL = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS_COMPACT = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function BookingCalendar({
   mode,
@@ -192,6 +193,7 @@ export function BookingCalendar({
   const gridShellClass = compact
     ? "overflow-x-auto rounded-xl border border-black/[0.06] bg-cream/40 p-2 sm:p-2.5"
     : "overflow-x-auto rounded-2xl border border-black/[0.06] bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-3 sm:p-5";
+  const weekdayLabels = compact ? WEEKDAYS_COMPACT : WEEKDAYS_FULL;
 
   return (
     <div className={`${compact ? "space-y-2.5" : "space-y-4"} ${className}`}>
@@ -237,13 +239,15 @@ export function BookingCalendar({
           }
         >
           <div
-            className={`grid grid-cols-7 gap-0.5 text-center font-semibold uppercase tracking-wide text-muted ${
-              compact ? "text-[0.6rem]" : "text-[0.65rem] sm:text-xs"
+            className={`grid grid-cols-7 text-center font-semibold text-muted ${
+              compact
+                ? "gap-0.5 text-[0.7rem] leading-none"
+                : "gap-0.5 text-[0.65rem] uppercase tracking-wide sm:gap-1 sm:text-xs"
             }`}
           >
-            {WEEKDAYS.map((d) => (
-              <div key={d} className="py-1">
-                {d}
+            {weekdayLabels.map((label, index) => (
+              <div key={`weekday-${index}`} className="min-w-0 py-1">
+                {label}
               </div>
             ))}
           </div>
@@ -361,8 +365,8 @@ export function BookingCalendar({
       {showLegend ? <CalendarInlineLegend mode={mode} compact={compact} /> : null}
 
       {mode === "availability-readonly" ? (
-        compact || !showViewOnlyHint ? null : (
-          <p className="text-xs text-muted">{t.bookingCalendar.viewOnlyHint}</p>
+        !showViewOnlyHint ? null : (
+          <p className="text-xs text-muted">{t.bookingCalendar.tapToSee}</p>
         )
       ) : mode === "availability-select" ? (
         <p className="text-xs text-muted">{t.bookingCalendar.tapToAdd}</p>

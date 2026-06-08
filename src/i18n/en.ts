@@ -413,6 +413,7 @@ export const en = {
     legendSelected: "Selected",
     selectedDates: "Selected dates",
     tapToAdd: "Tap days on the calendar to add availability.",
+    tapToSee: "Tap days on the calendar to see availability.",
     selectFromAvailable: "Select one or more available dates from the calendar.",
     clearDates: "Clear dates",
     viewOnlyHint: "Dates are shown for reference only — select dates when you send a care request.",

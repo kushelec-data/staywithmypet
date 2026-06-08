@@ -417,6 +417,7 @@ export const et = {
     legendSelected: "Valitud",
     selectedDates: "Valitud kuupäevad",
     tapToAdd: "Puuduta kalendris päevi, et lisada saadavust.",
+    tapToSee: "Puuduta kalendris päevi, et vaadata saadavust.",
     selectFromAvailable: "Vali üks või mitu saadaolevat kuupäeva kalendrist.",
     clearDates: "Tühjenda kuupäevad",
     viewOnlyHint:
