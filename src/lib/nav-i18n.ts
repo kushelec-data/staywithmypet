@@ -3,14 +3,12 @@ import type { ProfileRow } from "@/lib/profile-utils";
 import { resolveActiveMode } from "@/lib/profile-mode";
 
 export const primaryNavConfig = [
-  { href: "/find-pets", labelKey: "searchPets" },
   { href: "/find-care", labelKey: "findCare" },
+  { href: "/find-pets", labelKey: "findPets" },
   { href: "/how-it-works", labelKey: "howItWorks" },
   { href: "/pricing", labelKey: "pricing" },
   { href: "/faq", labelKey: "faq" },
-  { href: "/articles", labelKey: "articles" },
   { href: "/about", labelKey: "about" },
-  { href: "/contact", labelKey: "contact" },
 ] as const;
 
 /** Center nav when logged in — marketing pages omitted. */
