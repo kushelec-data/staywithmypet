@@ -605,23 +605,21 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
         </p>
       ) : null}
 
-      {selectedAvailabilityItem ? (
-        <PetAvailabilityModal
-          open
-          name={selectedAvailabilityItem.name}
-          petId={selectedAvailabilityItem.kind === "pet" ? selectedAvailabilityItem.id : null}
-          petFriendId={
-            selectedAvailabilityItem.kind === "profile" ? selectedAvailabilityItem.id : null
-          }
-          dates={selectedAvailabilityItem.dates}
-          subtitle={
-            selectedAvailabilityItem.kind === "pet"
-              ? "Dates when this pet is available for care."
-              : undefined
-          }
-          onClose={handleCloseAvailability}
-        />
-      ) : null}
+      <PetAvailabilityModal
+        open={selectedAvailabilityItem !== null}
+        name={selectedAvailabilityItem?.name ?? ""}
+        petId={selectedAvailabilityItem?.kind === "pet" ? selectedAvailabilityItem.id : null}
+        petFriendId={
+          selectedAvailabilityItem?.kind === "profile" ? selectedAvailabilityItem.id : null
+        }
+        dates={selectedAvailabilityItem?.dates ?? []}
+        subtitle={
+          selectedAvailabilityItem?.kind === "pet"
+            ? "Dates when this pet is available for care."
+            : undefined
+        }
+        onClose={handleCloseAvailability}
+      />
     </div>
   );
 }

@@ -189,6 +189,7 @@ export function PetCard({
               type="button"
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 openCalendar();
               }}
               className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-teal/25 bg-mint/35 font-semibold text-brand-teal transition-colors hover:bg-mint/55 ${

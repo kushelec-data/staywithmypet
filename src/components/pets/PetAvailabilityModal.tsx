@@ -79,13 +79,13 @@ export function PetAvailabilityModal({
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!dialog) return;
+    if (!dialog || !mounted) return;
     if (open) {
-      if (!dialog.open) dialog.show();
+      if (!dialog.open) dialog.showModal();
     } else if (dialog.open) {
       dialog.close();
     }
-  }, [open]);
+  }, [open, mounted]);
 
   useEffect(() => {
     if (!mounted || !open) return;
