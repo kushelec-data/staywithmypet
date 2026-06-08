@@ -1,4 +1,5 @@
-import { careTypeOptions, sizeOptions } from "@/lib/legacy/search-filters";
+import { careTypeOptions, formatCareTypeLabel as formatCanonicalCareTypeLabel } from "@/lib/care-type-options";
+import { sizeOptions } from "@/lib/legacy/search-filters";
 import {
   formatPetTypeLabel,
   normalizePetTypeList,
@@ -500,10 +501,7 @@ export function formatLivingTypeLabel(
 }
 
 export function formatCareTypeLabel(value: string, otherCustom?: string | null): string {
-  if (isOtherOptionValue(value)) {
-    return otherCustom?.trim() || "Other";
-  }
-  return value.trim();
+  return formatCanonicalCareTypeLabel(value, otherCustom) ?? value.trim();
 }
 
 export function formatYesNo(value: boolean | null | undefined): string {
@@ -537,6 +535,7 @@ export function carePreferenceDisplayGroups(details: ProfileDetails): {
     careTypes: formatListWithOtherDisplay(
       care.available_care_types ?? [],
       care.available_care_types_other,
+      (value) => formatCareTypeLabel(value, care.available_care_types_other),
     ),
     petSizes: formatPreferredPetWeightSizes(care.preferred_pet_sizes ?? []),
     experience,

@@ -1,3 +1,4 @@
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { DateFormatLocale } from "@/lib/date-format";
@@ -220,7 +221,7 @@ function mapRequestRow(
     dateFrom: row.date_from,
     dateTo: row.date_to,
     message: row.message,
-    careType: row.care_type,
+    careType: formatCareTypeLabel(row.care_type),
     petId: row.pet_id,
     petName: names.petName,
     petSpeciesLabel: names.petSpeciesLabel,

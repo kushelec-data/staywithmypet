@@ -1,7 +1,5 @@
-import {
-  petSearchCareTypeOptions,
-  petSearchTemperamentOptions,
-} from "@/lib/pet-search-filter-config";
+import { careTypeFilterMatchVariants } from "@/lib/care-type-options";
+import { petSearchTemperamentOptions } from "@/lib/pet-search-filter-config";
 import { matchesSearchAvailabilityDates } from "@/lib/search-availability-match";
 import { normalizePetWeightStorageValue } from "@/lib/pet-weight";
 
@@ -64,10 +62,7 @@ function temperamentAliases(selected: string): string[] {
 }
 
 function careTypeAliases(selected: string): string[] {
-  const opt = petSearchCareTypeOptions.find((o) => o.value === selected);
-  if (!opt) return [selected];
-  const aliases = "aliases" in opt ? (opt.aliases ?? []) : [];
-  return [opt.value, ...aliases];
+  return careTypeFilterMatchVariants(selected);
 }
 
 export function petMatchesTemperament(pet: PetSearchFilterable, wanted: string[]): boolean {

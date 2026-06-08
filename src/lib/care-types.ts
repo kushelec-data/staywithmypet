@@ -174,8 +174,8 @@ const CARE_TYPE_LIST: CareTypeContent[] = [
     name: "Overnight care",
     icon: "🌙",
     href: "/care/overnight-care",
-    findCareFilter: "Overnight stays",
-    findCareHref: buildFindCareUrl("Overnight stays"),
+    findCareFilter: "Overnight care / 24h stay",
+    findCareHref: buildFindCareUrl("Overnight care / 24h stay"),
     cardSummary: {
       en: "Loving overnight care that feels like home—not a kennel. Calm, one-to-one 24-hour care with familiar routines and emotional comfort.",
       et: "Armastav ööhoid, mis tundub nagu kodus—not kennel. Rahulik üks-ühele ööpäevane hooldus tuttavate rutiinidega.",

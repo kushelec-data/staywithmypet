@@ -286,6 +286,12 @@ export function ChatPanel({
                   · {conversation.dateLabel}
                 </span>
               ) : null}
+              {conversation.careType ? (
+                <span className="break-words text-[#4b4b4b]/80 dark:text-muted/80">
+                  {" "}
+                  · {conversation.careType}
+                </span>
+              ) : null}
             </p>
           </div>
 

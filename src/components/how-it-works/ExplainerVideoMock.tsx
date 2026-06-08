@@ -241,7 +241,7 @@ function AddPetOverlay({ isActive, animate }: { isActive: boolean; animate: bool
             <p className="text-sm font-bold text-foreground">Paula</p>
             <p className="text-xs font-medium text-muted">Golden mix · Friendly · Vaccinated</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {["Walks", "Visits", "Overnight"].map((tag) => (
+              {["Walks only", "Home visits", "Overnight care / 24h stay"].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full bg-brand-teal/10 px-2 py-0.5 text-[10px] font-semibold text-brand-teal"

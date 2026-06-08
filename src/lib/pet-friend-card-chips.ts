@@ -2,6 +2,7 @@ import {
   formatExperienceLevelLabel,
   formatPetTypesWillingComfort,
 } from "@/lib/pet-care-labels";
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 import { formatPetTypeLabel, normalizePetTypeValue } from "@/lib/pet-type-options";
 import { resolvedPetCarePreferences, type ProfileDetails } from "@/lib/profile-details";
@@ -52,6 +53,7 @@ export function buildPetFriendPreferenceChips(details: ProfileDetails | null | u
   for (const careType of formatListWithOtherDisplay(
     care.available_care_types ?? [],
     care.available_care_types_other,
+    (value) => formatCareTypeLabel(value, care.available_care_types_other) ?? value,
   )) {
     if (chips.length >= 5) break;
     const label = careType.replace(/\s+/g, " ").trim();

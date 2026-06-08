@@ -51,6 +51,21 @@ export function CareTypeVisitsIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+export function CareTypePlayIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.75" />
+      <path
+        d="M10 8.5v7l6-3.5-6-3.5Z"
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function CareTypeFeedingIcon({ className = "h-4 w-4" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -108,6 +123,7 @@ export function careTypeIconForValue(value: string): ReactNode {
   if (key.includes("daycare")) return <CareTypeDaycareIcon />;
   if (key.includes("overnight")) return <CareTypeOvernightIcon />;
   if (key.includes("long")) return <CareTypeLongTermIcon />;
+  if (key.includes("play")) return <CareTypePlayIcon />;
   if (key.includes("visit") || key.includes("home")) return <CareTypeVisitsIcon />;
   if (key.includes("feed")) return <CareTypeFeedingIcon />;
   if (key.includes("emergency")) return <CareTypeEmergencyIcon />;

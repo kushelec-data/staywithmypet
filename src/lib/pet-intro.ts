@@ -5,6 +5,7 @@ import { pickCareTypesFromRow, normalizeCareTypes } from "@/lib/pet-care-type";
 import { formatNearbyLocation } from "@/lib/location-public";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { speciesDisplayLabel, speciesEmoji, type PetSpecies } from "@/lib/pet-data";
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 import { pickPrimaryPhotoUrl, sortPetPhotoUrls } from "@/lib/pet-photos";
 import {
@@ -111,7 +112,11 @@ function formatTraitList(parts: string[]): string {
 }
 
 function formatCareTypes(types: string[], otherCustom?: string | null): string {
-  const labels = formatListWithOtherDisplay(types, otherCustom).map((t) => t.trim()).filter(Boolean);
+  const labels = formatListWithOtherDisplay(types, otherCustom, (value) =>
+    formatCareTypeLabel(value, otherCustom) ?? value,
+  )
+    .map((t) => t.trim())
+    .filter(Boolean);
   if (!labels.length) return "";
   if (labels.length === 1) return labels[0]!.toLowerCase();
   if (labels.length === 2) return `${labels[0]!.toLowerCase()} and ${labels[1]!.toLowerCase()}`;

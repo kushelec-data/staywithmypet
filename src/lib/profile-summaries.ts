@@ -13,6 +13,7 @@ import {
   formatPreferredCareLocationLabel,
 } from "@/lib/pet-care-labels";
 import { formatPreferredPetWeightSizes } from "@/lib/pet-weight";
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 
 function joinNatural(items: string[], max = 4): string | null {
@@ -101,6 +102,7 @@ export function buildPetCarePreferencesSummary(details: ProfileDetails): Profile
   const careTypes = formatListWithOtherDisplay(
     care.available_care_types ?? [],
     care.available_care_types_other,
+    (value) => formatCareTypeLabel(value, care.available_care_types_other) ?? value,
   );
   if (careTypes.length) {
     lines.push(joinNatural(careTypes, 4) ?? "");

@@ -54,15 +54,9 @@ export const petSearchCareLocationOptions = [
   { value: "Either / flexible", label: "Flexible — either home works" },
 ] as const;
 
-export const petSearchCareTypeOptions = [
-  { value: "Walks", label: "Walks", aliases: ["Walks only"] },
-  { value: "Daycare", label: "Daycare" },
-  { value: "Overnight care / 24h stay", label: "Overnight", aliases: ["Overnight stays"] },
-  { value: "Long-term care", label: "Long-term" },
-  { value: "Home visits", label: "Visits", aliases: ["Play visits", "Visits / check-ins"] },
-  { value: "Feeding only", label: "Feeding", aliases: ["Feeding"] },
-  { value: "Emergency care", label: "Emergency care", aliases: ["Emergency"] },
-] as const;
+import { CARE_TYPE_FILTER_OPTIONS } from "@/lib/care-type-options";
+
+export const petSearchCareTypeOptions = CARE_TYPE_FILTER_OPTIONS;
 
 export const petSearchLanguageOptions = [
   { value: "English", label: "English" },

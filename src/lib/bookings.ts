@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import { normalizeRequestMessage } from "@/lib/requests";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
@@ -193,7 +194,7 @@ function mapBookingRow(
     petFriendId: row.pet_friend_id,
     otherPartyId,
     otherPartyName: profileNames.get(otherPartyId) ?? "Member",
-    careType: req?.care_type?.trim() || null,
+    careType: formatCareTypeLabel(req?.care_type) ?? null,
     message: req?.message ?? null,
     requestedDates,
     requestedDatesLabel: dateLabel,

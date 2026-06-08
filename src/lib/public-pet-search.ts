@@ -1,3 +1,4 @@
+import { formatCareTypeLabels } from "@/lib/care-type-options";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
@@ -399,7 +400,7 @@ export function publicSearchPetToCardPet(pet: PublicSearchPet): Pet {
     pricePerNight: pet.pricePerNight,
     rating: pet.ratingAvg,
     reviewCount: pet.ratingCount,
-    tags: pet.careTypes,
+    tags: formatCareTypeLabels(pet.careTypes, pet.careTypesOther),
     placeholderColor: "#e8f5f0",
     emoji: speciesEmoji(pet.species),
     sizeLabel: pet.sizeLabel,

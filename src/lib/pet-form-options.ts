@@ -39,15 +39,7 @@ export const petCareLocationOptions = [
   "Either / flexible",
 ] as const;
 
-export const petCareTypeOptions = [
-  "Walks",
-  "Daycare",
-  "Home visits",
-  "Feeding only",
-  "Play visits",
-  "Overnight care / 24h stay",
-  "Other",
-] as const;
+export { careTypeOptions as petCareTypeOptions } from "@/lib/care-type-options";
 
 export const estoniaLocationSuggestions = [
   "Tallinn",

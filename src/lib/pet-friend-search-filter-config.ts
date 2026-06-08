@@ -15,23 +15,9 @@ export const petFriendSearchTypeOptions = [
   { value: "other", label: "Other", aliases: ["other"] },
 ] as const;
 
-export const petFriendSearchCareTypeOptions = [
-  { value: "Walks only", label: "Walks", aliases: ["Walks", "Walks only"] },
-  { value: "Daycare", label: "Daycare" },
-  {
-    value: "Overnight stays",
-    label: "Overnight",
-    aliases: ["Overnight care / 24h stay", "Overnight stay"],
-  },
-  {
-    value: "Home visits",
-    label: "Visits",
-    aliases: ["Play visits", "Visits / check-ins"],
-  },
-  { value: "Long-term care", label: "Long-term" },
-  { value: "Feeding only", label: "Feeding", aliases: ["Feeding"] },
-  { value: "Emergency care", label: "Emergency care", aliases: ["Emergency"] },
-] as const;
+import { CARE_TYPE_FILTER_OPTIONS } from "@/lib/care-type-options";
+
+export const petFriendSearchCareTypeOptions = CARE_TYPE_FILTER_OPTIONS;
 
 export const petFriendSearchExperienceOptions = [
   {

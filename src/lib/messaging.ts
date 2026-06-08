@@ -1,4 +1,5 @@
 import type { PostgrestError, RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { pickPrimaryPhotoUrl } from "@/lib/pet-photos";
 
@@ -755,7 +756,7 @@ export async function fetchConversations(
       bookingCancelledAt: booking?.cancelledAt ?? null,
       dateLabel: formatRequestDateLabel(req),
       dateRangeKey: dateRangeKeyFromRequest(req),
-      careType: req.care_type ?? req.service_type,
+      careType: formatCareTypeLabel(req.care_type ?? req.service_type),
       lastMessagePreview: last?.body ?? null,
       lastMessageAt: last?.created_at ?? null,
       unreadCount: unreadByConversation.get(row.id) ?? 0,

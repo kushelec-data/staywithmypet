@@ -2,6 +2,7 @@ import { formatBookingDates, formatDate } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 import { speciesDisplayLabel, genderDisplayLabel } from "@/lib/pet-data";
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 
 export type PublicDetailGroup = {
@@ -25,13 +26,6 @@ export type PublicPetQuickFact = {
   label: string;
 };
 
-function titleCaseCareLabel(value: string): string {
-  const t = value.trim();
-  if (!t) return "";
-  return t
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 export function buildPublicPetSubtitle(pet: PublicSearchPet): string {
   const weight = pet.weightDisplayShort?.trim() || null;
@@ -122,8 +116,11 @@ export function buildPublicPetQuickFacts(pet: PublicSearchPet): PublicPetQuickFa
 }
 
 export function buildPublicPetCareColumns(pet: PublicSearchPet): PublicCareColumns {
-  const services = formatListWithOtherDisplay(pet.careTypes, pet.careTypesOther)
-    .map(titleCaseCareLabel)
+  const services = formatListWithOtherDisplay(
+    pet.careTypes,
+    pet.careTypesOther,
+    (value) => formatCareTypeLabel(value, pet.careTypesOther) ?? value,
+  )
     .filter(Boolean);
   const walks = pet.walkNeeds?.trim()
     ? [pet.walkNeeds.trim()]

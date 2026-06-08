@@ -24,15 +24,7 @@ export const serviceOptions = [
   { value: "both", label: "Both" },
 ] as const;
 
-export const careTypeOptions = [
-  "Walks only",
-  "Daycare",
-  "Home visits",
-  "Feeding only",
-  "Play visits",
-  "Overnight stays",
-  "Other",
-] as const;
+export { careTypeOptions } from "@/lib/care-type-options";
 
 export const languageOptions = [
   "English",

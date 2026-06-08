@@ -2,7 +2,7 @@
 
 import { RequestBookingCalendar } from "@/components/calendar/RequestBookingCalendar";
 import { Button } from "@/components/ui/Button";
-import { careTypeOptions } from "@/lib/legacy/search-filters";
+import { careTypeRequestOptions } from "@/lib/care-type-options";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   countMessageCharacters,
@@ -170,10 +170,10 @@ export function RequestModal({
             <select
               name="careType"
               required
-              defaultValue={careTypeOptions[0]}
+              defaultValue={careTypeRequestOptions[0]}
               className="mt-1.5 w-full rounded-xl border border-black/10 bg-background px-3 py-2.5 text-sm"
             >
-              {careTypeOptions.map((option) => (
+              {careTypeRequestOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
