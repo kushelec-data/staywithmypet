@@ -96,12 +96,13 @@ export const et = {
     },
   },
   hero: {
-    eyebrow: "Vastutustundlik lemmikloomade jagamine ja seltskond",
-    title: "Leia usaldusväärne lemmikloomahooldus inimestelt, kes armastavad loomi",
+    eyebrow: "EESTI ESIMENE LEMMIKLOOMADE JAGAMISE KOGUKOND",
+    title:
+      "Iga lemmik väärib parimat hoolt – ka siis, kui sina ei saa tema kõrval olla.",
     subtitle:
-      "Ühendu hoolivate lemmiklooma sõpradega jalutiste, külastuste, päevahoiu ja seltsisoleku jaoks — turvaliselt StayWithMyPet kaudu.",
-    findCareCta: "Leia hooldus täna",
-    becomeFriendCta: "Hakka lemmiklooma sõbraks",
+      "Stay With My Pet ühendab loomaomanikud usaldusväärsete loomasõpradega, kes pakuvad sinu lemmikule turvalist kodust hoolt, seltsi ja tuge just siis, kui seda kõige rohkem vaja on.",
+    findCareCta: "Leia hoidja",
+    becomeFriendCta: "Leia lemmik",
     trustCards: {
       verified: "Kinnitatud profiilid",
       reviews: "Arvustused ja hinnangud",

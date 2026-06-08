@@ -96,7 +96,7 @@ export const en = {
     },
   },
   hero: {
-    eyebrow: "Responsible pet sharing & companionship",
+    eyebrow: "RESPONSIBLE PET SHARING & COMPANIONSHIP",
     title: "Find trusted pet care from people who love animals",
     subtitle:
       "Connect with caring Pet Friends for walks, visits, daycare, and companionship — safely through StayWithMyPet.",
