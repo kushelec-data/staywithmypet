@@ -8,7 +8,7 @@ import { ChatPanel } from "@/components/messages/ChatPanel";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
-  ensureConversationForAcceptedRequest,
+  ensureConversationForRequest,
   fetchConversations,
   formatMessagingError,
   markConversationFullyRead,
@@ -109,7 +109,7 @@ export function MessagesPageContent() {
 
       if (requestParam && !preferredId) {
         try {
-          const ensured = await ensureConversationForAcceptedRequest(supabase, requestParam);
+          const ensured = await ensureConversationForRequest(supabase, requestParam);
           if (ensured) preferredId = ensured;
         } catch {
           /* errors surface when loading the list */

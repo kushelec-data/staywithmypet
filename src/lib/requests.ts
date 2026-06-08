@@ -1,7 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { DateFormatLocale } from "@/lib/date-format";
-import { ensureConversationForAcceptedRequest } from "@/lib/messaging";
+import {
+  ensureConversationForRequest,
+  seedRequestMessageIfAbsent,
+} from "@/lib/messaging";
+import {
+  messagesHrefForRequest,
+  petHrefForRequestParticipant,
+  profileHrefForParticipant,
+  REQUEST_ACCESS_STATUSES,
+} from "@/lib/request-profile-access";
+import { speciesDisplayLabel } from "@/lib/pet-data";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import {
   parseProfileDetails,
@@ -44,6 +54,14 @@ export type CareRequest = {
   careType: string | null;
   petId: string | null;
   petName: string | null;
+  petSpeciesLabel: string | null;
+  petParentId: string;
+  petFriendId: string;
+  petProfileHref: string | null;
+  petParentProfileHref: string | null;
+  otherPartyProfileHref: string | null;
+  canOpenMessages: boolean;
+  messagesHref: string;
   senderId: string;
   receiverId: string;
   senderName: string;
@@ -140,7 +158,24 @@ export function normalizeRequestMessage(raw: string | null | undefined): string 
 }
 
 type ProfileJoin = { id: string; display_name: string };
-type PetJoin = { id: string; name: string };
+type PetJoin = { id: string; name: string; species?: string | null; breed?: string | null };
+
+function formatPetSpeciesLabel(
+  species: string | null | undefined,
+  breed: string | null | undefined,
+): string | null {
+  if (!species?.trim()) return null;
+  const label = speciesDisplayLabel(species.trim(), breed?.trim() ?? null);
+  if (!label) return null;
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function requestAllowsMessaging(status: RequestRow["status"], message: string | null): boolean {
+  if (!REQUEST_ACCESS_STATUSES.includes(status as (typeof REQUEST_ACCESS_STATUSES)[number])) {
+    return false;
+  }
+  return Boolean(message?.trim());
+}
 
 type RequestRowWithRelations = RequestRow & {
   sender?: ProfileJoin | ProfileJoin[] | null;
@@ -170,12 +205,14 @@ function mapRequestRow(
     senderName: string;
     receiverName: string;
     petName: string | null;
+    petSpeciesLabel: string | null;
   },
 ): CareRequest {
   const { senderId, receiverId } = resolveEffectiveSenderReceiver(row);
   const otherId = direction === "outgoing" ? receiverId : senderId;
   const otherPartyName =
     otherId === senderId ? names.senderName : otherId === receiverId ? names.receiverName : MISSING_PARTICIPANT_LABEL;
+  const canOpenMessages = requestAllowsMessaging(row.status, row.message);
 
   return {
     id: row.id,
@@ -186,6 +223,18 @@ function mapRequestRow(
     careType: row.care_type,
     petId: row.pet_id,
     petName: names.petName,
+    petSpeciesLabel: names.petSpeciesLabel,
+    petParentId: row.pet_parent_id,
+    petFriendId: row.pet_friend_id,
+    petProfileHref: row.pet_id ? petHrefForRequestParticipant(row.pet_id) : null,
+    petParentProfileHref:
+      row.pet_id && row.pet_parent_id !== userId
+        ? profileHrefForParticipant(row.pet_parent_id)
+        : null,
+    otherPartyProfileHref:
+      otherId && otherId !== userId ? profileHrefForParticipant(otherId) : null,
+    canOpenMessages,
+    messagesHref: messagesHrefForRequest(row.id),
     senderId: senderId ?? "",
     receiverId: receiverId ?? "",
     senderName: names.senderName,
@@ -204,6 +253,7 @@ function namesFromEmbeddedRow(row: RequestRowWithRelations): {
   senderName: string;
   receiverName: string;
   petName: string | null;
+  petSpeciesLabel: string | null;
 } {
   const senderProfile = pickSupabaseJoin(row.sender);
   const receiverProfile = pickSupabaseJoin(row.receiver);
@@ -219,7 +269,11 @@ function namesFromEmbeddedRow(row: RequestRowWithRelations): {
         ? "Pet"
         : null;
 
-  return { senderName, receiverName, petName };
+  const petSpeciesLabel = row.pet_id
+    ? formatPetSpeciesLabel(petRow?.species, petRow?.breed)
+    : null;
+
+  return { senderName, receiverName, petName, petSpeciesLabel };
 }
 
 function mapRequestsFromEmbedded(
@@ -253,19 +307,31 @@ async function loadProfileNamesById(
   return map;
 }
 
-async function loadPetNamesById(
+type PetListMeta = { name: string; speciesLabel: string | null };
+
+async function loadPetMetaById(
   supabase: SupabaseClient,
   petIds: string[],
-): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+): Promise<Map<string, PetListMeta>> {
+  const map = new Map<string, PetListMeta>();
   if (!petIds.length) return map;
 
-  const { data, error } = await supabase.from("pets").select("id, name").in("id", petIds);
+  const { data, error } = await supabase
+    .from("pets")
+    .select("id, name, species, breed")
+    .in("id", petIds);
   if (error) throw error;
 
   for (const row of data ?? []) {
     const name = (row.name as string)?.trim();
-    if (name) map.set(row.id as string, name);
+    if (!name) continue;
+    map.set(row.id as string, {
+      name,
+      speciesLabel: formatPetSpeciesLabel(
+        row.species as string | null,
+        row.breed as string | null,
+      ),
+    });
   }
 
   return map;
@@ -290,18 +356,20 @@ async function enrichRequests(
   const petIds = [...new Set(rows.map((r) => r.pet_id).filter((id): id is string => Boolean(id)))];
   const profileIds = collectParticipantProfileIds(rows);
 
-  const [petNames, profileNames] = await Promise.all([
-    loadPetNamesById(supabase, petIds),
+  const [petMeta, profileNames] = await Promise.all([
+    loadPetMetaById(supabase, petIds),
     loadProfileNamesById(supabase, profileIds),
   ]);
 
-  return rows.map((row) =>
-    mapRequestRow(row, userId, direction, {
+  return rows.map((row) => {
+    const pet = row.pet_id ? petMeta.get(row.pet_id) : null;
+    return mapRequestRow(row, userId, direction, {
       senderName: participantName(profileNames, row.sender_id),
       receiverName: participantName(profileNames, row.receiver_id),
-      petName: row.pet_id ? (petNames.get(row.pet_id) ?? "Pet") : null,
-    }),
-  );
+      petName: pet?.name ?? (row.pet_id ? "Pet" : null),
+      petSpeciesLabel: pet?.speciesLabel ?? null,
+    });
+  });
 }
 
 function isEmbedQueryError(error: unknown): boolean {
@@ -574,6 +642,19 @@ export async function createCareRequest(
     status: payload.status,
   });
 
+  if (message) {
+    try {
+      await ensureConversationForRequest(supabase, requestId);
+      await seedRequestMessageIfAbsent(supabase, requestId);
+    } catch (err) {
+      if (isPostgrestError(err)) {
+        logSupabaseError("request message seed", err);
+      } else {
+        console.error("[request] message seed", err);
+      }
+    }
+  }
+
   return { requestId };
 }
 
@@ -646,10 +727,12 @@ export async function respondToRequest(
   const { assertActiveMembershipForRole } = await import("@/lib/membership-access");
   await assertActiveMembershipForRole(supabase, userId, receiverRole);
 
-  const conversationId = await ensureConversationForAcceptedRequest(supabase, requestId);
+  const conversationId = await ensureConversationForRequest(supabase, requestId);
   if (!conversationId) {
     throw new Error("Request was accepted but the chat could not be started. Refresh and open Messages.");
   }
+
+  await seedRequestMessageIfAbsent(supabase, requestId);
 
   return { conversationId };
 }

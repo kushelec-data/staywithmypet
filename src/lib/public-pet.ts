@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { userCanViewPetViaRequest } from "@/lib/request-profile-access";
 import {
   fetchPublicSearchPetById,
   type PublicSearchPet,
@@ -30,6 +31,19 @@ export async function fetchPublicPetProfile(
   const pet = await fetchPublicSearchPetById(supabase, petId);
   if (pet) {
     return { pet, isOwnerPreview: viewerId === pet.ownerId, notListedPublicly: false };
+  }
+
+  if (viewerId && (await userCanViewPetViaRequest(supabase, viewerId, petId))) {
+    const preview = await fetchPublicSearchPetById(supabase, petId, {
+      skipVisibilityFilters: true,
+    });
+    if (preview) {
+      return {
+        pet: preview,
+        isOwnerPreview: viewerId === preview.ownerId,
+        notListedPublicly: true,
+      };
+    }
   }
 
   if (!viewerId) {

@@ -94,14 +94,23 @@ export function RequestListItem({
   onCancel,
 }: RequestListItemProps) {
   const { t } = useLanguage();
-  const title = request.petName
-    ? t.requests.careForPet.replace("{name}", request.petName)
+  const petTitle =
+    request.petName && request.petSpeciesLabel
+      ? `${request.petName} · ${request.petSpeciesLabel}`
+      : request.petName;
+  const title = petTitle
+    ? t.requests.careForPet.replace("{name}", petTitle)
     : t.requests.requestWith.replace("{name}", request.otherPartyName);
 
   const messageText = normalizeRequestMessage(request.message);
+  const showRespondToMessage = request.canOpenMessages;
+  const showParentProfileLink =
+    Boolean(request.petParentProfileHref) &&
+    request.petParentProfileHref !== request.otherPartyProfileHref;
   const showActions =
     (request.canRespond && direction === "incoming") ||
-    (request.canCancel && direction === "outgoing");
+    (request.canCancel && direction === "outgoing") ||
+    showRespondToMessage;
 
   return (
     <li>
@@ -134,7 +143,37 @@ export function RequestListItem({
                 className="max-w-2xl"
                 label={t.requests.message}
                 message={messageText}
+                href={showRespondToMessage ? request.messagesHref : null}
               />
+            </div>
+          ) : null}
+
+          {request.petProfileHref || request.otherPartyProfileHref || showParentProfileLink ? (
+            <div className="flex flex-wrap gap-2 border-t border-[#E5E2D8] pt-4">
+              {request.petProfileHref ? (
+                <Link
+                  href={request.petProfileHref}
+                  className="inline-flex items-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-brand-teal hover:bg-mint/30 dark:border-border dark:bg-surface"
+                >
+                  {t.requests.viewPetProfile}
+                </Link>
+              ) : null}
+              {showParentProfileLink && request.petParentProfileHref ? (
+                <Link
+                  href={request.petParentProfileHref}
+                  className="inline-flex items-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-brand-teal hover:bg-mint/30 dark:border-border dark:bg-surface"
+                >
+                  {t.requests.viewOwnerProfile}
+                </Link>
+              ) : null}
+              {request.otherPartyProfileHref ? (
+                <Link
+                  href={request.otherPartyProfileHref}
+                  className="inline-flex items-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-brand-teal hover:bg-mint/30 dark:border-border dark:bg-surface"
+                >
+                  {t.requests.viewProfile}
+                </Link>
+              ) : null}
             </div>
           ) : null}
 
@@ -157,6 +196,16 @@ export function RequestListItem({
 
           {showActions ? (
             <div className="flex flex-col gap-2 border-t border-black/5 pt-4 dark:border-border sm:flex-row sm:flex-wrap sm:justify-end">
+              {showRespondToMessage ? (
+                <Button
+                  href={request.messagesHref}
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
+                  {t.requests.respondToMessage}
+                </Button>
+              ) : null}
               {request.canRespond && direction === "incoming" ? (
                 <>
                   <Button

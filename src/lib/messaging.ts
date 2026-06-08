@@ -416,14 +416,16 @@ async function fetchRequestForConversation(
   return null;
 }
 
-/** Create or return conversation for an accepted request (RPC + client upsert fallback). */
-export async function ensureConversationForAcceptedRequest(
+const REQUEST_CONVERSATION_STATUSES: RequestStatus[] = ["pending", "accepted", "completed"];
+
+/** Create or return conversation for a request that allows messaging (RPC + client upsert fallback). */
+export async function ensureConversationForRequest(
   supabase: SupabaseClient,
   requestId: string,
 ): Promise<string | null> {
   const request = await fetchRequestForConversation(supabase, requestId);
   if (!request) return null;
-  if (request.status !== "accepted" && request.status !== "completed") return null;
+  if (!REQUEST_CONVERSATION_STATUSES.includes(request.status)) return null;
 
   const { data: rpcData, error: rpcError } = await supabase.rpc(
     "ensure_conversation_for_request",
@@ -472,6 +474,75 @@ export async function ensureConversationForAcceptedRequest(
   return null;
 }
 
+/** @deprecated use ensureConversationForRequest */
+export async function ensureConversationForAcceptedRequest(
+  supabase: SupabaseClient,
+  requestId: string,
+): Promise<string | null> {
+  return ensureConversationForRequest(supabase, requestId);
+}
+
+/** Insert the request message as the first chat message when the thread is still empty. */
+export async function seedRequestMessageIfAbsent(
+  supabase: SupabaseClient,
+  requestId: string,
+): Promise<void> {
+  const { data: requestRow, error: requestError } = await supabase
+    .from("requests")
+    .select("message, sender_id, status")
+    .eq("id", requestId)
+    .maybeSingle();
+
+  if (requestError) {
+    logSupabaseError("seed request message load", requestError);
+    return;
+  }
+  if (!requestRow) return;
+
+  const status = requestRow.status as RequestStatus;
+  if (status === "declined" || status === "cancelled") return;
+
+  const body = (requestRow.message as string | null)?.trim() ?? "";
+  if (!body) return;
+
+  const senderId = requestRow.sender_id as string;
+  const conversationId = await ensureConversationForRequest(supabase, requestId);
+  if (!conversationId) return;
+
+  const { count: messageCount, error: countError } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .eq("conversation_id", conversationId);
+
+  if (countError) {
+    logSupabaseError("seed request message count", countError);
+    return;
+  }
+
+  if ((messageCount ?? 0) > 0) {
+    const { data: duplicate } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("conversation_id", conversationId)
+      .eq("sender_id", senderId)
+      .eq("body", body)
+      .limit(1)
+      .maybeSingle();
+    if (duplicate?.id) return;
+    return;
+  }
+
+  const { error: insertError } = await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    sender_id: senderId,
+    body,
+  });
+
+  if (insertError) {
+    logSupabaseError("seed request message insert", insertError);
+  }
+}
+
 /** Ensure conversations exist for all accepted requests the user is part of. */
 export async function syncAcceptedRequestConversations(
   supabase: SupabaseClient,
@@ -480,7 +551,7 @@ export async function syncAcceptedRequestConversations(
   const { data: requests, error } = await supabase
     .from("requests")
     .select("id")
-    .in("status", ["accepted", "completed"])
+    .in("status", REQUEST_CONVERSATION_STATUSES)
     .or(`pet_parent_id.eq.${userId},pet_friend_id.eq.${userId}`);
 
   if (error) {
@@ -490,7 +561,8 @@ export async function syncAcceptedRequestConversations(
 
   for (const row of requests ?? []) {
     try {
-      await ensureConversationForAcceptedRequest(supabase, row.id);
+      await ensureConversationForRequest(supabase, row.id);
+      await seedRequestMessageIfAbsent(supabase, row.id);
     } catch (err) {
       logSupabaseError(`sync conversation ${row.id}`, err as PostgrestError);
     }
@@ -557,7 +629,7 @@ export async function fetchConversations(
   const eligibleConversations = convRows.filter((c) => {
     const req = requestsById.get(c.request_id);
     if (!req) return false;
-    if (req.status !== "accepted" && req.status !== "completed") return false;
+    if (!REQUEST_CONVERSATION_STATUSES.includes(req.status)) return false;
     return req.pet_parent_id === userId || req.pet_friend_id === userId;
   });
 

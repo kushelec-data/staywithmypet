@@ -260,6 +260,10 @@ export const et = {
     datesLabel: "Kuupäevad",
     careTypeLabel: "Hoolduse tüüp",
     openMessages: "Ava sõnumid",
+    respondToMessage: "Vasta sõnumile",
+    viewPetProfile: "Vaata lemmiku profiili",
+    viewProfile: "Vaata profiili",
+    viewOwnerProfile: "Vaata omaniku profiili",
   },
   bookings: {
     pageTitle: "Broneeringud",

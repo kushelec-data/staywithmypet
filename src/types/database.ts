@@ -163,4 +163,4 @@ export const REQUEST_SELECT =
   "id, status, message, care_type, pet_id, pet_parent_id, pet_friend_id, sender_id, receiver_id, date_from, date_to, requested_dates, created_at" as const;
 
 /** Requests with sender/receiver profiles and pet (PostgREST FK hints). */
-export const REQUEST_SELECT_WITH_RELATIONS = `${REQUEST_SELECT}, sender:profiles!requests_sender_id_fkey(id, display_name), receiver:profiles!requests_receiver_id_fkey(id, display_name), pet:pets(id, name)` as const;
+export const REQUEST_SELECT_WITH_RELATIONS = `${REQUEST_SELECT}, sender:profiles!requests_sender_id_fkey(id, display_name), receiver:profiles!requests_receiver_id_fkey(id, display_name), pet:pets(id, name, species, breed)` as const;

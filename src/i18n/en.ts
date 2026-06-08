@@ -259,6 +259,10 @@ export const en = {
     datesLabel: "Dates",
     careTypeLabel: "Care type",
     openMessages: "Open messages",
+    respondToMessage: "Respond to message",
+    viewPetProfile: "View pet profile",
+    viewProfile: "View profile",
+    viewOwnerProfile: "View owner profile",
   },
   bookings: {
     pageTitle: "Bookings",
