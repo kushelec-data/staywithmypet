@@ -4,9 +4,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { useEffect, useState } from "react";
-
-const AUTO_HIDE_MS = 8000;
+import { useState } from "react";
 
 function HeroPuppySvg() {
   return (
@@ -184,23 +182,14 @@ export function HeroPuppyAssistant() {
   const { t } = useLanguage();
   const copy = t.hero.puppyWelcome;
 
-  const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    if (loading || user || dismissed) return;
-    setVisible(true);
-    const timer = window.setTimeout(() => setVisible(false), AUTO_HIDE_MS);
-    return () => window.clearTimeout(timer);
-  }, [loading, user, dismissed]);
-
-  if (loading || user || dismissed || !visible) {
+  if (loading || user || dismissed) {
     return null;
   }
 
   const dismiss = () => {
     setDismissed(true);
-    setVisible(false);
   };
 
   return (
@@ -226,8 +215,10 @@ export function HeroPuppyAssistant() {
         </Link>
       </div>
 
-      <div className="hero-puppy-assistant__walk-track pointer-events-none" aria-hidden>
-        <HeroPuppySvg />
+      <div className="hero-puppy-assistant__stage" aria-hidden>
+        <div className="hero-puppy-assistant__mover">
+          <HeroPuppySvg />
+        </div>
       </div>
     </aside>
   );
