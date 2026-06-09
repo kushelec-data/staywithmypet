@@ -47,73 +47,133 @@ function HeroPuppySvg() {
         </filter>
       </defs>
 
-      <ellipse cx="60" cy="124" rx="32" ry="4.5" fill="#1a1a1f" opacity="0.07" />
-
-      <g className="hero-puppy__bounce" filter="url(#hero-puppy-soft-shadow)">
-        <g className="hero-puppy__tail">
-          <path
-            d="M22 78 C8 72 4 58 10 44 C14 36 20 38 24 48 L28 76 Z"
-            fill="url(#hero-puppy-fur-light)"
-            stroke="url(#hero-puppy-fur-shadow)"
-            strokeWidth="1.1"
-            strokeLinejoin="round"
-          />
-        </g>
-
-        <ellipse cx="58" cy="90" rx="31" ry="25" fill="url(#hero-puppy-fur-shadow)" opacity="0.35" />
-        <ellipse cx="58" cy="88" rx="30" ry="26" fill="url(#hero-puppy-fur-light)" />
-        <ellipse cx="56" cy="92" rx="18" ry="14" fill="url(#hero-puppy-belly)" />
-
-        <path
-          d="M38 74 Q60 68 82 74 L80 78 Q60 82 40 78 Z"
-          fill="url(#hero-puppy-collar)"
-          opacity="0.85"
+      <g className="hero-puppy__walker">
+        <ellipse
+          className="hero-puppy__shadow"
+          cx="60"
+          cy="126"
+          rx="30"
+          ry="5"
+          fill="#1a1a1f"
         />
 
-        <g className="hero-puppy__head">
-          <g className="hero-puppy__ear hero-puppy__ear--left">
+        <g className="hero-puppy__character" filter="url(#hero-puppy-soft-shadow)">
+          <g className="hero-puppy__tail">
             <path
-              d="M34 42 C28 22 38 14 46 24 C48 30 42 38 36 44 Z"
-              fill="url(#hero-puppy-fur-shadow)"
-            />
-            <path
-              d="M36 40 C32 26 40 20 44 28 C45 32 41 38 38 42 Z"
+              d="M22 78 C8 72 4 58 10 44 C14 36 20 38 24 48 L28 76 Z"
               fill="url(#hero-puppy-fur-light)"
+              stroke="url(#hero-puppy-fur-shadow)"
+              strokeWidth="1.1"
+              strokeLinejoin="round"
             />
-            <path d="M38 38 C36 30 40 26 42 32 Z" fill="#e8cfc0" opacity="0.7" />
-          </g>
-          <g className="hero-puppy__ear hero-puppy__ear--right">
-            <path
-              d="M86 42 C92 22 82 14 74 24 C72 30 78 38 84 44 Z"
-              fill="url(#hero-puppy-fur-shadow)"
-            />
-            <path
-              d="M84 40 C88 26 80 20 76 28 C75 32 79 38 82 42 Z"
-              fill="url(#hero-puppy-fur-light)"
-            />
-            <path d="M82 38 C84 30 80 26 78 32 Z" fill="#e8cfc0" opacity="0.7" />
           </g>
 
-          <ellipse cx="60" cy="52" rx="28" ry="26" fill="url(#hero-puppy-fur-light)" />
-          <ellipse cx="60" cy="56" rx="22" ry="18" fill="url(#hero-puppy-belly)" />
+          <g className="hero-puppy__body">
+            <ellipse cx="58" cy="90" rx="31" ry="25" fill="url(#hero-puppy-fur-shadow)" opacity="0.35" />
+            <ellipse cx="58" cy="88" rx="30" ry="26" fill="url(#hero-puppy-fur-light)" />
+            <ellipse cx="56" cy="92" rx="18" ry="14" fill="url(#hero-puppy-belly)" />
+            <path
+              d="M38 74 Q60 68 82 74 L80 78 Q60 82 40 78 Z"
+              fill="url(#hero-puppy-collar)"
+              opacity="0.85"
+            />
+          </g>
 
-          <ellipse cx="60" cy="64" rx="11" ry="9" fill="url(#hero-puppy-snout)" />
-          <ellipse cx="60" cy="63" rx="8" ry="5" fill="#fff" opacity="0.35" />
+          <g className="hero-puppy__legs">
+            <g className="hero-puppy__leg hero-puppy__leg--bl">
+              <path
+                d="M44 94 Q38 100 34 106"
+                fill="none"
+                stroke="url(#hero-puppy-fur-shadow)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                opacity="0.55"
+              />
+              <ellipse cx="33" cy="107" rx="6" ry="4.5" fill="url(#hero-puppy-fur-shadow)" opacity="0.4" />
+            </g>
+            <g className="hero-puppy__leg hero-puppy__leg--br">
+              <path
+                d="M74 94 Q80 100 84 106"
+                fill="none"
+                stroke="url(#hero-puppy-fur-shadow)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                opacity="0.55"
+              />
+              <ellipse cx="85" cy="107" rx="6" ry="4.5" fill="url(#hero-puppy-fur-shadow)" opacity="0.4" />
+            </g>
+            <g className="hero-puppy__leg hero-puppy__leg--fl">
+              <path
+                d="M46 96 Q42 102 40 108"
+                fill="none"
+                stroke="url(#hero-puppy-fur-shadow)"
+                strokeWidth="5.5"
+                strokeLinecap="round"
+                opacity="0.6"
+              />
+              <ellipse cx="39" cy="109" rx="7.5" ry="5.5" fill="url(#hero-puppy-fur-shadow)" opacity="0.5" />
+            </g>
+            <g className="hero-puppy__leg hero-puppy__leg--fr">
+              <path
+                d="M72 96 Q76 102 78 108"
+                fill="none"
+                stroke="url(#hero-puppy-fur-shadow)"
+                strokeWidth="5.5"
+                strokeLinecap="round"
+                opacity="0.6"
+              />
+              <ellipse cx="79" cy="109" rx="7.5" ry="5.5" fill="url(#hero-puppy-fur-shadow)" opacity="0.5" />
+            </g>
+          </g>
 
-          <circle cx="44" cy="58" r="6.5" fill="url(#hero-puppy-cheek)" />
-          <circle cx="76" cy="58" r="6.5" fill="url(#hero-puppy-cheek)" />
+          <g className="hero-puppy__head">
+            <g className="hero-puppy__ear hero-puppy__ear--left">
+              <path
+                d="M34 42 C28 22 38 14 46 24 C48 30 42 38 36 44 Z"
+                fill="url(#hero-puppy-fur-shadow)"
+              />
+              <path
+                d="M36 40 C32 26 40 20 44 28 C45 32 41 38 38 42 Z"
+                fill="url(#hero-puppy-fur-light)"
+              />
+              <path d="M38 38 C36 30 40 26 42 32 Z" fill="#e8cfc0" opacity="0.7" />
+            </g>
+            <g className="hero-puppy__ear hero-puppy__ear--right">
+              <path
+                d="M86 42 C92 22 82 14 74 24 C72 30 78 38 84 44 Z"
+                fill="url(#hero-puppy-fur-shadow)"
+              />
+              <path
+                d="M84 40 C88 26 80 20 76 28 C75 32 79 38 82 42 Z"
+                fill="url(#hero-puppy-fur-light)"
+              />
+              <path d="M82 38 C84 30 80 26 78 32 Z" fill="#e8cfc0" opacity="0.7" />
+            </g>
 
-          <ellipse cx="48" cy="50" rx="4.5" ry="5.5" fill="#2d2a32" />
-          <ellipse cx="72" cy="50" rx="4.5" ry="5.5" fill="#2d2a32" />
-          <circle cx="49" cy="48" r="1.6" fill="#fff" opacity="0.92" />
-          <circle cx="73" cy="48" r="1.6" fill="#fff" opacity="0.92" />
+            <ellipse cx="60" cy="52" rx="28" ry="26" fill="url(#hero-puppy-fur-light)" />
+            <ellipse cx="60" cy="56" rx="22" ry="18" fill="url(#hero-puppy-belly)" />
 
-          <ellipse cx="60" cy="66" rx="4" ry="3" fill="#4a3d36" opacity="0.85" />
-          <path d="M57 67 Q60 70 63 67" fill="none" stroke="#5c4a42" strokeWidth="1.4" strokeLinecap="round" />
+            <ellipse cx="60" cy="64" rx="11" ry="9" fill="url(#hero-puppy-snout)" />
+            <ellipse cx="60" cy="63" rx="8" ry="5" fill="#fff" opacity="0.35" />
+
+            <circle cx="44" cy="58" r="6.5" fill="url(#hero-puppy-cheek)" />
+            <circle cx="76" cy="58" r="6.5" fill="url(#hero-puppy-cheek)" />
+
+            <ellipse cx="48" cy="50" rx="4.5" ry="5.5" fill="#2d2a32" />
+            <ellipse cx="72" cy="50" rx="4.5" ry="5.5" fill="#2d2a32" />
+            <circle cx="49" cy="48" r="1.6" fill="#fff" opacity="0.92" />
+            <circle cx="73" cy="48" r="1.6" fill="#fff" opacity="0.92" />
+
+            <ellipse cx="60" cy="66" rx="4" ry="3" fill="#4a3d36" opacity="0.85" />
+            <path
+              d="M57 67 Q60 70 63 67"
+              fill="none"
+              stroke="#5c4a42"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+          </g>
         </g>
-
-        <ellipse cx="42" cy="100" rx="8" ry="5.5" fill="url(#hero-puppy-fur-shadow)" opacity="0.45" />
-        <ellipse cx="76" cy="100" rx="8" ry="5.5" fill="url(#hero-puppy-fur-shadow)" opacity="0.45" />
       </g>
     </svg>
   );
@@ -166,7 +226,7 @@ export function HeroPuppyAssistant() {
         </Link>
       </div>
 
-      <div className="hero-puppy-assistant__figure pointer-events-none flex shrink-0 items-center justify-center">
+      <div className="hero-puppy-assistant__walk-track pointer-events-none" aria-hidden>
         <HeroPuppySvg />
       </div>
     </aside>
