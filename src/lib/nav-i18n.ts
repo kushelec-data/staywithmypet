@@ -68,10 +68,27 @@ export function getAuthNavLinks(t: Dictionary["navbar"]) {
   ];
 }
 
-/** Translate account sidebar labels where i18n keys exist. */
-export function accountSidebarLabel(href: string, fallbackLabel: string, t: Dictionary["navbar"]): string {
-  if (href === "/dashboard/calendar") return t.calendar;
-  if (href === "/find-care") return t.findPetFriends;
-  if (href === "/find-pets") return t.findPets;
-  return fallbackLabel;
+/** Translate account sidebar / nav strip labels. */
+export function accountSidebarLabel(href: string, _fallbackLabel: string, t: Dictionary): string {
+  const path = href.split("?")[0].split("#")[0];
+  const nav = t.navbar;
+  const account = t.account.nav;
+
+  const byPath: Record<string, string> = {
+    "/dashboard": nav.dashboard,
+    "/dashboard/calendar": nav.calendar,
+    "/dashboard/bookings": nav.bookings,
+    "/messages": nav.messages,
+    "/requests": nav.requests,
+    "/saved": account.savedPets,
+    "/profile/edit": account.editProfile,
+    "/membership": account.membership,
+    "/change-password": account.changePassword,
+    "/pets": account.myPets,
+    "/pets/new": account.addPet,
+    "/find-care": nav.findPetFriends,
+    "/find-pets": nav.findPets,
+  };
+
+  return byPath[path] ?? _fallbackLabel;
 }

@@ -16,6 +16,9 @@ export type DashboardBreadcrumbProps = {
   parent?: DashboardBreadcrumbParent;
   backHref?: string;
   className?: string;
+  dashboardLabel?: string;
+  goBackLabel?: string;
+  breadcrumbAriaLabel?: string;
 };
 
 export function DashboardBreadcrumb({
@@ -23,6 +26,9 @@ export function DashboardBreadcrumb({
   parent,
   backHref = DASHBOARD_PATH,
   className = "",
+  dashboardLabel = "Dashboard",
+  goBackLabel = "Go back",
+  breadcrumbAriaLabel = "Breadcrumb",
 }: DashboardBreadcrumbProps) {
   const router = useRouter();
 
@@ -36,7 +42,7 @@ export function DashboardBreadcrumb({
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={breadcrumbAriaLabel}
       className={`sticky top-[4.25rem] z-20 -mx-1 mb-4 border-b border-black/5 bg-background/95 pb-3 pt-0.5 backdrop-blur-md sm:static sm:mx-0 sm:mb-5 sm:border-0 sm:bg-transparent sm:pb-0 sm:pt-0 sm:backdrop-blur-none ${className}`}
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -44,7 +50,7 @@ export function DashboardBreadcrumb({
           type="button"
           onClick={handleBack}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-[#DDEEDF] hover:text-[#2E6B3F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E6B3F]"
-          aria-label="Go back"
+          aria-label={goBackLabel}
         >
           <span aria-hidden className="text-base leading-none">
             ←
@@ -57,7 +63,7 @@ export function DashboardBreadcrumb({
               href={DASHBOARD_PATH}
               className={ACCOUNT_LINK_CLASS}
             >
-              Dashboard
+              {dashboardLabel}
             </Link>
           </li>
 

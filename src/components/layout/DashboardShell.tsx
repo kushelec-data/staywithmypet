@@ -84,7 +84,7 @@ export function DashboardShell({
     : null;
   const sidebarSections = sidebarSectionsForActiveMode(resolvedActiveMode);
   const headerNav = headerNavForActiveMode(resolvedActiveMode);
-  const modeAction = sidebarModeActionForProfile(profile);
+  const modeAction = sidebarModeActionForProfile(profile, t.account);
   const [loggingOut, setLoggingOut] = useState(false);
   const [switchingMode, setSwitchingMode] = useState<string | null>(null);
   const [modeError, setModeError] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export function DashboardShell({
     isIncomplete &&
     !onProfileFormPage;
 
-  const autoBreadcrumb = dashboardBreadcrumbFromPath(pathname, searchParams);
+  const autoBreadcrumb = dashboardBreadcrumbFromPath(t.account.breadcrumb, pathname, searchParams);
   const isDashboardHome = pathname === DASHBOARD_PATH;
   const showBreadcrumb = !hideBreadcrumb && !isDashboardHome;
   const crumbTitle = breadcrumbTitle ?? autoBreadcrumb?.title ?? title;
@@ -142,7 +142,7 @@ export function DashboardShell({
   async function handleModeSwitch(targetMode: "pet_parent" | "pet_friend") {
     if (!user || switchingMode) return;
     if (!profile) {
-      setModeError("Profile is still loading. Please try again.");
+      setModeError(t.account.profileStillLoading);
       return;
     }
     if (resolveActiveMode(profile.role, profile.active_mode) === targetMode) return;
@@ -165,7 +165,7 @@ export function DashboardShell({
         router.refresh();
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not switch mode.";
+      const message = err instanceof Error ? err.message : t.account.couldNotSwitchMode;
       setModeError(message);
     } finally {
       setSwitchingMode(null);
@@ -175,7 +175,7 @@ export function DashboardShell({
   return (
     <div className={`${ACCOUNT_LAYOUT_SHELL} ${ACCOUNT_LAYOUT_PADDING}`}>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:items-center">
-        <p className={ACCOUNT_PAGE_HEADER_EYEBROW}>Your account</p>
+        <p className={ACCOUNT_PAGE_HEADER_EYEBROW}>{t.account.eyebrow}</p>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {headerNav.map((item) => (
             <DashboardHeaderNavLink key={item.href} item={item} />
@@ -185,12 +185,10 @@ export function DashboardShell({
 
       {showCompleteProfile ? (
         <div className={`${ACCOUNT_CALLOUT_CLASS} mb-6 p-4`}>
-          <p className="font-heading text-sm font-semibold text-foreground">Complete your profile</p>
-          <p className="mt-1 text-sm text-muted">
-            Add your details so Pet Parents and Pet Friends can trust and connect with you.
-          </p>
+          <p className="font-heading text-sm font-semibold text-foreground">{t.account.completeProfileTitle}</p>
+          <p className="mt-1 text-sm text-muted">{t.account.completeProfileBody}</p>
           <Button href="/profile/setup" size="sm" className="mt-3">
-            Complete profile
+            {t.account.completeProfileCta}
           </Button>
         </div>
       ) : null}
@@ -209,7 +207,7 @@ export function DashboardShell({
           sidebarSections={sidebarSections}
           pathname={pathname}
           searchParams={searchParams}
-          navbarT={t.navbar}
+          t={t}
           modeAction={modeAction}
           switchingMode={switchingMode}
           modeError={modeError}
@@ -225,6 +223,9 @@ export function DashboardShell({
               title={crumbTitle}
               parent={crumbParent}
               backHref={backHref}
+              dashboardLabel={t.navbar.dashboard}
+              goBackLabel={t.account.goBack}
+              breadcrumbAriaLabel={t.account.breadcrumbAriaLabel}
             />
           ) : null}
           {showMainPageHeader ? (
@@ -238,7 +239,7 @@ export function DashboardShell({
 
         {showDashboardRightAside ? (
           <aside
-            aria-label="Account insights"
+            aria-label={t.account.accountInsightsAriaLabel}
             className="min-w-0 space-y-4 sm:space-y-5 lg:sticky lg:top-24 lg:self-start"
           >
             {rightAside}

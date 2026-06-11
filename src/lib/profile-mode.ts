@@ -1,5 +1,6 @@
 import type { ProfileRole } from "@/lib/profile-setup";
 import type { ProfileRow } from "@/lib/profile-utils";
+import type { Dictionary } from "@/i18n/translations";
 
 /** UI-only dashboard mode. Stored as profiles.active_mode (user spec: current_mode). */
 export type ProfileActiveMode = "pet_parent" | "pet_friend";
@@ -27,7 +28,10 @@ export function resolveActiveMode(
 }
 
 /** Single opposite-mode switch shown in the account sidebar. */
-export function sidebarModeActionForProfile(profile: ProfileRow | null): SidebarModeAction | null {
+export function sidebarModeActionForProfile(
+  profile: ProfileRow | null,
+  accountT?: Dictionary["account"],
+): SidebarModeAction | null {
   if (!profile) return null;
 
   const mode = resolveActiveMode(profile.role, profile.active_mode);
@@ -35,14 +39,14 @@ export function sidebarModeActionForProfile(profile: ProfileRow | null): Sidebar
   if (mode === "pet_parent") {
     return {
       id: "pet_friend",
-      label: "Switch to Pet Friend",
+      label: accountT?.switchToPetFriend ?? "Switch to Pet Friend",
       targetMode: "pet_friend",
     };
   }
 
   return {
     id: "pet_parent",
-    label: "Switch to Pet Parent",
+    label: accountT?.switchToPetParent ?? "Switch to Pet Parent",
     targetMode: "pet_parent",
   };
 }
@@ -53,7 +57,13 @@ export function sidebarModeActionsForProfile(profile: ProfileRow | null): Sideba
   return action ? [action] : [];
 }
 
-export function formatActiveMode(mode: ProfileActiveMode): string {
+export function formatActiveMode(
+  mode: ProfileActiveMode,
+  roles?: Dictionary["roles"],
+): string {
+  if (roles) {
+    return mode === "pet_parent" ? roles.petParent.label : roles.petFriend.label;
+  }
   return mode === "pet_parent" ? "Pet Parent" : "Pet Friend";
 }
 

@@ -107,9 +107,12 @@ export function DashboardPageContent() {
   } = useProfile();
   const { snapshot, waitingForProfile, loadSnapshot } = useDashboardData();
 
+  const dh = t.dashboardHome;
+  const acc = t.account;
+
   if (rolePending || waitingForProfile) {
     return (
-      <div className="py-12 text-center text-sm text-muted">Loading your dashboard…</div>
+      <div className="py-12 text-center text-sm text-muted">{dh.loadingDashboard}</div>
     );
   }
 
@@ -126,9 +129,9 @@ export function DashboardPageContent() {
   if (!profile) {
     return (
       <div className="py-12 text-center text-sm text-muted">
-        <p>We couldn&apos;t load your profile.</p>
+        <p>{dh.profileLoadError}</p>
         <Link href="/profile/edit" className={`${DASHBOARD_LINK_CLASS} mt-2 inline-block`}>
-          Complete your profile
+          {acc.completeProfileCta}
         </Link>
       </div>
     );
@@ -169,17 +172,17 @@ export function DashboardPageContent() {
     availabilityUx.showMyAvailability && profileCalDates.length === 0;
 
   const locationPetTitle = showPetCareSection
-    ? "Location & pet care"
+    ? dh.locationPetCare
     : availabilityUx.showMyAvailability
-      ? "Location & availability"
-      : "Your location";
+      ? dh.locationAvailability
+      : dh.yourLocation;
 
   const locationPetCard = showPetCareSection ? (
     <DashboardInfoCard title={locationPetTitle} editHref="/profile/edit">
       <div className="space-y-3 text-sm">
         <p className="text-xs text-muted">
           <span className="font-medium text-foreground">
-            {profile.location?.trim() || "Location not set"}
+            {profile.location?.trim() || acc.locationNotSet}
           </span>
           {profile.address?.trim() ? (
             <span className="mt-0.5 block text-muted">{profile.address.trim()}</span>
@@ -189,18 +192,18 @@ export function DashboardPageContent() {
         {availabilityUx.showMyAvailability ? (
           <AvailabilityDateChips
             dates={profileCalDates}
-            label="My availability"
+            label={dh.myAvailability}
             locale={locale}
-            emptyLabel="Not set"
+            emptyLabel={acc.notSet}
             tone="dashboard"
           />
         ) : null}
 
         {snapshot.petIntros.length === 0 ? (
           <DashboardEmptyState
-            message="Add a pet so Pet Friends can see care needs."
+            message={dh.addPetForCareNeeds}
             actionHref="/pets/new"
-            actionLabel="Add pet"
+            actionLabel={acc.nav.addPet}
           />
         ) : (
           <ul className="space-y-2">
@@ -218,11 +221,11 @@ export function DashboardPageContent() {
 
         <div className="flex flex-wrap gap-2 border-t border-[#E5E2D8] pt-3">
           <Button href="/pets" variant="ghost" size="sm">
-            Manage pets
+            {dh.managePets}
           </Button>
           {needsMyAvailability ? (
             <Button href="/profile/edit" variant="outline" size="sm">
-              Add availability
+              {dh.addAvailability}
             </Button>
           ) : null}
         </div>
@@ -231,12 +234,12 @@ export function DashboardPageContent() {
   ) : (
     <DashboardInfoCard title={locationPetTitle} editHref="/profile/edit">
       <div className="space-y-3 text-sm">
-        <p className="text-foreground">{profile.location?.trim() || "Not set"}</p>
+        <p className="text-foreground">{profile.location?.trim() || acc.notSet}</p>
         {availabilityUx.showMyAvailability && user ? (
           <DashboardAvailabilityMiniCalendar
             availabilityDates={profileCalDates}
             petFriendId={user.id}
-            emptyLabel="Not set"
+            emptyLabel={acc.notSet}
           />
         ) : null}
       </div>
@@ -260,8 +263,8 @@ export function DashboardPageContent() {
 
   return (
     <AccountLayout
-      title="Dashboard"
-      description="Your account at a glance."
+      title={dh.pageTitle}
+      description={dh.pageDescription}
       hideCompleteProfileBanner
       rightAside={dashboardRightAside}
     >
@@ -293,10 +296,10 @@ export function DashboardPageContent() {
             {showParentNoPetsBanner ? (
               <div className={`${DASHBOARD_CALLOUT_CLASS} p-4 sm:p-5`}>
                 <p className="text-sm text-foreground">
-                  You haven&apos;t added any pets yet. Add your first pet so Pet Friends can find you.
+                  {dh.noPetsYet}
                 </p>
                 <Button href="/pets/new" size="sm" className="mt-3">
-                  Add pet
+                  {acc.nav.addPet}
                 </Button>
               </div>
             ) : null}
@@ -304,10 +307,10 @@ export function DashboardPageContent() {
             {showFriendSetupBanner ? (
               <div className={`${DASHBOARD_CALLOUT_CLASS} p-4 sm:p-5`}>
                 <p className="text-sm text-muted">
-                  Complete your Pet Friend setup so Pet Parents can request you.
+                  {dh.completeFriendSetup}
                 </p>
                 <Button href="/profile/edit#pet-care-preferences" size="sm" className="mt-3">
-                  Complete setup
+                  {dh.completeSetup}
                 </Button>
               </div>
             ) : null}
@@ -323,7 +326,7 @@ export function DashboardPageContent() {
         </section>
 
         <section aria-label="Profile details" className="space-y-4 sm:space-y-5">
-          <DashboardInfoCard title="About me" editHref="/profile/edit">
+          <DashboardInfoCard title={dh.aboutMe} editHref="/profile/edit" editLabel={acc.edit}>
             {profile.bio?.trim() ? (
               <>
                 <p className="line-clamp-3 text-sm leading-relaxed text-foreground/90">
@@ -333,14 +336,14 @@ export function DashboardPageContent() {
                   href="/profile/edit"
                   className={`${DASHBOARD_LINK_CLASS} mt-2 inline-block text-xs`}
                 >
-                  View more →
+                  {dh.viewMore}
                 </Link>
               </>
             ) : (
               <DashboardEmptyState
-                message="You haven't added a bio yet."
+                message={dh.noBioYet}
                 actionHref="/profile/edit"
-                actionLabel="Add bio"
+                actionLabel={dh.addBio}
               />
             )}
           </DashboardInfoCard>

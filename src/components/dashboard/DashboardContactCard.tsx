@@ -14,35 +14,37 @@ type DashboardContactCardProps = {
 
 export function DashboardContactCard({ profile }: DashboardContactCardProps) {
   const { t } = useLanguage();
+  const dh = t.dashboardHome;
+  const acc = t.account;
   const ts = t.trustSafety;
   const emergency = parseEmergencyContactFromProfile(profile);
   const phoneOnFile = Boolean(profile.phone_e164?.trim() || profile.phone?.trim());
 
   return (
-    <DashboardInfoCard title="Contact" titleStyle="panel" editHref="/profile/edit">
+    <DashboardInfoCard title={dh.contact} titleStyle="panel" editHref="/profile/edit" editLabel={acc.edit}>
       <dl className="space-y-2 text-xs">
         <DashboardDetailRow
-          label="Location"
-          value={profile.location?.trim() || "Not set"}
+          label={dh.location}
+          value={profile.location?.trim() || acc.notSet}
         />
         <DashboardDetailRow
-          label="Languages"
+          label={dh.languages}
           value={profile.languages?.length ? profile.languages.join(", ") : "—"}
         />
         <DashboardDetailRow
-          label="Phone"
+          label={dh.phone}
           value={
             phoneOnFile
               ? profile.phone_verified
-                ? "On file · verified"
-                : "On file · not verified"
-              : "Not added"
+                ? dh.phoneOnFileVerified
+                : dh.phoneOnFileNotVerified
+              : dh.phoneNotAdded
           }
         />
         <DashboardDetailRow
           label={ts.emergencyContact}
           value={
-            emergency ? `${emergency.name} · on file` : ts.emergencyContactEmpty
+            emergency ? `${emergency.name} ${dh.emergencyOnFile}` : ts.emergencyContactEmpty
           }
         />
       </dl>

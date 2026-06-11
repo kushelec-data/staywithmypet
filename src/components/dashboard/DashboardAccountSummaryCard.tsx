@@ -64,20 +64,27 @@ export function DashboardAccountSummaryCard({
         ]
       : [];
 
+  const dh = t.dashboardHome;
+  const acc = t.account;
+
   return (
-    <DashboardInfoCard title="Account summary" titleStyle="panel">
+    <DashboardInfoCard title={dh.accountSummary} titleStyle="panel">
       {showPetStats ? (
         <div>
           <p className={DASHBOARD_PANEL_SECTION_LABEL}>{t.requests.petsSectionLabel}</p>
           <ul className="mt-2 space-y-1 text-xs text-muted">
             {caps.showMyPets ? (
               <li>
-                {snapshot.petsOwned} pet{snapshot.petsOwned === 1 ? "" : "s"}
+                {snapshot.petsOwned === 1
+                  ? dh.petsCountOne.replace("{count}", String(snapshot.petsOwned))
+                  : dh.petsCountMany.replace("{count}", String(snapshot.petsOwned))}
               </li>
             ) : null}
             {caps.showSavedStat ? (
               <li>
-                {snapshot.favoritesCount} saved pet{snapshot.favoritesCount === 1 ? "" : "s"}
+                {snapshot.favoritesCount === 1
+                  ? dh.savedPetsCountOne.replace("{count}", String(snapshot.favoritesCount))
+                  : dh.savedPetsCountMany.replace("{count}", String(snapshot.favoritesCount))}
               </li>
             ) : null}
           </ul>
@@ -102,11 +109,11 @@ export function DashboardAccountSummaryCard({
             : ""
         }
       >
-        <p className={DASHBOARD_PANEL_SECTION_LABEL}>Quick actions</p>
+        <p className={DASHBOARD_PANEL_SECTION_LABEL}>{dh.quickActions}</p>
         <div className="mt-2 flex flex-col gap-1.5">
           {caps.showAddPet ? (
             <Button href="/pets/new" size="sm" className="w-full justify-center">
-              Add pet
+              {acc.nav.addPet}
             </Button>
           ) : null}
           {caps.showMyPets ? (
@@ -116,7 +123,7 @@ export function DashboardAccountSummaryCard({
               size="sm"
               className="w-full justify-center"
             >
-              My pets
+              {acc.nav.myPets}
             </Button>
           ) : null}
           {showRequestsQuickAction ? (
@@ -126,12 +133,12 @@ export function DashboardAccountSummaryCard({
           ) : null}
           {caps.showFindCareCta ? (
             <Button href="/find-care" variant="outline" size="sm" className="w-full justify-center">
-              Find Pet Friends
+              {t.navbar.findPetFriends}
             </Button>
           ) : null}
           {caps.showSearchPetsCta ? (
             <Button href="/find-pets" size="sm" className="w-full justify-center">
-              Search pets
+              {t.navbar.searchPets}
             </Button>
           ) : null}
         </div>

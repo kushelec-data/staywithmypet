@@ -1,4 +1,5 @@
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
+import type { Dictionary } from "@/i18n/translations";
 
 export type DashboardBreadcrumbParent = {
   label: string;
@@ -12,74 +13,77 @@ export type DashboardBreadcrumbConfig = {
 
 type SearchParamsLike = { get(key: string): string | null } | null | undefined;
 
-/** Resolve breadcrumb trail from the current dashboard route. */
+type BreadcrumbLabels = Dictionary["account"]["breadcrumb"];
+
+/** Resolve breadcrumb trail from the current dashboard route (localized). */
 export function dashboardBreadcrumbFromPath(
+  labels: BreadcrumbLabels,
   pathname: string,
   searchParams?: SearchParamsLike,
 ): DashboardBreadcrumbConfig | null {
   if (pathname === DASHBOARD_PATH) return null;
 
   if (pathname === "/pets") {
-    return { title: "My pets" };
+    return { title: labels.myPets };
   }
   if (pathname === "/pets/new") {
-    return { title: "Add pet", parent: { label: "My pets", href: "/pets" } };
+    return { title: labels.addPet, parent: { label: labels.myPets, href: "/pets" } };
   }
   if (/^\/pets\/[^/]+\/edit$/.test(pathname)) {
-    return { title: "Edit pet", parent: { label: "My pets", href: "/pets" } };
+    return { title: labels.editPet, parent: { label: labels.myPets, href: "/pets" } };
   }
 
   if (pathname === "/requests") {
-    return { title: "Requests" };
+    return { title: labels.requests };
   }
   if (pathname === "/messages") {
-    return { title: "Messages" };
+    return { title: labels.messages };
   }
 
   if (pathname === "/profile/edit") {
-    return { title: "Edit Profile" };
+    return { title: labels.editProfile };
   }
   if (pathname === "/profile/setup") {
-    return { title: "Set up your profile" };
+    return { title: labels.setupProfile };
   }
   if (pathname === "/profile" || pathname.startsWith("/profile/")) {
-    return { title: "Profile" };
+    return { title: labels.profile };
   }
 
   if (pathname === "/membership") {
-    return { title: "Membership" };
+    return { title: labels.membership };
   }
   if (pathname === "/change-password") {
-    return { title: "Change password" };
+    return { title: labels.changePassword };
   }
   if (pathname === "/preferences") {
-    return { title: "My preferences" };
+    return { title: labels.preferences };
   }
   if (pathname === "/saved") {
-    return { title: "Saved pets" };
+    return { title: labels.savedPets };
   }
   if (pathname === "/find-pets") {
-    return { title: "Search pets" };
+    return { title: labels.searchPets };
   }
   if (pathname === "/find-care") {
-    return { title: "Find Pet Friends" };
+    return { title: labels.findPetFriends };
   }
   if (pathname === "/gallery") {
-    return { title: "Your gallery" };
+    return { title: labels.gallery };
   }
 
   if (pathname === "/dashboard/calendar") {
-    return { title: "Calendar" };
+    return { title: labels.calendar };
   }
 
   if (pathname === "/dashboard/bookings") {
-    return { title: "Bookings" };
+    return { title: labels.bookings };
   }
 
   if (/^\/dashboard\/bookings\/[^/]+$/.test(pathname)) {
     return {
-      title: "Booking details",
-      parent: { label: "Bookings", href: "/dashboard/bookings" },
+      title: labels.bookingDetails,
+      parent: { label: labels.bookings, href: "/dashboard/bookings" },
     };
   }
 
@@ -91,7 +95,7 @@ export function dashboardBreadcrumbFromPath(
     const parentSegment = segments.length >= 2 ? segments[segments.length - 2] : null;
     const parentLabel = parentSegment ? humanizeSegment(parentSegment) : undefined;
     return {
-      title: "Details",
+      title: labels.details,
       parent: parentLabel
         ? {
             label: parentLabel,

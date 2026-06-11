@@ -26,7 +26,7 @@ type AccountSidebarProps = {
   sidebarSections: AccountSidebarSection[];
   pathname: string;
   searchParams: ReadonlyURLSearchParams;
-  navbarT: Dictionary["navbar"];
+  t: Dictionary;
   modeAction: { label: string; targetMode: "pet_parent" | "pet_friend" } | null;
   switchingMode: string | null;
   modeError: string | null;
@@ -48,7 +48,7 @@ export function AccountSidebar({
   sidebarSections,
   pathname,
   searchParams,
-  navbarT,
+  t,
   modeAction,
   switchingMode,
   modeError,
@@ -56,6 +56,8 @@ export function AccountSidebar({
   onModeSwitch,
   onLogout,
 }: AccountSidebarProps) {
+  const accountT = t.account;
+  const navbarT = t.navbar;
   const initials = profileInitials(displayName, email);
   const username = profileUsername(profile, email);
 
@@ -79,13 +81,13 @@ export function AccountSidebar({
           </div>
         )}
         <p className="mt-3 font-heading font-semibold text-foreground">
-          {authLoading || profileLoading ? "Loading…" : displayName}
+          {authLoading || profileLoading ? accountT.loading : displayName}
         </p>
         <p className="text-xs text-muted">@{username}</p>
         {email ? <p className="mt-1 text-xs text-muted/80">{email}</p> : null}
       </div>
 
-      <nav className="mt-6 space-y-3" aria-label="Account">
+      <nav className="mt-6 space-y-3" aria-label={accountT.accountNavAriaLabel}>
         {sidebarSections.map((section) => {
           if (section.items.length === 0) return null;
 
@@ -105,6 +107,7 @@ export function AccountSidebar({
                       pathname={pathname}
                       searchParams={searchParams}
                       navbarT={navbarT}
+                      t={t}
                     />
                   </li>
                 ))}
@@ -118,7 +121,7 @@ export function AccountSidebar({
         {modeAction ? (
           <>
             <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted">
-              Switch mode
+              {accountT.switchMode}
             </p>
             <button
               type="button"
@@ -131,7 +134,7 @@ export function AccountSidebar({
                 strokeWidth={1.75}
                 aria-hidden
               />
-              {switchingMode === modeAction.targetMode ? "Switching…" : modeAction.label}
+              {switchingMode === modeAction.targetMode ? accountT.switching : modeAction.label}
             </button>
             {modeError ? (
               <p className="mt-1.5 px-3 text-xs text-brand-pink" role="alert">
@@ -149,7 +152,7 @@ export function AccountSidebar({
           disabled={loggingOut}
           onClick={onLogout}
         >
-          {loggingOut ? "Logging out…" : "Log out"}
+          {loggingOut ? accountT.loggingOut : accountT.logOut}
         </Button>
       </div>
     </aside>

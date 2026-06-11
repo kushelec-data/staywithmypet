@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import type { PublicProfileView } from "@/lib/public-profile";
 import { resolvedAvailability } from "@/lib/profile-details";
+import { useLanguage } from "@/context/LanguageContext";
 import { usePathname } from "next/navigation";
 
 type PublicContactCtaProps = {
@@ -12,6 +13,7 @@ type PublicContactCtaProps = {
 };
 
 export function PublicContactCta({ profile }: PublicContactCtaProps) {
+  const { t } = useLanguage();
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const isSelf = user?.id === profile.id;
@@ -21,13 +23,13 @@ export function PublicContactCta({ profile }: PublicContactCtaProps) {
   if (isSelf) {
     return (
       <section className="card-elevated rounded-2xl p-4 sm:p-5">
-        <h2 className="font-heading text-base font-semibold text-foreground">Your public profile</h2>
+        <h2 className="font-heading text-base font-semibold text-foreground">{t.dashboardHome.yourPublicProfile}</h2>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button href="/dashboard" size="sm">
-            Dashboard
+            {t.navbar.dashboard}
           </Button>
           <Button href="/profile/edit" variant="outline" size="sm">
-            Edit profile
+            {t.dashboardHome.editProfile}
           </Button>
         </div>
       </section>

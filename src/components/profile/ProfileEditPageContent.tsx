@@ -26,7 +26,7 @@ export function ProfileEditPageContent() {
   if (loading || profileLoading || !user) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 text-center text-muted sm:px-6">
-        Loading profile…
+        {t.account.loadingProfile}
       </div>
     );
   }

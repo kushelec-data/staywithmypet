@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { formatActiveMode, resolveActiveMode } from "@/lib/profile-mode";
 import { profileInitials, type ProfileRow } from "@/lib/profile-utils";
 import { absolutePublicProfileUrl } from "@/lib/site-url";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   DASHBOARD_CARD_CLASS,
   DASHBOARD_COLORS,
-  DASHBOARD_LINK_CLASS,
   DASHBOARD_SCORE_TEXT_CLASS,
 } from "@/lib/dashboard-theme";
 import { Copy } from "lucide-react";
@@ -36,12 +36,14 @@ export function DashboardProfileHero({
   reviewsAvg = 0,
   reviewsCount = 0,
 }: DashboardProfileHeroProps) {
+  const { t } = useLanguage();
+  const dh = t.dashboardHome;
   const initials = profileInitials(displayName, email);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const roleLabel = formatActiveMode(resolveActiveMode(profile.role, profile.active_mode));
-  const locationLabel = profile.location?.trim() || "Add location in profile";
+  const roleLabel = formatActiveMode(resolveActiveMode(profile.role, profile.active_mode), t.roles);
+  const locationLabel = profile.location?.trim() || dh.addLocationInProfile;
   const heroTrustBadges = heroTrustBadgesFromProfileRow(profile);
 
   useEffect(() => {
@@ -58,9 +60,9 @@ export function DashboardProfileHero({
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       copyTimerRef.current = setTimeout(() => setCopied(false), 2500);
     } catch {
-      window.prompt("Copy your public profile link:", url);
+      window.prompt(dh.copyLinkPrompt, url);
     }
-  }, [profile.id]);
+  }, [profile.id, dh.copyLinkPrompt]);
 
   return (
     <section className={`${DASHBOARD_CARD_CLASS} overflow-hidden`}>
@@ -106,18 +108,18 @@ export function DashboardProfileHero({
 
         <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <Button href="/profile/edit" size="sm">
-            Edit profile
+            {dh.editProfile}
           </Button>
           {isPublic ? (
             <div className="inline-flex items-center gap-1">
               <Button href={publicProfileHref} variant="outline" size="sm">
-                Public profile
+                {dh.publicProfile}
               </Button>
               <button
                 type="button"
                 onClick={() => void copyPublicLink()}
-                title={copied ? "Link copied" : "Copy public profile link"}
-                aria-label={copied ? "Link copied" : "Copy public profile link"}
+                title={copied ? dh.linkCopied : dh.copyPublicLink}
+                aria-label={copied ? dh.linkCopied : dh.copyPublicLink}
                 className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E5E2D8] bg-[#F8F6F1] text-muted transition-colors hover:border-[#2E6B3F] hover:text-[#2E6B3F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E6B3F]`}
               >
                 <Copy className="h-3.5 w-3.5" aria-hidden />
@@ -125,7 +127,7 @@ export function DashboardProfileHero({
             </div>
           ) : (
             <Button href="/profile/edit" variant="outline" size="sm">
-              Go public
+              {dh.goPublic}
             </Button>
           )}
         </div>
@@ -136,7 +138,7 @@ export function DashboardProfileHero({
           className={`${DASHBOARD_SCORE_TEXT_CLASS} border-t border-[#E5E2D8] px-4 pb-3 pt-2 text-xs font-medium sm:px-5`}
           role="status"
         >
-          Link copied to clipboard
+          {dh.linkCopiedClipboard}
         </p>
       ) : null}
 

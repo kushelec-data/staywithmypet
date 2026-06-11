@@ -20,7 +20,7 @@ export function DashboardAccountNavStrip({ activeMode }: DashboardAccountNavStri
   return (
     <nav
       className="-mx-1 mb-4 overflow-x-auto overscroll-x-contain pb-1 lg:hidden [-webkit-overflow-scrolling:touch]"
-      aria-label="Account navigation"
+      aria-label={t.account.accountNavAriaLabel}
     >
       <ul className="flex w-max min-w-full items-center gap-2 px-1">
         {sections.flatMap((section) =>
@@ -31,6 +31,7 @@ export function DashboardAccountNavStrip({ activeMode }: DashboardAccountNavStri
                 pathname={pathname}
                 searchParams={searchParams}
                 navbarT={t.navbar}
+                t={t}
                 variant="strip"
               />
             </li>

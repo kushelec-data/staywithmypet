@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { isMarketplaceNavHref, isSidebarLinkActive } from "@/lib/account-nav";
+import { accountSidebarLabel } from "@/lib/nav-i18n";
 import type { AccountNavItem } from "@/lib/legacy/nav";
 import { DASHBOARD_NAV_ACTIVE_CLASS, DASHBOARD_NAV_INACTIVE_CLASS } from "@/lib/dashboard-theme";
 
@@ -58,7 +59,8 @@ export function DashboardHeaderNavLink({ item }: DashboardHeaderNavLinkProps) {
   const { t } = useLanguage();
   const external = isMarketplaceNavHref(item.href);
   const active = !external && isSidebarLinkActive(pathname, item.href, searchParams);
-  const tooltip = external ? t.navbar.marketplaceSearchTooltip : item.label;
+  const label = accountSidebarLabel(item.href, item.label, t);
+  const tooltip = external ? t.navbar.marketplaceSearchTooltip : label;
 
   return (
     <Link
@@ -78,7 +80,7 @@ export function DashboardHeaderNavLink({ item }: DashboardHeaderNavLinkProps) {
           aria-hidden
         />
       ) : null}
-      <span className="sr-only">{item.label}</span>
+      <span className="sr-only">{label}</span>
     </Link>
   );
 }

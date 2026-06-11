@@ -106,14 +106,14 @@ export function ChangePasswordPageContent() {
 
   return (
     <AccountLayout
-      title="Change password"
-      description="Manage how you sign in to StayWithMyPet."
+      title={t.account.changePassword.pageTitle}
+      description={t.account.changePassword.pageDescription}
       hideCompleteProfileBanner
     >
       {loading ? (
-        <p className="text-sm text-muted">Loading account…</p>
+        <p className="text-sm text-muted">{t.account.changePassword.loadingAccount}</p>
       ) : !user ? (
-        <p className="text-sm text-muted">You need to be signed in to change your password.</p>
+        <p className="text-sm text-muted">{t.account.changePassword.signInRequired}</p>
       ) : !hasEmailPasswordIdentity(user) ? (
         <AccountCard className="max-w-lg p-6 sm:p-8">
           <p className="text-sm leading-relaxed text-foreground">

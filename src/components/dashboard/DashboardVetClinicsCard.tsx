@@ -2,6 +2,7 @@
 
 import { DashboardInfoCard } from "@/components/dashboard/DashboardInfoCard";
 import { VetClinicList } from "@/components/vet/VetClinicList";
+import { useLanguage } from "@/context/LanguageContext";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { extractCityFromLocation } from "@/lib/vet-clinics";
 
@@ -10,18 +11,18 @@ type DashboardVetClinicsCardProps = {
 };
 
 export function DashboardVetClinicsCard({ profile }: DashboardVetClinicsCardProps) {
+  const { t } = useLanguage();
+  const dh = t.dashboardHome;
   const city = extractCityFromLocation(profile.location);
 
   return (
     <DashboardInfoCard
-      title="Emergency clinics"
+      title={dh.emergencyClinics}
       titleStyle="panel"
       className="h-full !p-4 sm:!p-4"
     >
       <p className="mb-2 text-[0.7rem] leading-snug text-muted">
-        {city
-          ? `Near ${city} — verify before visiting.`
-          : "Add location to see nearby clinics."}
+        {city ? dh.clinicsNearCity.replace("{city}", city) : dh.addLocationForClinics}
       </p>
       <VetClinicList
         city={city}
@@ -30,7 +31,7 @@ export function DashboardVetClinicsCard({ profile }: DashboardVetClinicsCardProp
         compact
         showViewAll
         viewAllHref="/care/emergency"
-        emptyMessage="Set your location to see nearby vet clinics."
+        emptyMessage={dh.setLocationForClinics}
         className="space-y-2"
       />
     </DashboardInfoCard>

@@ -31,10 +31,6 @@ import {
   hasActiveMembershipForMode,
   hasActiveMembershipForRole,
   hasDualActiveMemberships,
-  membershipActiveHeadline,
-  membershipInactiveHeadline,
-  membershipPageSubtitle,
-  membershipPageTitle,
   membershipPlanLabel,
   membershipPlansForRole,
   membershipRoleTitle,
@@ -312,7 +308,7 @@ export function MembershipPageContent({
   if (authLoading) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 text-center text-muted sm:px-6">
-        Loading…
+        {t.account.loading}
       </div>
     );
   }
@@ -322,11 +318,16 @@ export function MembershipPageContent({
   }
 
   const loading = profileLoading;
-  const pageTitle = membershipPageTitle(planMode);
-  const pageSubtitle = membershipPageSubtitle(planMode);
-  const statusHeadline = isActive && activePlanName
-    ? membershipActiveHeadline(planMode, activePlanName)
-    : membershipInactiveHeadline(planMode);
+  const mpage = t.account.membershipPage;
+  const pageTitle = planMode === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
+  const pageSubtitle =
+    planMode === "pet_parent" ? mpage.petParentSubtitle : mpage.petFriendSubtitle;
+  const roleLabel =
+    planMode === "pet_parent" ? t.roles.petParent.label : t.roles.petFriend.label;
+  const statusHeadline =
+    isActive && activePlanName
+      ? mpage.activeHeadline.replace("{role}", roleLabel)
+      : mpage.inactiveHeadline.replace("{role}", roleLabel);
 
   return (
     <AccountLayout
@@ -336,7 +337,7 @@ export function MembershipPageContent({
     >
       {dualActive ? (
         <p className={`mb-4 inline-flex items-center gap-2 px-3 py-1 text-xs ${ACCOUNT_STATUS_BADGE_CLASS}`}>
-          Dual member — both roles active
+          {mpage.dualMember}
         </p>
       ) : null}
 

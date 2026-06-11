@@ -70,10 +70,10 @@ export function MemberPublicTopCard({
     mainCta = (
       <>
         <Button href="/dashboard" size="sm" className="w-full justify-center">
-          Dashboard
+          {t.navbar.dashboard}
         </Button>
         <Button href="/profile/edit" variant="outline" size="sm" className="w-full justify-center">
-          Edit profile
+          {t.dashboardHome.editProfile}
         </Button>
       </>
     );

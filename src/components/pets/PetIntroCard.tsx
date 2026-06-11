@@ -1,4 +1,7 @@
+"use client";
+
 import { AppImage } from "@/components/ui/AppImage";
+import { useLanguage } from "@/context/LanguageContext";
 import { AvailabilityDateChips } from "@/components/ui/AvailabilityDateChips";
 import Link from "next/link";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
@@ -36,6 +39,9 @@ export function PetIntroCard({
   detailsLabel = "View pet details",
   variant = "dashboard",
 }: PetIntroCardProps) {
+  const { t } = useLanguage();
+  const dh = t.dashboardHome;
+  const ppp = t.petPublicProfile;
   const isDashboard = variant === "dashboard";
   const isList = variant === "list";
   const isPublic = variant === "public";
@@ -98,14 +104,14 @@ export function PetIntroCard({
               href={publicHref}
               className={isDashboard ? `${DASHBOARD_LINK_CLASS} text-xs` : "text-xs font-semibold text-brand-teal hover:text-brand-pink"}
             >
-              Public profile →
+              {ppp.viewPublicProfile} →
             </Link>
             {editLink ? (
               <Link
                 href={editLink}
                 className={isDashboard ? `${DASHBOARD_LINK_CLASS} text-xs` : "text-xs font-semibold text-brand-teal hover:text-brand-pink"}
               >
-                Edit pet →
+                {dh.editPet} →
               </Link>
             ) : null}
           </div>
@@ -114,7 +120,7 @@ export function PetIntroCard({
             href={detailsHref}
             className="inline-block text-xs font-semibold text-brand-teal hover:text-brand-pink"
           >
-            {detailsLabel === "View pet details" ? "Public profile" : detailsLabel} →
+            {detailsLabel === "View pet details" ? ppp.viewPublicProfile : detailsLabel} →
           </Link>
         ) : null}
       </div>

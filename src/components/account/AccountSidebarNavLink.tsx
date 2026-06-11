@@ -22,6 +22,7 @@ type AccountSidebarNavLinkProps = {
   pathname: string;
   searchParams: ReadonlyURLSearchParams;
   navbarT: Dictionary["navbar"];
+  t: Dictionary;
   variant?: "sidebar" | "strip";
 };
 
@@ -30,12 +31,13 @@ export function AccountSidebarNavLink({
   pathname,
   searchParams,
   navbarT,
+  t,
   variant = "sidebar",
 }: AccountSidebarNavLinkProps) {
   const external = isMarketplaceNavHref(item.href);
   const active = !external && isSidebarLinkActive(pathname, item.href, searchParams);
   const Icon = accountSidebarIconForHref(item.href);
-  const label = accountSidebarLabel(item.href, item.label, navbarT);
+  const label = accountSidebarLabel(item.href, item.label, t);
   const tooltip = external ? navbarT.marketplaceSearchTooltip : undefined;
 
   if (variant === "strip") {
