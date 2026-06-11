@@ -82,6 +82,46 @@ const strings = parseSharedStrings(fs.readFileSync(path.join(extractDir, "xl/sha
 console.log("Sheets:", sheetNames.join(", "));
 console.log("");
 
+function getCell(rows, r, c) {
+  return (rows[r]?.[c] ?? "").trim();
+}
+
+function isClearlyEstonian(text) {
+  const t = (text ?? "").trim();
+  if (!t) return false;
+  if (/[õäüöÕÄÜÖ]/.test(t)) return true;
+  if (/^Stay With My Pet on /i.test(t)) return true;
+  if (/\b(kuidas|konto|profiil|lemmik|loom|broneering|liikmelisus|sirvimine|andmeid|kogume|teenusepakkujatega)\b/i.test(t)) {
+    return !/\b(the|and|your|our|we|shall|must|unless|including|between|through)\b/i.test(t);
+  }
+  return false;
+}
+
+function isClearlyEnglish(text) {
+  const t = (text ?? "").trim();
+  if (!t || isClearlyEstonian(t)) return false;
+  if (/^Stay With My Pet is /i.test(t)) return true;
+  return /\b(the|and|your|our|we|this|you|shall|must|with|for|users|service|platform)\b/i.test(t) || /^[A-Za-z0-9]/.test(t);
+}
+
+function pairAtRow(rows, r, enCol, etCol) {
+  const en = getCell(rows, r, enCol);
+  if (!isClearlyEnglish(en)) return null;
+  const same = getCell(rows, r, etCol);
+  if (isClearlyEstonian(same)) return { en, et: same, mode: "same-row" };
+  const next = getCell(rows, r + 1, etCol);
+  if (isClearlyEstonian(next)) return { en, et: next, mode: "offset-row" };
+  const stacked = getCell(rows, r + 1, enCol);
+  if (isClearlyEstonian(stacked)) return { en, et: stacked, mode: "stacked-col" };
+  return { en, et: null, mode: "missing" };
+}
+
+const legalLayouts = {
+  "privacy policy": { enCol: 2, etCol: 3 },
+  "Terms of Use": { enCol: 2, etCol: 4 },
+  "Safety guidelines": { enCol: 2, etCol: 3 },
+};
+
 for (let i = 1; i <= sheetNames.length; i++) {
   const name = sheetNames[i - 1];
   const xml = fs.readFileSync(path.join(extractDir, `xl/worksheets/sheet${i}.xml`), "utf8");
@@ -94,5 +134,29 @@ for (let i = 1; i <= sheetNames.length; i++) {
     for (let c = 1; c <= 6; c++) vals.push((rows[r][c] || "").slice(0, 100));
     if (vals.some((v) => v)) console.log(`R${r}:`, vals.join(" | "));
   }
+
+  const layout = legalLayouts[name];
+  if (layout) {
+    let paired = 0;
+    let missing = 0;
+    const samples = [];
+    for (let r = 1; r <= maxR; r++) {
+      const hit = pairAtRow(rows, r, layout.enCol, layout.etCol);
+      if (!hit) continue;
+      if (hit.et) paired++;
+      else {
+        missing++;
+        if (samples.length < 5) samples.push(hit.en.slice(0, 80));
+      }
+    }
+    console.log(`  Pairing: ${paired} paired, ${missing} EN-only (raw row scan)`);
+    if (samples.length) console.log(`  Unpaired samples: ${samples.join(" | ")}`);
+  }
   console.log("");
+}
+
+const missingPath = path.join(root, "src/i18n/generated/site-missing-translations.json");
+if (fs.existsSync(missingPath)) {
+  const missing = JSON.parse(fs.readFileSync(missingPath, "utf8"));
+  console.log(`site-missing-translations.json: ${missing.length} entries`);
 }
