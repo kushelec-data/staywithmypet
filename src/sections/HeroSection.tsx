@@ -75,10 +75,10 @@ export function HeroSection() {
             </p>
 
             <div className="mx-auto mt-6 flex w-full max-w-sm flex-col gap-3 sm:mt-7 sm:max-w-none sm:flex-row sm:justify-center lg:mx-0 lg:justify-start">
-              <Button href="/how-it-works#pet-parent-workflow" size="lg">
+              <Button href="/find-care" size="lg">
                 {t.hero.findCareCta}
               </Button>
-              <Button href="/how-it-works#pet-friend-workflow" variant="secondary" size="lg">
+              <Button href="/find-pets" variant="secondary" size="lg">
                 {t.hero.becomeFriendCta}
               </Button>
             </div>

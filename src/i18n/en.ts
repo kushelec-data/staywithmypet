@@ -96,12 +96,12 @@ export const en = {
     },
   },
   hero: {
-    eyebrow: "RESPONSIBLE PET SHARING & COMPANIONSHIP",
-    title: "Find trusted pet care\nfrom people who love\nanimals",
+    eyebrow: "ESTONIA'S FIRST PET SHARING COMMUNITY",
+    title: "Every pet deserves the best care — even when you can't be there.",
     subtitle:
-      "Connect with caring Pet Friends for walks, visits, daycare, and companionship — safely through StayWithMyPet.",
-    findCareCta: "Find care today",
-    becomeFriendCta: "Become a Pet Friend",
+      "Stay With My Pet connects Pet Parents with trusted animal lovers who provide safe, home-based care, companionship, and support when you need it most.",
+    findCareCta: "Find Care",
+    becomeFriendCta: "Find Pets",
     trustCards: {
       verified: "Verified profiles",
       reviews: "Reviews & ratings",
