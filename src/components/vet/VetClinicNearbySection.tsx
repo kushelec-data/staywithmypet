@@ -1,6 +1,7 @@
 "use client";
 
 import { VetClinicList } from "@/components/vet/VetClinicList";
+import { useLanguage } from "@/context/LanguageContext";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import { Stethoscope } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +27,9 @@ export function VetClinicNearbySection({
   compact = true,
   className = "",
 }: VetClinicNearbySectionProps) {
+  const { t } = useLanguage();
+  const defaults = t.petPublicDetail;
+
   return (
     <section className={`${PUBLIC_CARD} ${className}`}>
       <div className="flex items-start gap-3">
@@ -36,8 +40,10 @@ export function VetClinicNearbySection({
           <Stethoscope className="h-4 w-4" strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className={PUBLIC_SECTION_TITLE}>{title}</h2>
-          <p className="mt-1 text-xs leading-relaxed text-muted sm:text-sm">{description}</p>
+          <h2 className={PUBLIC_SECTION_TITLE}>{title ?? defaults.emergencyCareNearby}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted sm:text-sm">
+            {description ?? defaults.vetClinicsDescription}
+          </p>
         </div>
       </div>
       <div className="mt-4">
@@ -52,7 +58,7 @@ export function VetClinicNearbySection({
       </div>
       <p className="mt-3 text-xs text-muted">
         <Link href="/care/emergency" className="font-semibold text-brand-teal hover:text-brand-pink">
-          Emergency care & full clinic list →
+          {defaults.emergencyClinicListLink} →
         </Link>
       </p>
     </section>

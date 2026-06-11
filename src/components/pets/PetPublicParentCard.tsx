@@ -1,5 +1,8 @@
+"use client";
+
 import { AppImage } from "@/components/ui/AppImage";
 import { Button } from "@/components/ui/Button";
+import { useLanguage } from "@/context/LanguageContext";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 import Link from "next/link";
@@ -23,11 +26,14 @@ type PetPublicParentCardProps = {
 };
 
 export function PetPublicParentCard({ pet }: PetPublicParentCardProps) {
+  const { t } = useLanguage();
+  const copy = t.petPublicDetail;
+  const reviews = t.reviews;
   const hasReviews = pet.ownerRatingCount > 0;
 
   return (
     <section className={PUBLIC_CARD}>
-      <h2 className={PUBLIC_SECTION_TITLE}>Pet parent</h2>
+      <h2 className={PUBLIC_SECTION_TITLE}>{copy.petParent}</h2>
 
       <div className="mt-3 rounded-2xl border border-black/[0.05] bg-gradient-to-br from-mint/20 via-surface to-cream/30 p-3.5 sm:p-4">
         <div className="flex items-start gap-3">
@@ -61,7 +67,8 @@ export function PetPublicParentCard({ pet }: PetPublicParentCardProps) {
                 <span aria-hidden>★</span>
                 {pet.ownerRatingAvg.toFixed(1)}
                 <span className="font-medium text-muted">
-                  · {pet.ownerRatingCount} review{pet.ownerRatingCount === 1 ? "" : "s"}
+                  · {pet.ownerRatingCount}{" "}
+                  {pet.ownerRatingCount === 1 ? reviews.reviewSingular : reviews.reviewPlural}
                 </span>
               </p>
             ) : null}
@@ -74,7 +81,7 @@ export function PetPublicParentCard({ pet }: PetPublicParentCardProps) {
           size="sm"
           className="mt-4 w-full justify-center gap-1.5 border-2 border-brand-teal/25 font-semibold text-brand-teal"
         >
-          View profile
+          {copy.viewProfile}
         </Button>
       </div>
     </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { VetClinic } from "@/data/vet-clinics";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   clinicMapUrl,
   formatPhoneDisplay,
@@ -14,6 +15,8 @@ type VetClinicCardProps = {
 };
 
 export function VetClinicCard({ clinic, compact = false }: VetClinicCardProps) {
+  const { t } = useLanguage();
+  const labels = t.petPublicDetail;
   const tel = formatPhoneLink(clinic.phone);
   const mapHref = clinicMapUrl(clinic);
 
@@ -67,8 +70,11 @@ export function VetClinicCard({ clinic, compact = false }: VetClinicCardProps) {
 
       <div className={`flex flex-wrap gap-2 ${compact ? "mt-3" : "mt-4"}`}>
         {tel ? (
-          <a href={tel} className="btn-interactive inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-teal px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-teal/20 hover:bg-brand-teal-hover">
-            Call
+          <a
+            href={tel}
+            className="btn-interactive inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-teal px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-teal/20 hover:bg-brand-teal-hover"
+          >
+            {labels.call}
           </a>
         ) : null}
         <a
@@ -77,7 +83,7 @@ export function VetClinicCard({ clinic, compact = false }: VetClinicCardProps) {
           rel="noopener noreferrer"
           className="btn-interactive inline-flex min-h-[40px] items-center justify-center rounded-full border border-black/10 bg-surface px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm hover:border-brand-teal/30 hover:bg-mint/40"
         >
-          Map
+          {labels.map}
         </a>
       </div>
     </article>

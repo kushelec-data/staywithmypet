@@ -3,6 +3,8 @@ import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 import { speciesDisplayLabel, genderDisplayLabel } from "@/lib/pet-data";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
+import { translateExcelLabel, translateExcelLabels } from "@/lib/excel-translations";
+import type { Locale } from "@/i18n/translations";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 
 export type PublicDetailGroup = {
@@ -32,15 +34,17 @@ export function buildPublicPetSubtitle(pet: PublicSearchPet): string {
   return [pet.breed ?? pet.speciesLabel, weight, pet.locationArea].filter(Boolean).join(" · ");
 }
 
-export function buildPublicPetChips(pet: PublicSearchPet): string[] {
+export function buildPublicPetChips(pet: PublicSearchPet, locale: Locale = "en"): string[] {
   const chips: string[] = [];
   const species = speciesDisplayLabel(pet.species, pet.breed);
-  if (species) chips.push(species);
+  if (species) chips.push(translateExcelLabel(species, locale));
   if (pet.weightDisplayShort?.trim()) chips.push(pet.weightDisplayShort.trim());
   for (const tag of pet.personalityTags.slice(0, 4)) {
-    if (tag.trim()) chips.push(tag.trim());
+    if (tag.trim()) chips.push(translateExcelLabel(tag.trim(), locale));
   }
-  if (pet.availabilityDates.length > 0) chips.push("Available");
+  if (pet.availabilityDates.length > 0) {
+    chips.push(translateExcelLabel("Available", locale));
+  }
   return [...new Set(chips)];
 }
 
@@ -98,14 +102,17 @@ export function buildPublicPetShortBio(pet: PublicSearchPet): string | null {
   return null;
 }
 
-export function buildPublicPetQuickFacts(pet: PublicSearchPet): PublicPetQuickFact[] {
+export function buildPublicPetQuickFacts(
+  pet: PublicSearchPet,
+  locale: Locale = "en",
+): PublicPetQuickFact[] {
   const facts: PublicPetQuickFact[] = [];
   if (pet.ageLabel?.trim()) {
-    facts.push({ icon: "age", label: pet.ageLabel.trim() });
+    facts.push({ icon: "age", label: translateExcelLabel(pet.ageLabel.trim(), locale) });
   }
   const genderLabel = genderDisplayLabel(pet.gender, pet.genderOther);
   if (genderLabel) {
-    facts.push({ icon: "gender", label: genderLabel });
+    facts.push({ icon: "gender", label: translateExcelLabel(genderLabel, locale) });
   }
   if (pet.spayedNeutered) {
     facts.push({ icon: "health", label: "Spayed / neutered" });
@@ -115,22 +122,27 @@ export function buildPublicPetQuickFacts(pet: PublicSearchPet): PublicPetQuickFa
   return facts;
 }
 
-export function buildPublicPetCareColumns(pet: PublicSearchPet): PublicCareColumns {
-  const services = formatListWithOtherDisplay(
-    pet.careTypes,
-    pet.careTypesOther,
-    (value) => formatCareTypeLabel(value, pet.careTypesOther) ?? value,
-  )
-    .filter(Boolean);
+export function buildPublicPetCareColumns(
+  pet: PublicSearchPet,
+  locale: Locale = "en",
+): PublicCareColumns {
+  const services = translateExcelLabels(
+    formatListWithOtherDisplay(
+      pet.careTypes,
+      pet.careTypesOther,
+      (value) => formatCareTypeLabel(value, pet.careTypesOther) ?? value,
+    ).filter(Boolean),
+    locale,
+  );
   const walks = pet.walkNeeds?.trim()
-    ? [pet.walkNeeds.trim()]
-    : ["None"];
+    ? [translateExcelLabel(pet.walkNeeds.trim(), locale)]
+    : [translateExcelLabel("None", locale)];
   const medication =
     pet.requiresMedication === true
-      ? ["Needs medication"]
+      ? [translateExcelLabel("Needs medication", locale)]
       : pet.requiresMedication === false
-        ? ["No medication"]
-        : ["Not specified"];
+        ? [translateExcelLabel("No medication", locale)]
+        : [translateExcelLabel("Not specified", locale)];
 
   return { services, walks, medication };
 }

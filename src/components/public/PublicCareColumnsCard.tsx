@@ -1,3 +1,6 @@
+"use client";
+
+import { useLanguage } from "@/context/LanguageContext";
 import type { PublicCareColumns } from "@/lib/public-pet-display";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 
@@ -28,21 +31,22 @@ function CareColumn({ label, items }: { label: string; items: string[] }) {
   );
 }
 
-export function PublicCareColumnsCard({
-  columns,
-  title = "Care needs",
-}: PublicCareColumnsCardProps) {
+export function PublicCareColumnsCard({ columns, title }: PublicCareColumnsCardProps) {
+  const { t } = useLanguage();
+  const copy = t.petPublicDetail;
+  const heading = title ?? copy.careNeeds;
+
   const hasAny =
     columns.services.length || columns.walks.length || columns.medication.length;
   if (!hasAny) return null;
 
   return (
     <section className={PUBLIC_CARD}>
-      <h2 className={PUBLIC_SECTION_TITLE}>{title}</h2>
+      <h2 className={PUBLIC_SECTION_TITLE}>{heading}</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        <CareColumn label="Services" items={columns.services} />
-        <CareColumn label="Walks" items={columns.walks} />
-        <CareColumn label="Medication" items={columns.medication} />
+        <CareColumn label={copy.servicesColumn} items={columns.services} />
+        <CareColumn label={copy.walksColumn} items={columns.walks} />
+        <CareColumn label={copy.medicationColumn} items={columns.medication} />
       </div>
     </section>
   );

@@ -381,7 +381,24 @@ export const en = {
     linkCopied: "Link copied",
     shareText: "Check out {name} on Stay With My Pet",
     shareFallbackPrompt: "Copy this pet's public link:",
-    privacyNote: "Exact address is hidden until booking is accepted.",
+    privacyNote: "Exact address is hidden until booking is confirmed.",
+  },
+  petPublicDetail: {
+    backToSearchPets: "Back to search pets",
+    careNeeds: "Care needs",
+    servicesColumn: "Services",
+    walksColumn: "Walks",
+    medicationColumn: "Medication",
+    aboutPet: "About {name}",
+    petParent: "Pet parent",
+    viewProfile: "View profile",
+    emergencyCareNearby: "Emergency care nearby",
+    vetClinicsDescription:
+      "Veterinary clinics in this pet's area — verify hours before visiting.",
+    emergencyClinicListLink: "Emergency care & full clinic list",
+    viewAllVetClinics: "View all veterinary clinics",
+    call: "Call",
+    map: "Map",
   },
   bookingCalendar: {
     alreadyBooked: "Already booked",
@@ -444,6 +461,7 @@ export const en = {
     emptyDescription:
       "Reviews appear after a care booking is completed. Complete stays to build trust in the community.",
     emptyCtaBookings: "View bookings",
+    sectionTitlePlain: "Reviews",
     emptyProfile: "No reviews yet.",
     reviewSingular: "review",
     reviewPlural: "reviews",

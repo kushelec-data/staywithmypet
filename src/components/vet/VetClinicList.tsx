@@ -1,6 +1,7 @@
 "use client";
 
 import { VetClinicCard } from "@/components/vet/VetClinicCard";
+import { useLanguage } from "@/context/LanguageContext";
 import { VET_CLINICS, type VetClinic } from "@/data/vet-clinics";
 import { getClinicsByCity, getClinicsForLocation } from "@/lib/vet-clinics";
 import Link from "next/link";
@@ -40,6 +41,8 @@ export function VetClinicList({
   emptyMessage = "No clinics found for this area. See the full Estonia list.",
   className = "",
 }: VetClinicListProps) {
+  const { t } = useLanguage();
+  const viewAllLabel = t.petPublicDetail.viewAllVetClinics;
   const clinics = resolveClinics({ city, location, limit, emergencyOnly });
 
   if (clinics.length === 0) {
@@ -61,7 +64,7 @@ export function VetClinicList({
       {showViewAll ? (
         <p className="text-center text-sm">
           <Link href={viewAllHref} className="font-semibold text-brand-teal hover:text-brand-pink">
-            View all veterinary clinics →
+            {viewAllLabel} →
           </Link>
         </p>
       ) : null}

@@ -23,11 +23,12 @@ export function PublicCompactReviewsCard({
   loading = false,
   ratingAvg,
   ratingCount,
-  emptyMessage = "No reviews yet.",
+  emptyMessage,
   noteLabel = "note",
 }: PublicCompactReviewsCardProps) {
   const { t } = useLanguage();
   const r = t.reviews;
+  const resolvedEmptyMessage = emptyMessage ?? r.emptyProfile;
   const [showAll, setShowAll] = useState(false);
   const latest = reviews[0];
   const plural = ratingCount === 1 ? noteLabel : `${noteLabel}s`;
@@ -36,7 +37,8 @@ export function PublicCompactReviewsCard({
     <section id={REVIEWS_SECTION_ID} className={`${PUBLIC_CARD} scroll-mt-24`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className={PUBLIC_SECTION_TITLE}>
-          Reviews{ratingCount > 0 ? ` (${ratingCount})` : ""}
+          {r.sectionTitlePlain}
+          {ratingCount > 0 ? ` (${ratingCount})` : ""}
         </h2>
         {ratingCount > 0 ? (
           <p className="text-sm font-semibold text-brand-teal">
@@ -52,7 +54,7 @@ export function PublicCompactReviewsCard({
           className="!px-0 !py-6"
           icon="⭐"
           title={r.emptyTitle}
-          description={emptyMessage || r.emptyDescription}
+          description={resolvedEmptyMessage || r.emptyDescription}
           actions={[{ href: "/bookings", label: r.emptyCtaBookings }]}
         />
       ) : (

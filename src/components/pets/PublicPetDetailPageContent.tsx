@@ -23,6 +23,7 @@ import { placeholderPetImage } from "@/lib/images";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useEffect, useMemo, useState } from "react";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 
@@ -33,6 +34,8 @@ type PublicPetDetailPageContentProps = {
 export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContentProps) {
   const supabase = useMemo(() => createClient(), []);
   const { user } = useAuth();
+  const { locale, t } = useLanguage();
+  const detail = t.petPublicDetail;
   const [pet, setPet] = useState<PublicSearchPet | null>(null);
   const [isOwnerPreview, setIsOwnerPreview] = useState(false);
   const [notListedPublicly, setNotListedPublicly] = useState(false);
@@ -101,8 +104,13 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
   const isOwnPet = isOwnerPreview || user?.id === pet.ownerId;
   const { shortBio, about } = resolvePublicPetContent(pet);
 
+  const careColumns = buildPublicPetCareColumns(pet, locale);
+
   return (
-    <PublicPageShell className={isOwnPet ? "pb-8" : "pb-24 lg:pb-8"}>
+    <PublicPageShell
+      backLabel={detail.backToSearchPets}
+      className={isOwnPet ? "pb-8" : "pb-24 lg:pb-8"}
+    >
       {notListedPublicly && isOwnerPreview ? (
         <p
           className="mb-4 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-950"
@@ -118,17 +126,17 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           photoUrl={photoUrl}
           photoUrls={photos}
           subtitle={buildPublicPetSubtitle(pet)}
-          chips={buildPublicPetChips(pet)}
+          chips={buildPublicPetChips(pet, locale)}
           shortBio={shortBio}
-          quickFacts={buildPublicPetQuickFacts(pet)}
+          quickFacts={buildPublicPetQuickFacts(pet, locale)}
           isOwnPet={isOwnPet}
         />
 
-        <PublicCareColumnsCard columns={buildPublicPetCareColumns(pet)} />
+        <PublicCareColumnsCard columns={careColumns} />
 
         {about ? (
           <section className={PUBLIC_CARD}>
-            <h2 className={PUBLIC_SECTION_TITLE}>About {pet.name}</h2>
+            <h2 className={PUBLIC_SECTION_TITLE}>{detail.aboutPet.replace("{name}", pet.name)}</h2>
             <p className="mt-3 max-w-prose text-sm leading-relaxed text-foreground/90">{about}</p>
           </section>
         ) : null}
@@ -152,8 +160,8 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
             <PetPublicParentCard pet={pet} />
             <VetClinicNearbySection
               location={pet.locationArea}
-              title="Emergency care nearby"
-              description="Veterinary clinics in this pet's area — verify hours before visiting."
+              title={detail.emergencyCareNearby}
+              description={detail.vetClinicsDescription}
               limit={2}
               emergencyOnly
             />
