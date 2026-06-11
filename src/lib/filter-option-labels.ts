@@ -1,4 +1,7 @@
-import { getExcelLabelEt } from "@/lib/excel-translations";
+import {
+  getListingSearchLabelEt,
+  type ListingSearchScope,
+} from "@/lib/listing-search-translations";
 import type { Locale } from "@/i18n/translations";
 
 export type LocalizedFilterOption = {
@@ -8,21 +11,31 @@ export type LocalizedFilterOption = {
   aliases?: readonly string[];
 };
 
-/** Build a filter option; labelEt from Excel or English fallback when missing. */
+function resolveLabelEt(
+  value: string,
+  labelEn: string,
+  aliases: readonly string[] | undefined,
+  scope: ListingSearchScope,
+): string {
+  const fromLabel = getListingSearchLabelEt(labelEn, scope);
+  const fromValue = getListingSearchLabelEt(value, scope);
+  const fromAliases = aliases
+    ?.map((a) => getListingSearchLabelEt(a, scope))
+    .find((et): et is string => Boolean(et));
+  return fromLabel ?? fromValue ?? fromAliases ?? labelEn;
+}
+
+/** Build a filter option; labelEt from listing search translations.xlsx. */
 export function buildLocalizedFilterOption(
   value: string,
   labelEn: string,
   aliases?: readonly string[],
+  scope: ListingSearchScope = "pet",
 ): LocalizedFilterOption {
-  const fromLabel = getExcelLabelEt(labelEn);
-  const fromValue = getExcelLabelEt(value);
-  const fromAliases = aliases
-    ?.map((a) => getExcelLabelEt(a))
-    .find((et): et is string => Boolean(et));
   return {
     value,
     labelEn,
-    labelEt: fromLabel ?? fromValue ?? fromAliases ?? labelEn,
+    labelEt: resolveLabelEt(value, labelEn, aliases, scope),
     aliases,
   };
 }

@@ -16,15 +16,15 @@ export const petSearchTypeOptions: LocalizedFilterOption[] = [
 
 export const petSearchSizeOptions: LocalizedFilterOption[] = [
   buildLocalizedFilterOption("under_5_kg", "Tiny / Under 5 kg"),
-  buildLocalizedFilterOption("5_10_kg", "Small–Medium / 5–10 kg"),
-  buildLocalizedFilterOption("10_15_kg", "Medium–Large / 10–15 kg"),
+  buildLocalizedFilterOption("5_10_kg", "Small-Medium / 5-10 kg", ["Small–Medium / 5–10 kg"]),
+  buildLocalizedFilterOption("10_15_kg", "Medium-Large /10-15 kg", ["Medium–Large / 10–15 kg"]),
   buildLocalizedFilterOption("over_15_kg", "Large / Over 15 kg"),
 ];
 
 export const petSearchEnergyOptions: LocalizedFilterOption[] = [
-  buildLocalizedFilterOption("Low", "Low (chill mode)"),
+  buildLocalizedFilterOption("Low", "Low (prefers relaxing)", ["Low (chill mode)"]),
   buildLocalizedFilterOption("Medium", "Moderate (ready to play)"),
-  buildLocalizedFilterOption("High", "High (zoomies all day)"),
+  buildLocalizedFilterOption("High", "High (full of energy)", ["High (zoomies all day)"]),
 ];
 
 export const petSearchTemperamentOptions: LocalizedFilterOption[] = [
@@ -40,7 +40,7 @@ export const petSearchTemperamentOptions: LocalizedFilterOption[] = [
 
 export const petSearchMedicalOptions: LocalizedFilterOption[] = [
   buildLocalizedFilterOption("needs_medication", "Needs medication"),
-  buildLocalizedFilterOption("no_medication", "No medication needed"),
+  buildLocalizedFilterOption("no_medication", "Does not need meds", ["No medication needed"]),
 ];
 
 export const petSearchActivityOptions: LocalizedFilterOption[] = [
@@ -52,9 +52,15 @@ export const petSearchActivityOptions: LocalizedFilterOption[] = [
 ];
 
 export const petSearchCareLocationOptions: LocalizedFilterOption[] = [
-  buildLocalizedFilterOption("At pet friend's home", "At pet friend's home"),
-  buildLocalizedFilterOption("At pet owner's home", "At pet parent's home"),
-  buildLocalizedFilterOption("Either / flexible", "Flexible — either home works"),
+  buildLocalizedFilterOption("At pet friend's home", "At pet borrower's home", [
+    "At pet friend's home",
+  ]),
+  buildLocalizedFilterOption("At pet owner's home", "At pet owner's home", [
+    "At pet parent's home",
+  ]),
+  buildLocalizedFilterOption("Either / flexible", "Either / flexible", [
+    "Flexible — either home works",
+  ]),
 ];
 
 export const petSearchCareTypeOptions: LocalizedFilterOption[] = CARE_TYPE_FILTER_OPTIONS.map(

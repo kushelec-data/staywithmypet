@@ -1,59 +1,65 @@
 /** Find Care / Pet Friend search filter options. */
 
-export const petFriendSearchTypeOptions = [
-  { value: "dog", label: "Dogs", aliases: ["dog"] },
-  { value: "cat", label: "Cats", aliases: ["cat"] },
-  { value: "rabbit", label: "Rabbits", aliases: ["rabbit"] },
-  { value: "bird", label: "Birds", aliases: ["bird"] },
-  {
-    value: "rodent",
-    label: "Rodent",
-    aliases: ["rodent", "rodents", "small-mammal", "small_mammal", "small mammal"],
-  },
-  { value: "fish", label: "Fish", aliases: ["fish"] },
-  { value: "reptile", label: "Reptiles", aliases: ["reptile"] },
-  { value: "other", label: "Other", aliases: ["other"] },
-] as const;
-
 import { CARE_TYPE_FILTER_OPTIONS } from "@/lib/care-type-options";
+import {
+  buildLocalizedFilterOption,
+  type LocalizedFilterOption,
+} from "@/lib/filter-option-labels";
 
-export const petFriendSearchCareTypeOptions = CARE_TYPE_FILTER_OPTIONS;
+export const petFriendSearchTypeOptions: LocalizedFilterOption[] = [
+  buildLocalizedFilterOption("dog", "Dogs", ["Dog", "dog"], "petFriend"),
+  buildLocalizedFilterOption("cat", "Cats", ["Cat", "cat"], "petFriend"),
+  buildLocalizedFilterOption("rabbit", "Rabbits", ["Rabbit", "rabbit"], "petFriend"),
+  buildLocalizedFilterOption("bird", "Birds", ["Bird", "bird"], "petFriend"),
+  buildLocalizedFilterOption(
+    "rodent",
+    "Rodent",
+    ["rodent", "rodents", "small-mammal", "small_mammal", "small mammal"],
+    "petFriend",
+  ),
+  buildLocalizedFilterOption("fish", "Fish", ["fish"], "petFriend"),
+  buildLocalizedFilterOption("reptile", "Reptiles", ["Reptile", "reptile"], "petFriend"),
+  buildLocalizedFilterOption("other", "Other", ["other"], "petFriend"),
+];
 
-export const petFriendSearchExperienceOptions = [
-  {
-    value: "first_time",
-    label: "First-time Pet Friend",
-    aliases: [
-      "Beginner",
-      "first-time",
-      "first time",
-      "First-time Pet Friend",
-    ],
-  },
-  {
-    value: "some_experience",
-    label: "Some pet care experience",
-    aliases: ["Some experience", "Intermediate", "intermediate"],
-  },
-  {
-    value: "experienced",
-    label: "Experienced with pets",
-    aliases: ["Experienced sitter", "Very experienced", "Experienced"],
-  },
-] as const;
+export const petFriendSearchCareTypeOptions: LocalizedFilterOption[] =
+  CARE_TYPE_FILTER_OPTIONS.map((opt) =>
+    buildLocalizedFilterOption(opt.value, opt.label, opt.aliases, "petFriend"),
+  );
 
-export const petFriendSearchHomeOptions = [
-  { value: "has_garden", label: "Has garden" },
-  { value: "apartment_ok", label: "Apartment OK" },
-  { value: "no_other_pets", label: "No other pets" },
-  { value: "has_other_pets", label: "Has other pets" },
-  { value: "children_at_home", label: "Children at home" },
-  { value: "smoke_free", label: "Smoke-free home" },
-] as const;
+export const petFriendSearchExperienceOptions: LocalizedFilterOption[] = [
+  buildLocalizedFilterOption(
+    "first_time",
+    "First-time Pet Friend",
+    ["Beginner", "first-time", "first time", "First-timer", "First-time Pet Friend"],
+    "petFriend",
+  ),
+  buildLocalizedFilterOption(
+    "some_experience",
+    "Some pet care experience",
+    ["Some experience", "Intermediate", "intermediate"],
+    "petFriend",
+  ),
+  buildLocalizedFilterOption(
+    "experienced",
+    "Experienced with pets",
+    ["Experienced sitter", "Very experienced", "Experienced"],
+    "petFriend",
+  ),
+];
 
-export const petFriendSearchLanguageOptions = [
-  { value: "English", label: "English" },
-  { value: "Estonian", label: "Estonian" },
-  { value: "Russian", label: "Russian" },
-  { value: "Other", label: "Other" },
-] as const;
+export const petFriendSearchHomeOptions: LocalizedFilterOption[] = [
+  buildLocalizedFilterOption("has_garden", "Has garden", ["Garden"], "petFriend"),
+  buildLocalizedFilterOption("apartment_ok", "Apartment OK", ["Apartment"], "petFriend"),
+  buildLocalizedFilterOption("no_other_pets", "No other pets", undefined, "petFriend"),
+  buildLocalizedFilterOption("has_other_pets", "Has other pets", ["Other Pets"], "petFriend"),
+  buildLocalizedFilterOption("children_at_home", "Children at home", ["Kids"], "petFriend"),
+  buildLocalizedFilterOption("smoke_free", "Smoke-free home", undefined, "petFriend"),
+];
+
+export const petFriendSearchLanguageOptions: LocalizedFilterOption[] = [
+  buildLocalizedFilterOption("English", "English", undefined, "petFriend"),
+  buildLocalizedFilterOption("Estonian", "Estonian", undefined, "petFriend"),
+  buildLocalizedFilterOption("Russian", "Russian", undefined, "petFriend"),
+  buildLocalizedFilterOption("Other", "Other", undefined, "petFriend"),
+];

@@ -2,7 +2,8 @@ import type { Locale } from "@/i18n/translations";
 
 /**
  * English → Estonian labels from translations.xlsx (Translations tab).
- * Source columns: Eng text, Est text (table rows inside Eng text cells).
+ * Pet profile / public detail UI only — not listing search filters.
+ * Listing search filters use src/lib/listing-search-translations.ts instead.
  */
 const EXCEL_EN_TO_ET: Record<string, string> = {
   "Back to search pets": "Tagasi lemmikute otsingusse",
@@ -45,57 +46,6 @@ const EXCEL_EN_TO_ET: Record<string, string> = {
   Map: "Kaardil",
   "View all veterinary clinics": "Vaata kõiki loomakliinikuid",
   "Emergency care & full clinic list": "Erakorralise abi ja kliinikute täielik nimekiri",
-  // Pet search filter options
-  Dog: "Koer",
-  Cat: "Kass",
-  cat: "Kass",
-  Rabbit: "Küülik",
-  rabbit: "Küülik",
-  Bird: "Lind",
-  bird: "Lind",
-  Rodent: "Näriline",
-  rodent: "Näriline",
-  Fish: "Kala",
-  fish: "Kala",
-  Reptile: "Roomaja",
-  reptile: "Roomaja",
-  Other: "Muu",
-  other: "Muu",
-  "Tiny / Under 5 kg": "Väike / alla 5 kg",
-  "Small–Medium / 5–10 kg": "Väike–keskmine / 5–10 kg",
-  "Medium–Large / 10–15 kg": "Keskmine–suur / 10–15 kg",
-  "Large / Over 15 kg": "Suur / üle 15 kg",
-  "Low (chill mode)": "Madal (rahulik režiim)",
-  "Moderate (ready to play)": "Keskmine (mänguks valmis)",
-  "High (zoomies all day)": "Kõrge (terve päev liikvel)",
-  Low: "Madal",
-  Medium: "Keskmine",
-  High: "Kõrge",
-  "Friendly with dogs": "Sõbralik teiste koertega",
-  "Friendly with cats": "Sõbralik teiste kassidega",
-  "Cat-friendly": "Sõbralik teiste kassidega",
-  Shy: "Häbelik",
-  Independent: "Iseseisev",
-  Playful: "Mänguline",
-  Calm: "Rahulik",
-  Protective: "Kaitsev",
-  "No medication needed": "Ravimeid pole vaja",
-  None: "Puudub",
-  "Short walks": "Lühikesed jalutuskäigud",
-  "Long walks": "Pikad jalutuskäigud",
-  "High activity": "Suur liikumisvajadus",
-  "Outdoor play": "Välimäng",
-  "At pet friend's home": "Lemmikusõbra kodus",
-  "At pet parent's home": "Loomaomaniku kodus",
-  "Flexible — either home works": "Paindlik — sobib mõlemal pool",
-  "Walks only": "Ainult jalutuskäigud",
-  Daycare: "Päevahoid",
-  "Home visits": "Kodukülastused",
-  "Feeding only": "Ainult toitmine",
-  "Play visits": "Mängukülastused",
-  English: "Inglise",
-  Estonian: "Eesti",
-  Russian: "Vene",
 };
 
 const EXCEL_KEYS_LOWER = new Map(

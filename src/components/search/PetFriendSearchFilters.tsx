@@ -7,6 +7,7 @@ import { FilterChipGroup } from "@/components/search/FilterChipGroup";
 import { FilterSection, SearchFilterPanel } from "@/components/search/SearchFilterPanel";
 import { careTypeIconForValue } from "@/components/search/filter-icons";
 import { useLanguage } from "@/context/LanguageContext";
+import { toFilterChipOptions } from "@/lib/filter-option-labels";
 import {
   petFriendSearchCareTypeOptions,
   petFriendSearchExperienceOptions,
@@ -62,17 +63,32 @@ export function PetFriendSearchFilters({
   onApply,
   onClearAll,
 }: PetFriendSearchFiltersProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const f = t.searchFilters;
 
+  const typeChips = useMemo(
+    () => toFilterChipOptions(petFriendSearchTypeOptions, locale),
+    [locale],
+  );
   const careTypeChips = useMemo(
     () =>
-      petFriendSearchCareTypeOptions.map((opt) => ({
-        value: opt.value,
-        label: opt.label,
+      toFilterChipOptions(petFriendSearchCareTypeOptions, locale).map((opt) => ({
+        ...opt,
         icon: careTypeIconForValue(opt.value),
       })),
-    [],
+    [locale],
+  );
+  const experienceChips = useMemo(
+    () => toFilterChipOptions(petFriendSearchExperienceOptions, locale),
+    [locale],
+  );
+  const homeChips = useMemo(
+    () => toFilterChipOptions(petFriendSearchHomeOptions, locale),
+    [locale],
+  );
+  const languageChips = useMemo(
+    () => toFilterChipOptions(petFriendSearchLanguageOptions, locale),
+    [locale],
   );
 
   function handleClear() {
@@ -81,7 +97,7 @@ export function PetFriendSearchFilters({
     onClearAll?.();
   }
 
-  const activeChips = buildPetFriendSearchActiveChips(filters, onChange);
+  const activeChips = buildPetFriendSearchActiveChips(filters, onChange, locale);
 
   return (
     <SearchFilterPanel title={f.petFriendSearch} onSubmit={onApply} onClearAll={handleClear}>
@@ -113,9 +129,10 @@ export function PetFriendSearchFilters({
       </FilterSection>
 
       <FilterSection title={f.petTypesAccepted} id="filter-pet-types-accepted">
+        <p className="mb-2 text-xs text-muted">{f.petTypesAcceptedHint}</p>
         <FilterChipGroup
           ariaLabelledBy="filter-pet-types-accepted"
-          options={[...petFriendSearchTypeOptions]}
+          options={typeChips}
           selected={filters.petTypesAccepted}
           maxVisible={4}
           onChange={(petTypesAccepted) => onChange({ ...filters, petTypesAccepted })}
@@ -134,7 +151,7 @@ export function PetFriendSearchFilters({
       <FilterSection title={f.experience} id="filter-experience">
         <FilterChipGroup
           ariaLabelledBy="filter-experience"
-          options={[...petFriendSearchExperienceOptions]}
+          options={experienceChips}
           selected={filters.experienceLevels}
           onChange={(experienceLevels) => onChange({ ...filters, experienceLevels })}
         />
@@ -143,7 +160,7 @@ export function PetFriendSearchFilters({
       <FilterSection title={f.homeSuitability} id="filter-home">
         <FilterChipGroup
           ariaLabelledBy="filter-home"
-          options={[...petFriendSearchHomeOptions]}
+          options={homeChips}
           selected={filters.homeSuitability}
           maxVisible={4}
           onChange={(homeSuitability) => onChange({ ...filters, homeSuitability })}
@@ -153,7 +170,7 @@ export function PetFriendSearchFilters({
       <FilterSection title={f.languages} id="filter-friend-languages">
         <FilterChipGroup
           ariaLabelledBy="filter-friend-languages"
-          options={[...petFriendSearchLanguageOptions]}
+          options={languageChips}
           selected={filters.languages}
           onChange={(languages) => onChange({ ...filters, languages })}
         />

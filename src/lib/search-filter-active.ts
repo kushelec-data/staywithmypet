@@ -18,6 +18,7 @@ import {
   petFriendSearchLanguageOptions,
   petFriendSearchTypeOptions,
 } from "@/lib/pet-friend-search-filter-config";
+import { getListingSearchLabelEt } from "@/lib/listing-search-translations";
 import { formatDate } from "@/lib/date-format";
 import type { PetFriendSearchFilterState } from "@/lib/pet-friend-search";
 import type { PetSearchFilterState } from "@/lib/public-pet-search";
@@ -144,7 +145,10 @@ export function buildPetSearchActiveChips(
   if (filters.verifiedOnly) {
     chips.push({
       id: "verified",
-      label: "Verified",
+      label:
+        locale === "et"
+          ? (getListingSearchLabelEt("Verified", "pet") ?? "Verified")
+          : "Verified",
       onRemove: () => onChange({ ...filters, verifiedOnly: false }),
     });
   }
@@ -161,6 +165,7 @@ export function buildPetSearchActiveChips(
 export function buildPetFriendSearchActiveChips(
   filters: PetFriendSearchFilterState,
   onChange: (next: PetFriendSearchFilterState) => void,
+  locale: Locale = "en",
 ): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
 
@@ -185,47 +190,74 @@ export function buildPetFriendSearchActiveChips(
   }
 
   chips.push(
-    ...multiChips("pet-type", filters.petTypesAccepted, petFriendSearchTypeOptions, (value) =>
-      onChange({
-        ...filters,
-        petTypesAccepted: filters.petTypesAccepted.filter((v) => v !== value),
-      }),
+    ...multiChipsLocalized(
+      "pet-type",
+      filters.petTypesAccepted,
+      petFriendSearchTypeOptions,
+      locale,
+      (value) =>
+        onChange({
+          ...filters,
+          petTypesAccepted: filters.petTypesAccepted.filter((v) => v !== value),
+        }),
     ),
   );
   chips.push(
-    ...multiChips("care-type", filters.careTypesOffered, petFriendSearchCareTypeOptions, (value) =>
-      onChange({
-        ...filters,
-        careTypesOffered: filters.careTypesOffered.filter((v) => v !== value),
-      }),
+    ...multiChipsLocalized(
+      "care-type",
+      filters.careTypesOffered,
+      petFriendSearchCareTypeOptions,
+      locale,
+      (value) =>
+        onChange({
+          ...filters,
+          careTypesOffered: filters.careTypesOffered.filter((v) => v !== value),
+        }),
     ),
   );
   chips.push(
-    ...multiChips("experience", filters.experienceLevels, petFriendSearchExperienceOptions, (value) =>
-      onChange({
-        ...filters,
-        experienceLevels: filters.experienceLevels.filter((v) => v !== value),
-      }),
+    ...multiChipsLocalized(
+      "experience",
+      filters.experienceLevels,
+      petFriendSearchExperienceOptions,
+      locale,
+      (value) =>
+        onChange({
+          ...filters,
+          experienceLevels: filters.experienceLevels.filter((v) => v !== value),
+        }),
     ),
   );
   chips.push(
-    ...multiChips("home", filters.homeSuitability, petFriendSearchHomeOptions, (value) =>
-      onChange({
-        ...filters,
-        homeSuitability: filters.homeSuitability.filter((v) => v !== value),
-      }),
+    ...multiChipsLocalized(
+      "home",
+      filters.homeSuitability,
+      petFriendSearchHomeOptions,
+      locale,
+      (value) =>
+        onChange({
+          ...filters,
+          homeSuitability: filters.homeSuitability.filter((v) => v !== value),
+        }),
     ),
   );
   chips.push(
-    ...multiChips("lang", filters.languages, petFriendSearchLanguageOptions, (value) =>
-      onChange({ ...filters, languages: filters.languages.filter((v) => v !== value) }),
+    ...multiChipsLocalized(
+      "lang",
+      filters.languages,
+      petFriendSearchLanguageOptions,
+      locale,
+      (value) => onChange({ ...filters, languages: filters.languages.filter((v) => v !== value) }),
     ),
   );
 
   if (filters.verifiedOnly) {
     chips.push({
       id: "verified",
-      label: "Verified",
+      label:
+        locale === "et"
+          ? (getListingSearchLabelEt("Verified", "petFriend") ?? "Verified")
+          : "Verified",
       onRemove: () => onChange({ ...filters, verifiedOnly: false }),
     });
   }
