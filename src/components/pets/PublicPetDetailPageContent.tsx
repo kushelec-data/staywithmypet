@@ -168,7 +168,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           </aside>
         </div>
 
-        <PublicQuickInfoCard items={buildPublicPetQuickInfo(pet)} />
+        <PublicQuickInfoCard items={buildPublicPetQuickInfo(pet, locale)} />
       </div>
 
       <PetPublicMobileCta pet={pet} hidden={isOwnPet} />

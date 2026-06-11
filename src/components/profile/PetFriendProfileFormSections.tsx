@@ -22,7 +22,14 @@ import {
 import { PET_WEIGHT_CATEGORY_OPTIONS } from "@/lib/pet-weight";
 import { OTHER_FIELD_COPY, isOtherOptionValue } from "@/lib/other-option";
 import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  toProfileLabeledChipOptions,
+  toProfileStringChipOptions,
+} from "@/lib/profile-option-labels";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { ArrowLeftRight, Dog, Heart, Home, MapPin, Sparkles } from "lucide-react";
+import { useMemo } from "react";
 
 type PetFriendProfileFormSectionsProps = {
   form: PetFriendProfileFormInput;
@@ -72,18 +79,72 @@ export function PetFriendProfileFormSections({
   availabilityDefaultOpen = false,
   onlyAvailabilitySection = false,
 }: PetFriendProfileFormSectionsProps) {
+  const { locale } = useLanguage();
+  const pl = (en: string) => translateProfileLabel(en, locale);
+
+  const petTypeChipOptions = useMemo(() => toProfileLabeledChipOptions(petTypeOptions, locale), [locale]);
+  const careTypeChipOptions = useMemo(() => toProfileStringChipOptions(careTypeOptions, locale), [locale]);
+  const weightChipOptions = useMemo(
+    () => toProfileLabeledChipOptions(PET_WEIGHT_CATEGORY_OPTIONS, locale),
+    [locale],
+  );
+  const experienceChipOptions = useMemo(
+    () =>
+      experienceLevelOptions.map((o) => ({
+        ...o,
+        label: pl(o.label),
+        icon:
+          o.value === "first_time" ? (
+            <Heart className="h-3.5 w-3.5" />
+          ) : o.value === "experienced" ? (
+            <Sparkles className="h-3.5 w-3.5" />
+          ) : (
+            <Dog className="h-3.5 w-3.5" />
+          ),
+      })),
+    [locale],
+  );
+  const careLocationChipOptions = useMemo(
+    () =>
+      preferredCareLocationOptions.map((o) => ({
+        ...o,
+        label: pl(o.label),
+        icon:
+          o.value === "at_my_home" ? (
+            <Home className="h-3.5 w-3.5" />
+          ) : o.value === "at_pet_parent_home" ? (
+            <MapPin className="h-3.5 w-3.5" />
+          ) : (
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+          ),
+      })),
+    [locale],
+  );
+  const livingTypeSelectOptions = useMemo(
+    () => toProfileStringChipOptions(livingTypeOptions, locale),
+    [locale],
+  );
+  const daysTimesOptions = useMemo(
+    () => toProfileStringChipOptions(preferredDaysTimesOptions, locale),
+    [locale],
+  );
+  const durationOptions = useMemo(
+    () => toProfileStringChipOptions(durationOfCareOptions, locale),
+    [locale],
+  );
+
   return (
     <div className="space-y-4 sm:col-span-2">
       {!onlyAvailabilitySection ? (
         <ProfileCollapsibleSection
           id="pet-care-preferences"
-          title="Pet care preferences"
-          description="What pets and care you're comfortable offering."
+          title={pl("Pet care preferences")}
+          description={pl("What pets and care you're comfortable offering.")}
           defaultOpen
         >
           <ProfileChipMultiSelect
-            label="Pet types willing to care for"
-            options={petTypeOptions}
+            label={pl("Pet types willing to care for")}
+            options={petTypeChipOptions}
             selected={form.petTypesWilling}
             onToggle={(v) => toggleInList(form, onChange, "petTypesWilling", v)}
             disabled={disabled}
@@ -96,15 +157,15 @@ export function PetFriendProfileFormSections({
             }}
           />
           <ProfileChipMultiSelect
-            label="Preferred pet size"
-            options={PET_WEIGHT_CATEGORY_OPTIONS}
+            label={pl("Preferred pet size")}
+            options={weightChipOptions}
             selected={form.preferredPetSizes}
             onToggle={(v) => toggleInList(form, onChange, "preferredPetSizes", v)}
             disabled={disabled}
           />
           <ProfileChipMultiSelect
-            label="Available care types"
-            options={careTypeOptions}
+            label={pl("Available care types")}
+            options={careTypeChipOptions}
             selected={form.availableCareTypes}
             onToggle={(v) => toggleInList(form, onChange, "availableCareTypes", v)}
             disabled={disabled}
@@ -117,42 +178,22 @@ export function PetFriendProfileFormSections({
             }}
           />
           <ProfileChipSingleSelect
-            label="Pet care experience"
-            options={experienceLevelOptions.map((o) => ({
-              ...o,
-              icon:
-                o.value === "first_time" ? (
-                  <Heart className="h-3.5 w-3.5" />
-                ) : o.value === "experienced" ? (
-                  <Sparkles className="h-3.5 w-3.5" />
-                ) : (
-                  <Dog className="h-3.5 w-3.5" />
-                ),
-            }))}
+            label={pl("Pet care experience")}
+            options={experienceChipOptions}
             value={form.experienceLevel}
             onChange={(experienceLevel) => patch(form, onChange, { experienceLevel })}
             disabled={disabled}
           />
           <ProfileChipSingleSelect
-            label="Preferred care location"
-            options={preferredCareLocationOptions.map((o) => ({
-              ...o,
-              icon:
-                o.value === "at_my_home" ? (
-                  <Home className="h-3.5 w-3.5" />
-                ) : o.value === "at_pet_parent_home" ? (
-                  <MapPin className="h-3.5 w-3.5" />
-                ) : (
-                  <ArrowLeftRight className="h-3.5 w-3.5" />
-                ),
-            }))}
+            label={pl("Preferred care location")}
+            options={careLocationChipOptions}
             value={form.preferredCareLocation}
             onChange={(preferredCareLocation) => patch(form, onChange, { preferredCareLocation })}
             disabled={disabled}
           />
           <ProfileChipMultiSelect
-            label="Pet types previously cared for"
-            options={petTypeOptions}
+            label={pl("Pet types previously cared for")}
+            options={petTypeChipOptions}
             selected={form.petTypesPreviouslyBorrowed}
             onToggle={(v) => toggleInList(form, onChange, "petTypesPreviouslyBorrowed", v)}
             disabled={disabled}
@@ -166,25 +207,25 @@ export function PetFriendProfileFormSections({
             }}
           />
           <ProfileYesNoToggle
-            label="Willing to care for special medical needs?"
+            label={pl("Willing to care for special medical needs?")}
             value={form.willingSpecialMedicalNeeds}
             onChange={(v) => patch(form, onChange, { willingSpecialMedicalNeeds: v })}
             disabled={disabled}
           />
           <ProfileYesNoToggle
-            label="Comfortable with behavioral quirks?"
+            label={pl("Comfortable with behavioral quirks?")}
             value={form.willingBehavioralQuirks}
             onChange={(v) => patch(form, onChange, { willingBehavioralQuirks: v })}
             disabled={disabled}
           />
           <ProfileYesNoToggle
-            label="Happy to care for senior pets?"
+            label={pl("Happy to care for senior pets?")}
             value={form.willingSeniors}
             onChange={(v) => patch(form, onChange, { willingSeniors: v })}
             disabled={disabled}
           />
           <ProfileYesNoToggle
-            label="Happy with puppies & kittens?"
+            label={pl("Happy with puppies & kittens?")}
             value={form.willingPuppiesKittens}
             onChange={(v) => patch(form, onChange, { willingPuppiesKittens: v })}
             disabled={disabled}
@@ -195,20 +236,20 @@ export function PetFriendProfileFormSections({
       {onlyAvailabilitySection ? (
         <ProfileCollapsibleSection
           id="availability"
-          title="Availability"
-          description="When and how long you can help."
+          title={pl("Availability")}
+          description={pl("When and how long you can help.")}
           defaultOpen={availabilityDefaultOpen}
         >
           <ProfileChipMultiSelect
-            label="Preferred days & times"
-            options={preferredDaysTimesOptions}
+            label={pl("Preferred days & times")}
+            options={daysTimesOptions}
             selected={form.preferredDaysTimes}
             onToggle={(v) => toggleInList(form, onChange, "preferredDaysTimes", v)}
             disabled={disabled}
           />
           <div className="sm:col-span-1">
             <label htmlFor="duration_of_care" className="form-field-label">
-              Duration of care preferred
+              {pl("Duration of care preferred")}
             </label>
             <select
               id="duration_of_care"
@@ -217,9 +258,9 @@ export function PetFriendProfileFormSections({
               onChange={(e) => patch(form, onChange, { durationOfCarePreferred: e.target.value })}
               className="input-field mt-1"
             >
-              {durationOfCareOptions.map((o) => (
-                <option key={o} value={o}>
-                  {o}
+              {durationOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
                 </option>
               ))}
             </select>
@@ -261,12 +302,12 @@ export function PetFriendProfileFormSections({
       {!onlyAvailabilitySection ? (
         <ProfileCollapsibleSection
           id="living-situation"
-          title="Living situation"
-          description="Your home environment for Pet Parents."
+          title={pl("Living situation")}
+          description={pl("Your home environment for Pet Parents.")}
         >
         <div className="sm:col-span-1">
           <label htmlFor="living_type" className="form-field-label">
-            Living type
+            {pl("Living type")}
           </label>
           <select
             id="living_type"
@@ -281,9 +322,9 @@ export function PetFriendProfileFormSections({
             }}
             className="input-field mt-1"
           >
-            {livingTypeOptions.map((o) => (
-              <option key={o} value={o}>
-                {o}
+            {livingTypeSelectOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
@@ -299,7 +340,7 @@ export function PetFriendProfileFormSections({
           ) : null}
         </div>
         <ProfileYesNoToggle
-          label="Pets at home?"
+          label={pl("Pets at home?")}
           value={form.hasPetsAtHome}
           onChange={(v) => patch(form, onChange, { hasPetsAtHome: v })}
           disabled={disabled}
@@ -321,19 +362,19 @@ export function PetFriendProfileFormSections({
           </div>
         ) : null}
         <ProfileYesNoToggle
-          label="Children at home?"
+          label={pl("Children at home?")}
           value={form.hasChildren}
           onChange={(v) => patch(form, onChange, { hasChildren: v })}
           disabled={disabled}
         />
         <ProfileYesNoToggle
-          label="Yard or garden access?"
+          label={pl("Yard or garden access?")}
           value={form.yardGardenAccess}
           onChange={(v) => patch(form, onChange, { yardGardenAccess: v })}
           disabled={disabled}
         />
         <ProfileYesNoToggle
-          label="Nearby park access?"
+          label={pl("Nearby park access?")}
           value={form.nearbyParkAccess}
           onChange={(v) => patch(form, onChange, { nearbyParkAccess: v })}
           disabled={disabled}

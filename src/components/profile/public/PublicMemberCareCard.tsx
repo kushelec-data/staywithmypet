@@ -1,39 +1,65 @@
+"use client";
+
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { PublicDetailGroups } from "@/components/public/PublicDetailGroups";
+import { useLanguage } from "@/context/LanguageContext";
 import { carePreferenceDisplayGroups } from "@/lib/profile-details";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import type { PublicProfileView } from "@/lib/public-profile";
 import type { PublicDetailGroup } from "@/lib/public-pet-display";
+import { useMemo } from "react";
 
 type PublicMemberCareCardProps = {
   profile: PublicProfileView;
 };
 
 export function PublicMemberCareCard({ profile }: PublicMemberCareCardProps) {
-  const groups = carePreferenceDisplayGroups(profile.details);
-  const chipItems = [
-    ...groups.petTypes.slice(0, 3),
-    ...groups.experience.slice(0, 2),
-    ...groups.careTypes.slice(0, 3),
-    ...groups.petSizes.slice(0, 2),
-  ].filter(Boolean);
+  const { locale } = useLanguage();
+  const pl = (en: string) => translateProfileLabel(en, locale);
 
-  const detailGroups: PublicDetailGroup[] = [];
-  if (groups.petTypes.length) {
-    detailGroups.push({ label: "Pet types", items: groups.petTypes });
-  }
-  if (groups.careTypes.length) {
-    detailGroups.push({ label: "Care offered", items: groups.careTypes });
-  }
-  if (groups.experience.length) {
-    detailGroups.push({ label: "Experience", items: groups.experience });
-  }
+  const groups = carePreferenceDisplayGroups(profile.details);
+  const chipItems = useMemo(
+    () =>
+      [
+        ...groups.petTypes.slice(0, 3),
+        ...groups.experience.slice(0, 2),
+        ...groups.careTypes.slice(0, 3),
+        ...groups.petSizes.slice(0, 2),
+      ]
+        .filter(Boolean)
+        .map((item) => pl(item)),
+    [groups, locale],
+  );
+
+  const detailGroups: PublicDetailGroup[] = useMemo(() => {
+    const out: PublicDetailGroup[] = [];
+    if (groups.petTypes.length) {
+      out.push({
+        label: pl("Pet types"),
+        items: groups.petTypes.map((item) => pl(item)),
+      });
+    }
+    if (groups.careTypes.length) {
+      out.push({
+        label: pl("Care offered"),
+        items: groups.careTypes.map((item) => pl(item)),
+      });
+    }
+    if (groups.experience.length) {
+      out.push({
+        label: pl("Experience"),
+        items: groups.experience.map((item) => pl(item)),
+      });
+    }
+    return out;
+  }, [groups, locale]);
 
   if (!chipItems.length && !detailGroups.length) return null;
 
   return (
     <section className={PUBLIC_CARD}>
-      <h2 className={PUBLIC_SECTION_TITLE}>Care preferences</h2>
+      <h2 className={PUBLIC_SECTION_TITLE}>{pl("Care preferences")}</h2>
       {chipItems.length ? (
         <div className="mt-3">
           <PublicProfileChips chips={chipItems.slice(0, 8)} />

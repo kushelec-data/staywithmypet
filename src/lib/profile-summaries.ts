@@ -15,6 +15,8 @@ import {
 import { formatPreferredPetWeightSizes } from "@/lib/pet-weight";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
+import { translateProfileLabel } from "@/lib/profile-translations";
+import type { Locale } from "@/i18n/translations";
 
 function joinNatural(items: string[], max = 4): string | null {
   const slice = items.filter(Boolean).slice(0, max);
@@ -39,16 +41,21 @@ export type ProfileSummaryLines = {
   locale?: string;
 };
 
+function localizeLines(lines: string[], locale?: Locale): string[] {
+  if (!locale || locale === "en") return lines;
+  return lines.map((line) => translateProfileLabel(line, locale));
+}
+
 export function buildLivingSituationSummary(
   details: ProfileDetails,
-  options: { publicSafe?: boolean } = {},
+  options: { publicSafe?: boolean; locale?: Locale } = {},
 ): ProfileSummaryLines {
   const living = resolvedLivingSituation(details);
   const lines: string[] = [];
 
   const livingLabel = formatLivingTypeLabel(living.living_type, living.living_type_other);
   if (!options.publicSafe && livingLabel) {
-    lines.push(livingLabel);
+    lines.push(translateProfileLabel(livingLabel, options.locale ?? "en"));
   } else if (options.publicSafe && living.living_type) {
     lines.push("Pet-friendly home");
   }
@@ -75,9 +82,12 @@ export function buildLivingSituationSummary(
   }
 
   return {
-    title: "Your living situation",
-    lines,
-    emptyMessage: "Describe your home so Pet Parents know what to expect.",
+    title: translateProfileLabel("Your Living Situation", options.locale ?? "en"),
+    lines: localizeLines(lines, options.locale),
+    emptyMessage: translateProfileLabel(
+      "Help pet owners understand what kind of space and environment you can offer for their pet.",
+      options.locale ?? "en",
+    ),
   };
 }
 

@@ -26,7 +26,7 @@ export function PetFormSection({ title, description, children }: PetFormSectionP
 
 type ChipGroupProps = {
   label: string;
-  options: readonly string[];
+  options: readonly string[] | readonly { value: string; label: string }[];
   selected: string[];
   onToggle: (value: string) => void;
   disabled?: boolean;
@@ -39,6 +39,15 @@ type ChipGroupProps = {
   };
 };
 
+function normalizeChipOptions(
+  options: readonly string[] | readonly { value: string; label: string }[],
+): { value: string; label: string }[] {
+  if (typeof options[0] === "string") {
+    return (options as readonly string[]).map((value) => ({ value, label: value }));
+  }
+  return [...(options as readonly { value: string; label: string }[])];
+}
+
 export function PetFormChipGroup({
   label,
   options,
@@ -47,6 +56,7 @@ export function PetFormChipGroup({
   disabled,
   otherField,
 }: ChipGroupProps) {
+  const items = normalizeChipOptions(options);
   const showOtherInput = Boolean(otherField) && selected.some(isOtherOptionValue);
 
   function handleToggle(value: string) {
@@ -60,21 +70,21 @@ export function PetFormChipGroup({
     <div className="sm:col-span-2">
       <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
       <div className="mt-2 flex flex-wrap gap-2">
-        {options.map((option) => {
-          const isOn = selected.includes(option);
+        {items.map((option) => {
+          const isOn = selected.includes(option.value);
           return (
             <button
-              key={option}
+              key={option.value}
               type="button"
               disabled={disabled}
-              onClick={() => handleToggle(option)}
+              onClick={() => handleToggle(option.value)}
               className={`rounded-full border px-3 py-1.5 transition-colors ${
                 isOn
                   ? `border-brand-teal/30 bg-brand-teal text-white ${FORM_FIELD_CHIP_VALUE_SELECTED_CLASS}`
                   : `border-black/5 bg-surface hover:bg-mint/40 ${FORM_FIELD_CHIP_VALUE_CLASS}`
               }`}
             >
-              {option}
+              {option.label}
             </button>
           );
         })}

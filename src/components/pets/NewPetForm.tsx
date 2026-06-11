@@ -43,8 +43,14 @@ import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { OTHER_FIELD_COPY, validateOtherOptionFields } from "@/lib/other-option";
 import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
 import { createClient } from "@/lib/supabase";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  toProfileLabeledChipOptions,
+  toProfileStringChipOptions,
+} from "@/lib/profile-option-labels";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const emptyForm = (): PetProfileFormInput => ({
   name: "",
@@ -96,6 +102,45 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [loadingPet, setLoadingPet] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { locale } = useLanguage();
+  const pl = useCallback((en: string) => translateProfileLabel(en, locale), [locale]);
+
+  const localizedAnimalTypes = useMemo(
+    () => toProfileLabeledChipOptions(petAnimalTypes, locale),
+    [locale],
+  );
+  const localizedGenderOptions = useMemo(
+    () => toProfileStringChipOptions(petGenderOptions, locale),
+    [locale],
+  );
+  const localizedSizeOptions = useMemo(
+    () => toProfileLabeledChipOptions(petSizeOptions, locale),
+    [locale],
+  );
+  const localizedEnergyOptions = useMemo(
+    () => toProfileStringChipOptions(petEnergyOptions, locale),
+    [locale],
+  );
+  const localizedTemperamentOptions = useMemo(
+    () => toProfileStringChipOptions(petTemperamentOptions, locale),
+    [locale],
+  );
+  const localizedWalkOptions = useMemo(
+    () => toProfileStringChipOptions(petWalkNeedsOptions, locale),
+    [locale],
+  );
+  const localizedFriendReqOptions = useMemo(
+    () => toProfileStringChipOptions(petFriendRequirementOptions, locale),
+    [locale],
+  );
+  const localizedCareTypeOptions = useMemo(
+    () => toProfileStringChipOptions(petCareTypeOptions, locale),
+    [locale],
+  );
+  const localizedCareLocationOptions = useMemo(
+    () => toProfileStringChipOptions(petCareLocationOptions, locale),
+    [locale],
+  );
 
   useEffect(() => {
     if (!petId || !user?.id) return;
@@ -282,7 +327,12 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </p>
       ) : null}
 
-      <PetFormSection title="Pet media" description="Upload up to 6 photos or videos. The first file is the main listing image.">
+      <PetFormSection
+        title={pl("Pet media")}
+        description={pl(
+          "Add up to 6 photos or videos that best show your pet's personality and charm!",
+        )}
+      >
         <PetPhotoUpload
           files={photos}
           onChange={setPhotos}
@@ -294,10 +344,10 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         />
       </PetFormSection>
 
-      <PetFormSection title="Basic pet details">
+      <PetFormSection title={pl("Basic pet details")}>
         <div className="sm:col-span-2">
           <label htmlFor="pet_name" className="form-field-label">
-            Pet name
+            {pl("Pet name")}
           </label>
           <input
             id="pet_name"
@@ -310,7 +360,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="species" className="form-field-label">
-            Animal type
+            {pl("Animal type")}
           </label>
           <select
             id="species"
@@ -318,7 +368,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             onChange={(e) => patch("speciesForm", e.target.value)}
             className="input-field mt-1"
           >
-            {petAnimalTypes.map((o) => (
+            {localizedAnimalTypes.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
@@ -327,7 +377,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="breed" className="form-field-label">
-            {form.speciesForm === "other" ? OTHER_FIELD_COPY.petSpecies.label : "Breed"}
+            {form.speciesForm === "other" ? OTHER_FIELD_COPY.petSpecies.label : pl("Breed")}
           </label>
           <input
             id="breed"
@@ -344,7 +394,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="dob" className="form-field-label">
-            Date of birth
+            {pl("Date of Birth")}
           </label>
           <input
             id="dob"
@@ -356,7 +406,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="gender" className="form-field-label">
-            Gender
+            {pl("Gender")}
           </label>
           <select
             id="gender"
@@ -371,9 +421,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             }}
             className="input-field mt-1"
           >
-            {petGenderOptions.map((g) => (
-              <option key={g} value={g}>
-                {g}
+            {localizedGenderOptions.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
               </option>
             ))}
           </select>
@@ -390,7 +440,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="size" className="form-field-label">
-            Weight category
+            {pl("Weight category")}
           </label>
           <select
             id="size"
@@ -398,7 +448,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             onChange={(e) => patch("size", e.target.value)}
             className="input-field mt-1"
           >
-            {petSizeOptions.map((s) => (
+            {localizedSizeOptions.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
@@ -407,7 +457,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="energy" className="form-field-label">
-            Energy level
+            {pl("Energy level")}
           </label>
           <select
             id="energy"
@@ -415,25 +465,25 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             onChange={(e) => patch("energyLevel", e.target.value)}
             className="input-field mt-1"
           >
-            {petEnergyOptions.map((e) => (
-              <option key={e} value={e}>
-                {e}
+            {localizedEnergyOptions.map((e) => (
+              <option key={e.value} value={e.value}>
+                {e.label}
               </option>
             ))}
           </select>
         </div>
       </PetFormSection>
 
-      <PetFormSection title="Temperament and care">
+      <PetFormSection title={pl("Temperament and care")}>
         <PetFormChipGroup
-          label="Temperament"
-          options={petTemperamentOptions}
+          label={pl("Temperament")}
+          options={localizedTemperamentOptions}
           selected={form.temperament}
           onToggle={(v) => toggleList("temperament", v)}
           disabled={saving}
         />
         <div className="sm:col-span-2">
-          <span className="form-field-label">Requires medication</span>
+          <span className="form-field-label">{pl("Requires medication")}</span>
           <div className="mt-2 flex gap-4">
             <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
               <input
@@ -457,7 +507,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="health" className="form-field-label">
-            Health characteristics
+            {pl("Health characteristics")}
           </label>
           <textarea
             id="health"
@@ -469,7 +519,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="feeding" className="form-field-label">
-            Feeding schedule
+            {pl("Feeding Schedule")}
           </label>
           <input
             id="feeding"
@@ -480,7 +530,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="walk" className="form-field-label">
-            Walk needs
+            {pl("Walk needs")}
           </label>
           <select
             id="walk"
@@ -488,16 +538,16 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             onChange={(e) => patch("walkNeeds", e.target.value)}
             className="input-field mt-1"
           >
-            {petWalkNeedsOptions.map((w) => (
-              <option key={w} value={w}>
-                {w}
+            {localizedWalkOptions.map((w) => (
+              <option key={w.value} value={w.value}>
+                {w.label}
               </option>
             ))}
           </select>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="eating" className="form-field-label">
-            Eating habits
+            {pl("Eating habits")}
           </label>
           <textarea
             id="eating"
@@ -509,7 +559,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="positive" className="form-field-label">
-            Positive traits
+            {pl("Positive traits")}
           </label>
           <textarea
             id="positive"
@@ -521,7 +571,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div>
           <label htmlFor="challenging" className="form-field-label">
-            Challenging traits
+            {pl("Challenging traits")}
           </label>
           <textarea
             id="challenging"
@@ -533,7 +583,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="notes" className="form-field-label">
-            Additional notes
+            {pl("Additional Notes")}
           </label>
           <textarea
             id="notes"
@@ -545,17 +595,17 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
       </PetFormSection>
 
-      <PetFormSection title="Pet Friend requirements">
+      <PetFormSection title={pl("Pet Friend requirements")}>
         <PetFormChipGroup
-          label="Requirements"
-          options={petFriendRequirementOptions}
+          label={pl("Requirements")}
+          options={localizedFriendReqOptions}
           selected={form.friendRequirements}
           onToggle={(v) => toggleList("friendRequirements", v)}
           disabled={saving}
         />
       </PetFormSection>
 
-      <PetFormSection title="Availability and care location">
+      <PetFormSection title={pl("Availability and care location")}>
         <div className="sm:col-span-2">
           <p className="form-field-label">Available dates</p>
           <p className="mt-1 text-xs text-muted">
@@ -585,24 +635,24 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div className="sm:col-span-2">
-          <span className="form-field-label">Care location preference</span>
+          <span className="form-field-label">{pl("Care location preference")}</span>
           <div className="mt-2 space-y-2">
-            {petCareLocationOptions.map((opt) => (
-              <label key={opt} className="flex items-center gap-2 text-sm">
+            {localizedCareLocationOptions.map((opt) => (
+              <label key={opt.value} className="flex items-center gap-2 text-sm">
                 <input
                   type="radio"
                   name="care_location"
-                  checked={form.careLocation === opt}
-                  onChange={() => patch("careLocation", opt)}
+                  checked={form.careLocation === opt.value}
+                  onChange={() => patch("careLocation", opt.value)}
                 />
-                {opt}
+                {opt.label}
               </label>
             ))}
           </div>
         </div>
         <PetFormChipGroup
-          label="Care type needed"
-          options={petCareTypeOptions}
+          label={pl("Care type needed")}
+          options={localizedCareTypeOptions}
           selected={form.careTypes}
           onToggle={(v) => toggleList("careTypes", v)}
           disabled={saving}
@@ -616,7 +666,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         />
         <div className="sm:col-span-2">
           <label htmlFor="location" className="form-field-label">
-            Location / address
+            {pl("Location / address")}
           </label>
           <GooglePlacesInput
             id="location"
@@ -661,7 +711,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       </PetFormSection>
 
       <Button type="submit" variant="primary" disabled={saving}>
-        {saving ? "Saving…" : isEdit ? "Save changes" : "Save pet profile"}
+        {saving ? pl("Saving…") : isEdit ? pl("Save changes") : pl("Save pet profile")}
       </Button>
     </form>
   );

@@ -5,7 +5,7 @@ import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
-import { translateExcelLabel } from "@/lib/excel-translations";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import { useMemo } from "react";
 
@@ -39,7 +39,7 @@ export function PublicCompactAvailabilityCard({
       <div className="mt-3 space-y-3">
         {availabilityNotes?.trim() ? (
           <p className="text-xs leading-relaxed text-muted">
-            {translateExcelLabel(availabilityNotes.trim(), locale)}
+            {translateProfileLabel(availabilityNotes.trim(), locale)}
           </p>
         ) : null}
 

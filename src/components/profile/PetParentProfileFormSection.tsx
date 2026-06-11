@@ -1,8 +1,11 @@
 "use client";
 
 import { ProfileChipMultiSelect } from "@/components/profile/form/ProfileFormFields";
+import { useLanguage } from "@/context/LanguageContext";
+import { toProfileLabeledChipOptions, toProfileStringChipOptions } from "@/lib/profile-option-labels";
 import { careTypeOptions, petTypeOptions } from "@/lib/profile-friend-options";
 import { OTHER_FIELD_COPY } from "@/lib/other-option";
+import { useMemo } from "react";
 import type { PetParentProfileFormInput } from "@/lib/profile-parent-form";
 
 type PetParentProfileFormSectionProps = {
@@ -48,6 +51,10 @@ export function PetParentProfileFormSection({
   disabled,
   labels,
 }: PetParentProfileFormSectionProps) {
+  const { locale } = useLanguage();
+  const petTypeChips = useMemo(() => toProfileLabeledChipOptions(petTypeOptions, locale), [locale]);
+  const careTypeChips = useMemo(() => toProfileStringChipOptions(careTypeOptions, locale), [locale]);
+
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted">
@@ -104,7 +111,7 @@ export function PetParentProfileFormSection({
 
       <ProfileChipMultiSelect
         label={labels.preferredPetTypes}
-        options={petTypeOptions}
+        options={petTypeChips}
         selected={form.preferredPetTypes}
         onToggle={(v) => toggleInList(form, onChange, "preferredPetTypes", v)}
         disabled={disabled}
@@ -119,7 +126,7 @@ export function PetParentProfileFormSection({
 
       <ProfileChipMultiSelect
         label={labels.preferredCareTypes}
-        options={careTypeOptions}
+        options={careTypeChips}
         selected={form.preferredCareTypes}
         onToggle={(v) => toggleInList(form, onChange, "preferredCareTypes", v)}
         disabled={disabled}

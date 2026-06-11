@@ -3,7 +3,7 @@ import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 import { speciesDisplayLabel, genderDisplayLabel } from "@/lib/pet-data";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
-import { translateExcelLabel, translateExcelLabels } from "@/lib/excel-translations";
+import { translateProfileLabel, translateProfileLabels } from "@/lib/profile-translations";
 import type { Locale } from "@/i18n/translations";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 
@@ -37,13 +37,13 @@ export function buildPublicPetSubtitle(pet: PublicSearchPet): string {
 export function buildPublicPetChips(pet: PublicSearchPet, locale: Locale = "en"): string[] {
   const chips: string[] = [];
   const species = speciesDisplayLabel(pet.species, pet.breed);
-  if (species) chips.push(translateExcelLabel(species, locale));
+  if (species) chips.push(translateProfileLabel(species, locale));
   if (pet.weightDisplayShort?.trim()) chips.push(pet.weightDisplayShort.trim());
   for (const tag of pet.personalityTags.slice(0, 4)) {
-    if (tag.trim()) chips.push(translateExcelLabel(tag.trim(), locale));
+    if (tag.trim()) chips.push(translateProfileLabel(tag.trim(), locale));
   }
   if (pet.availabilityDates.length > 0) {
-    chips.push(translateExcelLabel("Available", locale));
+    chips.push(translateProfileLabel("Available", locale));
   }
   return [...new Set(chips)];
 }
@@ -108,11 +108,11 @@ export function buildPublicPetQuickFacts(
 ): PublicPetQuickFact[] {
   const facts: PublicPetQuickFact[] = [];
   if (pet.ageLabel?.trim()) {
-    facts.push({ icon: "age", label: translateExcelLabel(pet.ageLabel.trim(), locale) });
+    facts.push({ icon: "age", label: translateProfileLabel(pet.ageLabel.trim(), locale) });
   }
   const genderLabel = genderDisplayLabel(pet.gender, pet.genderOther);
   if (genderLabel) {
-    facts.push({ icon: "gender", label: translateExcelLabel(genderLabel, locale) });
+    facts.push({ icon: "gender", label: translateProfileLabel(genderLabel, locale) });
   }
   if (pet.spayedNeutered) {
     facts.push({ icon: "health", label: "Spayed / neutered" });
@@ -126,7 +126,7 @@ export function buildPublicPetCareColumns(
   pet: PublicSearchPet,
   locale: Locale = "en",
 ): PublicCareColumns {
-  const services = translateExcelLabels(
+  const services = translateProfileLabels(
     formatListWithOtherDisplay(
       pet.careTypes,
       pet.careTypesOther,
@@ -135,14 +135,14 @@ export function buildPublicPetCareColumns(
     locale,
   );
   const walks = pet.walkNeeds?.trim()
-    ? [translateExcelLabel(pet.walkNeeds.trim(), locale)]
-    : [translateExcelLabel("None", locale)];
+    ? [translateProfileLabel(pet.walkNeeds.trim(), locale)]
+    : [translateProfileLabel("None", locale)];
   const medication =
     pet.requiresMedication === true
-      ? [translateExcelLabel("Needs medication", locale)]
+      ? [translateProfileLabel("Needs medication", locale)]
       : pet.requiresMedication === false
-        ? [translateExcelLabel("No medication", locale)]
-        : [translateExcelLabel("Not specified", locale)];
+        ? [translateProfileLabel("No medication", locale)]
+        : [translateProfileLabel("Not specified", locale)];
 
   return { services, walks, medication };
 }
@@ -160,16 +160,48 @@ export function buildPublicPetAvailabilityChips(pet: PublicSearchPet): string[] 
   return chips;
 }
 
-export function buildPublicPetQuickInfo(pet: PublicSearchPet): PublicQuickInfoItem[] {
+export function buildPublicPetQuickInfo(
+  pet: PublicSearchPet,
+  locale: Locale = "en",
+): PublicQuickInfoItem[] {
   const items: PublicQuickInfoItem[] = [];
-  if (pet.breed?.trim()) items.push({ label: "Breed", value: pet.breed.trim() });
-  else if (pet.speciesLabel) items.push({ label: "Breed", value: pet.speciesLabel });
+  if (pet.breed?.trim()) {
+    items.push({
+      label: translateProfileLabel("Breed", locale),
+      value: translateProfileLabel(pet.breed.trim(), locale),
+    });
+  } else if (pet.speciesLabel) {
+    items.push({
+      label: translateProfileLabel("Breed", locale),
+      value: translateProfileLabel(pet.speciesLabel, locale),
+    });
+  }
   const w = pet.weightDisplayShort?.trim();
-  if (w) items.push({ label: "Weight", value: w });
-  if (pet.energyLevel?.trim()) items.push({ label: "Energy level", value: pet.energyLevel.trim() });
+  if (w) {
+    items.push({
+      label: translateProfileLabel("Size", locale),
+      value: translateProfileLabel(w, locale),
+    });
+  }
+  if (pet.energyLevel?.trim()) {
+    items.push({
+      label: translateProfileLabel("Energy Level", locale),
+      value: translateProfileLabel(pet.energyLevel.trim(), locale),
+    });
+  }
   const goodWith = pet.positiveTraits?.trim() || pet.healthCharacteristics?.trim();
-  if (goodWith) items.push({ label: "Good with", value: goodWith });
-  if (pet.ageLabel?.trim()) items.push({ label: "Age", value: pet.ageLabel.trim() });
+  if (goodWith) {
+    items.push({
+      label: translateProfileLabel("Positive traits", locale),
+      value: translateProfileLabel(goodWith, locale),
+    });
+  }
+  if (pet.ageLabel?.trim()) {
+    items.push({
+      label: translateProfileLabel("Date of Birth", locale),
+      value: translateProfileLabel(pet.ageLabel.trim(), locale),
+    });
+  }
   return items.slice(0, 5);
 }
 

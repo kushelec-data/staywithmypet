@@ -39,6 +39,7 @@ import {
 import { getGoogleMapsApiKey } from "@/lib/google-places-loader";
 import { PROFILE_LOCATION_CITY_OPTIONS, PROFILE_LOCATION_DATALIST_ID } from "@/lib/location-datalist";
 import { languageOptions } from "@/lib/legacy/search-filters";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
   isBasicProfileSectionComplete,
@@ -139,7 +140,7 @@ function applyTrustFromProfile(
 
 export function ProfileEditForm() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const pe = t.profileEdit;
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
@@ -695,7 +696,7 @@ export function ProfileEditForm() {
                         : "border-[#E5E2D8] bg-[#F8F6F1] text-sm font-medium text-[#333333] hover:bg-[#DDEEDF] hover:text-[#2E6B3F]"
                     }`}
                   >
-                    {lang}
+                    {translateProfileLabel(lang, locale)}
                   </button>
                 );
               })}
