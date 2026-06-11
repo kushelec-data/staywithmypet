@@ -25,6 +25,7 @@ import {
   petSearchTemperamentOptions,
   petSearchTypeOptions,
 } from "@/lib/pet-search-filter-config";
+import { toFilterChipOptions, filterOptionDisplayLabel } from "@/lib/filter-option-labels";
 import { buildPetSearchActiveChips } from "@/lib/search-filter-active";
 import { emptyPetSearchFilters, type PetSearchFilterState } from "@/lib/public-pet-search";
 import { useMemo, type ReactNode } from "react";
@@ -77,8 +78,37 @@ export function PetSearchFilters({
   onApply,
   onClearAll,
 }: PetSearchFiltersProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const f = t.searchFilters;
+
+  const typeChips = useMemo(
+    () => toFilterChipOptions(petSearchTypeOptions, locale),
+    [locale],
+  );
+  const sizeChips = useMemo(
+    () => toFilterChipOptions(petSearchSizeOptions, locale),
+    [locale],
+  );
+  const energyChips = useMemo(
+    () => toFilterChipOptions(petSearchEnergyOptions, locale),
+    [locale],
+  );
+  const temperamentChips = useMemo(
+    () => toFilterChipOptions(petSearchTemperamentOptions, locale),
+    [locale],
+  );
+  const medicalChips = useMemo(
+    () => toFilterChipOptions(petSearchMedicalOptions, locale),
+    [locale],
+  );
+  const activityChips = useMemo(
+    () => toFilterChipOptions(petSearchActivityOptions, locale),
+    [locale],
+  );
+  const languageChips = useMemo(
+    () => toFilterChipOptions(petSearchLanguageOptions, locale),
+    [locale],
+  );
 
   const breedOptions = useMemo(() => {
     const speciesWithBreeds = filters.species.filter((s) => breedsForSpecies(s).length > 0);
@@ -95,7 +125,7 @@ export function PetSearchFilters({
     () =>
       petSearchCareLocationOptions.map((opt) => ({
         value: opt.value,
-        label: opt.label,
+        label: filterOptionDisplayLabel(opt, locale),
         description:
           opt.value.includes("friend")
             ? f.careLocationFriendHint
@@ -104,17 +134,16 @@ export function PetSearchFilters({
               : f.careLocationFlexibleHint,
         icon: CARE_LOCATION_ICONS[opt.value] ?? <LocationFlexibleIcon />,
       })),
-    [f],
+    [f, locale],
   );
 
   const careTypeChips = useMemo(
     () =>
-      petSearchCareTypeOptions.map((opt) => ({
-        value: opt.value,
-        label: opt.label,
+      toFilterChipOptions(petSearchCareTypeOptions, locale).map((opt) => ({
+        ...opt,
         icon: careTypeIconForValue(opt.value),
       })),
-    [],
+    [locale],
   );
 
   function handleClear() {
@@ -123,7 +152,7 @@ export function PetSearchFilters({
     onClearAll?.();
   }
 
-  const activeChips = buildPetSearchActiveChips(filters, onChange);
+  const activeChips = buildPetSearchActiveChips(filters, onChange, locale);
 
   return (
     <SearchFilterPanel title={f.petSearch} onSubmit={onApply} onClearAll={handleClear}>
@@ -156,7 +185,7 @@ export function PetSearchFilters({
       <FilterSection title={f.petType} id="filter-pet-type">
         <FilterChipGroup
           ariaLabelledBy="filter-pet-type"
-          options={[...petSearchTypeOptions]}
+          options={typeChips}
           selected={filters.species}
           maxVisible={4}
           onChange={(species) => {
@@ -184,7 +213,7 @@ export function PetSearchFilters({
       <FilterSection title={f.size} id="filter-size">
         <FilterChipGroup
           ariaLabelledBy="filter-size"
-          options={[...petSearchSizeOptions]}
+          options={sizeChips}
           selected={filters.sizes}
           onChange={(sizes) => onChange({ ...filters, sizes })}
         />
@@ -193,7 +222,7 @@ export function PetSearchFilters({
       <FilterSection title={f.energyLevel} id="filter-energy">
         <FilterChipGroup
           ariaLabelledBy="filter-energy"
-          options={[...petSearchEnergyOptions]}
+          options={energyChips}
           selected={filters.energyLevels}
           onChange={(energyLevels) => onChange({ ...filters, energyLevels })}
         />
@@ -202,7 +231,7 @@ export function PetSearchFilters({
       <FilterSection title={f.temperament} id="filter-temperament">
         <FilterChipGroup
           ariaLabelledBy="filter-temperament"
-          options={[...petSearchTemperamentOptions]}
+          options={temperamentChips}
           selected={filters.temperaments}
           maxVisible={5}
           onChange={(temperaments) => onChange({ ...filters, temperaments })}
@@ -212,7 +241,7 @@ export function PetSearchFilters({
       <FilterSection title={f.medicalNeeds} id="filter-medical">
         <FilterChipGroup
           ariaLabelledBy="filter-medical"
-          options={[...petSearchMedicalOptions]}
+          options={medicalChips}
           selected={filters.medicalNeeds}
           onChange={(medicalNeeds) =>
             onChange({
@@ -226,7 +255,7 @@ export function PetSearchFilters({
       <FilterSection title={f.activityNeeds} id="filter-activity">
         <FilterChipGroup
           ariaLabelledBy="filter-activity"
-          options={[...petSearchActivityOptions]}
+          options={activityChips}
           selected={filters.activityNeeds}
           onChange={(activityNeeds) => onChange({ ...filters, activityNeeds })}
         />
@@ -261,7 +290,7 @@ export function PetSearchFilters({
       <FilterSection title={f.languages} id="filter-languages">
         <FilterChipGroup
           ariaLabelledBy="filter-languages"
-          options={[...petSearchLanguageOptions]}
+          options={languageChips}
           selected={filters.languages}
           onChange={(languages) => onChange({ ...filters, languages })}
         />

@@ -1,3 +1,4 @@
+import { localizedLabelForValue, type LocalizedFilterOption } from "@/lib/filter-option-labels";
 import {
   petSearchActivityOptions,
   petSearchCareLocationOptions,
@@ -9,6 +10,7 @@ import {
   petSearchTemperamentOptions,
   petSearchTypeOptions,
 } from "@/lib/pet-search-filter-config";
+import type { Locale } from "@/i18n/translations";
 import {
   petFriendSearchCareTypeOptions,
   petFriendSearchExperienceOptions,
@@ -28,6 +30,20 @@ function labelFor(
   return options.find((o) => o.value === value)?.label ?? value;
 }
 
+function multiChipsLocalized(
+  prefix: string,
+  values: string[],
+  options: readonly LocalizedFilterOption[],
+  locale: Locale,
+  onRemove: (value: string) => void,
+): ActiveFilterChip[] {
+  return values.map((value) => ({
+    id: `${prefix}-${value}`,
+    label: localizedLabelForValue(options, value, locale),
+    onRemove: () => onRemove(value),
+  }));
+}
+
 function multiChips(
   prefix: string,
   values: string[],
@@ -44,6 +60,7 @@ function multiChips(
 export function buildPetSearchActiveChips(
   filters: PetSearchFilterState,
   onChange: (next: PetSearchFilterState) => void,
+  locale: Locale = "en",
 ): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
 
@@ -68,7 +85,7 @@ export function buildPetSearchActiveChips(
   }
 
   chips.push(
-    ...multiChips("species", filters.species, petSearchTypeOptions, (value) =>
+    ...multiChipsLocalized("species", filters.species, petSearchTypeOptions, locale, (value) =>
       onChange({ ...filters, species: filters.species.filter((v) => v !== value) }),
     ),
   );
@@ -78,22 +95,26 @@ export function buildPetSearchActiveChips(
     ),
   );
   chips.push(
-    ...multiChips("size", filters.sizes, petSearchSizeOptions, (value) =>
+    ...multiChipsLocalized("size", filters.sizes, petSearchSizeOptions, locale, (value) =>
       onChange({ ...filters, sizes: filters.sizes.filter((v) => v !== value) }),
     ),
   );
   chips.push(
-    ...multiChips("energy", filters.energyLevels, petSearchEnergyOptions, (value) =>
+    ...multiChipsLocalized("energy", filters.energyLevels, petSearchEnergyOptions, locale, (value) =>
       onChange({ ...filters, energyLevels: filters.energyLevels.filter((v) => v !== value) }),
     ),
   );
   chips.push(
-    ...multiChips("temperament", filters.temperaments, petSearchTemperamentOptions, (value) =>
-      onChange({ ...filters, temperaments: filters.temperaments.filter((v) => v !== value) }),
+    ...multiChipsLocalized(
+      "temperament",
+      filters.temperaments,
+      petSearchTemperamentOptions,
+      locale,
+      (value) => onChange({ ...filters, temperaments: filters.temperaments.filter((v) => v !== value) }),
     ),
   );
   chips.push(
-    ...multiChips("medical", filters.medicalNeeds, petSearchMedicalOptions, (value) =>
+    ...multiChipsLocalized("medical", filters.medicalNeeds, petSearchMedicalOptions, locale, (value) =>
       onChange({
         ...filters,
         medicalNeeds: filters.medicalNeeds.filter((v) => v !== value),
@@ -101,7 +122,7 @@ export function buildPetSearchActiveChips(
     ),
   );
   chips.push(
-    ...multiChips("activity", filters.activityNeeds, petSearchActivityOptions, (value) =>
+    ...multiChipsLocalized("activity", filters.activityNeeds, petSearchActivityOptions, locale, (value) =>
       onChange({ ...filters, activityNeeds: filters.activityNeeds.filter((v) => v !== value) }),
     ),
   );
@@ -109,13 +130,13 @@ export function buildPetSearchActiveChips(
   if (filters.careLocation) {
     chips.push({
       id: "care-location",
-      label: labelFor(petSearchCareLocationOptions, filters.careLocation),
+      label: localizedLabelForValue(petSearchCareLocationOptions, filters.careLocation, locale),
       onRemove: () => onChange({ ...filters, careLocation: "" }),
     });
   }
 
   chips.push(
-    ...multiChips("care-type", filters.careTypes, petSearchCareTypeOptions, (value) =>
+    ...multiChipsLocalized("care-type", filters.careTypes, petSearchCareTypeOptions, locale, (value) =>
       onChange({ ...filters, careTypes: filters.careTypes.filter((v) => v !== value) }),
     ),
   );
@@ -129,7 +150,7 @@ export function buildPetSearchActiveChips(
   }
 
   chips.push(
-    ...multiChips("lang", filters.languages, petSearchLanguageOptions, (value) =>
+    ...multiChipsLocalized("lang", filters.languages, petSearchLanguageOptions, locale, (value) =>
       onChange({ ...filters, languages: filters.languages.filter((v) => v !== value) }),
     ),
   );
