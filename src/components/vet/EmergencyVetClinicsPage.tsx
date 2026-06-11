@@ -4,21 +4,16 @@ import { PageHero } from "@/components/layout/PageHero";
 import { PageMain } from "@/components/layout/PageMain";
 import { VetClinicList } from "@/components/vet/VetClinicList";
 import { useProfile } from "@/context/ProfileContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { CONTENT_CONTAINER } from "@/lib/layout";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import { VET_CLINICS } from "@/data/vet-clinics";
 import { extractCityFromLocation } from "@/lib/vet-clinics";
 import { useMemo, useState } from "react";
 
-const DISCLAIMER = [
-  "The clinic details shown on this page are compiled from publicly available sources for convenience only.",
-  "Contact details, opening hours, and services may change over time.",
-  "We recommend always verifying information directly on the clinic's official website or by contacting them before visiting.",
-  "Stay With My Pet does not guarantee the accuracy or completeness of the listed information and is not responsible for services provided by third-party clinics.",
-  "If you notice outdated information or would like to suggest a clinic, feel free to contact us — helping pets stay safe is a shared responsibility.",
-];
-
 export function EmergencyVetClinicsPage() {
+  const { t } = useLanguage();
+  const v = t.vetClinics;
   const { profile } = useProfile();
   const profileCity = extractCityFromLocation(profile?.location);
   const [filterCity, setFilterCity] = useState<string>("");
@@ -34,21 +29,13 @@ export function EmergencyVetClinicsPage() {
 
   return (
     <>
-      <PageHero
-        variant="mint"
-        badge="Pet safety"
-        title="Nearby veterinary clinics"
-        description="Find trusted animal clinics and emergency care across Estonia — for Pet Parents and Pet Friends before, during, and after bookings."
-      />
+      <PageHero variant="mint" badge={v.badge} title={v.title} description={v.subtitle} />
 
       <PageMain>
         <section className="pb-6">
           <div className={CONTENT_CONTAINER}>
             <div className={`${PUBLIC_CARD} max-w-3xl`}>
-              <p className="text-sm leading-relaxed text-muted sm:text-base">
-                At Stay With My Pet, animal wellbeing always comes first. Explore veterinary clinics
-                across Estonia so you can quickly find nearby support when it matters most.
-              </p>
+              <p className="text-sm leading-relaxed text-muted sm:text-base">{v.intro}</p>
             </div>
           </div>
         </section>
@@ -57,22 +44,22 @@ export function EmergencyVetClinicsPage() {
           <div className={CONTENT_CONTAINER}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className={PUBLIC_SECTION_TITLE}>Nearby veterinary clinics</h2>
+                <h2 className={PUBLIC_SECTION_TITLE}>{v.sectionTitle}</h2>
                 {profileCity && !showAllEstonia && !filterCity ? (
                   <p className="mt-1 text-xs text-muted">
-                    Showing clinics in {profileCity} from your profile.{" "}
+                    {v.showingCity.replace("{city}", profileCity)}{" "}
                     <button
                       type="button"
                       className="font-semibold text-brand-teal hover:text-brand-pink"
                       onClick={() => setShowAllEstonia(true)}
                     >
-                      Show all Estonia
+                      {v.showAllEstonia}
                     </button>
                   </p>
                 ) : null}
               </div>
               <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
-                Filter by city
+                {v.filterByCity}
                 <select
                   value={filterCity}
                   onChange={(e) => {
@@ -81,7 +68,7 @@ export function EmergencyVetClinicsPage() {
                   }}
                   className="min-h-[40px] rounded-xl border border-black/10 bg-surface px-3 text-sm text-foreground shadow-sm"
                 >
-                  <option value="">All cities</option>
+                  <option value="">{v.allCities}</option>
                   {cities.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -91,28 +78,24 @@ export function EmergencyVetClinicsPage() {
               </label>
             </div>
 
-            <VetClinicList
-              city={activeCity || undefined}
-              emptyMessage="No clinics in this city yet."
-              showViewAll={false}
-            />
+            <VetClinicList city={activeCity || undefined} emptyMessage={v.emptyMessage} showViewAll={false} />
           </div>
         </section>
 
         <section className="pb-12">
           <div className={CONTENT_CONTAINER}>
             <div className={`${PUBLIC_CARD} max-w-3xl border-amber-200/60 bg-amber-50/40`}>
-              <h2 className={PUBLIC_SECTION_TITLE}>Important note about clinic information</h2>
+              <h2 className={PUBLIC_SECTION_TITLE}>{v.disclaimerTitle}</h2>
               <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-muted">
-                {DISCLAIMER.map((item) => (
+                {v.disclaimer.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
               <p className="mt-4 text-sm">
                 <a href="/contact" className="font-semibold text-brand-teal hover:text-brand-pink">
-                  Contact us
+                  {v.contactSuggest}
                 </a>{" "}
-                to suggest updates.
+                {v.contactSuggestSuffix}
               </p>
             </div>
           </div>

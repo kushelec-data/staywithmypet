@@ -68,7 +68,10 @@ export function Footer() {
         { href: "/articles", label: g.company.articles },
         { href: "/about", label: g.company.about },
         { href: "/contact", label: g.company.contact },
-        { href: "/care/emergency", label: "Vet clinics" },
+        { href: "/care/emergency", label: g.company.vetClinics ?? "Vet clinics" },
+        { href: "/terms", label: g.company.terms ?? "Terms of Use" },
+        { href: "/privacy", label: g.company.privacy ?? "Privacy Policy" },
+        { href: "/safety", label: g.company.safety ?? "Safety Guidelines" },
       ],
     },
   ];

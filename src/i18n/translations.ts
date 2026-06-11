@@ -1,5 +1,8 @@
 import { en } from "./en";
 import { et } from "./et";
+import { siteEnPartial } from "./generated/site-en";
+import { siteEtPartial } from "./generated/site-et";
+import { deepMerge } from "./merge-site-texts";
 
 export type Locale = "en" | "et";
 
@@ -8,8 +11,8 @@ export const defaultLocale: Locale = "en";
 export const locales: Locale[] = ["en", "et"];
 
 export const translations = {
-  en,
-  et,
+  en: deepMerge(en, siteEnPartial),
+  et: deepMerge(et, siteEtPartial),
 } as const;
 
 export type Translations = typeof en;

@@ -1,0 +1,962 @@
+[
+  {
+    "key": "navbar.findCare",
+    "en": "Find Care"
+  },
+  {
+    "key": "navbar.findPets",
+    "en": "Find Pets"
+  },
+  {
+    "key": "navbar.findPetFriends",
+    "en": "Find Pet Friends"
+  },
+  {
+    "key": "navbar.searchPets",
+    "en": "Search pets"
+  },
+  {
+    "key": "navbar.pricing",
+    "en": "Pricing"
+  },
+  {
+    "key": "navbar.faq",
+    "en": "FAQ"
+  },
+  {
+    "key": "navbar.login",
+    "en": "Log in"
+  },
+  {
+    "key": "navbar.getStarted",
+    "en": "Sign up"
+  },
+  {
+    "key": "about.story[14]",
+    "en": "At Stay With My Pet, our core values guide every decision and every connection within our community. Everything begins with love and compassion — for pets, for people, and for the bonds between them. We prioritise safety, transparency, and responsible care, because every profile and every trusted connection matters. We believe in the power of community — in building friendships, supporting one another, and showing respect for both animals’ needs and people’s boundaries. And at the heart of it all is joy and wellbeing — because a shared moment with a pet can brighten a day, strengthen connections, and bring more warmth into life."
+  },
+  {
+    "key": "about.story[31]",
+    "en": "Iga sobivus põhineb usaldusel, hoolivusel ja vastutusel."
+  },
+  {
+    "key": "about.story[33]",
+    "en": "Keskendume tasakaalule — et lemmikloomad oleksid õnnelikud ja inimesed tunneksid end täidetuna."
+  },
+  {
+    "key": "about.story[35]",
+    "en": "Lühikestest külastustest pikemate viibimisteni — sina otsustad, mis sobib sinu elustiiliga."
+  },
+  {
+    "key": "about.story[37]",
+    "en": "Koerad, kassid, küülikud, linnud — iga loom väärib armastust."
+  },
+  {
+    "key": "about.story[40]",
+    "en": "*kehtib koertele ja kassidele"
+  },
+  {
+    "key": "howItWorksPage.subtitle",
+    "en": "A step-by-step guide to sharing love and care"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Effective Date:12/20/2025"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Your privacy is important to us. This Privacy Policy explains how Stay With My P"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "By registering or using the Service, you agree to this Privacy Policy. Please re"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "1. Data Controller"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Stay With My Pet acts as the data controller for the processing of personal data"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Käesolevate privaatsustingimuste alusel on isikuandmete vastutav töötleja Stay W"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We are established in the Republic of Estonia and comply with applicable Estonia"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Meie tegevuskoht asub Eesti Vabariigis ning järgime kohaldatavaid Eesti ja Euroo"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Contact details:"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Kontaktandmed:"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Stay With My Pet"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Stay With My Pet"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Legal Name Lareflexion OÜ /  Registration No. 16757645"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Registrikood: 16757645"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Registered Address: Juhkentali 16/1, Tallinn, Eestonia"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "E-post: info@staywithmypet.ee"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Email Address: info@staywithmypet.ee"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Telefon: +372 5901 7916"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Phone Number: +372 5901 7916"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Kui teil on küsimusi või muresid seoses isikuandmete töötlemisega, võtke meiega "
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "If you have questions or concerns about your data, you may contact us using the "
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "2. Milliseid andmeid me kogume"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "2. Information We Collect"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We collect and process personal data necessary to provide our Service safely and"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "(a) Identity and Contact Information"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Name, surname"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Email address, phone number"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Residential area or city (not exact address, unless required for a confirmed boo"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Profile photo (optional)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "(b) Account and Profile Data"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Role type (Pet Parent, Pet Friend, or both)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Profile description and preferences"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Pet information (name, age, species, breed, vaccination status, temperament)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Availability and home environment details (e.g. presence of garden, other pets, "
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "(c) Subscription and Transaction Data"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Subscription plan details (one-time, 3-month, or 12-month)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Payment method (credit/debit card or other method)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Payment confirmation and transaction history (processed via a secure third-party"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Renewal and cancellation data"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "(d) Communication and Interaction Data"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Messages exchanged between Users via the platform"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Booking requests and confirmations"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Reviews, feedback, or ratings"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Support or complaint correspondence with the Stay With My Pet team"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "(e) Technical and Usage Data"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "IP address, device type, browser version, operating system"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Log data (time and date of visits, pages viewed, actions taken)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Cookies and similar technologies (see section 7)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "3. Purpose of Processing"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We process your personal data for the following purposes:"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "To register your account and manage your user profile"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "To process payments and manage subscriptions"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "To enable communication between Pet Parents and Pet Friends"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "To send administrative notifications (e.g. subscription updates, service alerts)"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "To improve our platform and user experience"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "To comply with legal and regulatory obligations"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "4. No Peer-to-Peer Payments or Earnings"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Stay With My Pet is a non-commercial connection platform between pet owners (“Pe"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "All payments are made to the platform, not between Users."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Users cannot earn money or receive financial compensation from each other throug"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "This structure ensures transparency, fairness, and a focus on animal welfare and"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "5. Data Sharing and Disclosure"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We will only share your personal data when necessary for the operation of the Se"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Other Users, when necessary for a confirmed booking (e.g. first name, general lo"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Service providers and processors, including:"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "payment processors;"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "hosting and IT infrastructure providers;"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "insurance and veterinary partners (if applicable)."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Public authorities, if required to comply with legal obligations, such as for sa"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "All service providers are contractually bound to handle your data in accordance "
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Õigustatud huvi / Õiguslik kohustus"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "6. Data Retention"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We retain your personal data only for as long as necessary to fulfil the purpose"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "maksete töötlemine ja tellimuste haldamine – lepingu täitmine / õiguslik kohustu"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Profile and booking data are retained while your account is active."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Transaction data may be stored for up to 7 years to comply with accounting and t"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Communications and review data may be retained for community integrity and dispu"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Once data is no longer required, it is securely deleted or anonymised."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "7. Cookies and Similar Technologies"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We use cookies to enhance your experience and ensure the proper functioning of o"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Types of cookies:"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Essential cookies – required for platform functionality and security."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Analytics cookies – help us understand usage patterns (only with your consent)."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Preference cookies – remember your settings or login status."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "You can manage or disable cookies through your browser settings. Consent-based c"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "seadusest tulenevate kohustuste täitmine – õiguslik kohustus"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "8. Data Security"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We apply appropriate technical and organisational measures to protect personal d"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Secure (SSL/TLS) encryption of communications;"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Access control and data minimisation;"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Regular system monitoring and security reviews;"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Limiting access to personal data to authorised personnel only."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Despite these measures, no online service can guarantee absolute security. You a"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "9. International Data Transfers"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "If your personal data is transferred outside the European Economic Area (EEA), w"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "5. Andmete jagamine ja avaldamine"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "EU Commission adequacy decisions, or"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Standard Contractual Clauses (SCCs) approved by the European Commission."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We ensure that such transfers comply with GDPR requirements."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "teiste kasutajatega, kinnitatud broneeringu korral (nt eesnimi, üldine asukoht, "
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "10. Your Rights"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Under the GDPR and Estonian Personal Data Protection Act, you have the following"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Access – to request a copy of your personal data."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Rectification – to correct inaccurate or incomplete data."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Erasure (“Right to be Forgotten”) – to request deletion of data when legally pos"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Restriction – to limit how your data is processed in specific situations."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Portability – to receive your data in a structured, machine-readable format."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Objection – to object to processing based on legitimate interests, including dir"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Withdraw consent – at any time where processing is based on consent."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "To exercise any of these rights, please contact us at [info@staywithmypet.ee]."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Kõik teenusepakkujad on lepinguliselt kohustatud töötlema isikuandmeid üksnes va"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We will respond within one month, or notify you if an extension is needed."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "6. Andmete säilitamine"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "11. Children’s Data"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "The Service is not intended for users under 18 years of age."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We do not knowingly collect or process personal data from minors."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "If we become aware of any such collection, we will delete the data immediately."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "12. Changes to This Policy"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "We may update this Privacy Policy from time to time to reflect changes in our pr"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Kui andmeid ei ole enam vaja, kustutatakse või anonüümitakse need turvaliselt."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Any significant updates will be communicated via email or through the platform."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "7. Küpsised ja sarnased tehnoloogiad"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "The latest version will always be available on our website."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Kasutame küpsiseid ja sarnaseid tehnoloogiaid Teenuse toimimise ja kasutajakogem"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Continued use of the Service after changes means you accept the updated Policy."
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Küpsiste tüübid:"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "13. Contact and Complaints"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "If you have any questions, requests, or concerns regarding this Privacy Policy o"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Stay With My Pet"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Legal Name Lareflexion OÜ /  Registration No. 16757645"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Registered Address: Juhkentali 16/1, Tallinn, Eestonia"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Email Address: info@staywithmypet.ee"
+  },
+  {
+    "key": "legal.Privacy Policy",
+    "en": "Phone Number: +372 5901 7916"
+  },
+  {
+    "key": "legal.Terms of Use",
+    "en": "If you do not agree, you must not use the Service."
+  },
+  {
+    "key": "legal.Terms of Use",
+    "en": "Consumer notice: If you are a consumer in the EU/EEA, you have certain mandatory"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Safety Guidelines"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "A safe and caring experience starts with clear expectations"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Stay With My Pet is a community-based platform where animal wellbeing and mutual"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Safety isn’t about rules for the sake of rules — it’s about thoughtful choices, "
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "General principles for everyone"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "A pet’s wellbeing always comes first"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Communication should be honest and clear"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "All important expectations should be agreed before care begins"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "If something is unclear, ask — assumptions rarely help"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "For Pet Parents"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Clarity and preparation create a safe stay"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "As a pet parent, your role is to give your pet friend a clear and honest picture"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Complete your pet’s profile thoughtfully"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Your pet’s profile is the foundation for finding the right match. Please make su"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "describe daily routines (feeding, walks, rest)"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "share personality traits and behavioural characteristics"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "note any health-related needs, medications, or allergies"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "mention situations that may cause stress or anxiety"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "The more accurate the information, the calmer the experience for everyone."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Agree on details before care starts"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Before confirming care, discuss:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "where and when care will take place"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "daily routines and house rules"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "how you’ll communicate during the stay"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "what to do if plans change or something unexpected happens"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Clear agreements create confidence for both sides."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Share essential contacts and instructions"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Before care begins, make sure your pet friend has:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "your up-to-date contact details"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "your veterinarian’s name and contact information"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "guidance on how to act in case of an emergency"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "This helps everyone respond calmly and quickly if needed."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Stay available during care"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "A good experience continues throughout the stay. We recommend that you:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "remain reachable"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "answer questions clearly and calmly"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "provide updates if anything changes"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Open communication allows care to adapt to your pet’s needs."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Leave honest feedback after care"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "After care ends, share your experience:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "what worked well"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "what could be improved next time"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Kind and honest feedback helps keep the community safe and trustworthy."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "For Pet Friends"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Experience is not required — care and responsibility are"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Stay With My Pet welcomes pet friends with or without prior experience. What mat"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Choose care situations that fit your schedule, comfort level, and confidence."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Choose thoughtfully and ask questions"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Safe care starts with informed choices:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "accept stays you feel comfortable with"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "ask questions before care begins"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "be honest if something feels too challenging"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Asking questions is a sign of responsibility."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Follow the agreed routine"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Pets feel safest when:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "their daily rhythm stays familiar"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "feeding, walks, play, and rest follow agreed routines"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "care is calm, attentive, and consistent"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "If you notice changes, inform the pet parent."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Be present and attentive"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "A great pet friend:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "is genuinely present, not rushed"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "observes the pet’s mood and behaviour"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "stays calm in unexpected situations"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "You don’t need to know everything — what matters is care, awareness, and asking "
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "If something feels uncertain"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "If:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "a pet’s behaviour or condition changes"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "you’re unsure how to proceed"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "a situation feels unusual"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "contact the pet parent or reach out to us."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "You’re not alone — we’re here to support you."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Emergencies and unexpected situations"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Accidents are rare, but preparedness brings peace of mind. We recommend that you"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "know the pet’s veterinary details"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "keep the pet parent’s contact information accessible"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "act calmly and responsibly"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "If urgent action is required, the pet’s wellbeing always comes first."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Respect and trust within the community"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Stay With My Pet is built on mutual respect:"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "communicate kindly and respectfully"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "honour agreements"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "give feedback honestly and constructively"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Every experience helps shape a caring and safe community."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "When you need support or have questions"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "If anything feels unclear or you need help, don’t hesitate to get in touch."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "We’re here to support — not to judge or penalise."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Creating safer experiences together"
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "Safety is not the responsibility of one person alone."
+  },
+  {
+    "key": "legal.Safety Guidelines",
+    "en": "It’s a shared commitment to care, awareness, and trust."
+  }
+]
