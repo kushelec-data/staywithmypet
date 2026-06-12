@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { formatActiveMode, formatProfileRoleLabel, resolveActiveMode } from "@/lib/profile-mode";
 
@@ -8,29 +9,30 @@ type ProfileRoleStatusCardProps = {
 };
 
 export function ProfileRoleStatusCard({ profile }: ProfileRoleStatusCardProps) {
-  const accountType = formatProfileRoleLabel(profile.role);
-  const currentMode = formatActiveMode(resolveActiveMode(profile.role, profile.active_mode));
+  const { t } = useLanguage();
+  const setup = t.account.profileSetup;
+  const accountType = formatProfileRoleLabel(profile.role, t.roles);
+  const currentMode = formatActiveMode(
+    resolveActiveMode(profile.role, profile.active_mode),
+    t.roles,
+  );
 
   return (
     <div className="rounded-2xl border border-brand-teal/20 bg-mint/30 p-4 sm:p-5">
-      <p className="text-sm font-semibold uppercase tracking-wider text-brand-teal">Account type</p>
+      <p className="text-sm font-semibold uppercase tracking-wider text-brand-teal">
+        {setup.accountType}
+      </p>
       <p className="font-heading mt-2 text-lg font-semibold text-foreground">{accountType}</p>
       <p className="mt-3 text-sm text-muted">
-        Current dashboard mode:{" "}
+        {setup.currentDashboardMode}{" "}
         <span className="font-medium text-foreground">{currentMode}</span>
       </p>
       {profile.role === "both" ? (
-        <p className="mt-2 text-xs text-muted">
-          Switch between Pet Parent and Pet Friend modes from the sidebar.
-        </p>
+        <p className="mt-2 text-xs text-muted">{setup.switchModeHint}</p>
       ) : profile.role === "pet_parent" ? (
-        <p className="mt-2 text-xs text-muted">
-          Use &ldquo;Switch to Pet Friend&rdquo; in the sidebar to browse pets and send requests.
-        </p>
+        <p className="mt-2 text-xs text-muted">{setup.switchToFriendHint}</p>
       ) : (
-        <p className="mt-2 text-xs text-muted">
-          Use &ldquo;Switch to Pet Parent&rdquo; in the sidebar to list pets and receive requests.
-        </p>
+        <p className="mt-2 text-xs text-muted">{setup.switchToParentHint}</p>
       )}
     </div>
   );

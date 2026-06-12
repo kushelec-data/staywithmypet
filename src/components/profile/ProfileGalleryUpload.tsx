@@ -62,7 +62,7 @@ export function ProfileGalleryUpload({
     try {
       return await fn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : t.profileEdit.gallery.genericError);
       return undefined;
     } finally {
       setBusy(false);
@@ -153,10 +153,10 @@ export function ProfileGalleryUpload({
   return (
     <>
       <div className={`sm:col-span-2 ${editable ? "mt-6 border-t border-black/5 pt-6" : "mt-4"}`}>
-        <p className="form-field-label">Profile photos</p>
+        <p className="form-field-label">{t.account.petsPage.profilePhotos}</p>
         {editable ? (
           <p className="mt-1 text-xs text-muted">
-            Upload up to {MAX_PROFILE_GALLERY_PHOTOS} photos. Choose one as your main profile photo.
+            {t.profileEdit.gallery.photosHint.replace("{max}", String(MAX_PROFILE_GALLERY_PHOTOS))}
           </p>
         ) : null}
 
@@ -174,7 +174,7 @@ export function ProfileGalleryUpload({
                   <img src={url} alt="" className="aspect-square w-full object-cover" />
                   {isMain ? (
                     <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold text-white">
-                      Main
+                      {t.profileEdit.gallery.mainBadge}
                     </span>
                   ) : null}
                   {editable ? (
@@ -201,7 +201,7 @@ export function ProfileGalleryUpload({
                             })
                           }
                         >
-                          Set main
+                          {t.profileEdit.gallery.setMain}
                         </button>
                       ) : null}
                       <button
@@ -218,7 +218,7 @@ export function ProfileGalleryUpload({
                           })
                         }
                       >
-                        Remove
+                        {t.profileEdit.gallery.remove}
                       </button>
                     </div>
                   ) : null}
@@ -249,11 +249,16 @@ export function ProfileGalleryUpload({
                 disabled={disabled || busy}
                 onClick={() => inputRef.current?.click()}
               >
-                {busy ? "Uploading…" : `Add photos (${slotsLeft} left)`}
+                {busy
+                  ? t.common.uploading
+                  : t.profileEdit.gallery.addPhotos.replace("{count}", String(slotsLeft))}
               </Button>
             ) : (
               <p className="mt-3 text-xs text-muted">
-                Maximum {MAX_PROFILE_GALLERY_PHOTOS} photos reached.
+                {t.profileEdit.gallery.maxPhotosReached.replace(
+                  "{max}",
+                  String(MAX_PROFILE_GALLERY_PHOTOS),
+                )}
               </p>
             )}
 

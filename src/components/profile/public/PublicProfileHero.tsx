@@ -1,9 +1,13 @@
+"use client";
+
 import { AppImage } from "@/components/ui/AppImage";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
+import { useLanguage } from "@/context/LanguageContext";
 import { placeholderProfileImage } from "@/lib/images";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { formatProfileRoleBadge } from "@/lib/profile-mode";
 import type { PublicProfileView } from "@/lib/public-profile";
 import { profileInitials } from "@/lib/profile-utils";
@@ -19,11 +23,20 @@ export function PublicProfileHero({
   reviewsAvg = profile.rating_avg,
   reviewsCount = profile.rating_count,
 }: PublicProfileHeroProps) {
+  const { t, locale } = useLanguage();
   const initials = profileInitials(profile.display_name, null);
   const chips = [
-    formatProfileRoleBadge(profile.role),
+    formatProfileRoleBadge(profile.role, t.roles),
     ...(profile.nearbyLocation ? [profile.nearbyLocation] : []),
-    ...(profile.languages.length ? [profile.languages.slice(0, 2).join(", ")] : []),
+    ...(profile.languages.length
+      ? [
+          profile.languages
+            .slice(0, 2)
+            .map((l) => translateProfileLabel(l.trim(), locale))
+            .filter(Boolean)
+            .join(", "),
+        ]
+      : []),
   ].filter(Boolean);
   const avatarSrc = profile.avatar_url?.trim()
     ? profile.avatar_url

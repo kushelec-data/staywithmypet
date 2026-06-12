@@ -11,6 +11,7 @@ import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificatio
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { formatProfileRoleBadge, resolveActiveMode } from "@/lib/profile-mode";
 import { PUBLIC_CARD_MINT } from "@/lib/public-layout";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
@@ -39,7 +40,7 @@ export function MemberPublicTopCard({
   reviewsCount,
   ownerPets = [],
 }: MemberPublicTopCardProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { profile: viewerProfile } = useProfile();
   const isSelf = user?.id === profile.id;
@@ -48,9 +49,12 @@ export function MemberPublicTopCard({
     : null;
   const initials = profileInitials(profile.display_name, null);
   const chips = [
-    formatProfileRoleBadge(profile.role),
+    formatProfileRoleBadge(profile.role, t.roles),
     ...(profile.nearbyLocation ? [profile.nearbyLocation] : []),
-    ...(profile.languages.slice(0, 2).map((l) => l.trim()).filter(Boolean)),
+    ...profile.languages
+      .slice(0, 2)
+      .map((l) => translateProfileLabel(l.trim(), locale))
+      .filter(Boolean),
   ];
   const friendAvailability = resolvedAvailability(profile.details).selected_dates ?? [];
   const shownAsFriend = isProfileShownAsPetFriend(profile);

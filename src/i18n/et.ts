@@ -10,6 +10,7 @@ export const et = {
     cancel: "Tühista",
     save: "Salvesta",
     saving: "Salvestan…",
+    uploading: "Laadin üles…",
     loading: "Laen…",
     on: "Sees",
     off: "Väljas",
@@ -106,6 +107,10 @@ export const et = {
       description:
         "Sirvi lemmikloomi, kelle omanikud ootavad vastutustundlikku seltsi — jalutised, külastused, mäng ja soe kodune kogukond.",
       cta: "Otsi lemmikloomi",
+    },
+    both: {
+      label: "Lemmiklooma omanik ja sõber",
+      badge: "Mõlemad",
     },
   },
   hero: {
@@ -465,6 +470,7 @@ export const et = {
       editMyAvailability: "Muuda minu saadavust",
       editAvailabilityHint:
         "Puuduta päevi, mil oled saadaval. Loomaomanikud näevad sinu saadavust avalikul profiilil.",
+      profileSavedSuccess: "Profiil on edukalt salvestatud.",
     },
     petsPage: {
       createTitle: "Loo lemmiku profiil",
@@ -757,6 +763,16 @@ export const et = {
       errorLanguages: "Palun vali vähemalt üks keel.",
       errorBioMin: "Kirjuta biosse vähemalt 20 sõna.",
       errorBioMax: "Bio ei tohi ületada {max} sõna.",
+      bioWordCount: "{count} / {max} sõna",
+    },
+    gallery: {
+      photosHint: "Laadi üles kuni {max} fotot. Vali üks pea profiilipildiks.",
+      mainBadge: "Peamine",
+      setMain: "Määra peamiseks",
+      remove: "Eemalda",
+      addPhotos: "Lisa fotosid ({count} jäänud)",
+      maxPhotosReached: "Maksimaalselt {max} fotot on lubatud.",
+      genericError: "Midagi läks valesti.",
     },
     trust: {
       title: "Usaldus ja turvalisus",

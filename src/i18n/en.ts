@@ -10,6 +10,7 @@ export const en = {
     cancel: "Cancel",
     save: "Save",
     saving: "Saving…",
+    uploading: "Uploading…",
     loading: "Loading…",
     on: "On",
     off: "Off",
@@ -106,6 +107,10 @@ export const en = {
       description:
         "Browse pets near you whose Pet Parents welcome responsible companionship — walks, visits, play, and shared time in a warm, home-based community.",
       cta: "Search pets",
+    },
+    both: {
+      label: "Pet Parent & Pet Friend",
+      badge: "Both",
     },
   },
   hero: {
@@ -461,6 +466,7 @@ export const en = {
       editMyAvailability: "Edit my availability",
       editAvailabilityHint:
         "Tap days you're available. Pet Parents will see your availability on your public profile.",
+      profileSavedSuccess: "Profile saved successfully.",
     },
     petsPage: {
       createTitle: "Create pet profile",
@@ -748,6 +754,16 @@ export const en = {
       errorLanguages: "Please select at least one language.",
       errorBioMin: "Write at least 20 words in your bio.",
       errorBioMax: "Bio cannot exceed {max} words.",
+      bioWordCount: "{count} / {max} words",
+    },
+    gallery: {
+      photosHint: "Upload up to {max} photos. Choose one as your main profile photo.",
+      mainBadge: "Main",
+      setMain: "Set main",
+      remove: "Remove",
+      addPhotos: "Add photos ({count} left)",
+      maxPhotosReached: "Maximum {max} photos reached.",
+      genericError: "Something went wrong.",
     },
     trust: {
       title: "Trust & Safety",

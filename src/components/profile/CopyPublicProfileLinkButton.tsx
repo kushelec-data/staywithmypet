@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { useLanguage } from "@/context/LanguageContext";
 import { absolutePublicProfileUrl } from "@/lib/site-url";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -19,6 +20,8 @@ export function CopyPublicProfileLinkButton({
   className = "",
   disabled = false,
 }: CopyPublicProfileLinkButtonProps) {
+  const { t } = useLanguage();
+  const dh = t.dashboardHome;
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,9 +39,9 @@ export function CopyPublicProfileLinkButton({
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setCopied(false), 2500);
     } catch {
-      window.prompt("Copy your public profile link:", url);
+      window.prompt(dh.copyLinkPrompt, url);
     }
-  }, [profileId]);
+  }, [profileId, dh.copyLinkPrompt]);
 
   return (
     <div className="inline-flex flex-col items-start gap-1">
@@ -50,11 +53,11 @@ export function CopyPublicProfileLinkButton({
         disabled={disabled}
         onClick={() => void copyLink()}
       >
-        {copied ? "Link copied" : "Copy public profile link"}
+        {copied ? dh.linkCopied : dh.copyPublicLink}
       </Button>
       {copied ? (
         <span className="text-xs font-medium text-brand-teal" role="status">
-          Link copied to clipboard
+          {dh.linkCopiedClipboard}
         </span>
       ) : null}
     </div>

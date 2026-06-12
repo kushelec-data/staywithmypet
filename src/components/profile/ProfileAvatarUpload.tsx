@@ -96,10 +96,10 @@ export function ProfileAvatarUpload({
         )}
 
         <div className="min-w-0">
-          <p className="form-field-label">Profile photo</p>
+          <p className="form-field-label">{t.account.petsPage.profilePhoto}</p>
           {editable ? (
             <>
-              <p className="mt-1 text-xs text-muted">JPG, PNG, or WebP · max 5 MB</p>
+              <p className="mt-1 text-xs text-muted">{t.account.petsPage.photoFormatHint}</p>
               <input
                 ref={inputRef}
                 type="file"
@@ -116,7 +116,7 @@ export function ProfileAvatarUpload({
                   disabled={disabled || uploading}
                   onClick={() => inputRef.current?.click()}
                 >
-                  {uploading ? "Uploading…" : "Upload profile photo"}
+                  {uploading ? t.common.uploading : t.account.petsPage.uploadProfilePhoto}
                 </Button>
                 {shownUrl ? (
                   <Button

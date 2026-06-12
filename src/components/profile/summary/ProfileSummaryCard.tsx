@@ -1,4 +1,7 @@
+"use client";
+
 import { DashboardEmptyState, DashboardInfoCard } from "@/components/dashboard/DashboardInfoCard";
+import { useLanguage } from "@/context/LanguageContext";
 import { AvailabilityDateChips } from "@/components/ui/AvailabilityDateChips";
 import type { ProfileSummaryLines } from "@/lib/profile-summaries";
 import { DASHBOARD_TAG_CLASS } from "@/lib/dashboard-theme";
@@ -12,13 +15,15 @@ type ProfileSummaryCardProps = {
 export function ProfileSummaryCard({
   summary,
   editHref = "/profile/edit",
-  editLabel = "Edit",
+  editLabel,
 }: ProfileSummaryCardProps) {
+  const { t } = useLanguage();
+  const resolvedEditLabel = editLabel ?? t.common.edit;
   const hasContent =
     summary.lines.length > 0 || Boolean(summary.calendarDates?.length);
 
   return (
-    <DashboardInfoCard title={summary.title} editHref={editHref} editLabel={editLabel}>
+    <DashboardInfoCard title={summary.title} editHref={editHref} editLabel={resolvedEditLabel}>
       {hasContent ? (
         <div className="space-y-3">
           {summary.lines.length > 0 ? (
@@ -46,7 +51,7 @@ export function ProfileSummaryCard({
         <DashboardEmptyState
           message={summary.emptyMessage}
           actionHref={editHref}
-          actionLabel="Add details"
+          actionLabel={t.common.addDetails}
         />
       )}
     </DashboardInfoCard>

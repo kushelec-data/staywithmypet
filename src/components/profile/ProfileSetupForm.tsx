@@ -52,6 +52,7 @@ import {
 } from "@/lib/bio-words";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useLanguage } from "@/context/LanguageContext";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -114,8 +115,9 @@ export function ProfileSetupForm({
   hideRolePicker = false,
 }: ProfileSetupFormProps) {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const setup = t.account.profileSetup;
+  const pe = t.profileEdit.basic;
   const onboardingRole = t.onboarding.role;
   const resolvedSubmitLabel = submitLabel ?? setup.submitLabel;
   const roleOptions = useMemo(
@@ -260,24 +262,24 @@ export function ProfileSetupForm({
 
     const trimmedName = displayName.trim();
     if (!trimmedName) {
-      setError("Please enter your display name.");
+      setError(pe.errorDisplayName);
       return;
     }
     const locationText = finalizeLocationText(locationFieldValue);
     if (!locationText) {
-      setError("Please enter your location.");
+      setError(pe.errorLocation);
       return;
     }
     if (languages.length === 0) {
-      setError("Please select at least one language.");
+      setError(pe.errorLanguages);
       return;
     }
     if (!bioValid) {
-      if (bioWordCount < BIO_WORD_MIN) {
-        setError("Write at least 20 words in your bio.");
-      } else {
-        setError(`Bio cannot exceed ${BIO_WORD_MAX} words.`);
-      }
+      setError(
+        bioWordCount < BIO_WORD_MIN
+          ? pe.errorBioMin
+          : pe.errorBioMax.replace("{max}", String(BIO_WORD_MAX)),
+      );
       return;
     }
 
@@ -343,7 +345,7 @@ export function ProfileSetupForm({
       notifyDashboardRefresh();
       const { sendProfileCompletedEmailAction } = await import("@/app/actions/email-events");
       void sendProfileCompletedEmailAction();
-      setSuccess("Profile saved successfully.");
+      setSuccess(setup.profileSavedSuccess);
       router.push(DASHBOARD_PATH);
       router.refresh();
     } catch (err) {
@@ -535,7 +537,7 @@ export function ProfileSetupForm({
                       : "border-black/5 bg-surface text-sm font-medium text-[#333333] hover:bg-mint/40 hover:text-foreground"
                   }`}
                 >
-                  {lang}
+                  {translateProfileLabel(lang, locale)}
                 </button>
               );
             })}

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLanguage } from "@/context/LanguageContext";
 import {
   BIO_WORD_MAX,
   BIO_WORD_MIN,
@@ -12,16 +15,23 @@ type BioWordCounterProps = {
 };
 
 export function BioWordCounter({ wordCount, status, id }: BioWordCounterProps) {
+  const { t } = useLanguage();
+  const basic = t.profileEdit.basic;
+
   return (
     <div id={id} className="mt-1.5" aria-live="polite">
       <p className={`text-xs font-medium ${bioCounterTextClass(status)}`}>
-        {wordCount} / {BIO_WORD_MAX} words
+        {basic.bioWordCount
+          .replace("{count}", String(wordCount))
+          .replace("{max}", String(BIO_WORD_MAX))}
       </p>
       {wordCount < BIO_WORD_MIN ? (
-        <p className="mt-0.5 text-xs text-brand-pink">Write at least 20 words.</p>
+        <p className="mt-0.5 text-xs text-brand-pink">{basic.errorBioMin}</p>
       ) : null}
       {status === "too_many" ? (
-        <p className="mt-0.5 text-xs text-brand-pink">Bio cannot exceed {BIO_WORD_MAX} words.</p>
+        <p className="mt-0.5 text-xs text-brand-pink">
+          {basic.errorBioMax.replace("{max}", String(BIO_WORD_MAX))}
+        </p>
       ) : null}
     </div>
   );

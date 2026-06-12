@@ -67,7 +67,19 @@ export function formatActiveMode(
   return mode === "pet_parent" ? "Pet Parent" : "Pet Friend";
 }
 
-export function formatProfileRoleLabel(role: ProfileRole): string {
+export function formatProfileRoleLabel(role: ProfileRole, roles?: Dictionary["roles"]): string {
+  if (roles) {
+    switch (role) {
+      case "pet_parent":
+        return roles.petParent.label;
+      case "pet_friend":
+        return roles.petFriend.label;
+      case "both":
+        return roles.both.label;
+      default:
+        return role;
+    }
+  }
   switch (role) {
     case "pet_parent":
       return "Pet Parent";
@@ -81,7 +93,19 @@ export function formatProfileRoleLabel(role: ProfileRole): string {
 }
 
 /** Short badge label for public profile hero. */
-export function formatProfileRoleBadge(role: ProfileRole): string {
+export function formatProfileRoleBadge(role: ProfileRole, roles?: Dictionary["roles"]): string {
+  if (roles) {
+    switch (role) {
+      case "pet_parent":
+        return roles.petParent.label;
+      case "pet_friend":
+        return roles.petFriend.label;
+      case "both":
+        return roles.both.badge;
+      default:
+        return role;
+    }
+  }
   switch (role) {
     case "pet_parent":
       return "Pet Parent";
