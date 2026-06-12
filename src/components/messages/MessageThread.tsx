@@ -7,6 +7,7 @@ import {
   messageBubbleRadius,
   type ChatMessage,
 } from "@/lib/messaging";
+import { useLanguage } from "@/context/LanguageContext";
 
 type MessageThreadProps = {
   messages: ChatMessage[];
@@ -59,10 +60,12 @@ export function MessageThread({
   incomingAvatarUrl,
   incomingInitial = "?",
 }: MessageThreadProps) {
+  const { t } = useLanguage();
+
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center py-8">
-        <p className="text-sm text-[#4b4b4b] dark:text-muted">Loading messages…</p>
+        <p className="text-sm text-[#4b4b4b] dark:text-muted">{t.messages.loadingThread}</p>
       </div>
     );
   }

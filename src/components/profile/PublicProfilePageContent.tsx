@@ -53,7 +53,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
         if (cancelled) return;
 
         if (!row) {
-          setError("This profile could not be found.");
+          setError(t.publicProfileUi.profileNotFound);
           setProfile(null);
           setPets([]);
           return;
@@ -64,7 +64,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
             ? await usersShareActiveRequest(supabase, user.id, profileId)
             : false;
           if (!sharedRequest) {
-            setError("This profile is not public.");
+            setError(t.publicProfileUi.profileNotPublic);
             setProfile(null);
             setPets([]);
             return;
@@ -81,7 +81,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Could not load profile.");
+          setError(err instanceof Error ? err.message : t.publicProfileUi.loadError);
           setProfile(null);
           setPets([]);
         }
@@ -94,7 +94,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
     return () => {
       cancelled = true;
     };
-  }, [supabase, profileId, user?.id]);
+  }, [supabase, profileId, user?.id, t.publicProfileUi]);
 
   const { reviews, loading: reviewsLoading, ratingAvg, ratingCount } = useProfileReviews(
     profile?.id ?? null,
@@ -108,21 +108,21 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
 
   if (loading) {
     return (
-      <PublicPageShell backHref="/find-care" backLabel="Browse Pet Friends">
-        <p className="text-sm text-muted">Loading profile…</p>
+      <PublicPageShell backHref="/find-care" backLabel={t.publicProfileUi.browsePetFriends}>
+        <p className="text-sm text-muted">{t.publicProfileUi.loadingProfile}</p>
       </PublicPageShell>
     );
   }
 
   if (error || !profile) {
     return (
-      <PublicPageShell backHref="/find-care" backLabel="Browse Pet Friends">
+      <PublicPageShell backHref="/find-care" backLabel={t.publicProfileUi.browsePetFriends}>
         <div className="card-elevated rounded-2xl p-4 sm:p-5">
           <p className="text-sm text-brand-pink" role="alert">
-            {error ?? "Profile not found."}
+            {error ?? t.publicProfileUi.profileNotFound}
           </p>
           <Button href="/" variant="outline" size="sm" className="mt-3">
-            Back home
+            {t.publicProfileUi.backHome}
           </Button>
         </div>
       </PublicPageShell>
@@ -133,7 +133,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
   const showFriendSections = showPublicCareSection(profile);
 
   return (
-    <PublicPageShell backHref="/find-care" backLabel="Browse Pet Friends">
+    <PublicPageShell backHref="/find-care" backLabel={t.publicProfileUi.browsePetFriends}>
       <div className="space-y-4">
         <MemberPublicTopCard
           profile={profile}

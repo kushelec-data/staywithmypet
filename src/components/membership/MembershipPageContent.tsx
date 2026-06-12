@@ -33,7 +33,6 @@ import {
   hasDualActiveMemberships,
   membershipPlanLabel,
   membershipPlansForRole,
-  membershipRoleTitle,
   membershipStatusForMode,
   type MembershipRole,
   type UserMembership,
@@ -41,6 +40,7 @@ import {
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
+import type { Dictionary } from "@/i18n/translations";
 
 type StripeCheckoutReadiness = {
   ready: boolean;
@@ -58,53 +58,69 @@ function parseCheckoutRole(value: string | null): MembershipRole | null {
   return parseMembershipPageRole(value);
 }
 
+function localizedMembershipPlanName(
+  membership: UserMembership,
+  t: Dictionary,
+): string | null {
+  const plans =
+    membership.role === "pet_parent" ? t.pricing.petParentPlans : t.pricing.petFriendPlans;
+  const fromI18n = plans.find((p) => p.id === membership.plan_id)?.name;
+  if (fromI18n) return fromI18n;
+  return membershipPlanLabel(membership);
+}
+
 function RoleMembershipSummary({
   role,
   membership,
   isActive,
+  t,
 }: {
   role: MembershipRole;
   membership: UserMembership | null;
   isActive: boolean;
+  t: Dictionary;
 }) {
-  const planName = membership ? membershipPlanLabel(membership) : null;
-  const title = membershipRoleTitle(role);
+  const mpage = t.account.membershipPage;
+  const roleLabel = role === "pet_parent" ? t.roles.petParent.label : t.roles.petFriend.label;
+  const planName = membership ? localizedMembershipPlanName(membership, t) : null;
 
   return (
     <div className={`${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}>
-      <p className={ACCOUNT_FIELD_LABEL_CLASS}>{title}</p>
+      <p className={ACCOUNT_FIELD_LABEL_CLASS}>{roleLabel}</p>
       <p className={`mt-1 ${ACCOUNT_SECTION_TITLE}`}>
         {isActive && planName
-          ? `Your ${title} membership is active`
-          : `No active ${title} membership`}
+          ? mpage.activeHeadline.replace("{role}", roleLabel)
+          : mpage.inactiveHeadline.replace("{role}", roleLabel)}
       </p>
       {isActive && membership ? (
         <dl className="mt-3 space-y-2">
           {planName ? (
             <div className="flex justify-between gap-2">
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Plan</dt>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.planLabel}</dt>
               <dd className={ACCOUNT_BODY_VALUE}>{planName}</dd>
             </div>
           ) : null}
           {membership.start_date ? (
             <div className="flex justify-between gap-2">
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Started</dt>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
               <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.start_date)}</dd>
             </div>
           ) : null}
           {membership.end_date ? (
             <div className="flex justify-between gap-2">
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Ends</dt>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
               <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.end_date)}</dd>
             </div>
           ) : null}
           <div className="flex justify-between gap-2">
-            <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Auto-renew</dt>
-            <dd className={ACCOUNT_BODY_VALUE}>{membership.auto_renew ? "On" : "Off"}</dd>
+            <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
+            <dd className={ACCOUNT_BODY_VALUE}>
+              {membership.auto_renew ? mpage.on : mpage.off}
+            </dd>
           </div>
         </dl>
       ) : (
-        <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>Browse for free; upgrade to unlock paid features.</p>
+        <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{mpage.browseFreeUpgrade}</p>
       )}
     </div>
   );
@@ -263,8 +279,10 @@ export function MembershipPageContent({
 
   const activePlanName = useMemo(() => {
     if (!profile || !isActive) return null;
-    return membershipPlanLabel(memberships[modeRole]);
-  }, [profile, isActive, memberships, modeRole]);
+    const row = memberships[modeRole];
+    if (!row) return null;
+    return localizedMembershipPlanName(row, t);
+  }, [profile, isActive, memberships, modeRole, t]);
 
   const stripeCheckout = stripeCheckoutByRole?.[modeRole];
   const stripeCheckoutReady = stripeCheckout?.ready ?? false;
@@ -299,10 +317,16 @@ export function MembershipPageContent({
     const friendFeatures = Object.fromEntries(
       t.pricing.petFriendPlans.map((p) => [p.id, p.features]),
     );
+    const parentNames = Object.fromEntries(t.pricing.petParentPlans.map((p) => [p.id, p.name]));
+    const friendNames = Object.fromEntries(t.pricing.petFriendPlans.map((p) => [p.id, p.name]));
+    const namesById = modeRole === "pet_parent" ? parentNames : friendNames;
     return membershipPlansForRole(modeRole, {
       ...parentFeatures,
       ...friendFeatures,
-    });
+    }).map((plan) => ({
+      ...plan,
+      plan_name: namesById[plan.plan_id] ?? plan.plan_name,
+    }));
   }, [modeRole, t.pricing.petParentPlans, t.pricing.petFriendPlans]);
 
   if (authLoading) {
@@ -347,11 +371,13 @@ export function MembershipPageContent({
             role="pet_parent"
             membership={memberships.pet_parent}
             isActive={hasActiveMembershipForRole(memberships, "pet_parent")}
+            t={t}
           />
           <RoleMembershipSummary
             role="pet_friend"
             membership={memberships.pet_friend}
             isActive={hasActiveMembershipForRole(memberships, "pet_friend")}
+            t={t}
           />
         </div>
       ) : null}
@@ -359,16 +385,18 @@ export function MembershipPageContent({
       <AccountCard className={`mb-6 ${ACCOUNT_CARD_PADDING_COMPACT}`}>
         <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
         <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>
-          {loading ? "Loading…" : statusHeadline}
+          {loading ? t.common.loading : statusHeadline}
         </p>
         {!loading && isActive && activePlanName ? (
-          <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>{activePlanName} plan</p>
+          <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>
+            {mpage.activePlanSuffix.replace("{plan}", activePlanName)}
+          </p>
         ) : null}
         {!loading && isActive && activeMembership ? (
           <dl className="mt-4 grid gap-3 sm:grid-cols-3">
             {activeMembership.start_date ? (
               <div>
-                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Started</dt>
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
                 <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
                   {formatMembershipDate(activeMembership.start_date)}
                 </dd>
@@ -376,24 +404,24 @@ export function MembershipPageContent({
             ) : null}
             {activeMembership.end_date ? (
               <div>
-                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Ends</dt>
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
                 <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
                   {formatMembershipDate(activeMembership.end_date)}
                 </dd>
               </div>
             ) : null}
             <div>
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>Auto-renew</dt>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
               <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
-                {activeMembership.auto_renew ? "On" : "Off"}
+                {activeMembership.auto_renew ? mpage.on : mpage.off}
               </dd>
             </div>
           </dl>
         ) : null}
         <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
           {isActive
-            ? `Your ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} membership unlocks messaging and bookings in this mode.`
-            : `Choose a ${planMode === "pet_parent" ? "Pet Parent" : "Pet Friend"} plan below to pay securely with Stripe (TEST mode). Browse for free until you upgrade.`}
+            ? mpage.activeUnlocks.replace("{role}", roleLabel)
+            : mpage.choosePlanStripe.replace("{role}", roleLabel)}
         </p>
       </AccountCard>
 

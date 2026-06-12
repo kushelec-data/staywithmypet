@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { useLanguage } from "@/context/LanguageContext";
 import { absolutePublicPetUrl } from "@/lib/site-url";
 import { Copy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,11 +24,16 @@ export function CopyPublicPetLinkButton({
   size = "sm",
   className = "",
   disabled = false,
-  label = "Copy link",
-  copiedLabel = "Link copied",
+  label,
+  copiedLabel,
   iconOnly = false,
-  tooltip = "Copy public profile link",
+  tooltip,
 }: CopyPublicPetLinkButtonProps) {
+  const { t } = useLanguage();
+  const petsT = t.account.petsPage;
+  const resolvedLabel = label ?? petsT.copyLink;
+  const resolvedCopiedLabel = copiedLabel ?? petsT.linkCopied;
+  const resolvedTooltip = tooltip ?? petsT.copyPublicLink;
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -45,11 +51,11 @@ export function CopyPublicPetLinkButton({
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setCopied(false), 2500);
     } catch {
-      window.prompt("Copy this pet's public link:", url);
+      window.prompt(petsT.copyLinkPrompt, url);
     }
-  }, [petId]);
+  }, [petId, petsT.copyLinkPrompt]);
 
-  const title = copied ? copiedLabel : tooltip;
+  const title = copied ? resolvedCopiedLabel : resolvedTooltip;
 
   if (iconOnly) {
     return (
@@ -75,7 +81,7 @@ export function CopyPublicPetLinkButton({
       disabled={disabled}
       onClick={() => void copyLink()}
     >
-      {copied ? copiedLabel : label}
+      {copied ? resolvedCopiedLabel : resolvedLabel}
     </Button>
   );
 }

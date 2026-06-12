@@ -48,7 +48,7 @@ export function PublicCompactReviewsCard({
       </div>
 
       {loading ? (
-        <p className="mt-3 text-sm text-muted">Loading reviews…</p>
+        <p className="mt-3 text-sm text-muted">{t.reviewsUi.loadingReviews}</p>
       ) : ratingCount === 0 ? (
         <AccountEmptyState
           className="!px-0 !py-6"

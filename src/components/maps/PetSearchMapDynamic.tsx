@@ -1,5 +1,6 @@
 "use client";
 
+import { MapLoadingFallback } from "@/components/i18n/SuspenseFallbacks";
 import dynamic from "next/dynamic";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
 
@@ -8,12 +9,7 @@ const PetSearchMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div
-        className="flex min-h-[280px] items-center justify-center rounded-3xl border border-black/[0.06] bg-mint/20 text-sm text-muted sm:min-h-[360px] lg:min-h-[520px]"
-        aria-busy="true"
-      >
-        Loading map…
-      </div>
+      <MapLoadingFallback className="flex min-h-[280px] items-center justify-center rounded-3xl border border-black/[0.06] bg-mint/20 text-sm text-muted sm:min-h-[360px] lg:min-h-[520px]" />
     ),
   },
 );

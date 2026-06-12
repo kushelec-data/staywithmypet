@@ -1,3 +1,4 @@
+import { CommonLoadingFallback } from "@/components/i18n/SuspenseFallbacks";
 import { MembershipPageContent } from "@/components/membership/MembershipPageContent";
 import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import {
@@ -31,11 +32,7 @@ export default async function MembershipPage() {
 
   return (
     <Suspense
-      fallback={
-        <div className="mx-auto w-full max-w-7xl px-4 py-16 text-center text-muted sm:px-6">
-          Loading…
-        </div>
-      }
+      fallback={<CommonLoadingFallback />}
     >
       <MembershipPageContent
         stripeCheckoutByRole={stripeCheckoutByRole}

@@ -1,4 +1,7 @@
+"use client";
+
 import { PetIntroCard } from "@/components/pets/PetIntroCard";
+import { useLanguage } from "@/context/LanguageContext";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
 import { PUBLIC_OWNER_PETS_SECTION_ID } from "@/lib/public-profile";
 
@@ -7,6 +10,10 @@ type PublicPetSummaryProps = {
 };
 
 export function PublicPetSummary({ pets }: PublicPetSummaryProps) {
+  const { t } = useLanguage();
+  const ui = t.publicProfileUi;
+  const petsT = t.account.petsPage;
+
   if (!pets.length) return null;
 
   return (
@@ -15,9 +22,9 @@ export function PublicPetSummary({ pets }: PublicPetSummaryProps) {
       className="card-elevated rounded-2xl p-4 sm:p-5 scroll-mt-24"
     >
       <header>
-        <h2 className="font-heading text-base font-semibold text-foreground">Pets</h2>
+        <h2 className="font-heading text-base font-semibold text-foreground">{ui.petsHeading}</h2>
         <p className="mt-0.5 text-xs text-muted">
-          {pets.length} listed · general area only
+          {ui.listedGeneralArea.replace("{count}", String(pets.length))}
         </p>
       </header>
 
@@ -28,7 +35,7 @@ export function PublicPetSummary({ pets }: PublicPetSummaryProps) {
               pet={pet}
               variant="public"
               detailsHref={`/pet/${pet.id}`}
-              detailsLabel="Public profile"
+              detailsLabel={petsT.publicProfile}
             />
           </li>
         ))}

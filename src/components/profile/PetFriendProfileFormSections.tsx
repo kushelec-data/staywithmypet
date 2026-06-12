@@ -79,7 +79,8 @@ export function PetFriendProfileFormSections({
   availabilityDefaultOpen = false,
   onlyAvailabilitySection = false,
 }: PetFriendProfileFormSectionsProps) {
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
+  const setup = t.account.profileSetup;
   const pl = (en: string) => translateProfileLabel(en, locale);
 
   const petTypeChipOptions = useMemo(() => toProfileLabeledChipOptions(petTypeOptions, locale), [locale]);
@@ -267,10 +268,8 @@ export function PetFriendProfileFormSections({
           </div>
           {showCalendar ? (
             <div className="sm:col-span-2">
-              <p className="text-base font-semibold text-foreground">Edit my availability</p>
-              <p className="mt-1 text-sm text-muted">
-                Tap days you’re available. Pet Parents will see your availability on your public profile.
-              </p>
+              <p className="text-base font-semibold text-foreground">{setup.editMyAvailability}</p>
+              <p className="mt-1 text-sm text-muted">{setup.editAvailabilityHint}</p>
               <div className="mt-4 rounded-3xl border border-black/5 bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
                 <AvailabilityCalendar
                   selectedDates={form.availabilitySelectedDates}

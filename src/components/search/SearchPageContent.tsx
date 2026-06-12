@@ -318,7 +318,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
         if (!cancelled) {
           setAllPets([]);
           setProfiles([]);
-          setLoadError(err instanceof Error ? err.message : "Could not load results.");
+          setLoadError(err instanceof Error ? err.message : t.search.loadResultsError);
         }
       } finally {
         if (!cancelled) setLoading(false);

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { validateCropSourceFile } from "@/lib/image-crop";
 import { uploadProfileAvatar } from "@/lib/profile-avatar";
 import { profileInitials } from "@/lib/profile-utils";
+import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase";
 import { useMemo, useRef, useState } from "react";
 
@@ -33,6 +34,7 @@ export function ProfileAvatarUpload({
   editable = true,
   disabled = false,
 }: ProfileAvatarUploadProps) {
+  const { t } = useLanguage();
   const supabase = useMemo(() => createClient(), []);
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -50,7 +52,7 @@ export function ProfileAvatarUpload({
       if (file) validateCropSourceFile(file);
       setCropSession({ file, url });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not open photo editor.");
+      setError(err instanceof Error ? err.message : t.media.openEditorError);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -71,7 +73,7 @@ export function ProfileAvatarUpload({
       }
       setCropSession(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not upload profile photo.");
+      setError(err instanceof Error ? err.message : t.media.uploadAvatarError);
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -124,7 +126,7 @@ export function ProfileAvatarUpload({
                     disabled={disabled || uploading}
                     onClick={() => openCrop(undefined, shownUrl)}
                   >
-                    Edit photo
+                    {t.media.editPhoto}
                   </Button>
                 ) : null}
               </div>

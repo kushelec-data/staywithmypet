@@ -64,7 +64,7 @@ function FlyToSelected({
 function MapMarkerPopup({ marker }: { marker: SearchMapMarker }) {
   const { t } = useLanguage();
   const isFriend = marker.variant === "friends";
-  const ctaLabel = isFriend ? t.common.viewProfile : "View pet";
+  const ctaLabel = isFriend ? t.common.viewProfile : t.requests.viewPet;
 
   return (
     <div className="swmp-map-popup__card">
@@ -169,6 +169,7 @@ export function SearchResultsMap({
   onMarkerSelect,
   ariaLabel = "Search results map",
 }: SearchResultsMapProps) {
+  const { t } = useLanguage();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const containerRef = useRef<HTMLDivElement>(null);
@@ -221,7 +222,7 @@ export function SearchResultsMap({
           className="flex h-full min-h-[240px] w-full items-center justify-center bg-mint/10 text-sm text-muted"
           aria-busy="true"
         >
-          Loading map…
+          {t.search.loadingMap}
         </div>
       )}
     </div>

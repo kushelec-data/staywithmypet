@@ -394,7 +394,7 @@ export function ChatPanel({
             onClick={() => setEmojiOpen((v) => !v)}
             disabled={!canSend}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base text-muted hover:bg-black/[0.04] disabled:opacity-40 dark:hover:bg-white/[0.06]"
-            aria-label="Insert emoji"
+            aria-label={t.messagesUi.insertEmoji}
           >
             😊
           </button>

@@ -51,28 +51,11 @@ import {
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
+import { useLanguage } from "@/context/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const DASHBOARD_PATH = "/dashboard";
-
-const roleOptions: { value: ProfileRole; label: string; description: string }[] = [
-  {
-    value: "pet_parent",
-    label: "Pet Parent",
-    description: "I have pets and need care or companionship for them.",
-  },
-  {
-    value: "pet_friend",
-    label: "Pet Friend",
-    description: "I want to spend time with pets and help Pet Parents.",
-  },
-  {
-    value: "both",
-    label: "Both",
-    description: "I have pets and also enjoy caring for other pets.",
-  },
-];
 
 type ProfileSetupFormProps = {
   submitLabel?: string;
@@ -127,10 +110,34 @@ function applyProfileToForm(
 }
 
 export function ProfileSetupForm({
-  submitLabel = "Save profile",
+  submitLabel,
   hideRolePicker = false,
 }: ProfileSetupFormProps) {
   const router = useRouter();
+  const { t } = useLanguage();
+  const setup = t.account.profileSetup;
+  const onboardingRole = t.onboarding.role;
+  const resolvedSubmitLabel = submitLabel ?? setup.submitLabel;
+  const roleOptions = useMemo(
+    (): { value: ProfileRole; label: string; description: string }[] => [
+      {
+        value: "pet_parent",
+        label: t.roles.petParent.label,
+        description: onboardingRole.petParentDescription,
+      },
+      {
+        value: "pet_friend",
+        label: t.roles.petFriend.label,
+        description: onboardingRole.petFriendDescription,
+      },
+      {
+        value: "both",
+        label: setup.roleBoth,
+        description: setup.roleBothDescription,
+      },
+    ],
+    [t.roles.petParent.label, t.roles.petFriend.label, onboardingRole, setup],
+  );
   const { user } = useAuth();
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
@@ -340,7 +347,7 @@ export function ProfileSetupForm({
       router.push(DASHBOARD_PATH);
       router.refresh();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save your profile.";
+      const message = err instanceof Error ? err.message : setup.saveError;
       console.error("[profile] save failed in form", message);
       setError(message);
     } finally {
@@ -349,7 +356,7 @@ export function ProfileSetupForm({
   }
 
   if (profileLoading) {
-    return <p className="text-sm text-muted">Loading profile…</p>;
+    return <p className="text-sm text-muted">{setup.loadingProfile}</p>;
   }
 
   return (
@@ -369,8 +376,8 @@ export function ProfileSetupForm({
       <div className="space-y-4">
         <ProfileCollapsibleSection
           id="about-me"
-          title="About me"
-          description="Name, location, languages, and introduction."
+          title={setup.aboutMeTitle}
+          description={setup.aboutMeDescriptionIntro}
           defaultOpen
         >
         {user ? (
@@ -395,7 +402,7 @@ export function ProfileSetupForm({
 
         <div className="sm:col-span-2">
           <label htmlFor="display_name" className="form-field-label">
-            Display name
+            {setup.displayName}
           </label>
           <input
             id="display_name"
@@ -405,7 +412,7 @@ export function ProfileSetupForm({
             required
             autoComplete="name"
             className="input-field mt-1"
-            placeholder="How others will see you"
+            placeholder={setup.displayNamePlaceholder}
           />
         </div>
 
@@ -415,7 +422,7 @@ export function ProfileSetupForm({
           </div>
         ) : (
           <fieldset className="sm:col-span-2">
-            <legend className="form-field-label">Your role</legend>
+            <legend className="form-field-label">{setup.yourRole}</legend>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               {roleOptions.map((option) => (
                 <label
@@ -444,7 +451,7 @@ export function ProfileSetupForm({
 
         <div className="sm:col-span-2">
           <label htmlFor="location" className="form-field-label">
-            Location
+            {setup.location}
           </label>
           <GooglePlacesInput
             id="location"
@@ -467,7 +474,7 @@ export function ProfileSetupForm({
             required
             autoComplete="street-address"
             className="input-field mt-1"
-            placeholder="City, region, or address"
+            placeholder={setup.locationPlaceholder}
             datalistId={PROFILE_LOCATION_DATALIST_ID}
           />
           <datalist id={PROFILE_LOCATION_DATALIST_ID}>
@@ -476,18 +483,14 @@ export function ProfileSetupForm({
             ))}
           </datalist>
           <p className="mt-1 text-xs text-muted">
-            {getGoogleMapsApiKey()
-              ? "Start typing for Google address suggestions, or pick a city from the list."
-              : "Pick a suggested city or type your area."}
+            {getGoogleMapsApiKey() ? setup.locationGoogleHint : setup.locationCityHint}
           </p>
         </div>
 
         {availabilityUx.showPersonalAvailabilityEditor && !showFriendProfileSections ? (
           <div className="sm:col-span-2 rounded-2xl border border-black/5 bg-mint/15 p-4 sm:p-5">
-          <p className="form-field-label">My availability</p>
-          <p className="mt-1 text-xs text-muted">
-            Tap the days you are available to help care for pets as a Pet Friend.
-          </p>
+          <p className="form-field-label">{setup.myAvailability}</p>
+          <p className="mt-1 text-xs text-muted">{setup.myAvailabilityHint}</p>
           <div className="mt-4">
             <div className="rounded-2xl border-2 border-brand-teal/25 bg-surface/90 p-3 shadow-sm ring-1 ring-black/5 sm:p-4">
               <AvailabilityCalendar
@@ -505,19 +508,19 @@ export function ProfileSetupForm({
         {availabilityUx.showPetCareDates &&
         (!availabilityUx.showPersonalAvailabilityEditor || (profile?.role ?? role) === "both") ? (
           <div className="sm:col-span-2 rounded-2xl border border-black/5 bg-mint/15 p-4 sm:p-5">
-            <p className="form-field-label">Pet care availability</p>
+            <p className="form-field-label">{setup.petCareAvailability}</p>
             <p className="mt-1 text-xs text-muted">
-              Set when each pet needs care on{" "}
+              {setup.petCareAvailabilityHint}{" "}
               <a href="/pets" className="font-semibold text-brand-teal hover:text-brand-pink">
-                My pets
+                {setup.petCareAvailabilityLink}
               </a>{" "}
-              (add or edit a pet profile).
+              {setup.petCareAvailabilitySuffix}
             </p>
           </div>
         ) : null}
 
         <div className="sm:col-span-2">
-          <span className="form-field-label">Languages</span>
+          <span className="form-field-label">{setup.languages}</span>
           <div className="mt-2 flex flex-wrap gap-2">
             {languageOptions.map((lang) => {
               const selected = languages.includes(lang);
@@ -541,7 +544,7 @@ export function ProfileSetupForm({
 
         <div className="sm:col-span-2">
           <label htmlFor="bio" className="form-field-label">
-            Bio
+            {setup.bioLabel}
           </label>
           <textarea
             id="bio"
@@ -551,7 +554,7 @@ export function ProfileSetupForm({
             onChange={(e) => handleBioChange(e.target.value)}
             required
             className="input-field mt-1 resize-y"
-            placeholder="Tell Pet Parents and Pet Friends about yourself and your experience with pets."
+            placeholder={setup.bioPlaceholder}
             aria-describedby="bio-word-counter"
           />
           <BioWordCounter id="bio-word-counter" wordCount={bioWordCount} status={bioStatus} />
@@ -578,7 +581,7 @@ export function ProfileSetupForm({
       </div>
 
       <Button type="submit" variant="primary" disabled={saving || !bioValid}>
-        {saving ? "Saving…" : submitLabel}
+        {saving ? t.common.saving : resolvedSubmitLabel}
       </Button>
     </form>
   );

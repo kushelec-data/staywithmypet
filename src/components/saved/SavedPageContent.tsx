@@ -50,7 +50,7 @@ export function SavedPageContent() {
         if (!cancelled) {
           setSavedPets([]);
           setSavedFriends([]);
-          setLoadError(err instanceof Error ? err.message : "Could not load saved items.");
+          setLoadError(err instanceof Error ? err.message : s.loadError);
         }
       } finally {
         if (!cancelled) setLoading(false);

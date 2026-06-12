@@ -2,6 +2,7 @@
 
 import { RoleModeGuardModal } from "@/components/role-mode/RoleModeGuardModal";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import {
@@ -21,6 +22,7 @@ type RoleModeSearchGuardProps = {
 
 export function RoleModeSearchGuard({ page, children }: RoleModeSearchGuardProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, setProfileRow, refreshProfile } = useProfile();
   const supabase = useMemo(() => createClient(), []);
@@ -50,7 +52,7 @@ export function RoleModeSearchGuard({ page, children }: RoleModeSearchGuardProps
       router.push(DASHBOARD_PATH);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not switch mode.");
+      setError(err instanceof Error ? err.message : t.account.couldNotSwitchMode);
     } finally {
       setSwitching(false);
     }

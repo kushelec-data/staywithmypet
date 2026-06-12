@@ -102,7 +102,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [loadingPet, setLoadingPet] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
   const pl = useCallback((en: string) => translateProfileLabel(en, locale), [locale]);
 
   const localizedAnimalTypes = useMemo(
@@ -175,7 +175,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         );
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Could not load pet.");
+          setError(err instanceof Error ? err.message : t.account.petsPage.loadPetError);
         }
       } finally {
         if (!cancelled) setLoadingPet(false);
@@ -209,7 +209,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           .filter((photo) => photo.url.length > 0),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update pet photo.");
+      setError(err instanceof Error ? err.message : t.account.petsPage.updatePhotoError);
       throw err;
     } finally {
       setReplacingExistingPhoto(false);
@@ -309,14 +309,14 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       router.push("/pets");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save your pet profile.");
+      setError(err instanceof Error ? err.message : t.account.petsPage.savePetError);
     } finally {
       setSaving(false);
     }
   }
 
   if (loadingPet) {
-    return <p className="text-sm text-muted">Loading pet profile…</p>;
+    return <p className="text-sm text-muted">{t.account.petsPage.loadingPetProfile}</p>;
   }
 
   return (

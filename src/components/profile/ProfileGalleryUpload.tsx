@@ -11,6 +11,7 @@ import {
   setMainProfilePhoto,
   uploadProfileGalleryPhoto,
 } from "@/lib/profile-gallery";
+import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { useMemo, useRef, useState } from "react";
@@ -39,6 +40,7 @@ export function ProfileGalleryUpload({
   editable = true,
   disabled = false,
 }: ProfileGalleryUploadProps) {
+  const { t } = useLanguage();
   const supabase = useMemo(() => createClient(), []);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingUploadsRef = useRef<File[]>([]);
@@ -89,7 +91,7 @@ export function ProfileGalleryUpload({
         validateCropSourceFile(file);
         validFiles.push(file);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not open photo editor.");
+        setError(err instanceof Error ? err.message : t.media.openEditorError);
       }
     }
 
@@ -183,7 +185,7 @@ export function ProfileGalleryUpload({
                         className="rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground"
                         onClick={() => openReplaceCrop(url)}
                       >
-                        Edit photo
+                        {t.media.editPhoto}
                       </button>
                       {!isMain ? (
                         <button

@@ -2,6 +2,7 @@
 
 import { PhotoLightbox } from "@/components/media/PhotoLightbox";
 import { AppImage } from "@/components/ui/AppImage";
+import { useLanguage } from "@/context/LanguageContext";
 import { useState } from "react";
 
 type PublicProfileGalleryProps = {
@@ -10,6 +11,8 @@ type PublicProfileGalleryProps = {
 };
 
 export function PublicProfileGallery({ photos, displayName }: PublicProfileGalleryProps) {
+  const { t } = useLanguage();
+  const ui = t.publicProfileUi;
   const urls = photos.filter((u) => u.trim()).slice(0, 6);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -24,14 +27,19 @@ export function PublicProfileGallery({ photos, displayName }: PublicProfileGalle
   return (
     <>
       <section className="card-elevated rounded-2xl p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-foreground">Photos</h2>
-        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={`${displayName} profile photos`}>
+        <h2 className="text-sm font-semibold text-foreground">{ui.photos}</h2>
+        <ul
+          className="mt-2 flex flex-wrap gap-1.5"
+          aria-label={ui.profilePhotosAria.replace("{name}", displayName)}
+        >
           {urls.map((url, index) => (
             <li key={url}>
               <button
                 type="button"
                 className="relative h-14 w-14 overflow-hidden rounded-lg ring-1 ring-black/5 transition hover:ring-brand-teal/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal sm:h-16 sm:w-16"
-                aria-label={`View ${displayName} photo ${index + 1}`}
+                aria-label={ui.viewPhoto
+                  .replace("{name}", displayName)
+                  .replace("{n}", String(index + 1))}
                 onClick={() => openAt(index)}
               >
                 <AppImage

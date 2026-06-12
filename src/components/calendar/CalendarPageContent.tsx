@@ -55,7 +55,7 @@ export function CalendarPageContent() {
         if (cancelled) return;
         setPets([]);
         setSelectedPetId(null);
-        setPetsError(err instanceof Error ? err.message : "Could not load pets");
+        setPetsError(err instanceof Error ? err.message : copy.loadPetsError);
       })
       .finally(() => {
         if (!cancelled) setLoadingPets(false);

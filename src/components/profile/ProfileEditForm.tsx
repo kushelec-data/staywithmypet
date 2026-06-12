@@ -430,7 +430,7 @@ export function ProfileEditForm() {
       );
       await afterSectionSave("basic", saved);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save your profile.";
+      const message = err instanceof Error ? err.message : t.profileEdit.saveProfileError;
       setErrors((prev) => ({ ...prev, basic: message }));
     } finally {
       setSaving((prev) => ({ ...prev, basic: false }));
@@ -476,7 +476,7 @@ export function ProfileEditForm() {
       );
       await afterSectionSave("trust", saved);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save trust & safety.";
+      const message = err instanceof Error ? err.message : t.profileEdit.saveTrustSafetyError;
       setErrors((prev) => ({ ...prev, trust: message }));
     } finally {
       setSaving((prev) => ({ ...prev, trust: false }));
@@ -513,7 +513,7 @@ export function ProfileEditForm() {
       });
       await afterSectionSave(saveAsSection, saved);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save Pet Friend profile.";
+      const message = err instanceof Error ? err.message : t.profileEdit.saveFriendProfileError;
       setErrors((prev) => ({ ...prev, [saveAsSection]: message }));
     } finally {
       setSaving((prev) => ({ ...prev, [saveAsSection]: false }));
@@ -542,7 +542,7 @@ export function ProfileEditForm() {
       });
       await afterSectionSave("petParent", saved);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not save Pet Parent profile.";
+      const message = err instanceof Error ? err.message : t.profileEdit.saveParentProfileError;
       setErrors((prev) => ({ ...prev, petParent: message }));
     } finally {
       setSaving((prev) => ({ ...prev, petParent: false }));
@@ -550,7 +550,7 @@ export function ProfileEditForm() {
   }
 
   if (profileLoading) {
-    return <p className="text-sm text-muted">Loading profile…</p>;
+    return <p className="text-sm text-muted">{t.account.profileSetup.loadingProfile}</p>;
   }
 
   const anySaving = Object.values(saving).some(Boolean);

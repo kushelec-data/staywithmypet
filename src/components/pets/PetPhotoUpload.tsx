@@ -3,6 +3,7 @@
 import { PhotoCropModal } from "@/components/media/PhotoCropModal";
 import { isCropSupportedImageFile, validateCropSourceFile } from "@/lib/image-crop";
 import { MAX_PET_PHOTOS } from "@/lib/pet-photos";
+import { useLanguage } from "@/context/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 
 export type ExistingPetPhotoItem = {
@@ -39,6 +40,7 @@ export function PetPhotoUpload({
   onReplaceExistingPhoto,
   replacingExisting = false,
 }: PetPhotoUploadProps) {
+  const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -94,7 +96,7 @@ export function PetPhotoUpload({
         validateCropSourceFile(file);
         validImages.push(file);
       } catch (err) {
-        setPickError(err instanceof Error ? err.message : "Could not open photo editor.");
+        setPickError(err instanceof Error ? err.message : t.media.openEditorError);
       }
     }
 
@@ -160,7 +162,7 @@ export function PetPhotoUpload({
         setCropSession(null);
       }
     } catch (err) {
-      setPickError(err instanceof Error ? err.message : "Could not save photo.");
+      setPickError(err instanceof Error ? err.message : t.media.savePhotoError);
     } finally {
       setCropSaving(false);
     }
@@ -215,7 +217,7 @@ export function PetPhotoUpload({
                     onClick={() => openEditExistingPhoto(photo)}
                     className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
                   >
-                    Edit photo
+                    {t.media.editPhoto}
                   </button>
                 ) : null}
               </li>
@@ -239,7 +241,7 @@ export function PetPhotoUpload({
                     onClick={() => openEditNewFile(index)}
                     className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
                   >
-                    Edit photo
+                    {t.media.editPhoto}
                   </button>
                 ) : null}
                 <button

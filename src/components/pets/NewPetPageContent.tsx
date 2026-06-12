@@ -4,6 +4,7 @@ import { AccountLayout } from "@/components/account/AccountLayout";
 import { NewPetForm } from "@/components/pets/NewPetForm";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import { dashboardCapabilitiesForActiveMode } from "@/lib/account-nav";
 import { useRouter } from "next/navigation";
@@ -13,6 +14,8 @@ export function NewPetPageContent() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const { t } = useLanguage();
+  const pets = t.account.petsPage;
   const caps = dashboardCapabilitiesForActiveMode(profile?.active_mode);
 
   useEffect(() => {
@@ -31,15 +34,15 @@ export function NewPetPageContent() {
   if (authLoading || profileLoading || !user || !caps.showAddPet) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 text-center text-muted sm:px-6">
-        Loading…
+        {t.common.loading}
       </div>
     );
   }
 
   return (
     <AccountLayout
-      title="Create pet profile"
-      description="Add your pet's details, care needs, and photos so Pet Friends can find and help."
+      title={pets.createTitle}
+      description={pets.createDescription}
       hideCompleteProfileBanner
     >
       <NewPetForm />

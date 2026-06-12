@@ -58,7 +58,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
       } catch (err) {
         if (!cancelled) {
           setPet(null);
-          setError(err instanceof Error ? err.message : "Could not load pet.");
+          setError(err instanceof Error ? err.message : t.account.petsPage.loadPetError);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -74,7 +74,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
   if (loading) {
     return (
       <PublicPageShell>
-        <p className="text-sm text-muted">Loading pet profile…</p>
+        <p className="text-sm text-muted">{t.account.petsPage.loadingPetProfile}</p>
       </PublicPageShell>
     );
   }

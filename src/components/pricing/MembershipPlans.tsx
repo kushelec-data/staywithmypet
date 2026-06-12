@@ -76,6 +76,7 @@ function PlanCard({
   getStartedLabel,
   choosePlanLabel,
   activePlanLabel,
+  redirectingLabel,
   checkoutUnavailableLabel,
   popularBadge,
   enableCheckout,
@@ -96,6 +97,7 @@ function PlanCard({
   getStartedLabel: string;
   choosePlanLabel: string;
   activePlanLabel: string;
+  redirectingLabel: string;
   checkoutUnavailableLabel: string;
   popularBadge: string;
   enableCheckout?: boolean;
@@ -219,7 +221,7 @@ function PlanCard({
             }}
           >
             {isLoading
-              ? "Redirecting…"
+              ? redirectingLabel
               : canCancel
                 ? cancelPlanLoading
                   ? "…"
@@ -306,14 +308,14 @@ export function MembershipPlans({
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok) {
-        throw new Error(data.error ?? "Could not start checkout.");
+        throw new Error(data.error ?? t.pricing.checkoutError);
       }
       if (!data.url) {
-        throw new Error(data.error ?? "Checkout session missing URL.");
+        throw new Error(data.error ?? t.pricing.checkoutMissingUrl);
       }
       window.location.href = data.url;
     } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : "Could not start checkout.");
+      setCheckoutError(err instanceof Error ? err.message : t.pricing.checkoutError);
       setCheckoutLoadingPlanId(null);
     }
   }
@@ -376,7 +378,8 @@ export function MembershipPlans({
             currentPlanLabel={currentPlanLabel}
             getStartedLabel={t.pricing.getStarted}
             choosePlanLabel={t.pricing.choosePlan}
-            activePlanLabel="Active plan"
+            activePlanLabel={t.pricing.activePlan}
+            redirectingLabel={t.pricing.redirecting}
             checkoutUnavailableLabel={t.pricing.comingSoon}
             popularBadge={t.pricing.mostPopular}
             enableCheckout={enableCheckout}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   blobToCropFile,
   clampCropTransform,
@@ -47,6 +48,8 @@ export function PhotoCropModal({
   onClose,
   onSave,
 }: PhotoCropModalProps) {
+  const { t } = useLanguage();
+  const media = t.media;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const dragStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(
@@ -229,7 +232,7 @@ export function PhotoCropModal({
       const file = blobToCropFile(blob, baseName, mimeType);
       await onSave(file);
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Could not save cropped photo.");
+      setLoadError(err instanceof Error ? err.message : t.media.saveCroppedError);
     } finally {
       setLocalSaving(false);
     }
@@ -269,16 +272,16 @@ export function PhotoCropModal({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 id="photo-crop-title" className="font-heading text-lg font-semibold">
-                Adjust photo
+                {media.adjustPhoto}
               </h2>
-              <p className="mt-1 text-sm text-muted">Drag to reposition. Use the slider to zoom.</p>
+              <p className="mt-1 text-sm text-muted">{media.adjustPhotoHint}</p>
             </div>
             <button
               type="button"
               disabled={busy}
               onClick={onClose}
               className="rounded-full px-2 py-1 text-sm text-muted hover:bg-mint/50 hover:text-foreground disabled:opacity-50"
-              aria-label="Close"
+              aria-label={t.common.close}
             >
               ✕
             </button>
@@ -316,7 +319,7 @@ export function PhotoCropModal({
               ) : null}
               {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-muted">
-                  Loading…
+                  {t.common.loading}
                 </div>
               ) : null}
               {loadError ? (
@@ -328,7 +331,7 @@ export function PhotoCropModal({
 
             <div className="w-full max-w-xs">
               <label htmlFor="photo-crop-zoom" className="text-xs font-medium text-muted">
-                Zoom
+                {media.zoom}
               </label>
               <input
                 id="photo-crop-zoom"
@@ -353,7 +356,7 @@ export function PhotoCropModal({
               disabled={busy}
               onClick={onClose}
             >
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button
               type="button"
@@ -362,7 +365,7 @@ export function PhotoCropModal({
               disabled={!showCropArea || busy}
               onClick={() => void handleSave()}
             >
-              {saving || localSaving ? "Saving…" : "Save"}
+              {saving || localSaving ? t.common.saving : t.common.save}
             </Button>
           </div>
         </div>

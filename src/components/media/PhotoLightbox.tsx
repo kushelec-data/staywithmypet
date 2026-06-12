@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -21,6 +22,8 @@ export function PhotoLightbox({
   onClose,
   altPrefix,
 }: PhotoLightboxProps) {
+  const { t } = useLanguage();
+  const media = t.media;
   const urls = photos.filter((url) => url.trim());
   const [index, setIndex] = useState(initialIndex);
   const touchStartX = useRef<number | null>(null);
@@ -99,7 +102,7 @@ export function PhotoLightbox({
       <button
         type="button"
         className="absolute inset-0 cursor-default bg-black/80"
-        aria-label="Close photo viewer"
+        aria-label={media.closePhotoViewer}
         onClick={onClose}
       />
 
@@ -115,7 +118,7 @@ export function PhotoLightbox({
             type="button"
             onClick={onClose}
             className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-black/50 px-3 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-black/70"
-            aria-label="Close"
+            aria-label={t.common.close}
           >
             <span aria-hidden>×</span>
           </button>
@@ -127,7 +130,7 @@ export function PhotoLightbox({
               type="button"
               onClick={goPrev}
               className="absolute left-0 z-20 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/50 text-lg text-white ring-1 ring-white/20 hover:bg-black/70 sm:-left-12"
-              aria-label="Previous photo"
+              aria-label={media.previousPhoto}
             >
               ‹
             </button>
@@ -136,7 +139,7 @@ export function PhotoLightbox({
           <figure className="mx-auto flex max-h-[min(78dvh,900px)] w-full min-w-0 max-w-full flex-col items-center justify-center">
             <img
               src={currentUrl}
-              alt={`${altPrefix} photo ${index + 1} of ${urls.length}`}
+              alt={`${altPrefix} ${media.photoOf.replace("{n}", String(index + 1)).replace("{total}", String(urls.length))}`}
               className="max-h-[min(78dvh,900px)] w-auto max-w-full rounded-xl object-contain shadow-2xl"
             />
             {hasMultiple ? (
@@ -151,7 +154,7 @@ export function PhotoLightbox({
               type="button"
               onClick={goNext}
               className="absolute right-0 z-20 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/50 text-lg text-white ring-1 ring-white/20 hover:bg-black/70 sm:-right-12"
-              aria-label="Next photo"
+              aria-label={media.nextPhoto}
             >
               ›
             </button>

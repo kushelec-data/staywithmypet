@@ -3,6 +3,7 @@
 import { PetIntroCard } from "@/components/pets/PetIntroCard";
 import { PetManageActions } from "@/components/pets/PetManageActions";
 import { Button } from "@/components/ui/Button";
+import { useLanguage } from "@/context/LanguageContext";
 import { fetchOwnerPetIntros } from "@/lib/pet-intro";
 import { createClient } from "@/lib/supabase";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -13,6 +14,8 @@ type MyPetsListProps = {
 };
 
 export function MyPetsList({ userId }: MyPetsListProps) {
+  const { t } = useLanguage();
+  const petsT = t.account.petsPage;
   const supabase = useMemo(() => createClient(), []);
   const [pets, setPets] = useState<PetIntroDisplay[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,18 +29,18 @@ export function MyPetsList({ userId }: MyPetsListProps) {
       setPets(rows);
     } catch (err) {
       setPets([]);
-      setError(err instanceof Error ? err.message : "Could not load your pets.");
+      setError(err instanceof Error ? err.message : petsT.loadError);
     } finally {
       setLoading(false);
     }
-  }, [supabase, userId]);
+  }, [supabase, userId, petsT.loadError]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   if (loading) {
-    return <p className="text-sm text-muted">Loading your pets…</p>;
+    return <p className="text-sm text-muted">{petsT.loadingPets}</p>;
   }
 
   if (error) {
@@ -51,9 +54,9 @@ export function MyPetsList({ userId }: MyPetsListProps) {
   if (pets.length === 0) {
     return (
       <div className="account-card flex flex-col items-center gap-4 border border-dashed border-[#E5E2D8] px-6 py-12 text-center">
-        <p className="text-sm text-muted">No pets added yet</p>
+        <p className="text-sm text-muted">{petsT.empty}</p>
         <Button href="/pets/new" size="sm">
-          Add your pet
+          {petsT.addYourPet}
         </Button>
       </div>
     );
