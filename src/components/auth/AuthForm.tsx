@@ -10,6 +10,7 @@ import { completeAuthSession } from "@/lib/auth-flow";
 import { formatAuthError } from "@/lib/auth-messages";
 import { DASHBOARD_PATH, resolveLoginReturnPath, resolvePostLoginPath } from "@/lib/auth-routing";
 import { getAuthCallbackUrl } from "@/lib/auth";
+import { logSignupResponseDev } from "@/lib/auth-signup-dev";
 import { PROFILE_SESSION_MISMATCH_PARAM } from "@/lib/profile-session-guard";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { passwordMeetsPolicy } from "@/lib/password-policy";
@@ -117,16 +118,22 @@ export function AuthForm({ mode }: AuthFormProps) {
           setError(t.auth.weakPassword);
           return;
         }
+        const emailRedirectTo = getAuthCallbackUrl(DASHBOARD_PATH);
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password: passwordField,
           options: {
             data: { display_name: name || undefined },
-            emailRedirectTo: getAuthCallbackUrl(DASHBOARD_PATH),
+            emailRedirectTo,
           },
         });
 
-        if (signUpError) throw signUpError;
+        logSignupResponseDev(data, signUpError);
+
+        if (signUpError) {
+          setError(signUpError.message);
+          return;
+        }
 
         if (data.session && data.user) {
           await finishSession(name);
@@ -134,12 +141,13 @@ export function AuthForm({ mode }: AuthFormProps) {
           return;
         }
 
-        if (data.user) {
+        if (data.user && !data.session) {
           setInfo(t.auth.checkEmail);
           return;
         }
 
-        throw new Error(t.auth.errorGeneric);
+        setError(t.auth.errorGeneric);
+        return;
       }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -152,7 +160,12 @@ export function AuthForm({ mode }: AuthFormProps) {
       await finishSession();
       await goAfterAuth(t.auth.loginSuccess);
     } catch (err) {
-      setError(formatAuthError(err, authMessages));
+      if (isSignup) {
+        const message = err instanceof Error ? err.message : t.auth.errorGeneric;
+        setError(message || t.auth.errorGeneric);
+      } else {
+        setError(formatAuthError(err, authMessages));
+      }
     } finally {
       setLoading(false);
     }
