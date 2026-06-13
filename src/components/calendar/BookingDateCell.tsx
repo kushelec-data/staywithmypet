@@ -2,6 +2,7 @@
 
 import { AppImage } from "@/components/ui/AppImage";
 import type { DayBookingSlice } from "@/lib/booking-calendar";
+import { CALENDAR_COLORS, type CalendarCellFill } from "@/lib/calendar-design-tokens";
 
 const MAX_AVATARS = 2;
 
@@ -11,10 +12,12 @@ type BookingDateCellProps = {
   showAvatars: boolean;
   /** Booked day without slice details (public view). */
   booked?: boolean;
-  tint?: string | null;
+  cellFill?: CalendarCellFill;
   className?: string;
   compact?: boolean;
-  /** @deprecated Dots use the unified soft palette. */
+  /** @deprecated Dots use the unified palette. */
+  tint?: string | null;
+  /** @deprecated Dots use the unified palette. */
   bookedDotPastel?: boolean;
 };
 
@@ -23,22 +26,21 @@ export function BookingDateCell({
   slices,
   showAvatars,
   booked = false,
-  tint,
+  cellFill = "default",
   className = "",
   compact = false,
 }: BookingDateCellProps) {
   const hasBookings = slices.length > 0 || booked;
   const visible = showAvatars ? slices.slice(0, MAX_AVATARS) : [];
   const overflow = showAvatars ? Math.max(0, slices.length - MAX_AVATARS) : 0;
+  const dotColor =
+    cellFill === "pending" ? CALENDAR_COLORS.pending : CALENDAR_COLORS.booked;
 
   return (
     <div
       className={`relative flex h-full w-full flex-col items-center justify-center gap-0.5 ${className}`}
-      style={tint ? { backgroundColor: tint } : undefined}
     >
-      <span
-        className={`font-semibold leading-none ${compact ? "text-[0.65rem]" : "text-[0.95rem]"}`}
-      >
+      <span className={compact ? "text-[0.7rem] font-semibold leading-none text-[#333333]" : "text-sm font-semibold leading-none text-[#333333]"}>
         {day}
       </span>
       {hasBookings && showAvatars ? (
@@ -58,22 +60,24 @@ export function BookingDateCell({
                   className="object-cover"
                 />
               ) : (
-                <span
-                  className={`flex h-full w-full items-center justify-center text-[0.5rem] font-bold ${slice.booking.color.text} ${slice.booking.color.bg}`}
-                >
+                <span className="flex h-full w-full items-center justify-center bg-[#FCE2E2] text-[0.5rem] font-bold text-[#333333]">
                   {slice.displayName.charAt(0).toUpperCase() || "?"}
                 </span>
               )}
             </span>
           ))}
           {overflow > 0 ? (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground/80 px-0.5 text-[0.5rem] font-bold text-white ring-1 ring-white">
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[#333333]/80 px-0.5 text-[0.5rem] font-bold text-white ring-1 ring-white">
               +{overflow}
             </span>
           ) : null}
         </div>
       ) : hasBookings && !showAvatars ? (
-        <span className="h-2 w-2 rounded-full bg-indigo-500/60" aria-hidden />
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: dotColor }}
+          aria-hidden
+        />
       ) : null}
     </div>
   );

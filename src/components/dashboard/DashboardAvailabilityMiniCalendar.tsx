@@ -42,7 +42,7 @@ export function DashboardAvailabilityMiniCalendar({
           compact
           petFriendId={petFriendId}
           viewRole="pet-friend"
-          showLegend={false}
+          showLegend
           showViewOnlyHint={false}
           monthCursor={monthCursor}
           onMonthCursorChange={setMonthCursor}

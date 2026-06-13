@@ -14,6 +14,12 @@ import {
   type CalendarViewRole,
   type MonthCursor,
 } from "@/lib/booking-calendar";
+import {
+  CALENDAR_CELL,
+  CALENDAR_NAV,
+  CALENDAR_SHELL,
+  CALENDAR_WEEKDAY,
+} from "@/lib/calendar-design-tokens";
 import { filterPastDates, resolveCalendarDay, todayISODate } from "@/lib/calendar-date-state";
 import {
   eachISODateInRangeInclusive,
@@ -96,6 +102,13 @@ export function BookingCalendar({
 
   function goToMonth(delta: number) {
     const next = shiftMonthCursor(monthCursor, delta);
+    if (onMonthCursorChange) onMonthCursorChange(next);
+    if (!isMonthControlled) setInternalMonthCursor(next);
+  }
+
+  function goToToday() {
+    const now = new Date();
+    const next: MonthCursor = { year: now.getFullYear(), month: now.getMonth() };
     if (onMonthCursorChange) onMonthCursorChange(next);
     if (!isMonthControlled) setInternalMonthCursor(next);
   }
@@ -186,65 +199,63 @@ export function BookingCalendar({
     );
   }
 
-  const navBtnClass = compact
-    ? "rounded-lg border border-black/8 bg-surface px-2 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-mint/35 disabled:opacity-50"
-    : "rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-mint/40 disabled:opacity-50";
-
-  const gridShellClass = compact
-    ? "overflow-x-auto rounded-xl border border-black/[0.06] bg-cream/40 p-2 sm:p-2.5"
-    : "overflow-x-auto rounded-2xl border border-black/[0.06] bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-3 sm:p-5";
+  const navBtnClass = compact ? CALENDAR_NAV.buttonCompact : CALENDAR_NAV.button;
+  const gridShellClass = compact ? CALENDAR_SHELL.outerCompact : CALENDAR_SHELL.outer;
   const weekdayLabels = compact ? WEEKDAYS_COMPACT : WEEKDAYS_FULL;
 
   return (
     <div className={`${compact ? "space-y-2.5" : "space-y-4"} ${className}`}>
-      <div className="flex items-center justify-between gap-2">
+      <div className={CALENDAR_NAV.row}>
+        <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
+          <button
+            type="button"
+            disabled={navigationDisabled}
+            onClick={() => goToMonth(-1)}
+            className={navBtnClass}
+            style={CALENDAR_NAV.borderStyle}
+            aria-label={t.bookingCalendar.prevMonth}
+          >
+            ‹
+          </button>
+          <p className={compact ? CALENDAR_NAV.titleCompact : CALENDAR_NAV.title}>
+            {title}
+            {loading ? (
+              <span className="ml-1.5 text-[0.65rem] font-normal text-[#5C5C5C]">
+                {t.bookingCalendar.loading}
+              </span>
+            ) : null}
+          </p>
+          <button
+            type="button"
+            disabled={navigationDisabled}
+            onClick={() => goToMonth(1)}
+            className={navBtnClass}
+            style={CALENDAR_NAV.borderStyle}
+            aria-label={t.bookingCalendar.nextMonth}
+          >
+            ›
+          </button>
+        </div>
         <button
           type="button"
           disabled={navigationDisabled}
-          onClick={() => goToMonth(-1)}
-          className={navBtnClass}
-          aria-label={t.bookingCalendar.prevMonth}
+          onClick={goToToday}
+          className={CALENDAR_NAV.todayButton}
+          style={CALENDAR_NAV.borderStyle}
         >
-          ←
-        </button>
-        <p
-          className={`min-w-0 flex-1 text-center font-heading font-semibold text-foreground ${
-            compact ? "text-xs" : "text-sm sm:text-base"
-          }`}
-        >
-          {title}
-          {loading ? (
-            <span className="ml-1.5 text-[0.65rem] font-normal text-muted">
-              {t.bookingCalendar.loading}
-            </span>
-          ) : null}
-        </p>
-        <button
-          type="button"
-          disabled={navigationDisabled}
-          onClick={() => goToMonth(1)}
-          className={navBtnClass}
-          aria-label={t.bookingCalendar.nextMonth}
-        >
-          →
+          {t.bookingCalendar.todayButton}
         </button>
       </div>
 
-      <div className={gridShellClass}>
+      <div className={gridShellClass} style={CALENDAR_SHELL.borderStyle}>
         <div
           className={
             compact
               ? "min-w-0 w-full"
-              : `mx-auto w-full min-w-[min(100%,240px)] ${maxWidthClass} px-0.5 sm:px-0`
+              : `${CALENDAR_SHELL.maxWidth} ${maxWidthClass} px-0.5 sm:px-0`
           }
         >
-          <div
-            className={`grid grid-cols-7 text-center font-semibold text-muted ${
-              compact
-                ? "gap-0.5 text-[0.7rem] leading-none"
-                : "gap-0.5 text-[0.65rem] uppercase tracking-wide sm:gap-1 sm:text-xs"
-            }`}
-          >
+          <div className={compact ? CALENDAR_WEEKDAY.rowCompact : CALENDAR_WEEKDAY.row}>
             {weekdayLabels.map((label, index) => (
               <div key={`weekday-${index}`} className="min-w-0 py-1">
                 {label}
@@ -252,7 +263,7 @@ export function BookingCalendar({
             ))}
           </div>
           <div
-            className={`mt-1 grid grid-cols-7 ${compact ? "gap-0.5" : "gap-0.5 sm:gap-1"}`}
+            className={`mt-1 grid grid-cols-7 ${compact ? CALENDAR_CELL.gapCompact : CALENDAR_CELL.gap}`}
           >
             {cells.map((day, idx) => {
               if (day === null) {
@@ -287,19 +298,17 @@ export function BookingCalendar({
                 {
                   visibility,
                   disabled,
-                  primaryTint: primaryBooking?.color.tint ?? null,
                   primaryColor: primaryBooking?.color,
                 },
               );
 
-              const cellRound = compact ? "rounded-lg" : "rounded-lg sm:rounded-xl";
               const cellInner = (
                 <BookingDateCell
                   day={day}
                   slices={slices}
                   booked={blockingBooked || slices.length > 0}
                   showAvatars={resolved.showAvatars && viewRole !== "public"}
-                  tint={resolved.tint}
+                  cellFill={resolved.cellFill}
                   compact={compact}
                 />
               );
@@ -310,7 +319,8 @@ export function BookingCalendar({
                     key={iso}
                     title={resolved.title}
                     aria-label={resolved.ariaLabel}
-                    className={`relative flex aspect-square items-center justify-center transition-colors ${cellRound} ${resolved.cellClassName}`}
+                    className={resolved.cellClassName}
+                    style={resolved.cellStyle}
                   >
                     {cellInner}
                   </div>
@@ -341,7 +351,8 @@ export function BookingCalendar({
                       setActiveBooking(primaryBooking);
                     }
                   }}
-                  className={`relative flex aspect-square items-center justify-center transition-colors ${cellRound} ${resolved.cellClassName}`}
+                  className={resolved.cellClassName}
+                  style={resolved.cellStyle}
                 >
                   {cellInner}
                 </button>
@@ -362,7 +373,7 @@ export function BookingCalendar({
         />
       ) : null}
 
-      {showLegend ? <CalendarInlineLegend mode={mode} compact={compact} /> : null}
+      {showLegend ? <CalendarInlineLegend compact={compact} /> : null}
 
       {mode === "availability-readonly" ? (
         !showViewOnlyHint ? null : (

@@ -5,7 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { CalendarLegendSwatch } from "@/components/calendar/CalendarLegendSwatch";
 
 type LegendRowProps = {
-  kind: "past" | "booked" | "available" | "unavailable";
+  kind: "available" | "booked" | "pending" | "unavailable";
   label: string;
 };
 
@@ -29,8 +29,8 @@ export function CalendarLegendPanel({ className = "" }: { className?: string }) 
       <ul className="mt-4 space-y-3" aria-label={copy.legendTitle}>
         <LegendRow kind="available" label={copy.legendAvailable} />
         <LegendRow kind="booked" label={copy.legendBooked} />
+        <LegendRow kind="pending" label={copy.legendPending} />
         <LegendRow kind="unavailable" label={copy.legendUnavailable} />
-        <LegendRow kind="past" label={copy.legendPast} />
       </ul>
     </AccountCard>
   );

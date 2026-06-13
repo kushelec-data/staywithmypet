@@ -1,8 +1,17 @@
+import type { CSSProperties } from "react";
 import {
   isBlockingBookingStatus,
   type CalendarBookingColor,
   type DayBookingSlice,
 } from "@/lib/booking-calendar";
+import {
+  calendarCellClassName,
+  calendarCellStyle,
+  calendarLegendBackground,
+  type CalendarCellFill,
+  type CalendarLegendKind,
+  CALENDAR_LEGEND,
+} from "@/lib/calendar-design-tokens";
 import { localISODate } from "@/lib/pet-availability";
 
 /** Local calendar YYYY-MM-DD for "today" (browser / server local timezone). */
@@ -41,6 +50,7 @@ export type CalendarDayVisual =
   | "past"
   | "past-completed"
   | "future-booked"
+  | "future-pending"
   | "available"
   | "selected"
   | "default"
@@ -61,38 +71,36 @@ export type ResolvedCalendarDay = {
   canSelect: boolean;
   canOpenBooking: boolean;
   showAvatars: boolean;
+  /** @deprecated Unified palette — always null. */
   tint: string | null;
-  /** Tailwind classes for the day cell container. */
+  cellFill: CalendarCellFill;
+  cellStyle: CSSProperties;
+  /** Interaction + layout classes for the day cell container. */
   cellClassName: string;
   ariaLabel: string;
   title: string;
 };
 
-/**
- * Shared fill/ring for calendar day tiles and legend swatches.
- * Day cells add text, hover, and cursor classes on top of these.
- */
+/** Shared legend swatch dimensions (inline legend + dashboard panel). */
+export const CALENDAR_LEGEND_SWATCH_SHAPE = CALENDAR_LEGEND.swatch;
+
+/** @deprecated Use calendarLegendBackground — kept for callers expecting class strings. */
 export const CALENDAR_SWATCH = {
-  past: "bg-stone-100 ring-1 ring-stone-200/70",
-  pastCompleted: "bg-stone-200/80 ring-1 ring-stone-200/70",
-  booked: "bg-indigo-200/65 ring-1 ring-indigo-200/70",
-  available: "bg-mint/50 ring-1 ring-emerald-200/60",
-  unavailable: "bg-neutral-200/55 ring-1 ring-neutral-300/80",
-  selected: "bg-mint/45 ring-2 ring-brand-teal ring-offset-1",
-  selectedReadonly: "bg-mint/30 ring-2 ring-brand-teal/40",
+  past: "",
+  pastCompleted: "",
+  booked: "",
+  available: "",
+  unavailable: "",
+  selected: "",
+  selectedReadonly: "",
 } as const;
 
-/** Tailwind classes for legend swatches (matches day tile fill). */
-export const LEGEND_PAST_CLASS = CALENDAR_SWATCH.past;
-export const LEGEND_BOOKED_CLASS = CALENDAR_SWATCH.booked;
-export const LEGEND_AVAILABLE_CLASS = CALENDAR_SWATCH.available;
-export const LEGEND_UNAVAILABLE_CLASS = CALENDAR_SWATCH.unavailable;
-export const LEGEND_SELECTED_CLASS = CALENDAR_SWATCH.selected;
+export const LEGEND_PAST_CLASS = "";
+export const LEGEND_BOOKED_CLASS = "";
+export const LEGEND_AVAILABLE_CLASS = "";
+export const LEGEND_UNAVAILABLE_CLASS = "";
+export const LEGEND_SELECTED_CLASS = "";
 
-/** Shared legend swatch dimensions (inline legend + dashboard panel). */
-export const CALENDAR_LEGEND_SWATCH_SHAPE = "h-4 w-4 shrink-0 rounded-md";
-
-/** @deprecated Alias — same palette as default legend classes. */
 export const PASTEL_LEGEND_PAST_CLASS = LEGEND_PAST_CLASS;
 export const PASTEL_LEGEND_BOOKED_CLASS = LEGEND_BOOKED_CLASS;
 export const PASTEL_LEGEND_AVAILABLE_CLASS = LEGEND_AVAILABLE_CLASS;
@@ -100,64 +108,25 @@ export const PASTEL_LEGEND_UNAVAILABLE_CLASS = LEGEND_UNAVAILABLE_CLASS;
 export const PASTEL_LEGEND_SELECTED_CLASS = LEGEND_SELECTED_CLASS;
 
 export function legendSwatchClass(
-  kind: "past" | "booked" | "available" | "unavailable" | "selected",
-  /** @deprecated Variant is ignored; one palette site-wide. */
-  _variant?: "default" | "pastel",
+  kind: CalendarLegendKind | "past" | "selected",
 ): string {
-  switch (kind) {
-    case "past":
-      return CALENDAR_SWATCH.past;
-    case "booked":
-      return CALENDAR_SWATCH.booked;
-    case "available":
-      return CALENDAR_SWATCH.available;
-    case "unavailable":
-      return CALENDAR_SWATCH.unavailable;
-    case "selected":
-      return CALENDAR_SWATCH.selected;
-  }
+  return CALENDAR_LEGEND.swatch;
 }
 
-export const PAST_DAY_CELL =
-  `${CALENDAR_SWATCH.past} text-stone-600 cursor-not-allowed dark:bg-stone-800/30 dark:text-stone-400`;
-
-export const PAST_COMPLETED_CELL =
-  `${CALENDAR_SWATCH.pastCompleted} text-stone-500 cursor-not-allowed dark:bg-stone-700/40 dark:text-stone-400 dark:ring-stone-600/50`;
-
-export const PUBLIC_BOOKED_CELL =
-  `${CALENDAR_SWATCH.booked} text-indigo-950 cursor-not-allowed dark:bg-indigo-950/25 dark:text-indigo-200 dark:ring-indigo-800/50`;
-
-export const AVAILABLE_CELL =
-  `${CALENDAR_SWATCH.available} text-emerald-900 hover:bg-mint/65 hover:ring-brand-teal/25 cursor-pointer dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-emerald-800/50`;
-
-export const AVAILABLE_TODAY_CELL =
-  `${CALENDAR_SWATCH.available} text-emerald-900 ring-2 ring-brand-teal/35 ring-offset-1 hover:bg-mint/65 cursor-pointer dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-brand-teal/40`;
-
-export const READONLY_AVAILABLE_CELL =
-  `${CALENDAR_SWATCH.available} text-emerald-900 cursor-default dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-emerald-800/50`;
-
-export const READONLY_AVAILABLE_TODAY_CELL =
-  `${CALENDAR_SWATCH.available} text-emerald-900 ring-2 ring-brand-teal/35 ring-offset-1 cursor-default dark:bg-emerald-950/25 dark:text-emerald-200 dark:ring-brand-teal/40`;
-
-export const SELECTED_CELL =
-  `${CALENDAR_SWATCH.selected} text-brand-teal shadow-sm hover:bg-mint/55 cursor-pointer dark:bg-mint/20 dark:text-brand-teal dark:ring-brand-teal/50`;
-
-export const READONLY_SELECTED_CELL =
-  `${CALENDAR_SWATCH.selectedReadonly} text-brand-teal cursor-default dark:bg-mint/15`;
-
-export const DEFAULT_SELECT_CELL =
-  "bg-surface text-foreground ring-1 ring-neutral-200/80 hover:bg-mint/40 hover:ring-brand-teal/25 cursor-pointer dark:ring-neutral-600/80";
-
-export const DEFAULT_TODAY_SELECT_CELL =
-  "bg-surface text-foreground ring-2 ring-brand-teal/35 ring-offset-1 hover:bg-mint/40 cursor-pointer dark:ring-brand-teal/40";
-
-export const UNAVAILABLE_REQUEST_CELL =
-  `${CALENDAR_SWATCH.unavailable} text-neutral-700 cursor-not-allowed dark:bg-neutral-800/40 dark:text-neutral-300 dark:ring-neutral-700/60`;
-
-/** @deprecated Alias — same as UNAVAILABLE_REQUEST_CELL. */
+/** @deprecated Cell styling is inline via `cellStyle`. */
+export const PAST_DAY_CELL = "";
+export const PAST_COMPLETED_CELL = "";
+export const PUBLIC_BOOKED_CELL = "";
+export const AVAILABLE_CELL = "";
+export const AVAILABLE_TODAY_CELL = "";
+export const READONLY_AVAILABLE_CELL = "";
+export const READONLY_AVAILABLE_TODAY_CELL = "";
+export const SELECTED_CELL = "";
+export const READONLY_SELECTED_CELL = "";
+export const DEFAULT_SELECT_CELL = "";
+export const DEFAULT_TODAY_SELECT_CELL = "";
+export const UNAVAILABLE_REQUEST_CELL = "";
 export const HIGH_CONTRAST_UNAVAILABLE_CELL = UNAVAILABLE_REQUEST_CELL;
-
-/** @deprecated Aliases — same unified palette. */
 export const PASTEL_PAST_DAY_CELL = PAST_DAY_CELL;
 export const PASTEL_PAST_COMPLETED_CELL = PAST_COMPLETED_CELL;
 export const PASTEL_PUBLIC_BOOKED_CELL = PUBLIC_BOOKED_CELL;
@@ -167,8 +136,75 @@ export const PASTEL_UNAVAILABLE_CELL = UNAVAILABLE_REQUEST_CELL;
 export const PASTEL_DEFAULT_SELECT_CELL = DEFAULT_SELECT_CELL;
 export const PASTEL_DEFAULT_TODAY_SELECT_CELL = DEFAULT_TODAY_SELECT_CELL;
 
-export function bookingColorClasses(color: CalendarBookingColor): string {
-  return `${color.bg} ${color.text} ring-1 ${color.ring} cursor-not-allowed`;
+export function legendSwatchStyle(
+  kind: CalendarLegendKind | "past" | "selected",
+): CSSProperties {
+  if (kind === "past" || kind === "selected") {
+    return {
+      backgroundColor: calendarLegendBackground("unavailable"),
+      borderColor: "rgba(0, 0, 0, 0.08)",
+    };
+  }
+  return {
+    backgroundColor: calendarLegendBackground(kind),
+    borderColor: "rgba(0, 0, 0, 0.08)",
+  };
+}
+
+/** @deprecated Unified booked styling — per-booking tints removed. */
+export function bookingColorClasses(_color: CalendarBookingColor): string {
+  return "cursor-not-allowed";
+}
+
+function resolveCellFill(input: {
+  iso: string;
+  today: string;
+  slices: DayBookingSlice[];
+  mode: ResolveCalendarDayInput["mode"];
+  isSelected: boolean;
+  isAvailable: boolean;
+  blockingBooked: boolean;
+  past: boolean;
+  futureBooked: boolean;
+  pastOrCompleted: boolean;
+  visibility: "full" | "public";
+  primaryBooking?: DayBookingSlice["booking"];
+}): CalendarCellFill {
+  const {
+    past,
+    futureBooked,
+    pastOrCompleted,
+    mode,
+    isSelected,
+    isAvailable,
+    blockingBooked,
+    slices,
+    visibility,
+    primaryBooking,
+  } = input;
+
+  if (past && !slices.length && !blockingBooked) return "past";
+  if (pastOrCompleted) return "past";
+
+  if (futureBooked) {
+    if (visibility === "public") return "booked";
+    if (primaryBooking?.status === "upcoming") return "pending";
+    return "booked";
+  }
+
+  if (mode === "availability-readonly") {
+    return isAvailable ? "available" : "unavailable";
+  }
+
+  if (mode === "request-select") {
+    return isAvailable ? "available" : "unavailable";
+  }
+
+  if (mode === "availability-select" && isSelected) {
+    return "available";
+  }
+
+  return "default";
 }
 
 export function resolveCalendarDay(
@@ -188,9 +224,9 @@ export function resolveCalendarDay(
     disabled?: boolean;
     primaryTint?: string | null;
     primaryColor?: CalendarBookingColor;
-    /** @deprecated Ignored — same soft palette everywhere. */
+    /** @deprecated Ignored — unified palette. */
     highContrast?: boolean;
-    /** @deprecated Ignored — same soft palette everywhere. */
+    /** @deprecated Ignored — unified palette. */
     variant?: "default" | "pastel";
   },
 ): ResolvedCalendarDay {
@@ -232,15 +268,47 @@ export function resolveCalendarDay(
   const showAvatars =
     visibility === "full" && hasBookingSlice && (pastOrCompleted || futureBooked);
 
+  const cellFill = resolveCellFill({
+    iso: input.iso,
+    today,
+    slices: input.slices,
+    mode: input.mode,
+    isSelected: input.isSelected,
+    isAvailable: input.isAvailable,
+    blockingBooked: input.blockingBooked,
+    past,
+    futureBooked,
+    pastOrCompleted,
+    visibility,
+    primaryBooking,
+  });
+
+  const isSelectedBorder = input.isSelected && !readonly;
+  const cellStyle = calendarCellStyle({
+    fill: cellFill,
+    isToday: isToday && !isSelectedBorder,
+    isSelected: isSelectedBorder,
+  });
+
+  const canInteract = readonly
+    ? false
+    : resolvedCanInteract(canSelect, canOpenBooking);
+
+  const cellClassName = calendarCellClassName({
+    canInteract,
+    isDisabled: !readonly && !canSelect && !canOpenBooking,
+  });
+
   let visual: CalendarDayVisual = "default";
-  if (input.isSelected && !readonly) {
+  if (isSelectedBorder) {
     visual = "selected";
   } else if (past && !hasBookingSlice && !input.blockingBooked) {
     visual = "past";
   } else if (pastOrCompleted) {
     visual = "past-completed";
   } else if (futureBooked) {
-    visual = "future-booked";
+    visual =
+      cellFill === "pending" && visibility !== "public" ? "future-pending" : "future-booked";
   } else if (readonly && input.isAvailable) {
     visual = "available";
   } else if (readonly) {
@@ -249,36 +317,6 @@ export function resolveCalendarDay(
     visual = "available";
   } else if (input.mode === "request-select") {
     visual = "unavailable";
-  }
-
-  let cellClassName = DEFAULT_SELECT_CELL;
-  let tint: string | null = null;
-
-  if (visual === "selected") {
-    cellClassName = readonly ? READONLY_SELECTED_CELL : SELECTED_CELL;
-  } else if (visual === "past") {
-    cellClassName = PAST_DAY_CELL;
-  } else if (visual === "past-completed") {
-    cellClassName = PAST_COMPLETED_CELL;
-  } else if (visual === "future-booked") {
-    if (visibility === "public") {
-      cellClassName = PUBLIC_BOOKED_CELL;
-    } else if (options?.primaryColor) {
-      cellClassName = bookingColorClasses(options.primaryColor);
-      tint = options.primaryTint ?? options.primaryColor.tint;
-    } else {
-      cellClassName = PUBLIC_BOOKED_CELL;
-    }
-  } else if (visual === "available") {
-    if (readonly) {
-      cellClassName = isToday ? READONLY_AVAILABLE_TODAY_CELL : READONLY_AVAILABLE_CELL;
-    } else {
-      cellClassName = isToday ? AVAILABLE_TODAY_CELL : AVAILABLE_CELL;
-    }
-  } else if (visual === "unavailable") {
-    cellClassName = UNAVAILABLE_REQUEST_CELL;
-  } else if (isToday) {
-    cellClassName = DEFAULT_TODAY_SELECT_CELL;
   }
 
   let ariaLabel = labels.iso;
@@ -315,11 +353,17 @@ export function resolveCalendarDay(
     canSelect,
     canOpenBooking,
     showAvatars,
-    tint,
+    tint: null,
+    cellFill,
+    cellStyle,
     cellClassName,
     ariaLabel,
     title,
   };
+}
+
+function resolvedCanInteract(canSelect: boolean, canOpenBooking: boolean): boolean {
+  return canSelect || canOpenBooking;
 }
 
 /** Strip past dates from a selection list. */
