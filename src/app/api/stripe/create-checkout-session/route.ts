@@ -15,6 +15,7 @@ import { sanitizeReturnTo } from "@/lib/membership-return";
 import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import { getStripe } from "@/lib/stripe";
+import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
@@ -56,6 +57,13 @@ function checkoutErrorFromStripe(
 
 export async function POST(request: Request) {
   logStripeEnvPresence("create-checkout-session");
+
+  if (!isStripeCheckoutEnabled()) {
+    return NextResponse.json(
+      { error: "Stripe checkout is temporarily disabled. Use test access code." },
+      { status: 403 },
+    );
+  }
 
   let body: CheckoutBody;
   try {

@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 
 type Props = {
   userId: string;
@@ -10,6 +12,22 @@ type Props = {
 export function TestPetParentCheckoutButton({ userId, planId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const stripeEnabled = isStripeCheckoutEnabled();
+
+  if (!stripeEnabled) {
+    return (
+      <div>
+        <p>Stripe checkout is disabled. Use membership test access codes instead.</p>
+        <p>
+          <Link href={`/test-access-code?planId=${encodeURIComponent(planId)}&role=parent`}>
+            Go to test access code
+          </Link>
+          {" · "}
+          <Link href="/membership">Membership page</Link>
+        </p>
+      </div>
+    );
+  }
 
   async function handleClick() {
     setError(null);
