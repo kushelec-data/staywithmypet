@@ -1155,6 +1155,28 @@ export const en = {
     cancelUnavailable:
       "Plan cancellation is not available yet. Please contact support.",
   },
+  testAccess: {
+    membershipBanner:
+      "Free test access for invited users. No card required — choose a plan, then enter your access code.",
+    membershipIntro:
+      "Choose a {role} plan below. You will enter a test access code on the next step — no payment required.",
+    pageTitle: "Enter test access code",
+    pageDescription:
+      "Invited test users can unlock membership free for 3 months with an access code.",
+    selectedPlanLabel: "Selected plan",
+    singleRoleSummary: "{role} — {plan}",
+    dualRoleSummary:
+      "Both Pet Parent and Pet Friend — {plan} (3 months free for each role)",
+    freeAccessNote:
+      "Your membership will be active for 3 months. No card or Stripe checkout is required.",
+    codeLabel: "Test access code",
+    codePlaceholder: "Enter your code",
+    codeHint: "Use the code shared with invited test users.",
+    invalidCode: "Invalid test access code. Check the code and try again.",
+    activateButton: "Activate free membership",
+    activating: "Activating…",
+    backToPlans: "Back to plans",
+  },
   membershipUpsell: {
     oneStepTitle: "🐾 You're one step away!",
     searchPetBody: "{name} wanted to meet you. Unlock membership to send a request.",

@@ -20,9 +20,9 @@ export const siteEtPartial = {
     groups: {
       company: {
         vetClinics: "Loomakliinikud",
-        terms: "Konto loomisel, liikmelisuse ostmisel või Teenuse kasutamisel nõustute nende Tingimustega. Kui te Tingimustega ei nõustu, ei tohi te Teenust kasutada.",
-        privacy: "Teie privaatsus on meile oluline. Käesolevad privaatsustingimused selgitavad, kuidas Stay With My Pet („meie“, „meid“, „meie“) kogub, kasutab, säilitab ja kaitseb teie isikuandmeid, kui kasutate meie veebilehte, mobiilirakendust või nendega seotud teenuseid (edaspidi ühiselt „Teenust“).",
-        safety: "Ohutus ei tähenda reegleid reeglite pärast – see tähendab teadlikke valikuid, avatud suhtlust ja vastastikust hoolivust.",
+        terms: "Kasutustingimused",
+        privacy: "Privaatsuspoliitika",
+        safety: "Ohutusjuhised",
       },
     },
   },
@@ -189,7 +189,7 @@ export const siteEtPartial = {
   },
   legal: {
     privacy: {
-      title: "Teie privaatsus on meile oluline. Käesolevad privaatsustingimused selgitavad, kuidas Stay With My Pet („meie“, „meid“, „meie“) kogub, kasutab, säilitab ja kaitseb teie isikuandmeid, kui kasutate meie veebilehte, mobiilirakendust või nendega seotud teenuseid (edaspidi ühiselt „Teenust“).",
+      title: "Privaatsuspoliitika",
     },
     terms: {
       title: "Kasutustingimused",

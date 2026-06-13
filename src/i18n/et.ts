@@ -1166,6 +1166,28 @@ export const et = {
     cancelUnavailable:
       "Paketi tühistamine pole veel saadaval. Palun võta ühendust toega.",
   },
+  testAccess: {
+    membershipBanner:
+      "Tasuta testligipääs kutsutud kasutajatele. Kaarti pole vaja — vali pakett ja sisesta ligipääsukood.",
+    membershipIntro:
+      "Vali allpool {role} pakett. Järgmisel sammul sisestad testligipääsukoodi — makset pole vaja.",
+    pageTitle: "Sisesta testligipääsukood",
+    pageDescription:
+      "Kutsutud testkasutajad saavad liikmelisuse 3 kuuks tasuta aktiveerida ligipääsukoodiga.",
+    selectedPlanLabel: "Valitud pakett",
+    singleRoleSummary: "{role} — {plan}",
+    dualRoleSummary:
+      "Nii lemmiklooma vanem kui ka sõber — {plan} (3 kuud tasuta mõlema rolli jaoks)",
+    freeAccessNote:
+      "Sinu liikmelisus kehtib 3 kuud. Kaarti ega Stripe makset pole vaja.",
+    codeLabel: "Testligipääsukood",
+    codePlaceholder: "Sisesta kood",
+    codeHint: "Kasuta kutsutud testkasutajatele jagatud koodi.",
+    invalidCode: "Vale testligipääsukood. Kontrolli koodi ja proovi uuesti.",
+    activateButton: "Aktiveeri tasuta liikmelisus",
+    activating: "Aktiveerin…",
+    backToPlans: "Tagasi pakettide juurde",
+  },
   membershipUpsell: {
     oneStepTitle: "🐾 Oled ühe sammu kaugusel!",
     searchPetBody: "{name} tahab sinuga tutvuda. Ava liikmelisus, et päring saata.",

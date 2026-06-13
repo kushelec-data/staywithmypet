@@ -189,13 +189,13 @@ export const siteEnPartial = {
   },
   legal: {
     privacy: {
-      title: "Your privacy is important to us. This Privacy Policy explains how Stay With My Pet (“we”, “us”, “our”) collects, uses, stores, and protects your personal data when you use our website, mobile application, or related services (collectively, “the Service”).",
+      title: "Privacy Policy",
     },
     terms: {
       title: "Terms of Use",
     },
     safety: {
-      title: "Safety isn’t about rules for the sake of rules — it’s about thoughtful choices, open communication, and shared responsibility.",
+      title: "Safety Guidelines",
     },
   },
 } as const;

@@ -37,6 +37,8 @@ type MembershipPlansProps = {
   planCheckoutErrors?: Record<string, string | null>;
   /** After checkout, return user to this path (e.g. pet booking page). */
   checkoutReturnTo?: string | null;
+  /** When true, plan selection redirects to /test-access-code instead of Stripe. */
+  useTestAccessFlow?: boolean;
   cancelPlanLabel?: string;
   cancelPlanLoading?: boolean;
   onCancelPlan?: () => void;
@@ -80,6 +82,7 @@ function PlanCard({
   checkoutUnavailableLabel,
   popularBadge,
   enableCheckout,
+  useTestAccessFlow,
   checkoutUserId,
   checkoutRole,
   checkoutLoadingPlanId,
@@ -101,6 +104,7 @@ function PlanCard({
   checkoutUnavailableLabel: string;
   popularBadge: string;
   enableCheckout?: boolean;
+  useTestAccessFlow?: boolean;
   checkoutUserId?: string;
   checkoutRole?: MembershipRole;
   checkoutLoadingPlanId?: string | null;
@@ -119,7 +123,7 @@ function PlanCard({
   const isLoading = checkoutLoadingPlanId === plan.id;
   const canCheckout =
     variant === "account" &&
-    enableCheckout &&
+    (enableCheckout || useTestAccessFlow) &&
     !isCurrent &&
     !planConfigError &&
     Boolean(checkoutUserId) &&
@@ -263,6 +267,7 @@ export function MembershipPlans({
   enableCheckout = false,
   planCheckoutErrors,
   checkoutReturnTo,
+  useTestAccessFlow = false,
   cancelPlanLabel,
   cancelPlanLoading = false,
   onCancelPlan,
@@ -295,6 +300,19 @@ export function MembershipPlans({
     if (!checkoutUserId || !effectiveCheckoutRole) return;
     setCheckoutError(null);
     setCheckoutLoadingPlanId(plan.id);
+
+    if (useTestAccessFlow) {
+      const params = new URLSearchParams({
+        planId: planId(plan),
+        role: effectiveCheckoutRole === "pet_parent" ? "parent" : "friend",
+      });
+      if (checkoutReturnTo) {
+        params.set("returnTo", checkoutReturnTo);
+      }
+      window.location.href = `/test-access-code?${params.toString()}`;
+      return;
+    }
+
     try {
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
@@ -383,12 +401,13 @@ export function MembershipPlans({
             checkoutUnavailableLabel={t.pricing.comingSoon}
             popularBadge={t.pricing.mostPopular}
             enableCheckout={enableCheckout}
+            useTestAccessFlow={useTestAccessFlow}
             checkoutUserId={checkoutUserId}
             checkoutRole={effectiveCheckoutRole}
             checkoutLoadingPlanId={checkoutLoadingPlanId}
             checkoutError={checkoutError}
             planConfigError={planCheckoutErrors?.[plan.id] ?? null}
-            onChoosePlan={enableCheckout ? handleChoosePlan : undefined}
+            onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
             cancelPlanLabel={cancelPlanLabel}
             cancelPlanLoading={cancelPlanLoading}
             onCancelPlan={onCancelPlan}

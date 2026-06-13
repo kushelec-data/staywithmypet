@@ -15,8 +15,8 @@ export type LegalDocument = {
 
 export const legalDocuments = {
   privacy: {
-    titleEn: "Your privacy is important to us. This Privacy Policy explains how Stay With My Pet (“we”, “us”, “our”) collects, uses, stores, and protects your personal data when you use our website, mobile application, or related services (collectively, “the Service”).",
-    titleEt: "Teie privaatsus on meile oluline. Käesolevad privaatsustingimused selgitavad, kuidas Stay With My Pet („meie“, „meid“, „meie“) kogub, kasutab, säilitab ja kaitseb teie isikuandmeid, kui kasutate meie veebilehte, mobiilirakendust või nendega seotud teenuseid (edaspidi ühiselt „Teenust“).",
+    titleEn: "Privacy Policy",
+    titleEt: "Privaatsuspoliitika",
     blocks: [
       {
         en: "Effective Date:12/20/2025",
@@ -967,7 +967,7 @@ export const legalDocuments = {
     ],
   },
   safety: {
-    titleEn: "Safety isn’t about rules for the sake of rules — it’s about thoughtful choices, open communication, and shared responsibility.",
+    titleEn: "Safety Guidelines",
     titleEt: "Ohutusjuhised",
     blocks: [
       {

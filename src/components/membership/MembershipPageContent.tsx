@@ -40,6 +40,7 @@ import {
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
+import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import type { Dictionary } from "@/i18n/translations";
 
 type StripeCheckoutReadiness = {
@@ -287,6 +288,9 @@ export function MembershipPageContent({
   const stripeCheckout = stripeCheckoutByRole?.[modeRole];
   const stripeCheckoutReady = stripeCheckout?.ready ?? false;
   const stripeConfigMessage = stripeCheckout?.message ?? null;
+  const stripeEnabled = isStripeCheckoutEnabled();
+  const useTestAccessFlow = !stripeEnabled;
+  const checkoutEnabled = !isActive && (stripeEnabled ? stripeCheckoutReady : true);
 
   const handleCancelPlan = useCallback(async () => {
     setCancelError(null);
@@ -421,9 +425,20 @@ export function MembershipPageContent({
         <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
           {isActive
             ? mpage.activeUnlocks.replace("{role}", roleLabel)
-            : mpage.choosePlanStripe.replace("{role}", roleLabel)}
+            : useTestAccessFlow
+              ? t.testAccess.membershipIntro.replace("{role}", roleLabel)
+              : mpage.choosePlanStripe.replace("{role}", roleLabel)}
         </p>
       </AccountCard>
+
+      {useTestAccessFlow && !isActive ? (
+        <p
+          className="mb-4 rounded-2xl border border-[#2E6B3F]/25 bg-[#DDEEDF]/60 px-4 py-3 text-sm text-foreground"
+          role="status"
+        >
+          {t.testAccess.membershipBanner}
+        </p>
+      ) : null}
 
       {returnTo ? (
         <p
@@ -457,7 +472,7 @@ export function MembershipPageContent({
         </p>
       ) : null}
 
-      {stripeConfigMessage ? (
+      {stripeEnabled && stripeConfigMessage ? (
         <p
           className="mb-4 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950"
           role="alert"
@@ -474,12 +489,13 @@ export function MembershipPageContent({
         plans={stripePlans}
         checkoutUserId={user.id}
         checkoutRole={modeRole}
-        enableCheckout={!isActive && stripeCheckoutReady}
-        planCheckoutErrors={stripePlanErrorsByRole?.[modeRole]}
+        enableCheckout={checkoutEnabled && stripeEnabled}
+        useTestAccessFlow={checkoutEnabled && useTestAccessFlow}
+        planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
         cancelPlanLabel={t.membershipCheckout.cancelPlan}
         cancelPlanLoading={cancelLoading}
-        onCancelPlan={isActive ? handleCancelPlan : undefined}
+        onCancelPlan={isActive && stripeEnabled ? handleCancelPlan : undefined}
       />
     </AccountLayout>
   );

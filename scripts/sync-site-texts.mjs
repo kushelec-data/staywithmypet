@@ -110,6 +110,41 @@ const NAVBAR_ET = {
   getStarted: "Registreeru",
 };
 
+/** Short footer / legal-page titles — never use legal document body paragraphs. */
+const FOOTER_LEGAL = {
+  en: {
+    terms: "Terms of Use",
+    privacy: "Privacy Policy",
+    safety: "Safety Guidelines",
+  },
+  et: {
+    terms: "Kasutustingimused",
+    privacy: "Privaatsuspoliitika",
+    safety: "Ohutusjuhised",
+  },
+};
+
+/** Read footer legal link labels from Header and footer sheet (col A = EN, col C = ET). */
+function extractFooterLegalLabels(rows) {
+  const out = { en: {}, et: {} };
+  for (let r = 1; r <= 60; r++) {
+    const en = getCell(rows, r, 0) || getCell(rows, r, 2);
+    const et = getCell(rows, r, 2) || getCell(rows, r, 4);
+    if (!en || !et || en.length > 60 || et.length > 60) continue;
+    if (/^terms of (use|service)$/i.test(en)) {
+      out.en.terms = FOOTER_LEGAL.en.terms;
+      out.et.terms = FOOTER_LEGAL.et.terms;
+    } else if (/^privacy policy$/i.test(en)) {
+      out.en.privacy = FOOTER_LEGAL.en.privacy;
+      out.et.privacy = FOOTER_LEGAL.et.privacy;
+    } else if (/^safety guidelines?$/i.test(en)) {
+      out.en.safety = FOOTER_LEGAL.en.safety;
+      out.et.safety = FOOTER_LEGAL.et.safety;
+    }
+  }
+  return out;
+}
+
 const HOW_IT_WORKS_SUBTITLE_EN = "A step-by-step guide to sharing love and care";
 
 const CORE_VALUES_EN_PREFIX = "At Stay With My Pet, our core values guide every decision";
@@ -764,6 +799,7 @@ const contact = parseContact(loadSheet(sheetIndex["Contact Us"]));
 const clinics = parseClinics(loadSheet(sheetIndex["Clinics"]));
 const headerFooterRows = loadSheet(sheetIndex["Header and footer"]);
 const navPairs = extractNavPairs(headerFooterRows);
+const footerLegalLabels = extractFooterLegalLabels(headerFooterRows);
 const footerTaglineEn = getCell(headerFooterRows, 13, 2);
 const footerTaglineEt = getCell(headerFooterRows, 13, 3) || getCell(headerFooterRows, 13, 4) || null;
 
@@ -903,9 +939,9 @@ const siteEnPartial = {
     groups: {
       company: {
         vetClinics: "Vet clinics",
-        terms: "Terms of Use",
-        privacy: "Privacy Policy",
-        safety: "Safety Guidelines",
+        terms: footerLegalLabels.en.terms || FOOTER_LEGAL.en.terms,
+        privacy: footerLegalLabels.en.privacy || FOOTER_LEGAL.en.privacy,
+        safety: footerLegalLabels.en.safety || FOOTER_LEGAL.en.safety,
       },
     },
   },
@@ -957,9 +993,9 @@ const siteEnPartial = {
     disclaimer: clinics.disclaimer.map((d) => d.en),
   },
   legal: {
-    privacy: { title: privacy.find((p) => p.en?.includes("Privacy Policy"))?.en || "Privacy Policy" },
-    terms: { title: terms.find((p) => p.en?.includes("Terms of Use"))?.en || "Terms of Use" },
-    safety: { title: safety.find((p) => p.en?.includes("Safety"))?.en || "Safety Guidelines" },
+    privacy: { title: FOOTER_LEGAL.en.privacy },
+    terms: { title: FOOTER_LEGAL.en.terms },
+    safety: { title: FOOTER_LEGAL.en.safety },
   },
 };
 
@@ -970,9 +1006,21 @@ const siteEtPartial = {
     groups: {
       company: {
         vetClinics: track("footer.vetClinics", "Vet clinics", "Loomakliinikud"),
-        terms: track("footer.terms", "Terms of Use", terms.find((p) => p.en?.includes("Terms"))?.et || getCell(termsRows, 2, 4)?.split("—").pop()?.trim()),
-        privacy: track("footer.privacy", "Privacy Policy", privacy.find((p) => p.en?.includes("Privacy"))?.et || getCell(privacyRows, 1, 4)),
-        safety: track("footer.safety", "Safety Guidelines", safety.find((p) => p.en?.includes("Safety"))?.et || getCell(safetyRows, 2, 3)),
+        terms: track(
+          "footer.terms",
+          FOOTER_LEGAL.en.terms,
+          footerLegalLabels.et.terms || FOOTER_LEGAL.et.terms,
+        ),
+        privacy: track(
+          "footer.privacy",
+          FOOTER_LEGAL.en.privacy,
+          footerLegalLabels.et.privacy || FOOTER_LEGAL.et.privacy,
+        ),
+        safety: track(
+          "footer.safety",
+          FOOTER_LEGAL.en.safety,
+          footerLegalLabels.et.safety || FOOTER_LEGAL.et.safety,
+        ),
       },
     },
   },
@@ -1030,9 +1078,27 @@ const siteEtPartial = {
     ),
   },
   legal: {
-    privacy: { title: track("legal.privacy.title", "Privacy Policy", privacy.find((p) => p.en?.includes("Privacy"))?.et || getCell(privacyRows, 1, 4)) },
-    terms: { title: track("legal.terms.title", "Terms of Use", getCell(termsRows, 2, 4)?.split("—").pop()?.trim() || terms.find((p) => p.en?.includes("Terms"))?.et) },
-    safety: { title: track("legal.safety.title", "Safety Guidelines", getCell(safetyRows, 2, 3)) },
+    privacy: {
+      title: track(
+        "legal.privacy.title",
+        FOOTER_LEGAL.en.privacy,
+        footerLegalLabels.et.privacy || FOOTER_LEGAL.et.privacy,
+      ),
+    },
+    terms: {
+      title: track(
+        "legal.terms.title",
+        FOOTER_LEGAL.en.terms,
+        footerLegalLabels.et.terms || FOOTER_LEGAL.et.terms,
+      ),
+    },
+    safety: {
+      title: track(
+        "legal.safety.title",
+        FOOTER_LEGAL.en.safety,
+        footerLegalLabels.et.safety || FOOTER_LEGAL.et.safety,
+      ),
+    },
   },
 };
 
@@ -1048,26 +1114,17 @@ function formatLegalBlocks(blocks) {
 const legalDocs = {
   privacy: {
     titleEn: siteEnPartial.legal.privacy.title,
-    titleEt:
-      siteEtPartial.legal.privacy.title ||
-      getCell(privacyRows, 1, 4) ||
-      "Privaatsustingimused",
+    titleEt: siteEtPartial.legal.privacy.title || FOOTER_LEGAL.et.privacy,
     blocks: formatLegalBlocks(privacy),
   },
   terms: {
     titleEn: siteEnPartial.legal.terms.title,
-    titleEt:
-      siteEtPartial.legal.terms.title ||
-      getCell(termsRows, 2, 4)?.split("—").pop()?.trim() ||
-      "Kasutustingimused",
+    titleEt: siteEtPartial.legal.terms.title || FOOTER_LEGAL.et.terms,
     blocks: formatLegalBlocks(terms),
   },
   safety: {
     titleEn: siteEnPartial.legal.safety.title,
-    titleEt:
-      siteEtPartial.legal.safety.title ||
-      getCell(safetyRows, 2, 3) ||
-      "Ohutusjuhised",
+    titleEt: siteEtPartial.legal.safety.title || FOOTER_LEGAL.et.safety,
     blocks: formatLegalBlocks(safety),
   },
 };

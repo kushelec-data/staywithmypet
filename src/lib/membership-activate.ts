@@ -41,6 +41,8 @@ export type UpsertMembershipInput = {
   stripeSubscriptionId?: string | null;
   stripePriceId?: string | null;
   stripeCheckoutSessionId?: string | null;
+  /** Provenance: e.g. test_code, stripe_checkout. Optional column — stripped if migration not applied. */
+  source?: string | null;
   /** When false, skip confirmation email (e.g. interim webhook updates). */
   sendConfirmationEmail?: boolean;
 };
@@ -79,6 +81,7 @@ const MEMBERSHIP_CORE_COLUMNS = [
 
 const MEMBERSHIP_OPTIONAL_STRIP_COLUMNS = [
   "plan_name",
+  "source",
   "stripe_customer_id",
   "stripe_subscription_id",
   "stripe_price_id",
@@ -211,6 +214,9 @@ function buildMembershipUpsertPayload(input: UpsertMembershipInput): {
   }
   if (input.stripeCheckoutSessionId !== undefined) {
     payload.stripe_checkout_session_id = input.stripeCheckoutSessionId;
+  }
+  if (input.source !== undefined) {
+    payload.source = input.source;
   }
 
   return {
