@@ -38,8 +38,12 @@ export function ForgotPasswordForm() {
 
     try {
       const origin = getAuthRedirectOrigin();
+      const redirectTo = `${origin}/auth/confirm?next=${encodeURIComponent("/reset-password")}`;
+      if (process.env.NODE_ENV !== "production") {
+        console.info("[auth:recovery:forgot-password]", { redirectTo });
+      }
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/reset-password`,
+        redirectTo,
       });
       if (resetError) throw resetError;
       setDone(true);

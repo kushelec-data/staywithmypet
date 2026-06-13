@@ -2,34 +2,67 @@ import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import { getAuthCallbackUrl } from "@/lib/auth";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 
-type SignupResponseLog = {
-  error: Pick<AuthError, "message" | "status" | "name"> | null;
+/** Production callback URL used for Supabase redirect allowlist audits. */
+export const EXPECTED_PRODUCTION_SIGNUP_CALLBACK =
+  "https://staywithmypet-5296.vercel.app/auth/callback?next=%2Fdashboard";
+
+export type SignupDebugSnapshot = {
   hasUser: boolean;
   hasSession: boolean;
-  userId: string | null;
   emailConfirmedAt: string | null;
-  identitiesCount: number;
   emailRedirectTo: string;
+  supabaseError: string | null;
+  matchesExpectedProductionRedirect: boolean;
 };
 
-/** Dev-only signup diagnostics — never logs passwords or tokens. */
+export function isSignupDebugEnabled(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
+export function buildSignupDebugSnapshot(
+  data: { user: User | null; session: Session | null },
+  error: AuthError | null,
+  emailRedirectTo: string,
+): SignupDebugSnapshot {
+  return {
+    hasUser: Boolean(data.user),
+    hasSession: Boolean(data.session),
+    emailConfirmedAt: data.user?.email_confirmed_at ?? null,
+    emailRedirectTo,
+    supabaseError: error?.message ?? null,
+    matchesExpectedProductionRedirect:
+      emailRedirectTo === EXPECTED_PRODUCTION_SIGNUP_CALLBACK,
+  };
+}
+
+type SignupResponseLog = SignupDebugSnapshot & {
+  userId: string | null;
+  identitiesCount: number;
+  errorStatus: number | undefined;
+};
+
+/** Non-production signup diagnostics — never logs passwords or tokens. */
 export function logSignupResponseDev(
   data: { user: User | null; session: Session | null },
   error: AuthError | null,
+  emailRedirectTo: string,
 ): void {
-  if (process.env.NODE_ENV !== "development") return;
+  if (!isSignupDebugEnabled()) return;
 
+  const snapshot = buildSignupDebugSnapshot(data, error, emailRedirectTo);
   const payload: SignupResponseLog = {
-    error: error
-      ? { message: error.message, status: error.status, name: error.name }
-      : null,
-    hasUser: Boolean(data.user),
-    hasSession: Boolean(data.session),
+    ...snapshot,
     userId: data.user?.id ?? null,
-    emailConfirmedAt: data.user?.email_confirmed_at ?? null,
     identitiesCount: data.user?.identities?.length ?? 0,
-    emailRedirectTo: getAuthCallbackUrl(DASHBOARD_PATH),
+    errorStatus: error?.status,
   };
 
   console.info("[auth:signup]", payload);
+}
+
+export function signupOutcomeLabel(snapshot: SignupDebugSnapshot): string {
+  if (snapshot.supabaseError) return "error";
+  if (snapshot.hasSession && snapshot.hasUser) return "session (auto-confirmed or confirm off)";
+  if (snapshot.hasUser && !snapshot.hasSession) return "user without session (confirm email pending)";
+  return "empty response";
 }

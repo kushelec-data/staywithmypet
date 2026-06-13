@@ -9,21 +9,45 @@ import { PasswordPolicyChecklist } from "@/components/auth/PasswordPolicyCheckli
 import { useLanguage } from "@/context/LanguageContext";
 import { signOut } from "@/lib/auth";
 import { formatAuthError } from "@/lib/auth-messages";
+import {
+  buildAuthConfirmPath,
+  parseAuthHash,
+  PASSWORD_RESET_PATH,
+} from "@/lib/auth-recovery";
+import {
+  captureRecoveryUrlDebug,
+  isRecoveryDebugEnabled,
+  logRecoveryExchangeDev,
+  logRecoveryUrlDebug,
+} from "@/lib/auth-recovery-dev";
 import { passwordMeetsPolicy } from "@/lib/password-policy";
 import { createClient } from "@/lib/supabase";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+function RecoveryDebugPanel({ snapshot }: { snapshot: NonNullable<ReturnType<typeof captureRecoveryUrlDebug>> }) {
+  return (
+    <aside className="mt-4 rounded-2xl border border-amber-300/70 bg-amber-50/90 p-4 text-left text-xs">
+      <p className="font-semibold uppercase tracking-wide text-amber-900">Recovery debug (dev/test)</p>
+      <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all font-mono text-amber-950">
+        {JSON.stringify(snapshot, null, 2)}
+      </pre>
+    </aside>
+  );
+}
 
 export function ResetPasswordForm() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createClient(), []);
+  const handledRef = useRef(false);
   const [initializing, setInitializing] = useState(true);
   const [loading, setLoading] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [debugSnapshot, setDebugSnapshot] = useState<ReturnType<typeof captureRecoveryUrlDebug>>(null);
 
   const authMessages = useMemo(
     () => ({
@@ -38,24 +62,83 @@ export function ResetPasswordForm() {
   );
 
   const notReadyMessage = t.auth.resetPasswordPage.notReady;
+  const showRecoveryDebug = isRecoveryDebugEnabled();
 
   useEffect(() => {
+    if (handledRef.current) return;
     let cancelled = false;
 
     async function init() {
       setError(null);
-      const code = searchParams.get("code");
 
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (showRecoveryDebug) {
+        logRecoveryUrlDebug("reset-password-init");
+        setDebugSnapshot(captureRecoveryUrlDebug());
+      }
+
+      const recoveryError = searchParams.get("recovery_error");
+      if (recoveryError) {
         if (cancelled) return;
-        if (exchangeError) {
+        setSessionReady(false);
+        setError(decodeURIComponent(recoveryError));
+        setInitializing(false);
+        return;
+      }
+
+      const code = searchParams.get("code");
+      const tokenHash = searchParams.get("token_hash");
+      const type = searchParams.get("type");
+
+      if (code || (tokenHash && type)) {
+        handledRef.current = true;
+        const confirmPath = buildAuthConfirmPath({
+          code,
+          token_hash: tokenHash,
+          type,
+          next: PASSWORD_RESET_PATH,
+        });
+        if (showRecoveryDebug) {
+          console.info("[auth:recovery:redirect-to-confirm]", { confirmPath, code: Boolean(code), tokenHash: Boolean(tokenHash), type });
+        }
+        window.location.replace(confirmPath);
+        return;
+      }
+
+      const hashParams =
+        typeof window !== "undefined" ? parseAuthHash(window.location.hash) : {};
+      const accessToken = hashParams.access_token;
+      const refreshToken = hashParams.refresh_token;
+      const hashType = hashParams.type ?? null;
+
+      if (accessToken && refreshToken) {
+        handledRef.current = true;
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        logRecoveryExchangeDev("setSession", {
+          method: "setSession",
+          error: setSessionError?.message ?? null,
+        });
+
+        if (showRecoveryDebug) {
+          console.info("[auth:recovery:hash]", {
+            recoveryType: hashType,
+            hasAccessToken: true,
+            hasRefreshToken: true,
+          });
+        }
+
+        window.history.replaceState(null, "", PASSWORD_RESET_PATH);
+
+        if (setSessionError) {
+          if (cancelled) return;
           setSessionReady(false);
-          setError(notReadyMessage);
+          setError(setSessionError.message || notReadyMessage);
           setInitializing(false);
           return;
         }
-        router.replace("/reset-password");
       }
 
       const {
@@ -86,7 +169,7 @@ export function ResetPasswordForm() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, supabase, router, notReadyMessage]);
+  }, [searchParams, supabase, notReadyMessage, showRecoveryDebug]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -127,9 +210,14 @@ export function ResetPasswordForm() {
           {initializing ? (
             <p className="text-center text-sm text-muted">{t.auth.pleaseWait}</p>
           ) : !sessionReady ? (
-            <p className="text-center text-sm text-brand-pink" role="alert">
-              {error ?? notReadyMessage}
-            </p>
+            <>
+              <p className="text-center text-sm text-brand-pink" role="alert">
+                {error ?? notReadyMessage}
+              </p>
+              {showRecoveryDebug && debugSnapshot ? (
+                <RecoveryDebugPanel snapshot={debugSnapshot} />
+              ) : null}
+            </>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>

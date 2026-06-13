@@ -10,7 +10,13 @@ import { completeAuthSession } from "@/lib/auth-flow";
 import { formatAuthError } from "@/lib/auth-messages";
 import { DASHBOARD_PATH, resolveLoginReturnPath, resolvePostLoginPath } from "@/lib/auth-routing";
 import { getAuthCallbackUrl } from "@/lib/auth";
-import { logSignupResponseDev } from "@/lib/auth-signup-dev";
+import {
+  buildSignupDebugSnapshot,
+  isSignupDebugEnabled,
+  logSignupResponseDev,
+  type SignupDebugSnapshot,
+} from "@/lib/auth-signup-dev";
+import { SignupDebugPanel } from "@/components/auth/SignupDebugPanel";
 import { PROFILE_SESSION_MISMATCH_PARAM } from "@/lib/profile-session-guard";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { passwordMeetsPolicy } from "@/lib/password-policy";
@@ -48,6 +54,8 @@ export function AuthForm({ mode }: AuthFormProps) {
   );
 
   const [password, setPassword] = useState("");
+  const [signupDebug, setSignupDebug] = useState<SignupDebugSnapshot | null>(null);
+  const showSignupDebug = isSignupDebugEnabled();
 
   useEffect(() => {
     if (searchParams.get("passwordReset") === "1") {
@@ -97,6 +105,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError(null);
     setSuccess(null);
     setInfo(null);
+    setSignupDebug(null);
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
@@ -128,7 +137,10 @@ export function AuthForm({ mode }: AuthFormProps) {
           },
         });
 
-        logSignupResponseDev(data, signUpError);
+        logSignupResponseDev(data, signUpError, emailRedirectTo);
+        if (showSignupDebug) {
+          setSignupDebug(buildSignupDebugSnapshot(data, signUpError, emailRedirectTo));
+        }
 
         if (signUpError) {
           setError(signUpError.message);
@@ -211,6 +223,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           <Button href="/login" className="mt-6" size="lg">
             {t.auth.login.submit}
           </Button>
+          {showSignupDebug && signupDebug ? <SignupDebugPanel snapshot={signupDebug} /> : null}
         </div>
       </div>
     );
@@ -318,6 +331,9 @@ export function AuthForm({ mode }: AuthFormProps) {
               <p className="rounded-xl bg-error-bg px-3 py-2 text-sm text-error-text" role="alert">
                 {error}
               </p>
+            ) : null}
+            {showSignupDebug && isSignup && signupDebug ? (
+              <SignupDebugPanel snapshot={signupDebug} />
             ) : null}
             {success ? (
               <p className="rounded-xl bg-success-bg px-3 py-2 text-sm font-medium text-success-text" role="status">
