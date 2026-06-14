@@ -4,14 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { useProfile } from "@/context/ProfileContext";
 import { useAuth } from "@/context/AuthContext";
 import type { ProfileRow } from "@/lib/profile-utils";
-import { GooglePlacesInput } from "@/components/location/GooglePlacesInput";
-import {
-  finalizeLocationText,
-  locationInputDisplayValue,
-  shortLocationLabel,
-} from "@/lib/google-places-parse";
-import { getGoogleMapsApiKey } from "@/lib/google-places-loader";
-import { PROFILE_LOCATION_CITY_OPTIONS, PROFILE_LOCATION_DATALIST_ID } from "@/lib/location-datalist";
+import { ProfileLocationField } from "@/components/profile/ProfileLocationField";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import { BioWordCounter } from "@/components/profile/BioWordCounter";
 import { ProfileAvatarUpload } from "@/components/profile/ProfileAvatarUpload";
@@ -52,6 +45,13 @@ import {
 import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesSelector";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
 import {
+  EMPTY_PROFILE_LOCATION_FORM,
+  profileLocationFromRow,
+  profileLocationToSaveInput,
+  validateProfileLocationForSave,
+  type ProfileLocationFormState,
+} from "@/lib/profile-location";
+import {
   languagesOtherFromDetails,
   profileLanguagesOtherMissing,
 } from "@/lib/profile-languages";
@@ -73,29 +73,19 @@ function applyProfileToForm(
   setters: {
     setDisplayName: (v: string) => void;
     setRole: (v: ProfileRole) => void;
-    setLocation: (v: string) => void;
-    setAddress: (v: string) => void;
-    setLatitude: (v: number | null) => void;
-    setLongitude: (v: number | null) => void;
+    setProfileLocation: (v: ProfileLocationFormState) => void;
     setAvailabilitySelectedDates: (v: string[]) => void;
     setLanguages: (v: string[]) => void;
     setLanguagesOther: (v: string) => void;
     setBio: (v: string) => void;
     setTrustSafety: (v: TrustSafetyFormValues) => void;
-    setGooglePlaceId: (v: string | null) => void;
     setAvatarUrl: (v: string | null) => void;
   },
 ) {
   setters.setAvatarUrl(profile.avatar_url?.trim() || null);
   setters.setDisplayName(profile.display_name?.trim() ?? "");
   setters.setRole(profile.role ?? "pet_friend");
-  setters.setLocation(profile.location?.trim() ?? "");
-  setters.setAddress(profile.address?.trim() ?? "");
-  const rawDetails = profile.details as Record<string, unknown> | undefined;
-  const pid = rawDetails?.google_place_id;
-  setters.setGooglePlaceId(typeof pid === "string" && pid.trim() ? pid.trim() : null);
-  setters.setLatitude(profile.latitude ?? null);
-  setters.setLongitude(profile.longitude ?? null);
+  setters.setProfileLocation(profileLocationFromRow(profile));
   const sched = profile.details?.availability_schedule;
   setters.setAvailabilitySelectedDates(normalizeAvailabilityDates(sched?.selected_dates ?? []));
   setters.setLanguages([...(profile.languages ?? [])]);
@@ -152,16 +142,15 @@ export function ProfileSetupForm({
 
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<ProfileRole>("pet_friend");
-  const [location, setLocation] = useState("");
-  const [address, setAddress] = useState("");
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
+  const [profileLocation, setProfileLocation] = useState<ProfileLocationFormState>(
+    EMPTY_PROFILE_LOCATION_FORM,
+  );
+  const [locationFieldError, setLocationFieldError] = useState<string | null>(null);
   const [availabilitySelectedDates, setAvailabilitySelectedDates] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [languagesOther, setLanguagesOther] = useState("");
   const [bio, setBio] = useState("");
   const [trustSafety, setTrustSafety] = useState<TrustSafetyFormValues>(emptyTrustSafetyFormValues);
-  const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [petFriendForm, setPetFriendForm] = useState<PetFriendProfileFormInput>(
     emptyPetFriendProfileForm,
@@ -177,16 +166,12 @@ export function ProfileSetupForm({
     () => ({
       setDisplayName,
       setRole,
-      setLocation,
-      setAddress,
-      setLatitude,
-      setLongitude,
+      setProfileLocation,
       setAvailabilitySelectedDates,
       setLanguages,
       setLanguagesOther,
       setBio,
       setTrustSafety,
-      setGooglePlaceId,
       setAvatarUrl,
     }),
     [],
@@ -209,7 +194,6 @@ export function ProfileSetupForm({
     notifyDashboardRefresh();
   }
 
-  const locationFieldValue = locationInputDisplayValue(address, location);
   const showFriendProfileSections = role === "pet_friend" || role === "both";
   const bioWordCount = useMemo(() => countBioWords(bio), [bio]);
   const bioStatus = bioWordStatus(bioWordCount);
@@ -249,16 +233,13 @@ export function ProfileSetupForm({
       setDisplayName("");
     }
     setRole("pet_friend");
-    setLocation("");
-    setAddress("");
-    setLatitude(null);
-    setLongitude(null);
+    setProfileLocation(EMPTY_PROFILE_LOCATION_FORM);
+    setLocationFieldError(null);
     setAvailabilitySelectedDates([]);
     setLanguages([]);
     setLanguagesOther("");
     setBio("");
     setTrustSafety(emptyTrustSafetyFormValues);
-    setGooglePlaceId(null);
     setAvatarUrl(null);
     setPetFriendForm(emptyPetFriendProfileForm());
   }, [profile, profileLoading, user, setters]);
@@ -272,11 +253,17 @@ export function ProfileSetupForm({
       setError(pe.errorDisplayName);
       return;
     }
-    const locationText = finalizeLocationText(locationFieldValue);
-    if (!locationText) {
-      setError(pe.errorLocation);
+    const locationValidation = validateProfileLocationForSave(profileLocation);
+    if (!locationValidation.ok) {
+      const message =
+        locationValidation.error === "placeRequired"
+          ? setup.errorLocationPlaceRequired
+          : pe.errorLocation;
+      setLocationFieldError(message);
+      setError(message);
       return;
     }
+    setLocationFieldError(null);
     if (languages.length === 0) {
       setError(pe.errorLanguages);
       return;
@@ -294,7 +281,6 @@ export function ProfileSetupForm({
       return;
     }
 
-    const hasGoogleCoords = latitude != null && longitude != null;
     const ecName =
       trustSafety.emergencyName.trim() || profile?.emergency_contact_name?.trim() || "";
     const ecNational =
@@ -311,7 +297,7 @@ export function ProfileSetupForm({
     const payload: ProfileSetupInput = {
       displayName: trimmedName,
       role,
-      location: hasGoogleCoords ? finalizeLocationText(location) || locationText : locationText,
+      location: profileLocationToSaveInput(profileLocation),
       languages: [...languages],
       languagesOther,
       bio: normalizeBioForSave(bio),
@@ -325,11 +311,7 @@ export function ProfileSetupForm({
             relationship: ecRelationship,
           }
         : null,
-      address: hasGoogleCoords ? finalizeLocationText(address) || locationText : locationText,
-      latitude,
-      longitude,
       availabilitySelectedDates,
-      googlePlaceId: hasGoogleCoords ? googlePlaceId : null,
       petFriend: showFriendProfileSections
         ? {
             ...petFriendForm,
@@ -464,41 +446,20 @@ export function ProfileSetupForm({
         )}
 
         <div className="sm:col-span-2">
-          <label htmlFor="location" className="form-field-label">
-            {setup.location}
-          </label>
-          <GooglePlacesInput
-            id="location"
-            name="location"
-            value={locationFieldValue}
-            onChange={(text) => {
-              setLocation(text);
-              setAddress(text);
-              setLatitude(null);
-              setLongitude(null);
-              setGooglePlaceId(null);
-            }}
-            onPlaceSelect={(place) => {
-              setLocation(shortLocationLabel(place));
-              setAddress(place.formatted_address);
-              setLatitude(place.latitude);
-              setLongitude(place.longitude);
-              setGooglePlaceId(place.place_id);
-            }}
-            required
-            autoComplete="street-address"
-            className="input-field mt-1"
+          <ProfileLocationField
+            label={setup.location}
             placeholder={setup.locationPlaceholder}
-            datalistId={PROFILE_LOCATION_DATALIST_ID}
+            hintGoogle={setup.locationGoogleHint}
+            hintFallback={setup.locationCityHint}
+            value={profileLocation}
+            onChange={(next) => {
+              setProfileLocation(next);
+              setLocationFieldError(null);
+            }}
+            disabled={saving}
+            required
+            error={locationFieldError}
           />
-          <datalist id={PROFILE_LOCATION_DATALIST_ID}>
-            {PROFILE_LOCATION_CITY_OPTIONS.map((city) => (
-              <option key={city} value={city} />
-            ))}
-          </datalist>
-          <p className="mt-1 text-xs text-muted">
-            {getGoogleMapsApiKey() ? setup.locationGoogleHint : setup.locationCityHint}
-          </p>
         </div>
 
         {availabilityUx.showPersonalAvailabilityEditor && !showFriendProfileSections ? (

@@ -21,6 +21,8 @@ type GooglePlacesInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "onCha
   value: string;
   onChange: (value: string) => void;
   onPlaceSelect: (place: GooglePlaceSelectPayload) => void;
+  /** When true (Google API available), free-text entry without a suggestion is cleared on blur. */
+  forceGoogleSelection?: boolean;
   /** Estonian city datalist when Google is unavailable */
   datalistId?: string;
 };
@@ -69,6 +71,7 @@ export function GooglePlacesInput({
   onChange,
   onPlaceSelect,
   datalistId,
+  forceGoogleSelection = false,
   id,
   onKeyDown,
   onFocus,
@@ -80,6 +83,7 @@ export function GooglePlacesInput({
   const onPlaceSelectRef = useRef(onPlaceSelect);
   const onChangeRef = useRef(onChange);
   const focusedRef = useRef(false);
+  const confirmedRef = useRef(false);
   const [draft, setDraft] = useState(value);
 
   onPlaceSelectRef.current = onPlaceSelect;
@@ -88,6 +92,7 @@ export function GooglePlacesInput({
   useEffect(() => {
     if (!focusedRef.current) {
       setDraft(value);
+      confirmedRef.current = Boolean(value.trim());
     }
   }, [value]);
 
@@ -115,6 +120,7 @@ export function GooglePlacesInput({
           void (async () => {
             const parsed = await resolvePlaceFromAutocomplete(ac.getPlace());
             if (!parsed || cancelled) return;
+            confirmedRef.current = true;
             setDraft(parsed.formatted_address);
             onChangeRef.current(parsed.formatted_address);
             onPlaceSelectRef.current(parsed);
@@ -138,6 +144,7 @@ export function GooglePlacesInput({
   }, [apiKey]);
 
   function handleChange(next: string) {
+    confirmedRef.current = false;
     setDraft(next);
     onChange(next);
   }
@@ -165,6 +172,10 @@ export function GooglePlacesInput({
       }}
       onBlur={(e) => {
         focusedRef.current = false;
+        if (forceGoogleSelection && useGoogle && !confirmedRef.current) {
+          setDraft(value);
+          onChangeRef.current(value);
+        }
         onBlur?.(e);
       }}
       list={useGoogle ? undefined : datalistId}

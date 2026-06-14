@@ -476,6 +476,7 @@ export const en = {
       editAvailabilityHint:
         "Tap days you're available. Pet Parents will see your availability on your public profile.",
       profileSavedSuccess: "Profile saved successfully.",
+      errorLocationPlaceRequired: "Please select an address from the suggestions.",
     },
     petsPage: {
       createTitle: "Create pet profile",
@@ -771,6 +772,7 @@ export const en = {
       },
       errorDisplayName: "Please enter your display name.",
       errorLocation: "Please enter your location.",
+      errorLocationPlaceRequired: "Please select an address from the suggestions.",
       errorLanguages: "Please select at least one language.",
       errorBioMin: "Write at least 20 words in your bio.",
       errorBioMax: "Bio cannot exceed {max} words.",

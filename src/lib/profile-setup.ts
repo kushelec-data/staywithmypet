@@ -23,6 +23,10 @@ import {
 } from "@/lib/profile-details";
 import { mergeLanguagesOtherIntoDetails } from "@/lib/profile-languages";
 import {
+  buildProfileLocationDbFields,
+  type ProfileLocationSaveInput,
+} from "@/lib/profile-location";
+import {
   mergePetFriendCalendarDates,
   mergePetFriendIntoDetails,
   type PetFriendProfileFormInput,
@@ -48,7 +52,7 @@ export type ProfileRole = "pet_parent" | "pet_friend" | "both";
 export type ProfileSetupInput = {
   displayName: string;
   role: ProfileRole;
-  location: string;
+  location: ProfileLocationSaveInput;
   languages: string[];
   languagesOther: string;
   bio: string;
@@ -60,12 +64,8 @@ export type ProfileSetupInput = {
     national: string;
     relationship?: string | null;
   } | null;
-  address?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
   /** YYYY-MM-DD → `profiles.details.availability.selected_dates`. */
   availabilitySelectedDates: string[];
-  googlePlaceId?: string | null;
   petFriend?: PetFriendProfileFormInput | null;
 };
 
@@ -76,13 +76,40 @@ export type ProfileSaveContext = {
 
 function isMissingProfilesColumnError(error: { message?: string } | null): boolean {
   const m = error?.message ?? "";
-  if (!m || !/address|latitude|longitude/i.test(m)) return false;
+  if (!m || !/address|latitude|longitude|formatted_address|google_place_id|public_location|postal_code|city|country/i.test(m)) {
+    return false;
+  }
   return /does not exist|schema cache|could not find/i.test(m);
 }
 
 async function profilesGeoColumnsWritable(supabase: SupabaseClient): Promise<boolean> {
   const { error } = await supabase.from("profiles").select("address,latitude,longitude").limit(1);
   return !isMissingProfilesColumnError(error);
+}
+
+async function profilesLocationColumnsWritable(supabase: SupabaseClient): Promise<boolean> {
+  const { error } = await supabase
+    .from("profiles")
+    .select("formatted_address,google_place_id,public_location,city,country,postal_code")
+    .limit(1);
+  return !isMissingProfilesColumnError(error);
+}
+
+function applyLocationFieldsToRow(
+  row: Record<string, unknown>,
+  location: ProfileLocationSaveInput,
+  options: { geo: boolean; structured: boolean },
+): void {
+  if (options.structured) {
+    Object.assign(row, buildProfileLocationDbFields(location));
+    return;
+  }
+  row.location = location.location.trim() || location.publicLocation?.trim() || null;
+  if (options.geo) {
+    row.address = location.formattedAddress?.trim() || null;
+    row.latitude = location.latitude ?? null;
+    row.longitude = location.longitude ?? null;
+  }
 }
 
 export async function saveUserRole(
@@ -322,7 +349,7 @@ export async function saveUserProfile(
   }
 
   detailsMerged = mergeDetailsTrustFlags(
-    mergeDetailsGooglePlace(detailsMerged, input.googlePlaceId),
+    mergeDetailsGooglePlace(detailsMerged, input.location.googlePlaceId),
     Boolean(context.user.email_confirmed_at),
     {
       phoneVerified: nextPhoneVerified,
@@ -368,12 +395,12 @@ export async function saveUserProfile(
   ).percent;
 
   const canWriteGeo = await profilesGeoColumnsWritable(supabase);
+  const canWriteLocation = await profilesLocationColumnsWritable(supabase);
 
   const row: Record<string, unknown> = {
     id: userId,
     display_name: displayName,
     role,
-    location: input.location.trim() || input.address?.trim() || null,
     languages: input.languages,
     bio: input.bio.trim() || null,
     phone: phoneE164 || null,
@@ -390,11 +417,10 @@ export async function saveUserProfile(
     updated_at: now,
   };
 
-  if (canWriteGeo) {
-    row.address = input.address?.trim() ? input.address.trim() : input.location.trim() || null;
-    row.latitude = input.latitude ?? null;
-    row.longitude = input.longitude ?? null;
-  }
+  applyLocationFieldsToRow(row, input.location, {
+    geo: canWriteGeo,
+    structured: canWriteLocation,
+  });
 
   console.log("[profile] save payload", { ...row, details: "[merged]" });
 
@@ -447,14 +473,10 @@ export async function saveUserProfile(
 
 export type BasicProfileSectionInput = {
   displayName: string;
-  location: string;
+  location: ProfileLocationSaveInput;
   languages: string[];
   languagesOther: string;
   bio: string;
-  address?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  googlePlaceId?: string | null;
 };
 
 export type TrustSafetySectionInput = {
@@ -727,7 +749,7 @@ export async function saveBasicProfileSection(
       ? { ...(existingDetailsRaw as Record<string, unknown>) }
       : {};
 
-  detailsMerged = mergeDetailsGooglePlace(detailsMerged, input.googlePlaceId);
+  detailsMerged = mergeDetailsGooglePlace(detailsMerged, input.location.googlePlaceId);
 
   detailsMerged = mergeLanguagesOtherIntoDetails(
     detailsMerged,
@@ -736,23 +758,22 @@ export async function saveBasicProfileSection(
   );
 
   const canWriteGeo = await profilesGeoColumnsWritable(supabase);
+  const canWriteLocation = await profilesLocationColumnsWritable(supabase);
 
   const row: Record<string, unknown> = {
     id: userId,
     display_name: displayName,
     role,
-    location: input.location.trim() || input.address?.trim() || null,
     languages: input.languages,
     bio: input.bio.trim() || null,
     details: detailsMerged,
     updated_at: now,
   };
 
-  if (canWriteGeo) {
-    row.address = input.address?.trim() ? input.address.trim() : input.location.trim() || null;
-    row.latitude = input.latitude ?? null;
-    row.longitude = input.longitude ?? null;
-  }
+  applyLocationFieldsToRow(row, input.location, {
+    geo: canWriteGeo,
+    structured: canWriteLocation,
+  });
 
   return persistProfilePartial(supabase, userId, row, "basic section save");
 }

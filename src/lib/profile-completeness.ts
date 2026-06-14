@@ -8,6 +8,7 @@ import {
 } from "@/lib/profile-details";
 import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
+import { hasSavedProfileLocation } from "@/lib/profile-location";
 import type { ProfileRow } from "@/lib/profile-utils";
 
 /** Minimum bio length counted toward profile completeness (same rule everywhere). */
@@ -73,6 +74,12 @@ export type ProfileCompletenessInput = Pick<
   | "avatar_url"
   | "bio"
   | "location"
+  | "public_location"
+  | "city"
+  | "country"
+  | "google_place_id"
+  | "latitude"
+  | "longitude"
   | "phone"
   | "phone_e164"
   | "role"
@@ -142,7 +149,7 @@ function sharedProfileItems(
     {
       id: "location",
       label: labels.location,
-      done: Boolean(profile.location?.trim()),
+      done: hasSavedProfileLocation(profile),
       href: "/profile/edit",
     },
   ];

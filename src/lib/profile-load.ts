@@ -9,7 +9,7 @@ import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils"
 import { toFriendlyClientMessage } from "@/lib/security/errors";
 
 export const PROFILE_SELECT =
-  "id, display_name, avatar_url, bio, location, address, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score, is_public, rating_avg, rating_count, membership_status, details, created_at";
+  "id, display_name, avatar_url, bio, location, address, formatted_address, city, country, postal_code, google_place_id, public_location, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score, is_public, rating_avg, rating_count, membership_status, details, created_at";
 
 const PROFILE_SELECT_FALLBACKS = [
   "id, display_name, avatar_url, bio, location, address, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, is_public, rating_avg, rating_count, membership_status, details, created_at",
@@ -30,6 +30,12 @@ export type ProfileDbRow = {
   bio: string | null;
   location: string | null;
   address?: string | null;
+  formatted_address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  postal_code?: string | null;
+  google_place_id?: string | null;
+  public_location?: string | null;
   latitude?: unknown;
   longitude?: unknown;
   role?: ProfileRole;
@@ -96,6 +102,12 @@ export function mapProfileRow(data: ProfileDbRow): ProfileRow {
     bio: data.bio,
     location: data.location,
     address: typeof data.address === "string" ? data.address : null,
+    formatted_address: typeof data.formatted_address === "string" ? data.formatted_address : null,
+    city: typeof data.city === "string" ? data.city : null,
+    country: typeof data.country === "string" ? data.country : null,
+    postal_code: typeof data.postal_code === "string" ? data.postal_code : null,
+    google_place_id: typeof data.google_place_id === "string" ? data.google_place_id : null,
+    public_location: typeof data.public_location === "string" ? data.public_location : null,
     latitude: parseCoord(data.latitude),
     longitude: parseCoord(data.longitude),
     role,

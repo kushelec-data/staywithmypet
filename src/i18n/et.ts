@@ -479,6 +479,7 @@ export const et = {
       editAvailabilityHint:
         "Puuduta päevi, mil oled saadaval. Loomaomanikud näevad sinu saadavust avalikul profiilil.",
       profileSavedSuccess: "Profiil on edukalt salvestatud.",
+      errorLocationPlaceRequired: "Palun vali aadress soovituste hulgast.",
     },
     petsPage: {
       createTitle: "Loo lemmiku profiil",
@@ -779,6 +780,7 @@ export const et = {
       },
       errorDisplayName: "Palun sisesta kuvatav nimi.",
       errorLocation: "Palun sisesta asukoht.",
+      errorLocationPlaceRequired: "Palun vali aadress soovituste hulgast.",
       errorLanguages: "Palun vali vähemalt üks keel.",
       errorBioMin: "Kirjuta biosse vähemalt 20 sõna.",
       errorBioMax: "Bio ei tohi ületada {max} sõna.",

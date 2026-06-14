@@ -13,8 +13,15 @@ export type ProfileRow = {
   display_name: string;
   avatar_url: string | null;
   bio: string | null;
+  /** Legacy short label; prefer public_location for public display when set. */
   location: string | null;
   address: string | null;
+  formatted_address: string | null;
+  city: string | null;
+  country: string | null;
+  postal_code: string | null;
+  google_place_id: string | null;
+  public_location: string | null;
   latitude: number | null;
   longitude: number | null;
   role: ProfileRole;

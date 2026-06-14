@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatNearbyLocation } from "@/lib/location-public";
+import { resolveProfilePublicLocation } from "@/lib/profile-location";
 import { blurCoordinates } from "@/lib/map-privacy";
 import { parseCoord } from "@/lib/parse-coord";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
@@ -38,8 +39,17 @@ function isListableProfile(row: {
   display_name: string;
   bio: string | null;
   location: string | null;
+  public_location?: string | null;
+  city?: string | null;
+  country?: string | null;
+  google_place_id?: string | null;
+  latitude?: unknown;
+  longitude?: unknown;
 }): boolean {
-  return Boolean(row.display_name?.trim() && row.bio?.trim() && row.location?.trim());
+  const hasLocation = Boolean(
+    resolveProfilePublicLocation(row) || row.location?.trim(),
+  );
+  return Boolean(row.display_name?.trim() && row.bio?.trim() && hasLocation);
 }
 
 /** Pet Friends discoverable on /find-care (not pure Pet Parents). */
@@ -61,6 +71,10 @@ type PetFriendSearchRow = {
   id: string;
   display_name: string;
   location: string | null;
+  public_location?: string | null;
+  city?: string | null;
+  country?: string | null;
+  google_place_id?: string | null;
   latitude?: unknown;
   longitude?: unknown;
   bio: string | null;
@@ -101,8 +115,9 @@ function profileEmailVerified(detailsRaw: unknown): boolean {
 export function mapPetFriendSearchRow(row: PetFriendSearchRow): SearchProfile {
   const role = row.role;
   const activeMode = resolveActiveMode(role, row.active_mode);
-  const rawLocation = row.location?.trim() ?? null;
-  const locationArea = formatNearbyLocation(rawLocation) ?? rawLocation;
+  const publicLocation = resolveProfilePublicLocation(row);
+  const rawLocation = publicLocation ?? row.location?.trim() ?? null;
+  const locationArea = publicLocation ?? formatNearbyLocation(rawLocation) ?? rawLocation;
   const details = parseProfileDetails(row.details);
   const availability = resolvedAvailability(details);
   const care = resolvedPetCarePreferences(details);
@@ -146,7 +161,7 @@ export async function fetchPetFriendSearchProfiles(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, display_name, location, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",
+      "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",
     )
     .eq("is_public", true)
     .in("role", ["pet_friend", "both"])

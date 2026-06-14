@@ -3,6 +3,7 @@ export type GooglePlaceSelectPayload = {
   formatted_address: string;
   city: string | null;
   country: string | null;
+  postal_code: string | null;
   latitude: number | null;
   longitude: number | null;
   place_id: string | null;
@@ -42,6 +43,7 @@ export function parseGooglePlaceSelection(place: PlaceLike): GooglePlaceSelectPa
     componentLong(components, "administrative_area_level_2");
 
   const country = componentLong(components, "country");
+  const postal_code = componentLong(components, "postal_code");
   const loc = place.geometry?.location;
   const latitude = loc ? loc.lat() : null;
   const longitude = loc ? loc.lng() : null;
@@ -50,6 +52,7 @@ export function parseGooglePlaceSelection(place: PlaceLike): GooglePlaceSelectPa
     formatted_address: formatted,
     city,
     country,
+    postal_code,
     latitude,
     longitude,
     place_id: place.place_id?.trim() || null,

@@ -6,6 +6,7 @@ import {
 } from "@/components/dashboard/DashboardInfoCard";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatProfileLanguagesLine } from "@/lib/profile-languages";
+import { resolvePrivateFormattedAddress } from "@/lib/profile-location";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import type { ProfileRow } from "@/lib/profile-utils";
 
@@ -26,7 +27,11 @@ export function DashboardContactCard({ profile }: DashboardContactCardProps) {
       <dl className="space-y-2 text-xs">
         <DashboardDetailRow
           label={dh.location}
-          value={profile.location?.trim() || acc.notSet}
+          value={
+            resolvePrivateFormattedAddress(profile) ||
+            profile.location?.trim() ||
+            acc.notSet
+          }
         />
         <DashboardDetailRow
           label={dh.languages}

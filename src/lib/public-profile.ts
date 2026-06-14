@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeProfileCompleteness } from "@/lib/profile-completeness";
 import { formatNearbyLocation } from "@/lib/location-public";
+import { resolveProfilePublicLocation } from "@/lib/profile-location";
 import { fetchOwnerPetIntros, type PetIntroDisplay } from "@/lib/pet-intro";
 
 export { formatNearbyLocation } from "@/lib/location-public";
@@ -24,7 +25,7 @@ import { countReviewsAsReviewee } from "@/lib/bookings-stats";
 const PUBLIC_PROFILE_SELECT = PUBLIC_PROFILE_COLUMNS;
 
 const PUBLIC_PROFILE_SELECT_FALLBACK =
-  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude";
+  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude";
 
 export type PublicProfileView = {
   id: string;
@@ -198,7 +199,8 @@ export function toPublicProfileView(
     created_at: typeof row.created_at === "string" ? row.created_at : null,
     details,
     profilePhotos: (details.profile_photos ?? []).slice(0, 6),
-    nearbyLocation: formatNearbyLocation(row.location),
+    nearbyLocation:
+      resolveProfilePublicLocation(row) ?? formatNearbyLocation(row.location),
     approximateMap,
     email_verified: emailVerified,
     phone_verified: phoneVerifiedPublic,

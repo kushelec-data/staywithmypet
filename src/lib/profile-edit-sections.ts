@@ -1,4 +1,5 @@
 import { countBioWords, isBioWordCountValid } from "@/lib/bio-words";
+import { hasSavedProfileLocation } from "@/lib/profile-location";
 import {
   hasCarePreferences,
   hasLivingSituation,
@@ -46,7 +47,7 @@ export function isBasicProfileSectionComplete(
   if (!profile) return false;
   return Boolean(
     profile.display_name?.trim() &&
-      profile.location?.trim() &&
+      hasSavedProfileLocation(profile) &&
       (profile.languages?.length ?? 0) > 0 &&
       bioValid,
   );

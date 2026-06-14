@@ -6,6 +6,12 @@ const PRIVATE_PROFILE_KEYS = [
   "phone_e164",
   "email",
   "address",
+  "formatted_address",
+  "city",
+  "country",
+  "postal_code",
+  "google_place_id",
+  "location",
   "emergency_contact_name",
   "emergency_contact_phone_country_code",
   "emergency_contact_phone_number",
@@ -63,4 +69,4 @@ export function sanitizePublicProfile<T extends Record<string, unknown>>(
 
 /** Narrow select list for public profile queries (keeps RLS + column exposure minimal). */
 export const PUBLIC_PROFILE_COLUMNS =
-  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude, trust_score, phone_verified" as const;
+  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude, trust_score, phone_verified" as const;
