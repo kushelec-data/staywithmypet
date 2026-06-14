@@ -1622,6 +1622,9 @@ export const en = {
     phoneHint: "Optional — pick country code, then your number.",
     subject: "Subject",
     message: "Message",
+    successMessage: "Your message has been sent. We'll get back to you soon.",
+    errorMessage:
+      "Could not send your message. Please email us directly at info@staywithmypet.ee.",
   },
   vetClinics: {
     badge: "Pet safety",

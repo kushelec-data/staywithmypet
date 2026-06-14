@@ -1625,6 +1625,9 @@ export const et = {
     phoneHint: "Valikuline — vali riigikood ja sisesta number.",
     subject: "Teema",
     message: "Sõnum",
+    successMessage: "Sinu sõnum on saadetud. Võtame sinuga peagi ühendust.",
+    errorMessage:
+      "Sõnumi saatmine ebaõnnestus. Palun kirjuta meile otse aadressil info@staywithmypet.ee.",
   },
   vetClinics: {
     badge: "Lemmiku turvalisus",
