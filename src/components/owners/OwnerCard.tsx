@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
-import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { ProfileCardHeroImage } from "@/components/profile/ProfileCardHeroImage";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { DateChips } from "@/components/ui/DateChips";
@@ -67,7 +67,6 @@ export function OwnerCard({
     }
     setCalendarOpen(true);
   }
-  const avatarSrc = profile.avatarUrl?.trim() ? profile.avatarUrl : null;
 
   return (
     <>
@@ -77,27 +76,17 @@ export function OwnerCard({
         }`}
       >
         <Link href={profileHref} className="relative block shrink-0 overflow-hidden">
-          <div
-            className={`relative w-full bg-mint/20 ${
-              compact ? "h-[240px] max-h-[240px]" : "aspect-[4/3]"
-            }`}
-          >
-            <ProfileAvatar
-              userId={profile.id}
-              displayName={profile.displayName}
-              avatarUrl={avatarSrc}
-              size="xl"
-              shape="rounded"
-              sizes={compact ? "(max-width: 640px) 100vw, 320px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"}
-              className={`h-full w-full ${compact ? "max-h-[240px]" : "aspect-[4/3]"}`}
-              imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            />
-            <FavoriteButton
-              target={{ type: "friend", id: profile.id }}
-              className={`absolute z-20 ${compact ? "left-2 top-2" : "left-3 top-3"}`}
-              compact
-            />
-          </div>
+          <ProfileCardHeroImage
+            userId={profile.id}
+            displayName={profile.displayName}
+            avatarUrl={profile.avatarUrl}
+            compact={compact}
+          />
+          <FavoriteButton
+            target={{ type: "friend", id: profile.id }}
+            className={`absolute z-20 ${compact ? "left-2 top-2" : "left-3 top-3"}`}
+            compact
+          />
         </Link>
 
         <div className={`flex flex-1 flex-col ${compact ? "gap-2 p-3" : "gap-2.5 p-4"}`}>
