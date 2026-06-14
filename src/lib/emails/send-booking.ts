@@ -17,7 +17,9 @@ export type BookingEmailType =
   | "booking_confirmed"
   | "booking_completed"
   | "review_reminder_parent"
-  | "review_reminder_friend";
+  | "review_reminder_friend"
+  | "booking_starts_tomorrow_parent"
+  | "booking_starts_tomorrow_friend";
 
 type SendBookingEmailInput = {
   type: BookingEmailType;
@@ -26,8 +28,8 @@ type SendBookingEmailInput = {
   data: EmailTemplateContext;
   requestId?: string | null;
   bookingId?: string | null;
-  /** When set, review reminders are queued for later (default 12h). */
-  scheduleReviewAt?: Date;
+  /** When set, email is queued for later delivery. */
+  scheduleAt?: Date;
 };
 
 function toEventType(type: BookingEmailType): EmailEventType {
@@ -44,13 +46,10 @@ export function sendBookingEmail(input: SendBookingEmailInput): void {
     bookingId: input.bookingId ?? null,
   };
 
-  const isReview =
-    eventType === "review_reminder_parent" || eventType === "review_reminder_friend";
-
-  if (isReview && input.scheduleReviewAt) {
+  if (input.scheduleAt) {
     void scheduleTransactionalEmail({
       ...payload,
-      scheduledFor: input.scheduleReviewAt,
+      scheduledFor: input.scheduleAt,
     });
     return;
   }

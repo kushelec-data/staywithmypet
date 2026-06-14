@@ -61,9 +61,11 @@ export async function hydrateScheduledEmailContext(
   const typeLabel = speciesDisplayLabel(species, (pet?.breed as string | null) ?? null).toLowerCase();
 
   const role =
-    row.event_type === "review_reminder_friend"
+    row.event_type === "review_reminder_friend" ||
+    row.event_type === "booking_starts_tomorrow_friend"
       ? "pet_friend"
-      : row.event_type === "review_reminder_parent"
+      : row.event_type === "review_reminder_parent" ||
+          row.event_type === "booking_starts_tomorrow_parent"
         ? "pet_parent"
         : row.user_id === booking.pet_parent_id
           ? "pet_parent"

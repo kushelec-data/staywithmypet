@@ -7,6 +7,7 @@ import {
   type EmailEventType,
   type EmailTemplateContext,
 } from "@/lib/emails";
+import { resolveEmailLocale } from "@/lib/email-templates/locale";
 import { hydrateScheduledEmailContext } from "@/lib/email-scheduled-context";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingColumnError, isMissingRelationError } from "@/lib/supabase-errors";
@@ -190,7 +191,8 @@ export async function sendTransactionalEmail(
     return { sent: false, skipped: true, reason: "no_email" };
   }
 
-  const template = buildEmailTemplate(input.eventType, input.context ?? {});
+  const locale = await resolveEmailLocale(input.userId, input.context?.locale);
+  const template = buildEmailTemplate(input.eventType, input.context ?? {}, locale);
   const apiKey = process.env.RESEND_API_KEY?.trim();
 
   if (!apiKey) {
@@ -260,7 +262,8 @@ async function sendScheduledRow(
   const to = await resolveRecipientEmail(input.userId);
   if (!to) return { sent: false, skipped: true, reason: "no_email" };
 
-  const template = buildEmailTemplate(input.eventType, input.context ?? {});
+  const locale = await resolveEmailLocale(input.userId, input.context?.locale);
+  const template = buildEmailTemplate(input.eventType, input.context ?? {}, locale);
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
     console.info("[email] scheduled send skipped (no API key)", uniqueKey);

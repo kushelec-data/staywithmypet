@@ -32,6 +32,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLocaleState(next);
     window.localStorage.setItem(STORAGE_KEY, next);
     document.documentElement.lang = next;
+    void fetch("/api/user/locale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale: next }),
+    }).catch((err) => {
+      console.warn("[locale] failed to sync preference", err);
+    });
   }, []);
 
   useEffect(() => {

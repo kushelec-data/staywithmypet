@@ -42,8 +42,18 @@ export function ctaButton(label: string, href: string): string {
   return `<p style="margin:20px 0 8px;"><a href="${url}" style="display:inline-block;background:#1a6b5c;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 24px;border-radius:999px;">${escapeHtml(label)}</a></p>`;
 }
 
-export function wrapEmail(bodyHtml: string, headline: string): string {
+export function wrapEmail(
+  bodyHtml: string,
+  headline: string,
+  options?: { includeFooter?: boolean },
+): string {
   const logoUrl = escapeHtml(absoluteUrl("/logo.png"));
+  const footer =
+    options?.includeFooter === false
+      ? ""
+      : `<p style="margin:24px 0 0;font-size:14px;line-height:1.5;color:#666;">
+                Warm regards,<br />The Stay With My Pet Team
+              </p>`;
   return `
 <!DOCTYPE html>
 <html>
@@ -63,9 +73,7 @@ export function wrapEmail(bodyHtml: string, headline: string): string {
           <tr>
             <td style="padding:28px 32px;">
               ${bodyHtml}
-              <p style="margin:24px 0 0;font-size:14px;line-height:1.5;color:#666;">
-                Warm regards,<br />The Stay With My Pet Team
-              </p>
+              ${footer}
             </td>
           </tr>
         </table>

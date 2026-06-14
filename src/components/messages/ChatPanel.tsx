@@ -211,6 +211,13 @@ export function ChatPanel({
       setDraft("");
       setEmojiOpen(false);
       onMessageSent(msg.body, msg.createdAt);
+      void import("@/app/actions/email-events").then(({ sendNewMessageEmailAction }) =>
+        sendNewMessageEmailAction({
+          conversationId,
+          messageId: msg.id,
+          recipientUserId: conversation.otherPartyId,
+        }),
+      );
     } catch (err) {
       if (isMembershipRequiredError(err)) {
         setUpgradeOpen(true);

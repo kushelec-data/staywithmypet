@@ -1,8 +1,8 @@
 import "server-only";
 
-import { REVIEW_REMINDER_DELAY_MS, sendBookingEmail } from "@/lib/emails/send-booking";
-import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
+import { sendBookingEmail } from "@/lib/emails/send-booking";
 import { queueEmailEvent } from "@/lib/email-send";
+import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
 import { speciesDisplayLabel, type PetSpecies } from "@/lib/pet-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { profileDisplayName } from "@/lib/profile-display";
@@ -170,8 +170,13 @@ export function triggerWelcomeForModeSwitch(userId: string, targetMode: ProfileA
 }
 
 export function triggerProfileCompletedEmail(userId: string, recipientName?: string): void {
+  triggerProfileVerifiedEmail(userId, recipientName);
+}
+
+/** Excel row 1 — profile verified / welcome (once per user). */
+export function triggerProfileVerifiedEmail(userId: string, recipientName?: string): void {
   queueEmailEvent({
-    eventType: "profile_completed",
+    eventType: "profile_verified",
     userId,
     context: { recipientName },
   });
@@ -281,6 +286,59 @@ export async function triggerRequestStatusEmails(
   });
 }
 
+function bookingStartsTomorrowAt(startDate: string): Date | null {
+  const parts = startDate.slice(0, 10).split("-").map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
+  const [year, month, day] = parts;
+  const start = new Date(Date.UTC(year, month - 1, day));
+  const reminder = new Date(start);
+  reminder.setUTCDate(reminder.getUTCDate() - 1);
+  reminder.setUTCHours(9, 0, 0, 0);
+  if (reminder.getTime() <= Date.now()) return null;
+  return reminder;
+}
+
+function scheduleBookingStartsTomorrowEmail(
+  booking: BookingEmailRow,
+  requestId: string,
+  userId: string,
+  role: EmailRecipientRole,
+  ctx: EmailTemplateContext,
+): void {
+  const scheduleAt = bookingStartsTomorrowAt(booking.start_date);
+  if (!scheduleAt) return;
+
+  sendBookingEmail({
+    type:
+      role === "pet_parent" ? "booking_starts_tomorrow_parent" : "booking_starts_tomorrow_friend",
+    role,
+    userId,
+    data: ctx,
+    requestId,
+    bookingId: booking.id,
+    scheduleAt,
+  });
+}
+
+export function triggerNewMessageEmail(input: {
+  recipientUserId: string;
+  recipientName?: string;
+  senderName: string;
+  conversationId: string;
+  messageId: string;
+}): void {
+  queueEmailEvent({
+    eventType: "new_message",
+    userId: input.recipientUserId,
+    uniqueKey: `new_message_${input.conversationId}_${input.messageId}`,
+    context: {
+      recipientName: input.recipientName,
+      senderName: input.senderName,
+      conversationId: input.conversationId,
+    },
+  });
+}
+
 export async function triggerBookingConfirmedForRequest(requestId: string): Promise<void> {
   const booking = await loadBookingByRequestId(requestId);
   if (!booking) return;
@@ -292,14 +350,23 @@ export async function triggerBookingConfirmedForRequest(requestId: string): Prom
 
   for (const userId of [booking.pet_parent_id, booking.pet_friend_id]) {
     const recipientName = await loadDisplayName(userId);
+    const otherId =
+      userId === booking.pet_parent_id ? booking.pet_friend_id : booking.pet_parent_id;
+    const otherName = await loadDisplayName(otherId);
+    const role: EmailRecipientRole =
+      userId === booking.pet_parent_id ? "pet_parent" : "pet_friend";
+    const data = { ...ctx, recipientName, otherPartyName: otherName, recipientRole: role };
+
     sendBookingEmail({
       type: "booking_confirmed",
-      role: userId === booking.pet_parent_id ? "pet_parent" : "pet_friend",
+      role,
       userId,
-      data: { ...ctx, recipientName },
+      data,
       requestId,
       bookingId: booking.id,
     });
+
+    scheduleBookingStartsTomorrowEmail(booking, requestId, userId, role, data);
   }
 }
 
@@ -311,30 +378,22 @@ export async function triggerBookingCompletedEmails(bookingId: string): Promise<
   const careType = row?.care_type ?? null;
   const pet = await loadPet(booking.pet_id);
   const ctx = bookingContext(booking, pet, careType, row);
-  const reviewAt = new Date(Date.now() + REVIEW_REMINDER_DELAY_MS);
 
   for (const userId of [booking.pet_parent_id, booking.pet_friend_id]) {
     const recipientName = await loadDisplayName(userId);
+    const otherId =
+      userId === booking.pet_parent_id ? booking.pet_friend_id : booking.pet_parent_id;
+    const otherName = await loadDisplayName(otherId);
     const role: EmailRecipientRole =
       userId === booking.pet_parent_id ? "pet_parent" : "pet_friend";
-
-    sendBookingEmail({
-      type: "booking_completed",
-      role,
-      userId,
-      data: { ...ctx, recipientName },
-      requestId: booking.request_id,
-      bookingId: booking.id,
-    });
 
     sendBookingEmail({
       type: role === "pet_parent" ? "review_reminder_parent" : "review_reminder_friend",
       role,
       userId,
-      data: { ...ctx, recipientName },
+      data: { ...ctx, recipientName, otherPartyName: otherName },
       requestId: booking.request_id,
       bookingId: booking.id,
-      scheduleReviewAt: reviewAt,
     });
   }
 }

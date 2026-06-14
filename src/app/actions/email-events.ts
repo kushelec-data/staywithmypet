@@ -2,6 +2,7 @@
 
 import {
   triggerBookingCompletedEmails,
+  triggerNewMessageEmail,
   triggerProfileCompletedEmail,
   triggerRequestStatusEmails,
   triggerWelcomeEmailsForRole,
@@ -115,4 +116,41 @@ export async function sendBookingCompletedEmailsAction(bookingId: string): Promi
   if (userId !== data.pet_parent_id && userId !== data.pet_friend_id) return;
 
   await triggerBookingCompletedEmails(bookingId);
+}
+
+export async function sendNewMessageEmailAction(input: {
+  conversationId: string;
+  messageId: string;
+  recipientUserId: string;
+}): Promise<void> {
+  const userId = await requireUserId();
+  if (!userId || !input.conversationId?.trim() || !input.messageId?.trim()) return;
+  if (!input.recipientUserId?.trim() || input.recipientUserId === userId) return;
+
+  const supabase = await createClient();
+  const { data: message } = await supabase
+    .from("messages")
+    .select("id, sender_id, conversation_id")
+    .eq("id", input.messageId.trim())
+    .maybeSingle();
+
+  if (!message || message.sender_id !== userId) return;
+  if (message.conversation_id !== input.conversationId.trim()) return;
+
+  const [{ data: senderProfile }, { data: recipientProfile }] = await Promise.all([
+    supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", input.recipientUserId.trim())
+      .maybeSingle(),
+  ]);
+
+  triggerNewMessageEmail({
+    recipientUserId: input.recipientUserId.trim(),
+    recipientName: recipientProfile?.display_name?.trim() || undefined,
+    senderName: senderProfile?.display_name?.trim() || "Member",
+    conversationId: input.conversationId.trim(),
+    messageId: input.messageId.trim(),
+  });
 }

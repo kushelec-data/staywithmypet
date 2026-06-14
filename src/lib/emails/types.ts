@@ -4,6 +4,7 @@ export type EmailEventType =
   | "email_verified"
   | "phone_verified"
   | "profile_completed"
+  | "profile_verified"
   | "request_sent"
   | "request_received"
   | "request_declined_by_you"
@@ -14,7 +15,10 @@ export type EmailEventType =
   | "review_reminder_friend"
   | "membership_activated"
   | "membership_renewal_reminder"
-  | "membership_expiry_reminder";
+  | "membership_expiry_reminder"
+  | "booking_starts_tomorrow_parent"
+  | "booking_starts_tomorrow_friend"
+  | "new_message";
 
 export type EmailRecipientRole = "pet_parent" | "pet_friend";
 
@@ -33,6 +37,9 @@ export type EmailTemplateContext = {
   renewalDate?: string | null;
   membershipEndDate?: string | null;
   autoRenew?: boolean;
+  locale?: "en" | "et";
+  senderName?: string;
+  conversationId?: string;
 };
 
 export type EmailTemplate = {
