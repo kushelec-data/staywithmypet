@@ -51,6 +51,7 @@ import {
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
+import { selectableChipClass } from "@/lib/form-field-styles";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useLanguage } from "@/context/LanguageContext";
 import { translateProfileLabel } from "@/lib/profile-translations";
@@ -536,11 +537,7 @@ export function ProfileSetupForm({
                   key={lang}
                   type="button"
                   onClick={() => toggleLanguage(lang)}
-                  className={`rounded-full border px-3 py-1.5 transition-colors ${
-                    selected
-                      ? "border-brand-teal/30 bg-brand-teal text-sm font-semibold text-white"
-                      : "border-black/5 bg-surface text-sm font-medium text-[#333333] hover:bg-mint/40 hover:text-foreground"
-                  }`}
+                  className={selectableChipClass(selected)}
                 >
                   {translateProfileLabel(lang, locale)}
                 </button>

@@ -2,6 +2,11 @@
 
 import { CheckIcon } from "@/components/search/filter-icons";
 import { useLanguage } from "@/context/LanguageContext";
+import {
+  SELECTABLE_CHIP_ICON_SELECTED_CLASS,
+  SELECTABLE_CHIP_ICON_UNSELECTED_CLASS,
+  selectableChipClass,
+} from "@/lib/selectable-chip-tokens";
 import { useMemo, useState, type ReactNode } from "react";
 
 export type FilterChipOption = {
@@ -68,20 +73,19 @@ export function FilterChipGroup({
               type="button"
               aria-pressed={checked}
               onClick={() => toggle(opt.value)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal ${
-                checked
-                  ? "border-brand-teal bg-brand-teal text-white shadow-sm"
-                  : "border-border bg-surface text-foreground hover:border-brand-teal/40 hover:bg-mint/40 dark:border-border"
-              }`}
+              className={selectableChipClass(checked)}
             >
               {opt.icon ? (
-                <span className={checked ? "text-white/90" : "text-brand-teal"} aria-hidden>
+                <span
+                  className={checked ? SELECTABLE_CHIP_ICON_SELECTED_CLASS : SELECTABLE_CHIP_ICON_UNSELECTED_CLASS}
+                  aria-hidden
+                >
                   {opt.icon}
                 </span>
               ) : null}
               <span>{opt.label}</span>
               {checked ? (
-                <CheckIcon className="h-3.5 w-3.5 shrink-0 text-white" />
+                <CheckIcon className={`h-3.5 w-3.5 shrink-0 ${SELECTABLE_CHIP_ICON_SELECTED_CLASS}`} />
               ) : null}
             </button>
           );

@@ -30,6 +30,7 @@ import {
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
+import { selectableChipClass } from "@/lib/form-field-styles";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { useRouter } from "next/navigation";
 import {
@@ -695,11 +696,7 @@ export function ProfileEditForm() {
                     type="button"
                     onClick={() => toggleLanguage(lang)}
                     disabled={!basicEnabled || saving.basic || anySaving}
-                    className={`rounded-full border px-3 py-1.5 transition-colors ${
-                      selected
-                        ? "border-[#2E6B3F] bg-[#2E6B3F] text-sm font-semibold text-white"
-                        : "border-[#E5E2D8] bg-[#F8F6F1] text-sm font-medium text-[#333333] hover:bg-[#DDEEDF] hover:text-[#2E6B3F]"
-                    }`}
+                    className={selectableChipClass(selected, !basicEnabled || saving.basic || anySaving ? "opacity-60" : undefined)}
                   >
                     {translateProfileLabel(lang, locale)}
                   </button>

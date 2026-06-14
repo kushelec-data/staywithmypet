@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  FORM_FIELD_CHIP_VALUE_CLASS,
-  FORM_FIELD_CHIP_VALUE_SELECTED_CLASS,
-  FORM_FIELD_LABEL_CLASS,
-} from "@/lib/form-field-styles";
+import { FORM_FIELD_LABEL_CLASS, selectableChipClass } from "@/lib/form-field-styles";
 import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
 import { isOtherOptionValue } from "@/lib/other-option";
 
@@ -78,11 +74,7 @@ export function PetFormChipGroup({
               type="button"
               disabled={disabled}
               onClick={() => handleToggle(option.value)}
-              className={`rounded-full border px-3 py-1.5 transition-colors ${
-                isOn
-                  ? `border-brand-teal/30 bg-brand-teal text-white ${FORM_FIELD_CHIP_VALUE_SELECTED_CLASS}`
-                  : `border-black/5 bg-surface hover:bg-mint/40 ${FORM_FIELD_CHIP_VALUE_CLASS}`
-              }`}
+              className={selectableChipClass(isOn)}
             >
               {option.label}
             </button>

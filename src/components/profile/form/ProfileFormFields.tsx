@@ -2,18 +2,13 @@
 
 import type { ReactNode } from "react";
 import {
-  FORM_FIELD_CHIP_VALUE_CLASS,
-  FORM_FIELD_CHIP_VALUE_SELECTED_CLASS,
   FORM_FIELD_LABEL_CLASS,
   FORM_FIELD_LEGEND_CLASS,
   FORM_FIELD_OPTION_LABEL_CLASS,
+  selectableChipClass,
+  selectableChipIconClass,
 } from "@/lib/form-field-styles";
 import { isOtherOptionValue } from "@/lib/other-option";
-
-const CHIP_SELECTED =
-  `border-brand-teal/35 bg-mint/55 shadow-sm ring-1 ring-brand-teal/15 ${FORM_FIELD_CHIP_VALUE_SELECTED_CLASS}`;
-const CHIP_UNSELECTED =
-  `border-black/5 bg-surface hover:border-brand-teal/25 hover:bg-mint/40 ${FORM_FIELD_CHIP_VALUE_CLASS}`;
 
 type OtherFieldConfig = {
   text: string;
@@ -73,9 +68,7 @@ export function ProfileChipMultiSelect({
               type="button"
               disabled={disabled}
               onClick={() => handleToggle(opt.value)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
-                isOn ? CHIP_SELECTED : CHIP_UNSELECTED
-              }`}
+              className={selectableChipClass(isOn)}
             >
               {opt.label}
             </button>
@@ -162,12 +155,10 @@ export function ProfileChipSingleSelect({
               disabled={disabled}
               aria-pressed={isOn}
               onClick={() => onChange(opt.value)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-colors ${
-                isOn ? CHIP_SELECTED : CHIP_UNSELECTED
-              }`}
+              className={selectableChipClass(isOn)}
             >
               {opt.icon ? (
-                <span className="text-brand-teal/90" aria-hidden>
+                <span className={selectableChipIconClass(isOn)} aria-hidden>
                   {opt.icon}
                 </span>
               ) : null}

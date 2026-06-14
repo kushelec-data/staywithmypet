@@ -99,6 +99,15 @@ export const ACCOUNT_STATUS_COMPLETE_CLASS =
 export const ACCOUNT_STATUS_BADGE_CLASS =
   "inline-flex items-center gap-1 rounded-full border border-[#E5E2D8] bg-[#DDEEDF] px-2.5 py-0.5 text-xs font-semibold text-[#2E6B3F]";
 
+/** Selectable chips / toggle pills — see `selectable-chip-tokens.ts`. */
+export {
+  SELECTABLE_CHIP_COLORS,
+  SELECTABLE_CHIP_SELECTED_CLASS,
+  SELECTABLE_CHIP_UNSELECTED_CLASS,
+  selectableChipClass,
+  selectableChipIconClass,
+} from "@/lib/selectable-chip-tokens";
+
 export const ACCOUNT_MESSAGES_PANEL_CLASS = `${ACCOUNT_CARD_CLASS} flex min-h-0 min-w-0 flex-col overflow-hidden`;
 
 export const ACCOUNT_LIST_ITEM_ACTIVE_CLASS =
