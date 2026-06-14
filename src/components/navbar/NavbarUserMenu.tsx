@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useAuth } from "@/context/AuthContext";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { getUserMenuLinks } from "@/lib/nav-i18n";
-import { profileInitials } from "@/lib/profile-utils";
 
 type NavbarUserMenuProps = {
   onLogout: () => void | Promise<void>;
@@ -40,7 +40,6 @@ export function NavbarUserMenu({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const email = user?.email ?? null;
-  const initials = profileInitials(displayName, email);
   const menuLinks = getUserMenuLinks(t.navbar, profile);
 
   useEffect(() => {
@@ -101,17 +100,19 @@ export function NavbarUserMenu({
         aria-haspopup="true"
         aria-label={t.navbar.accountMenu}
       >
-        {profile?.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt=""
-            className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-border"
+        {user?.id ? (
+          <ProfileAvatar
+            userId={user.id}
+            displayName={displayName}
+            email={email}
+            avatarUrl={profile?.avatar_url}
+            size="sm"
+            shape="circle"
+            loading={profileLoading}
+            imageClassName="object-cover ring-1 ring-border"
+            className="ring-1 ring-border"
           />
-        ) : (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lavender/60 text-xs font-semibold text-brand-teal">
-            {profileLoading ? "…" : initials}
-          </span>
-        )}
+        ) : null}
         <span className="truncate">{profileLoading ? "…" : displayName}</span>
         <svg
           className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}

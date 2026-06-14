@@ -1,6 +1,6 @@
 "use client";
 
-import { AppImage } from "@/components/ui/AppImage";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
@@ -38,15 +38,16 @@ export function PetPublicParentCard({ pet }: PetPublicParentCardProps) {
       <div className="mt-3 rounded-2xl border border-black/[0.05] bg-gradient-to-br from-mint/20 via-surface to-cream/30 p-3.5 sm:p-4">
         <div className="flex items-start gap-3">
           <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-mint/30 ring-2 ring-white shadow-sm">
-            <AppImage
-              src={pet.ownerAvatarUrl ?? ""}
-              alt={pet.ownerName}
-              seed={pet.ownerId}
-              fallbackCaption={pet.ownerName}
-              fallbackEmoji="🐾"
-              sizes="56px"
-              className="object-cover"
-            />
+          <ProfileAvatar
+            userId={pet.ownerId}
+            displayName={pet.ownerName}
+            avatarUrl={pet.ownerAvatarUrl}
+            size="sm"
+            shape="circle"
+            sizes="56px"
+            className="h-14 w-14 ring-2 ring-white shadow-sm"
+            imageClassName="object-cover"
+          />
           </div>
 
           <div className="min-w-0 flex-1">

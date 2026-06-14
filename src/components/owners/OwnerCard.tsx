@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AppImage } from "@/components/ui/AppImage";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
-import { placeholderProfileImage } from "@/lib/images";
 import type { SearchProfile } from "@/lib/search-profiles";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
 
@@ -67,9 +66,7 @@ export function OwnerCard({
     }
     setCalendarOpen(true);
   }
-  const avatarSrc = profile.avatarUrl?.trim()
-    ? profile.avatarUrl
-    : placeholderProfileImage(profile.id);
+  const avatarSrc = profile.avatarUrl?.trim() ? profile.avatarUrl : null;
 
   return (
     <>
@@ -84,18 +81,15 @@ export function OwnerCard({
               compact ? "h-[240px] max-h-[240px]" : "aspect-[4/3]"
             }`}
           >
-            <AppImage
-              src={avatarSrc}
-              alt={profile.displayName}
-              seed={profile.id}
-              fallbackCaption={profile.displayName}
-              fallbackEmoji="🐾"
-              sizes={
-                compact
-                  ? "(max-width: 640px) 100vw, 320px"
-                  : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
-              }
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            <ProfileAvatar
+              userId={profile.id}
+              displayName={profile.displayName}
+              avatarUrl={avatarSrc}
+              size="xl"
+              shape="rounded"
+              sizes={compact ? "(max-width: 640px) 100vw, 320px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"}
+              className={`h-full w-full ${compact ? "max-h-[240px]" : "aspect-[4/3]"}`}
+              imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
             <FavoriteButton
               target={{ type: "friend", id: profile.id }}

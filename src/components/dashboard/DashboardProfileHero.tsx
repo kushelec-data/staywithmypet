@@ -5,8 +5,9 @@ import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary"
 import { heroTrustBadgesFromProfileRow } from "@/lib/public-profile";
 import { ReviewsListModal } from "@/components/reviews/ReviewsListModal";
 import { Button } from "@/components/ui/Button";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { formatActiveMode, resolveActiveMode } from "@/lib/profile-mode";
-import { profileInitials, type ProfileRow } from "@/lib/profile-utils";
+import type { ProfileRow } from "@/lib/profile-utils";
 import { absolutePublicProfileUrl } from "@/lib/site-url";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -38,7 +39,6 @@ export function DashboardProfileHero({
 }: DashboardProfileHeroProps) {
   const { t } = useLanguage();
   const dh = t.dashboardHome;
-  const initials = profileInitials(displayName, email);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -73,20 +73,16 @@ export function DashboardProfileHero({
         }}
       >
         <div className="flex min-w-0 items-center gap-4">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt=""
-              className="h-16 w-16 shrink-0 rounded-2xl object-cover ring-2 ring-white/80 sm:h-[4.5rem] sm:w-[4.5rem]"
-            />
-          ) : (
-            <div
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-semibold sm:h-[4.5rem] sm:w-[4.5rem]"
-              style={{ backgroundColor: DASHBOARD_COLORS.light, color: DASHBOARD_COLORS.primary }}
-            >
-              {initials}
-            </div>
-          )}
+          <ProfileAvatar
+            userId={profile.id}
+            displayName={displayName}
+            email={email}
+            avatarUrl={profile.avatar_url}
+            size="md"
+            shape="rounded"
+            imageClassName="object-cover ring-2 ring-white/80"
+            className="ring-2 ring-white/80"
+          />
           <div className="min-w-0">
             <ProfileVerificationBadges trustBadges={heroTrustBadges} className="mb-1.5" />
             <p

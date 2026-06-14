@@ -1,9 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AppImage } from "@/components/ui/AppImage";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
-import { placeholderProfileImage } from "@/lib/images";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { SendRequestButton } from "@/components/requests/SendRequestButton";
@@ -22,7 +21,6 @@ import {
   type PublicProfileView,
 } from "@/lib/public-profile";
 import { resolvedAvailability } from "@/lib/profile-details";
-import { profileInitials } from "@/lib/profile-utils";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 
@@ -47,7 +45,6 @@ export function MemberPublicTopCard({
   const viewerMode = viewerProfile
     ? resolveActiveMode(viewerProfile.role, viewerProfile.active_mode)
     : null;
-  const initials = profileInitials(profile.display_name, null);
   const chips = [
     formatProfileRoleBadge(profile.role, t.roles),
     ...(profile.nearbyLocation ? [profile.nearbyLocation] : []),
@@ -59,9 +56,6 @@ export function MemberPublicTopCard({
   const friendAvailability = resolvedAvailability(profile.details).selected_dates ?? [];
   const shownAsFriend = isProfileShownAsPetFriend(profile);
   const shownAsParent = isProfileShownAsPetParent(profile);
-  const avatarSrc = profile.avatar_url?.trim()
-    ? profile.avatar_url
-    : placeholderProfileImage(profile.id);
 
   const viewPetsHref =
     ownerPets.length === 1
@@ -106,17 +100,16 @@ export function MemberPublicTopCard({
     <section className={PUBLIC_CARD_MINT}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
         <div className="mx-auto shrink-0 lg:mx-0">
-          <div className="relative h-[180px] w-[180px] overflow-hidden rounded-2xl ring-2 ring-white/80 shadow-sm sm:h-[200px] sm:w-[200px]">
-            <AppImage
-              src={avatarSrc}
-              alt={profile.display_name}
-              seed={profile.id}
-              fallbackCaption={profile.display_name}
-              fallbackEmoji={initials}
-              sizes="200px"
-              className="object-cover object-top"
-            />
-          </div>
+          <ProfileAvatar
+            userId={profile.id}
+            displayName={profile.display_name}
+            avatarUrl={profile.avatar_url}
+            size="xl"
+            shape="rounded"
+            sizes="200px"
+            className="h-[180px] w-[180px] text-3xl ring-2 ring-white/80 shadow-sm sm:h-[200px] sm:w-[200px]"
+            imageClassName="object-cover object-top"
+          />
         </div>
 
         <div className="min-w-0 flex-1 space-y-2">

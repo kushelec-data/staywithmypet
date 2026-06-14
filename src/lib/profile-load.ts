@@ -1,6 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { DEMO_MEMBERSHIP_LABEL, emptyMembershipsByRole } from "@/lib/membership";
 import { resolveUserMemberships, type MembershipLegacySource } from "@/lib/membership-load";
+import { isAvatarUrlOwnedByUser } from "@/lib/profile-avatar-display";
 import { parseProfileDetails } from "@/lib/profile-details";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
@@ -91,7 +92,7 @@ export function mapProfileRow(data: ProfileDbRow): ProfileRow {
   return {
     id: data.id,
     display_name: data.display_name,
-    avatar_url: data.avatar_url,
+    avatar_url: isAvatarUrlOwnedByUser(data.id, data.avatar_url) ? data.avatar_url : null,
     bio: data.bio,
     location: data.location,
     address: typeof data.address === "string" ? data.address : null,

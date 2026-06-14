@@ -1,13 +1,14 @@
 "use client";
 
 import { PhotoCropModal } from "@/components/media/PhotoCropModal";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
 import { validateCropSourceFile } from "@/lib/image-crop";
+import { resolveSanitizedAvatarUrl } from "@/lib/profile-avatar-display";
 import { uploadProfileAvatar } from "@/lib/profile-avatar";
-import { profileInitials } from "@/lib/profile-utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ProfileAvatarUploadProps = {
   userId: string;
@@ -42,8 +43,14 @@ export function ProfileAvatarUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cropSession, setCropSession] = useState<CropSession>(null);
 
-  const initials = profileInitials(displayName, email);
-  const shownUrl = previewUrl ?? avatarUrl;
+  useEffect(() => {
+    setPreviewUrl(null);
+    setCropSession(null);
+    setError(null);
+  }, [userId]);
+
+  const safeAvatarUrl = resolveSanitizedAvatarUrl(userId, avatarUrl);
+  const shownUrl = previewUrl ?? safeAvatarUrl;
 
   function openCrop(file?: File, url?: string) {
     if (!editable || disabled || uploading) return;
@@ -67,9 +74,10 @@ export function ProfileAvatarUpload({
     setUploading(true);
     try {
       const updated = await uploadProfileAvatar(supabase, userId, file);
-      setPreviewUrl(updated.avatar_url);
-      if (updated.avatar_url) {
-        onAvatarUpdated(updated.avatar_url);
+      const nextUrl = resolveSanitizedAvatarUrl(userId, updated.avatar_url);
+      setPreviewUrl(nextUrl);
+      if (nextUrl) {
+        onAvatarUpdated(nextUrl);
       }
       setCropSession(null);
     } catch (err) {
@@ -84,15 +92,23 @@ export function ProfileAvatarUpload({
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
         {shownUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- local preview blob or owned avatar URL
           <img
+            key={`${userId}:${shownUrl}`}
             src={shownUrl}
             alt=""
             className="h-24 w-24 shrink-0 rounded-2xl object-cover ring-2 ring-mint/50 shadow-md sm:h-28 sm:w-28"
           />
         ) : (
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-lavender/60 text-3xl font-semibold text-brand-teal shadow-md sm:h-28 sm:w-28">
-            {initials}
-          </div>
+          <ProfileAvatar
+            userId={userId}
+            displayName={displayName}
+            email={email}
+            avatarUrl={null}
+            size="xl"
+            shape="rounded"
+            className="ring-2 ring-mint/50 shadow-md"
+          />
         )}
 
         <div className="min-w-0">

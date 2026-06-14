@@ -2,15 +2,14 @@
 
 import { AppImage } from "@/components/ui/AppImage";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useLanguage } from "@/context/LanguageContext";
-import { placeholderProfileImage } from "@/lib/images";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { translateProfileLabel } from "@/lib/profile-translations";
 import { formatProfileRoleBadge } from "@/lib/profile-mode";
 import type { PublicProfileView } from "@/lib/public-profile";
-import { profileInitials } from "@/lib/profile-utils";
 
 type PublicProfileHeroProps = {
   profile: PublicProfileView;
@@ -24,7 +23,6 @@ export function PublicProfileHero({
   reviewsCount = profile.rating_count,
 }: PublicProfileHeroProps) {
   const { t, locale } = useLanguage();
-  const initials = profileInitials(profile.display_name, null);
   const chips = [
     formatProfileRoleBadge(profile.role, t.roles),
     ...(profile.nearbyLocation ? [profile.nearbyLocation] : []),
@@ -38,25 +36,21 @@ export function PublicProfileHero({
         ]
       : []),
   ].filter(Boolean);
-  const avatarSrc = profile.avatar_url?.trim()
-    ? profile.avatar_url
-    : placeholderProfileImage(profile.id);
 
   return (
     <section className="card-elevated overflow-hidden rounded-2xl">
       <div className="bg-gradient-to-br from-mint/40 via-surface to-lavender/20 p-4 sm:p-5">
         <div className="flex gap-4">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl ring-2 ring-white/80 shadow-sm sm:h-[4.5rem] sm:w-[4.5rem]">
-            <AppImage
-              src={avatarSrc}
-              alt={profile.display_name}
-              seed={profile.id}
-              fallbackCaption={profile.display_name}
-              fallbackEmoji={initials}
-              sizes="72px"
-              className="object-cover"
-            />
-          </div>
+          <ProfileAvatar
+            userId={profile.id}
+            displayName={profile.display_name}
+            avatarUrl={profile.avatar_url}
+            size="md"
+            shape="rounded-xl"
+            sizes="72px"
+            imageClassName="object-cover ring-2 ring-white/80 shadow-sm"
+            className="ring-2 ring-white/80 shadow-sm"
+          />
 
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">

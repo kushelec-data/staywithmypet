@@ -203,6 +203,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    if (profileRef.current && userId && !isProfileOwnedByUser(profileRef.current.id, userId)) {
+      resetForUser(userId);
+      setLoading(true);
+      setProfileResolved(false);
+      void refreshProfile();
+      return;
+    }
+
     if (loadedUserIdRef.current === userId && profileRef.current?.id === userId) {
       setProfileResolved(true);
       setLoading(false);
@@ -230,20 +238,27 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener(DASHBOARD_REFRESH_EVENT, onDashboardRefresh);
   }, [user?.id, refreshProfile]);
 
-  const displayName = profile?.display_name?.trim()
-    ? profile.display_name.trim()
+  const userId = user?.id ?? null;
+  const profileMismatch = Boolean(
+    profile && userId && !isProfileOwnedByUser(profile.id, userId),
+  );
+  const ownedProfile =
+    profile && userId && isProfileOwnedByUser(profile.id, userId) ? profile : null;
+
+  const displayName = ownedProfile?.display_name?.trim()
+    ? ownedProfile.display_name.trim()
     : profileDisplayLabel(null, user?.email);
 
   const isIncomplete = Boolean(
-    user && profile?.role_chosen_at && isProfileIncomplete(profile, user.email),
+    user && ownedProfile?.role_chosen_at && isProfileIncomplete(ownedProfile, user.email),
   );
-  const rolePending = Boolean(user) && needsRoleOnboarding(profile);
+  const rolePending = Boolean(user) && needsRoleOnboarding(ownedProfile);
 
   const value = useMemo(
     () => ({
-      profile,
-      loading: authLoading || loading,
-      profileResolved,
+      profile: ownedProfile,
+      loading: authLoading || loading || profileMismatch,
+      profileResolved: profileResolved && !profileMismatch,
       displayName,
       isIncomplete,
       needsRoleOnboarding: rolePending,
@@ -252,9 +267,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setProfileRow,
     }),
     [
-      profile,
+      ownedProfile,
       authLoading,
       loading,
+      profileMismatch,
       profileResolved,
       displayName,
       isIncomplete,

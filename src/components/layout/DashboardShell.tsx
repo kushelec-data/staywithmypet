@@ -199,6 +199,7 @@ export function DashboardShell({
         }
       >
         <AccountSidebar
+          userId={user?.id ?? null}
           profile={profile}
           displayName={displayName}
           email={email}

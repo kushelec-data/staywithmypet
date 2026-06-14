@@ -6,7 +6,8 @@ import { AccountSidebarNavLink } from "@/components/account/AccountSidebarNavLin
 import type { AccountSidebarSection } from "@/lib/account-nav";
 import type { Dictionary } from "@/i18n/translations";
 import type { ProfileRow } from "@/lib/profile-utils";
-import { profileInitials, profileUsername } from "@/lib/profile-utils";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { profileUsername } from "@/lib/profile-utils";
 import {
   ACCOUNT_CARD_CLASS,
   ACCOUNT_COLORS,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/account-sidebar-icons";
 
 type AccountSidebarProps = {
+  userId: string | null;
   profile: ProfileRow | null;
   displayName: string;
   email: string | null;
@@ -40,6 +42,7 @@ function sectionTitle(id: AccountSidebarSection["id"], navbarT: Dictionary["navb
 }
 
 export function AccountSidebar({
+  userId,
   profile,
   displayName,
   email,
@@ -58,7 +61,6 @@ export function AccountSidebar({
 }: AccountSidebarProps) {
   const accountT = t.account;
   const navbarT = t.navbar;
-  const initials = profileInitials(displayName, email);
   const username = profileUsername(profile, email);
 
   return (
@@ -66,20 +68,19 @@ export function AccountSidebar({
       className={`${ACCOUNT_CARD_CLASS} relative z-10 hidden h-fit shrink-0 p-4 lg:sticky lg:top-24 lg:block`}
     >
       <div className="flex flex-col items-center text-center">
-        {profile?.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt=""
-            className="h-20 w-20 rounded-full object-cover ring-2 ring-[#E5E2D8]"
+        {userId ? (
+          <ProfileAvatar
+            userId={userId}
+            displayName={displayName}
+            email={email}
+            avatarUrl={profile?.avatar_url}
+            size="lg"
+            shape="circle"
+            loading={authLoading || profileLoading}
+            imageClassName="object-cover"
+            className="ring-2 ring-[#E5E2D8]"
           />
-        ) : (
-          <div
-            className="flex h-20 w-20 items-center justify-center rounded-full text-2xl font-semibold"
-            style={{ backgroundColor: ACCOUNT_COLORS.light, color: ACCOUNT_COLORS.primary }}
-          >
-            {authLoading || profileLoading ? "…" : initials}
-          </div>
-        )}
+        ) : null}
         <p className="mt-3 font-heading font-semibold text-foreground">
           {authLoading || profileLoading ? accountT.loading : displayName}
         </p>

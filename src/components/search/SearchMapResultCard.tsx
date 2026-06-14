@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AppImage } from "@/components/ui/AppImage";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
-import { placeholderPetImage, placeholderProfileImage } from "@/lib/images";
+import { placeholderPetImage } from "@/lib/images";
 import type { Pet } from "@/lib/pets";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
 import type { SearchProfile } from "@/lib/search-profiles";
@@ -192,9 +193,7 @@ export function SearchMapFriendCard({
   const profileHref = `/users/${profile.id}`;
   const availability = buildPetAvailabilityCardPreview(profile.availabilityDates, 3, locale);
 
-  const avatarSrc = profile.avatarUrl?.trim()
-    ? profile.avatarUrl
-    : placeholderProfileImage(profile.id);
+  const avatarSrc = profile.avatarUrl?.trim() ? profile.avatarUrl : null;
   const careBadges = profile.preferenceChips.slice(0, 3);
 
   return (
@@ -218,14 +217,15 @@ export function SearchMapFriendCard({
           className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-mint/20"
           onClick={(e) => e.stopPropagation()}
         >
-          <AppImage
-            src={avatarSrc}
-            alt={profile.displayName}
-            seed={profile.id}
-            fallbackCaption={profile.displayName}
-            fallbackEmoji="🐾"
+          <ProfileAvatar
+            userId={profile.id}
+            displayName={profile.displayName}
+            avatarUrl={avatarSrc}
+            size="sm"
+            shape="circle"
             sizes="56px"
-            className="h-full w-full object-cover"
+            className="h-14 w-14"
+            imageClassName="object-cover"
           />
           <FavoriteButton
             target={{ type: "friend", id: profile.id }}
