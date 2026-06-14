@@ -3,6 +3,7 @@ import type { Pet } from "@/lib/pets";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { IMAGES, placeholderPetImage } from "@/lib/images";
 import { formatSupabaseError } from "@/lib/profile-load";
+import { resolveBreedForSave } from "@/lib/pet-breeds";
 import { pickPrimaryPhotoUrl, uploadAndAttachPetPhotos } from "@/lib/pet-photos";
 
 export type PetSpecies = "dog" | "cat" | "rabbit" | "bird" | "other";
@@ -11,7 +12,8 @@ export type PetProfileFormInput = {
   name: string;
   speciesForm: string;
   species: PetSpecies;
-  breed: string;
+  breedSelection: string;
+  breedOther: string;
   dateOfBirth: string;
   gender: string;
   size: string;
@@ -151,7 +153,8 @@ function buildPetRow(ownerId: string, input: PetProfileFormInput) {
     owner_id: ownerId,
     name: input.name.trim(),
     species: input.species,
-    breed: input.breed.trim() || null,
+    breed:
+      resolveBreedForSave(input.speciesForm, input.breedSelection, input.breedOther) || null,
     age_label: ageLabel,
     date_of_birth: input.dateOfBirth.trim() || null,
     gender: input.gender || null,

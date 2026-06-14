@@ -509,6 +509,12 @@ export const et = {
       loadPetError: "Lemmikut ei õnnestunud laadida.",
       savePetError: "Lemmiku profiili salvestamine ebaõnnestus.",
       updatePhotoError: "Lemmiku foto uuendamine ebaõnnestus.",
+      breedLabel: "Tõug",
+      breedSelectPlaceholder: "Vali tõug",
+      breedOtherLabel: "Muu tõug",
+      breedOtherPlaceholder: "Kirjuta tõug",
+      errorSelectBreed: "Palun vali tõug.",
+      errorEnterBreed: "Palun sisesta tõug.",
     },
   },
   dashboardHome: {

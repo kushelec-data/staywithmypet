@@ -33,11 +33,16 @@ import {
   petTemperamentOptions,
   petWalkNeedsOptions,
 } from "@/lib/pet-form-options";
-import { validatePetPhotoFiles } from "@/lib/pet-photos";
+import { PetBreedSelect } from "@/components/pets/PetBreedSelect";
+import {
+  breedsForSpeciesForm,
+  isBreedOtherValue,
+} from "@/lib/pet-breeds";
 import {
   fetchPetPhotosForOwner,
   replacePetPhotoImage,
   uploadAndAttachPetPhotos,
+  validatePetPhotoFiles,
 } from "@/lib/pet-photos";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { OTHER_FIELD_COPY, validateOtherOptionFields } from "@/lib/other-option";
@@ -56,7 +61,8 @@ const emptyForm = (): PetProfileFormInput => ({
   name: "",
   speciesForm: "dog",
   species: "dog",
-  breed: "",
+  breedSelection: "",
+  breedOther: "",
   dateOfBirth: "",
   gender: "Male",
   size: "5_10_kg",
@@ -102,7 +108,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [loadingPet, setLoadingPet] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [breedFieldError, setBreedFieldError] = useState<string | null>(null);
   const { locale, t } = useLanguage();
+  const petsCopy = t.account.petsPage;
   const pl = useCallback((en: string) => translateProfileLabel(en, locale), [locale]);
 
   const localizedAnimalTypes = useMemo(
@@ -255,10 +263,25 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       return;
     }
 
-    if (payload.speciesForm === "other" && !payload.breed.trim()) {
-      setError("Please specify what species your pet is.");
-      return;
+    if (payload.speciesForm === "other") {
+      if (!payload.breedOther.trim()) {
+        setBreedFieldError(OTHER_FIELD_COPY.petSpecies.placeholder);
+        setError("Please specify what species your pet is.");
+        return;
+      }
+    } else if (breedsForSpeciesForm(payload.speciesForm).length > 0) {
+      if (!payload.breedSelection.trim()) {
+        setBreedFieldError(petsCopy.errorSelectBreed);
+        setError(petsCopy.errorSelectBreed);
+        return;
+      }
+      if (isBreedOtherValue(payload.breedSelection) && !payload.breedOther.trim()) {
+        setBreedFieldError(petsCopy.errorEnterBreed);
+        setError(petsCopy.errorEnterBreed);
+        return;
+      }
     }
+    setBreedFieldError(null);
 
     const otherError = validateOtherOptionFields([
       { selected: payload.careTypes, otherText: payload.careTypesOther, fieldLabel: "care type" },
@@ -365,7 +388,16 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           <select
             id="species"
             value={form.speciesForm}
-            onChange={(e) => patch("speciesForm", e.target.value)}
+            onChange={(e) => {
+              const speciesForm = e.target.value;
+              setForm((prev) => ({
+                ...prev,
+                speciesForm,
+                breedSelection: "",
+                breedOther: "",
+              }));
+              setBreedFieldError(null);
+            }}
             className="input-field mt-1"
           >
             {localizedAnimalTypes.map((o) => (
@@ -375,23 +407,52 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor="breed" className="form-field-label">
-            {form.speciesForm === "other" ? OTHER_FIELD_COPY.petSpecies.label : pl("Breed")}
-          </label>
-          <input
-            id="breed"
-            value={form.breed}
-            onChange={(e) => patch("breed", e.target.value)}
-            required={form.speciesForm === "other"}
-            className="input-field mt-1"
-            placeholder={
-              form.speciesForm === "other"
-                ? OTHER_FIELD_COPY.petSpecies.placeholder
-                : "Optional"
-            }
+        {form.speciesForm === "other" ? (
+          <div>
+            <label htmlFor="pet_species_other" className="form-field-label">
+              {OTHER_FIELD_COPY.petSpecies.label}
+            </label>
+            <input
+              id="pet_species_other"
+              value={form.breedOther}
+              onChange={(e) => {
+                patch("breedOther", e.target.value);
+                setBreedFieldError(null);
+              }}
+              required
+              className="input-field mt-1"
+              placeholder={OTHER_FIELD_COPY.petSpecies.placeholder}
+            />
+            {breedFieldError ? (
+              <p className="mt-1 text-xs text-brand-pink" role="alert">
+                {breedFieldError}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <PetBreedSelect
+            speciesForm={form.speciesForm}
+            selection={form.breedSelection}
+            otherText={form.breedOther}
+            onSelectionChange={(breedSelection) => {
+              patch("breedSelection", breedSelection);
+              setBreedFieldError(null);
+            }}
+            onOtherTextChange={(breedOther) => {
+              patch("breedOther", breedOther);
+              setBreedFieldError(null);
+            }}
+            disabled={saving}
+            locale={locale}
+            labels={{
+              breed: pl("Breed"),
+              selectBreed: petsCopy.breedSelectPlaceholder,
+              otherBreed: petsCopy.breedOtherLabel,
+              writeBreed: petsCopy.breedOtherPlaceholder,
+            }}
+            error={breedFieldError}
           />
-        </div>
+        )}
         <div>
           <label htmlFor="dob" className="form-field-label">
             {pl("Date of Birth")}

@@ -506,6 +506,12 @@ export const en = {
       loadPetError: "Could not load pet.",
       savePetError: "Could not save your pet profile.",
       updatePhotoError: "Could not update pet photo.",
+      breedLabel: "Breed",
+      breedSelectPlaceholder: "Select breed",
+      breedOtherLabel: "Other breed",
+      breedOtherPlaceholder: "Write the breed",
+      errorSelectBreed: "Please select a breed.",
+      errorEnterBreed: "Please enter the breed.",
     },
   },
   dashboardHome: {

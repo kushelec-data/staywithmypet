@@ -1,3 +1,4 @@
+import { isStandardBreedForSpecies } from "@/lib/pet-breeds";
 import { careTypeFilterMatchVariants } from "@/lib/care-type-options";
 import { petSearchTemperamentOptions } from "@/lib/pet-search-filter-config";
 import { matchesSearchAvailabilityDates } from "@/lib/search-availability-match";
@@ -34,9 +35,18 @@ export function petMatchesSpeciesKeys(pet: PetSearchFilterable, selected: string
 
 export function petMatchesBreeds(pet: PetSearchFilterable, breeds: string[]): boolean {
   if (!breeds.length) return true;
-  const b = norm(pet.breed ?? "");
-  if (!b) return false;
-  return breeds.some((wanted) => b.includes(norm(wanted)) || norm(wanted).includes(b));
+  const petBreed = norm(pet.breed ?? "");
+  if (!petBreed) return false;
+
+  const speciesKey = pet.speciesForm ?? pet.species;
+  if (!isStandardBreedForSpecies(speciesKey, pet.breed)) {
+    return false;
+  }
+
+  return breeds.some((wanted) => {
+    const w = norm(wanted);
+    return petBreed === w || petBreed.includes(w) || w.includes(petBreed);
+  });
 }
 
 export function petMatchesSizes(pet: PetSearchFilterable, sizes: string[]): boolean {

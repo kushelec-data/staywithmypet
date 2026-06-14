@@ -1,5 +1,6 @@
 import type { PetProfileFormInput } from "@/lib/pet-data";
 import { toDbSpecies } from "@/lib/pet-data";
+import { breedFormStateFromStored } from "@/lib/pet-breeds";
 import { normalizePetWeightStorageValue } from "@/lib/pet-weight";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { pickCareTypesFromRow } from "@/lib/pet-care-type";
@@ -44,12 +45,15 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
   const speciesForm =
     str(record, "species_form") ||
     (typeof record.species === "string" ? record.species : "other");
+  const storedBreed = str(record, "breed");
+  const { breedSelection, breedOther } = breedFormStateFromStored(speciesForm, storedBreed);
 
   return {
     name: str(record, "name"),
     speciesForm,
     species: toDbSpecies(speciesForm),
-    breed: str(record, "breed"),
+    breedSelection,
+    breedOther,
     dateOfBirth: str(record, "date_of_birth") || str(record, "age_label"),
     gender: str(record, "gender"),
     size: normalizePetWeightStorageValue(str(record, "size_label")) ?? "5_10_kg",

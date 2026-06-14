@@ -13,7 +13,7 @@ import {
   LocationParentHomeIcon,
 } from "@/components/search/filter-icons";
 import { useLanguage } from "@/context/LanguageContext";
-import { breedsForSpecies } from "@/lib/pet-breeds";
+import { filterableBreedsForSpecies } from "@/lib/pet-breeds";
 import {
   petSearchActivityOptions,
   petSearchCareLocationOptions,
@@ -111,10 +111,10 @@ export function PetSearchFilters({
   );
 
   const breedOptions = useMemo(() => {
-    const speciesWithBreeds = filters.species.filter((s) => breedsForSpecies(s).length > 0);
+    const speciesWithBreeds = filters.species.filter((s) => filterableBreedsForSpecies(s).length > 0);
     const breeds = new Set<string>();
     for (const sp of speciesWithBreeds) {
-      for (const b of breedsForSpecies(sp)) breeds.add(b);
+      for (const b of filterableBreedsForSpecies(sp)) breeds.add(b);
     }
     return [...breeds].map((b) => ({ value: b, label: b }));
   }, [filters.species]);
@@ -189,7 +189,7 @@ export function PetSearchFilters({
           selected={filters.species}
           maxVisible={4}
           onChange={(species) => {
-            const breeds = species.some((s) => breedsForSpecies(s).length > 0)
+            const breeds = species.some((s) => filterableBreedsForSpecies(s).length > 0)
               ? filters.breeds
               : [];
             onChange({ ...filters, species, breeds });
