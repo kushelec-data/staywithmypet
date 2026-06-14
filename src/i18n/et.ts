@@ -62,19 +62,19 @@ export const et = {
   },
   footer: {
     tagline:
-      "Rohkem armastust. Vähem üksildust. Lemmikloomadele ja inimestele. Kogukonnapõhine platvorm, mis ühendab lemmiklooma omanikke ja sõpru vastutustundliku, paindliku hoolduse kaudu.",
+      "Rohkem armastust. Vähem üksildust. Lemmikloomadele ja inimestele. Kogukonnapõhine platvorm, mis ühendab loomaomanikke ja sõpru vastutustundliku, paindliku hoolduse kaudu.",
     points: ["Vastutustundlik jagamine", "Kontrollitud kogukond", "Raha ei liigu kasutajate vahel"],
     joinCta: "Liitu kogukonnaga",
     copyright: "© {year} Stay With My Pet. Kõik õigused kaitstud.",
     groups: {
       petFriends: {
-        title: "Lemmiklooma sõbrad",
+        title: "Loomasõbrad",
         searchPets: "Otsi lemmikloomi",
         howItWorks: "Kuidas see töötab",
         join: "Liitu sõbrana",
       },
       petParents: {
-        title: "Lemmiklooma omanikud",
+        title: "Loomaomanikud",
         findCare: "Leia abi",
         howItWorks: "Kuidas see töötab",
         join: "Liitu omanikuna",
@@ -95,22 +95,22 @@ export const et = {
   },
   roles: {
     petParent: {
-      label: "Lemmiklooma omanik",
+      label: "Loomaomanik",
       tagline: "Abi oma lemmikule",
       description:
         "Leia usaldusväärsed lemmiklooma sõbrad enda lähedal jalutiste, kodukülastuste, päevase seltsi või ööbimiste jaoks — paindlik, vastutustundlik jagamine ilma puurideta.",
       cta: "Leia abi",
     },
     petFriend: {
-      label: "Lemmiklooma sõber",
+      label: "Loomasõber",
       tagline: "Aeg lemmikloomadega",
       description:
         "Sirvi lemmikloomi, kelle omanikud ootavad vastutustundlikku seltsi — jalutised, külastused, mäng ja soe kodune kogukond.",
       cta: "Otsi lemmikloomi",
     },
     both: {
-      label: "Lemmiklooma omanik ja sõber",
-      badge: "Mõlemad",
+      label: "Loomaomanik ja loomasõber",
+      badge: "Mõlemad rollid",
     },
   },
   hero: {
@@ -160,7 +160,7 @@ export const et = {
           title: "Oled linnas uus?",
           text: "Leia endale karvane sõber.",
           cta: "Leia hooldus",
-          imageAlt: "Lemmiklooma sõber pakub õrna hooldust külastusel",
+          imageAlt: "Loomasõber pakub õrna hooldust külastusel",
         },
         {
           title: "Lemmikloomad vajavad inimesi. Inimesed vajavad lemmikloomi.",
@@ -174,18 +174,18 @@ export const et = {
   search: {
     title: "Leia lemmikloom või sõber enda lähedal",
     subtitle:
-      "Avasta usaldusväärsed lemmiklooma omanikud ja sõbrad sinu piirkonnas. Kas soovid seltsi lemmikloomaga või abi oma lemmikule — alusta siit.",
+      "Avasta usaldusväärsed loomaomanikud ja sõbrad sinu piirkonnas. Kas soovid seltsi lemmikloomaga või abi oma lemmikule — alusta siit.",
     petFriend: {
-      role: "Lemmiklooma sõber",
+      role: "Loomasõber",
       label: "Otsid lemmiklooma, kellega aega veeta?",
       placeholder: "Sisesta asukoht...",
       button: "Avasta lähedal olevad lemmikloomad",
     },
     petParent: {
-      role: "Lemmiklooma omanik",
+      role: "Loomaomanik",
       label: "Otsid abi oma lemmikloomale?",
       placeholder: "Sisesta asukoht...",
-      button: "Leia lemmiklooma sõber minu lähedal",
+      button: "Leia loomasõber minu lähedal",
     },
     loadingProfiles: "Laadin profiile…",
     emptyProfiles: "Profiile veel pole. Täida oma profiil, et siin nähtav olla.",
@@ -326,7 +326,7 @@ export const et = {
     detailDescription: "Kinnitatud hooldustöö nõustatud päringust.",
     backToList: "Tagasi broneeringute juurde",
     notFound: "Broneeringut ei leitud.",
-    parentLabel: "Lemmiku omanik",
+    parentLabel: "Loomaomanik",
     friendLabel: "Lemmiku sõber",
     selectedDates: "Valitud kuupäevad",
     messageLabel: "Päringu sõnum",
@@ -454,7 +454,7 @@ export const et = {
         'Kasuta külgmenüüs "Vaheta loomasõbra režiimile", et sirvida lemmikuid ja saata päringuid.',
       switchToParentHint:
         'Kasuta külgmenüüs "Vaheta loomaomaniku režiimile", et lisada lemmikuid ja leida hooldust.',
-      roleBoth: "Mõlemad",
+      roleBoth: "Mõlemad rollid",
       roleBothDescription: "Mul on lemmikloomad ja naudin ka teiste lemmikute hooldamist.",
       aboutMeDescriptionIntro: "Nimi, asukoht, keeled ja tutvustus.",
       bioLabel: "Bio",
@@ -653,7 +653,7 @@ export const et = {
     careType: "Hoolduse tüüp",
     viewBooking: "Vaata broneeringut",
     petLabel: "Lemmik",
-    parentLabel: "Lemmiku omanik",
+    parentLabel: "Loomaomanik",
     statusUpcoming: "Tulemas",
     statusActive: "Aktiivne",
     statusCompleted: "Lõpetatud",
@@ -687,11 +687,11 @@ export const et = {
     ratingRequired: "Palun vali tärnihinnang.",
     petTagsLabel: "Sildid lemmiku kohta",
     petTagsHint: "Vali sõnad, mis kirjeldavad lemmiku käitumist hoolduse ajal.",
-    friendTagsLabel: "Sildid lemmikusõbra kohta",
+    friendTagsLabel: "Sildid loomasõbra kohta",
     friendTagsHint: "Vali sõnad, mis kirjeldavad hoolduskogemust.",
     textLabel: "Jaga mõne sõnaga",
     textPlaceholderPet: "Kuidas läks selle lemmiku hooldus?",
-    textPlaceholderFriend: "Kuidas oli sinu kogemus selle lemmikusõbraga?",
+    textPlaceholderFriend: "Kuidas oli sinu kogemus selle loomasõbraga?",
     textRequired: "Palun kirjuta mõne sõnaga oma kogemusest.",
     textTooLong: "Märkus võib olla kuni {max} tähemärki.",
     cancel: "Tühista",
@@ -714,12 +714,12 @@ export const et = {
     yourReview: "Sinu arvustus",
     bookingReviewsTitle: "Arvustused selle broneeringu kohta",
     bookingReviewsTitleSingle: "Arvustus",
-    typeParentFriend: "Lemmiku omaniku arvustus lemmiku sõbrale",
+    typeParentFriend: "Loomaomaniku arvustus lemmiku sõbrale",
     typeFriendPet: "Lemmiku sõbra arvustus lemmiku kogemuse kohta",
     reviewParentRoleHint: "Jaga, kuidas sinu lemmiku sõber hooldas lemmikut {name}.",
     reviewFriendPetButton: "Arvusta lemmikut",
     reviewFriendParentHint:
-      "Sinu lemmikukogemuse arvustus on nähtav lemmiku omanikule ({name}).",
+      "Sinu lemmikukogemuse arvustus on nähtav loomaomanikule ({name}).",
     reviewFriendPetHint: "Kirjelda lemmiku {name} käitumist ja hoolduse vajadusi broneeringu ajal.",
     listModalTitle: "Sinu arvustused",
     viewReviews: "Vaata arvustusi",
@@ -866,7 +866,7 @@ export const et = {
     emergencyRelationshipPlaceholder: "nt partner, vanem",
   },
   saved: {
-    pageTitle: "Minu salvestatud lemmikud ja lemmikusõbrad",
+    pageTitle: "Minu salvestatud lemmikud ja loomasõbrad",
     pageDescription: "Lemmikud ja inimesed, keda oled lemmikutesse lisanud kiireks juurdepääsuks.",
     loading: "Laadin salvestatud…",
     loadError: "Salvestatud ei õnnestunud laadida.",
@@ -876,7 +876,7 @@ export const et = {
     findPets: "Otsi lemmikuid",
     findFriends: "Otsi lemmikusõpru",
     sectionPets: "Salvestatud lemmikud",
-    sectionFriends: "Salvestatud lemmikusõbrad",
+    sectionFriends: "Salvestatud loomasõbrad",
   },
   notifications: {
     bellLabel: "Teavitused",
@@ -935,7 +935,7 @@ export const et = {
     reviewBannerCta: "Jäta arvustus",
   },
   services: {
-    eyebrow: "Lemmiklooma omanikele",
+    eyebrow: "Loomaomanikele",
     title: "Paindlik hooldus sinu lemmiku rütmi järgi",
     subtitle:
       "Jalutistest ja kodukülastustest päevahoiuni ja ööbimiseni — vali turvaline, kodune hooldus.",
@@ -958,7 +958,7 @@ export const et = {
       {
         title: "Paindlikud rollid",
         description:
-          "Saad liituda lemmiklooma omaniku, sõbra või mõlemana. Vaheta rolle vabalt vastavalt elule ja vajadustele.",
+          "Saad liituda loomaomaniku, sõbra või mõlemana. Vaheta rolle vabalt vastavalt elule ja vajadustele.",
         icon: "🔄",
       },
       {
@@ -987,7 +987,7 @@ export const et = {
       description: "Sirvi tasuta — uuenda liikmesust, kui oled valmis ühendust looma.",
       primaryLabel: "Leia hooldus",
       primaryHref: "/find-care",
-      secondaryLabel: "Hakka lemmikusõbraks",
+      secondaryLabel: "Hakka loomasõbraks",
       secondaryHref: "/signup",
     },
     petParent: {
@@ -1210,7 +1210,7 @@ export const et = {
       {
         question: "Mis on Stay With My Pet?",
         answer:
-          "Stay With My Pet on kogukonnapõhine lemmikloomade jagamise platvorm. Ühendame lemmiklooma omanikke (kes vajavad vahel abi või seltsi) ja lemmiklooma sõpru (vastutustundlikke loomaarmastajaid). Meie missioon on lihtne — rohkem armastust, vähem üksildust. Lemmikloomadele ja inimestele.",
+          "Stay With My Pet on kogukonnapõhine lemmikloomade jagamise platvorm. Ühendame loomaomanikke (kes vajavad vahel abi või seltsi) ja loomasõpru (vastutustundlikke loomaarmastajaid). Meie missioon on lihtne — rohkem armastust, vähem üksildust. Lemmikloomadele ja inimestele.",
       },
       {
         question: "Kuidas Stay With My Pet töötab?",
@@ -1306,11 +1306,11 @@ export const et = {
     badge: "Meist",
     title: "Rohkem armastust. Vähem üksildust. Lemmikloomadele ja inimestele.",
     subtitle:
-      "StayWithMyPet ühendab usaldusväärset hooldust vajavad lemmiklooma omanikud ja loomi armastavad lemmikusõbrad.",
+      "StayWithMyPet ühendab usaldusväärset hooldust vajavad loomaomanikud ja loomi armastavad loomasõbrad.",
     missionTitle: "Meie missioon",
     missionParagraphs: [
       "Stay With My Pet missioon on lihtne ja sügav — luua maailm, kus lemmikloomad saavad rohkem hoolt ja inimesed tunnevad vähem üksildust.",
-      "Usume, et iga lemmik väärib armastust, tähelepanu ja rõõmuhetki — ka siis, kui omanik on hõivatud, reisib või seisab silmitsi elu väljakutsetega. Meie platvorm ühendab usaldusväärset hooldust vajavad lemmiklooma omanikud ja lemmikusõbrad, kes igatsevad loomade soojust.",
+      "Usume, et iga lemmik väärib armastust, tähelepanu ja rõõmuhetki — ka siis, kui omanik on hõivatud, reisib või seisab silmitsi elu väljakutsetega. Meie platvorm ühendab usaldusväärset hooldust vajavad loomaomanikud ja loomasõbrad, kes igatsevad loomade soojust.",
       "Luues turvalise, paindliku ja kaastundliku lemmikloomade jagamise kogukonna, aitame lemmikutel elada õnnelikumalt ja inimestel üksteisele lähemale tulla.",
     ],
     missionPillars: ["Lemmik esikohal", "Kogukond enne numbreid", "Usaldus enne kõike"],
@@ -1396,11 +1396,11 @@ export const et = {
   howItWorksPage: {
     title: "Kuidas StayWithMyPet töötab",
     subtitle:
-      "Kaks lihtsat viisi hoolitseda: lemmiklooma omanikud leiavad usaldusväärset abi ja sõbrad veedavad tähendusrikast aega loomadega.",
+      "Kaks lihtsat viisi hoolitseda: loomaomanikud leiavad usaldusväärset abi ja sõbrad veedavad tähendusrikast aega loomadega.",
     imageAlt: "Lemmikloomade hoolduse sammud — omanikud ja sõbrad",
     imageFallbackCaption: "Lihtne ja usaldusväärne lemmikloomahooldus",
     petFriend: {
-      role: "Lemmikusõber",
+      role: "Loomasõber",
       steps: [
         {
           title: "Loo profiil",
@@ -1421,14 +1421,14 @@ export const et = {
       ],
     },
     petParent: {
-      role: "Lemmiklooma omanik",
+      role: "Loomaomanik",
       steps: [
         {
           title: "Lisa lemmik",
           subtitle: "Kirjelda oma lemmikut.",
         },
         {
-          title: "Vali lemmikusõber",
+          title: "Vali loomasõber",
           subtitle: "Sirvi usaldusväärseid profiile.",
         },
         {
@@ -1473,22 +1473,22 @@ export const et = {
     ctaTitle: "Valmis alustama?",
     ctaDescription: "Sirvi tasuta — uuenda liikmesust, kui oled valmis ühendust looma.",
     findCareCta: "Leia hoolitsust",
-    becomeFriendCta: "Hakka lemmikusõbraks",
+    becomeFriendCta: "Hakka loomasõbraks",
     explainerSection: {
       heading: "Vaata, kuidas StayWithMyPet töötab",
       subheading:
         "Vali oma teekond — leia hoolitsust oma lemmikule või veeda aega lähedal olevate lemmikloomadega.",
       petParent: {
-        title: "Lemmiklooma omanikele",
+        title: "Loomaomanikele",
         description:
-          "Lemmiklooma omanikud saavad lisada lemmikuid, valida usaldusväärseid sõpru, turvaliselt vestelda, broneeringuid kinnitada ja jätta arvustusi pärast hooldust.",
+          "Loomaomanikud saavad lisada lemmikuid, valida usaldusväärseid sõpru, turvaliselt vestelda, broneeringuid kinnitada ja jätta arvustusi pärast hooldust.",
         cta: "Leia hoolitsust",
       },
       petFriend: {
         title: "Lemmikusõpradele",
         description:
-          "Lemmikusõbrad saavad avastada lähedal olevaid lemmikuid, taotleda jalutuskäike või külastusi, vestelda omanikega ja luua usaldust lõpetatud broneeringute ja arvustuste kaudu.",
-        cta: "Hakka lemmikusõbraks",
+          "Loomasõbrad saavad avastada lähedal olevaid lemmikuid, taotleda jalutuskäike või külastusi, vestelda omanikega ja luua usaldust lõpetatud broneeringute ja arvustuste kaudu.",
+        cta: "Hakka loomasõbraks",
       },
     },
     explainer: {
@@ -1500,7 +1500,7 @@ export const et = {
       parentJourneyBadge: "Broneerimise teekond",
       friendJourneyBadge: "Jalutuskäik ja ühendus",
       petParent: {
-        ariaLabel: "Lemmiklooma omaniku teekond — animeeritud ülevaade",
+        ariaLabel: "Loomaomaniku teekond — animeeritud ülevaade",
         scenes: [
           {
             title: "Leia usaldusväärseid sõpru",
@@ -1535,7 +1535,7 @@ export const et = {
             caption: "Jäta tärne ja aita teistel usaldusväärset abi valida.",
             imageAlt: "Tärnidega arvustus pärast broneeringut",
             reviewText: "Alex oli imeline — rahulik, mänguline ja suurepäraselt hoitud.",
-            reviewer: "Sina · lemmiklooma omanik",
+            reviewer: "Sina · loomaomanik",
           },
         ],
         petFriends: [
@@ -1545,12 +1545,12 @@ export const et = {
         ],
       },
       petFriend: {
-        ariaLabel: "Lemmikusõbra teekond — animeeritud ülevaade",
+        ariaLabel: "Loomasõbra teekond — animeeritud ülevaade",
         scenes: [
           {
-            title: "Seadista lemmikusõbra profiil",
+            title: "Seadista loomasõbra profiil",
             caption: "Jaga kogemust, saadavust ja mida pakud.",
-            imageAlt: "Lemmikusõber jalutab koeraga",
+            imageAlt: "Loomasõber jalutab koeraga",
           },
           {
             title: "Sirvi lemmikuid lähedal",
@@ -1578,7 +1578,7 @@ export const et = {
             caption: "Ehita mainet pärast iga lõpetatud broneeringut.",
             imageAlt: "Arvustused, mis loovad kogukonna usaldust",
             reviewText: "Alex oli usaldusväärne, lahke ja suurepärane meie koeraga.",
-            reviewer: "Maria · lemmiklooma omanik",
+            reviewer: "Maria · loomaomanik",
           },
         ],
         pets: [
@@ -1706,7 +1706,7 @@ export const et = {
     availabilityCalendarHint: "Täieliku saadavuse näed profiilikaardil „Vaata kalendrit”.",
   },
   petCard: {
-    petParent: "Lemmiklooma omanik",
+    petParent: "Loomaomanik",
   },
   auth: {
     continueWithGoogle: "Jätka Google'iga",
@@ -1795,14 +1795,14 @@ export const et = {
     switching: "Vahetan…",
     findCareBlocked: {
       message:
-        "Sirvid praegu lemmikusõbra rollis. Lemmiklooma omaniku režiimi lülitu, et leida oma lemmikloomadele hooldust.",
-      switch: "Lülitu lemmiklooma omanikuks",
+        "Sirvid praegu loomasõbra rollis. Loomaomaniku režiimi lülitu, et leida oma lemmikloomadele hooldust.",
+      switch: "Lülitu loomaomanikuks",
       cancel: "Tühista",
     },
     findPetsBlocked: {
       message:
-        "Sirvid praegu lemmiklooma omaniku rollis. Lemmikusõbra režiimi lülitu, et sirvida hooldust vajavaid lemmikloomi.",
-      switch: "Lülitu lemmikusõbraks",
+        "Sirvid praegu loomaomaniku rollis. Loomasõbra režiimi lülitu, et sirvida hooldust vajavaid lemmikloomi.",
+      switch: "Lülitu loomasõbraks",
       cancel: "Tühista",
     },
   },
@@ -1815,7 +1815,7 @@ export const et = {
       petParentDescription:
         "Mul on lemmikloom ja vajan talle hooldust või seltsi.",
       petFriendDescription:
-        "Tahan veeta aega lemmikloomadega ja aidata lemmiklooma omanikke.",
+        "Tahan veeta aega lemmikloomadega ja aidata loomaomanikke.",
       continue: "Jätka juhtpaneelile",
       saving: "Salvestan…",
       loading: "Laadin…",

@@ -522,7 +522,7 @@ export const legalDocuments = {
       },
       {
         en: "Pet Parent – a User who owns or is responsible for a pet and wishes to find a trusted temporary carer through the Service.",
-        et: "Loomaomanik – Kasutaja, kes on lemmiklooma omanik või vastutab lemmiklooma eest ning soovib platvormi kaudu leida usaldusväärse ajutise hoidja või seltsilise.",
+        et: "Loomaomanik – Kasutaja, kes on loomaomanik või vastutab lemmiklooma eest ning soovib platvormi kaudu leida usaldusväärse ajutise hoidja või seltsilise.",
       },
       {
         en: "Pet Friend – a User who wishes to spend time with or care for a pet through the Service.",
