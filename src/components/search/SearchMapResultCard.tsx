@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AppImage } from "@/components/ui/AppImage";
+import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
@@ -252,7 +253,11 @@ export function SearchMapFriendCard({
               </p>
             ) : null}
             {profile.bio ? (
-              <p className="mt-1 line-clamp-2 text-xs leading-snug text-foreground/85">{profile.bio}</p>
+              <ExpandableBioText
+                bio={profile.bio}
+                className="mt-1"
+                textClassName="text-xs leading-snug text-foreground/85"
+              />
             ) : null}
           </div>
 

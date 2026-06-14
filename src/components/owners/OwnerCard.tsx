@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
@@ -129,13 +130,14 @@ export function OwnerCard({
               </p>
             ) : null}
             {profile.bio ? (
-              <p
-                className={`leading-snug text-foreground/85 ${
-                  compact ? "mt-1 line-clamp-2 text-xs" : "mt-2 line-clamp-3 text-sm"
+              <ExpandableBioText
+                bio={profile.bio}
+                collapsedLines={compact ? 2 : 3}
+                textClassName={`leading-snug text-foreground/85 ${
+                  compact ? "text-xs" : "text-sm"
                 }`}
-              >
-                {profile.bio}
-              </p>
+                className={compact ? "mt-1" : "mt-2"}
+              />
             ) : null}
           </div>
 

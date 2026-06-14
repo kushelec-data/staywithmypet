@@ -2,6 +2,7 @@
 
 import { AppImage } from "@/components/ui/AppImage";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
+import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useLanguage } from "@/context/LanguageContext";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
@@ -78,7 +79,7 @@ export function PublicProfileHero({
         </div>
 
         {profile.bio ? (
-          <p className="mt-4 max-w-prose text-sm leading-relaxed text-foreground/90">{profile.bio}</p>
+          <ExpandableBioText bio={profile.bio} className="mt-4 max-w-prose" />
         ) : null}
       </div>
     </section>

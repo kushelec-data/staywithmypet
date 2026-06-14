@@ -11,6 +11,7 @@ import {
   DashboardInfoCard,
 } from "@/components/dashboard/DashboardInfoCard";
 import { DashboardProfileHero } from "@/components/dashboard/DashboardProfileHero";
+import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { DashboardReviewPromptBanner } from "@/components/dashboard/DashboardReviewPromptBanner";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui/Button";
@@ -329,9 +330,7 @@ export function DashboardPageContent() {
           <DashboardInfoCard title={dh.aboutMe} editHref="/profile/edit" editLabel={acc.edit}>
             {profile.bio?.trim() ? (
               <>
-                <p className="line-clamp-3 text-sm leading-relaxed text-foreground/90">
-                  {profile.bio}
-                </p>
+                <ExpandableBioText bio={profile.bio.trim()} />
                 <Link
                   href="/profile/edit"
                   className={`${DASHBOARD_LINK_CLASS} mt-2 inline-block text-xs`}

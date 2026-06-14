@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
+import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { SendRequestButton } from "@/components/requests/SendRequestButton";
@@ -128,9 +129,7 @@ export function MemberPublicTopCard({
           />
           <PublicProfileChips chips={chips} />
           {profile.bio ? (
-            <p className="line-clamp-3 max-w-prose text-sm leading-relaxed text-foreground/90">
-              {profile.bio}
-            </p>
+            <ExpandableBioText bio={profile.bio} className="max-w-prose" />
           ) : null}
         </div>
 

@@ -1124,6 +1124,8 @@ export const et = {
     backHome: "Tagasi avalehele",
     browsePetFriends: "Sirvi loomasõpru",
     loadingProfile: "Laen profiili…",
+    readMore: "Loe edasi",
+    showLess: "Näita vähem",
     memberSince: "Liige alates",
     careDetailsNotAdded: "Hoolduse andmeid pole veel lisatud.",
     available: "Saadaval",

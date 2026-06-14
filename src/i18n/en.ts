@@ -1114,6 +1114,8 @@ export const en = {
     backHome: "Back home",
     browsePetFriends: "Browse Pet Friends",
     loadingProfile: "Loading profile…",
+    readMore: "Read more",
+    showLess: "Show less",
     memberSince: "Member since",
     careDetailsNotAdded: "Care details not added yet.",
     available: "Available",
