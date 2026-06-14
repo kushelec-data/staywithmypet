@@ -122,7 +122,6 @@ export async function saveUserRole(
   const now = new Date().toISOString();
 
   const payload = {
-    id: userId,
     display_name: displayName,
     role,
     active_mode: initialActiveModeForRole(role),
@@ -130,28 +129,23 @@ export async function saveUserRole(
     updated_at: now,
   };
 
-  console.log("[profile] role save payload", payload);
+  console.log("[profile] role save payload", { id: userId, ...payload });
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert(payload, { onConflict: "id" })
-    .select(PROFILE_SELECT)
-    .single();
+  const { error } = await supabase.from("profiles").update(payload).eq("id", userId);
 
   if (error) {
     console.error("[profile] role save error", error);
     throw new Error(formatSupabaseError(error));
   }
 
-  if (!data) {
+  const reloaded = await fetchUserProfile(supabase, userId);
+  if (!reloaded) {
     throw new Error("Role could not be saved.");
   }
 
-  const row = data as unknown as ProfileDbRow;
-  assertProfileMatchesUser(row.id, userId);
-  const saved = await attachMemberships(supabase, mapProfileRow(row), row);
-  console.log("[profile] role saved", saved);
-  return saved;
+  assertProfileMatchesUser(reloaded.id, userId);
+  console.log("[profile] role saved", reloaded);
+  return reloaded;
 }
 
 export async function saveUserActiveMode(
@@ -166,38 +160,33 @@ export async function saveUserActiveMode(
   const newRole = roleAfterModeSwitch(currentProfile.role, targetMode);
 
   const payload = {
-    id: userId,
     display_name: displayName,
     role: newRole,
     active_mode: targetMode,
     updated_at: now,
   };
 
-  console.log("[profile] active_mode save payload", payload);
+  console.log("[profile] active_mode save payload", { id: userId, ...payload });
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert(payload, { onConflict: "id" })
-    .select(PROFILE_SELECT)
-    .single();
+  const { error } = await supabase.from("profiles").update(payload).eq("id", userId);
 
   if (error) {
     console.error("[profile] active_mode save error", error);
     throw new Error(formatSupabaseError(error));
   }
 
-  if (!data) {
-    throw new Error("Mode could not be saved.");
-  }
-
-  const row = data as unknown as ProfileDbRow;
-  assertProfileMatchesUser(row.id, userId);
   if (!isProfileOwnedByUser(currentProfile.id, userId)) {
     throw new Error("Profile session mismatch");
   }
-  const saved = mapProfileRow(row);
+
+  const reloaded = await fetchUserProfile(supabase, userId);
+  if (!reloaded) {
+    throw new Error("Mode could not be saved.");
+  }
+
+  assertProfileMatchesUser(reloaded.id, userId);
   const withMemberships = applyMembershipsToProfile(
-    saved,
+    reloaded,
     currentProfile.memberships ?? emptyMembershipsByRole(),
   );
   console.log("[profile] active_mode saved", withMemberships);
@@ -693,6 +682,9 @@ async function persistProfilePartial(
     .single();
 
   if (error && /column/i.test(error.message)) {
+    const reloaded = await fetchUserProfile(supabase, userId);
+    if (reloaded) return reloaded;
+
     const {
       phone_country_code: _a,
       phone_number: _b,
