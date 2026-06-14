@@ -15,13 +15,13 @@ export {
   selectableChipIconClass,
 } from "@/lib/selectable-chip-tokens";
 
-/** @deprecated Prefer `selectableChipClass(false)` — unselected chip text styling. */
+/** @deprecated Prefer `SELECTABLE_CHIP_UNSELECTED_CLASS` — unselected chip text styling. */
 export const FORM_FIELD_CHIP_VALUE_CLASS =
-  "text-sm font-medium text-[#333333] dark:text-foreground";
+  "text-sm font-medium text-[#333333]";
 
 /** @deprecated Prefer `SELECTABLE_CHIP_SELECTED_CLASS` — selected chip text styling. */
 export const FORM_FIELD_CHIP_VALUE_SELECTED_CLASS =
-  "text-sm font-semibold text-[#1F6B3D] dark:text-[#DDEEDF]";
+  "text-sm font-semibold text-white";
 
 /** Yes / No and similar inline option labels. */
 export const FORM_FIELD_OPTION_LABEL_CLASS =

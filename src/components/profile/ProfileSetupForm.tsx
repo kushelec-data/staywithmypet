@@ -50,8 +50,8 @@ import {
   normalizeBioForSave,
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
-import { selectableChipClass } from "@/lib/form-field-styles";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useLanguage } from "@/context/LanguageContext";
 import { translateProfileLabel } from "@/lib/profile-translations";
@@ -533,14 +533,13 @@ export function ProfileSetupForm({
             {languageOptions.map((lang) => {
               const selected = languages.includes(lang);
               return (
-                <button
+                <SelectableChip
                   key={lang}
-                  type="button"
+                  selected={selected}
                   onClick={() => toggleLanguage(lang)}
-                  className={selectableChipClass(selected)}
                 >
                   {translateProfileLabel(lang, locale)}
-                </button>
+                </SelectableChip>
               );
             })}
           </div>

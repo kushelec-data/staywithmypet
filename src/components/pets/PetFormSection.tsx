@@ -1,6 +1,7 @@
 "use client";
 
-import { FORM_FIELD_LABEL_CLASS, selectableChipClass } from "@/lib/form-field-styles";
+import { SelectableChip } from "@/components/ui/SelectableChip";
+import { FORM_FIELD_LABEL_CLASS } from "@/lib/form-field-styles";
 import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
 import { isOtherOptionValue } from "@/lib/other-option";
 
@@ -69,15 +70,14 @@ export function PetFormChipGroup({
         {items.map((option) => {
           const isOn = selected.includes(option.value);
           return (
-            <button
+            <SelectableChip
               key={option.value}
-              type="button"
+              selected={isOn}
               disabled={disabled}
               onClick={() => handleToggle(option.value)}
-              className={selectableChipClass(isOn)}
             >
               {option.label}
-            </button>
+            </SelectableChip>
           );
         })}
       </div>

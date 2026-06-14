@@ -29,8 +29,8 @@ import {
   normalizeBioForSave,
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
-import { selectableChipClass } from "@/lib/form-field-styles";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { useRouter } from "next/navigation";
 import {
@@ -691,15 +691,14 @@ export function ProfileEditForm() {
               {languageOptions.map((lang) => {
                 const selected = languages.includes(lang);
                 return (
-                  <button
+                  <SelectableChip
                     key={lang}
-                    type="button"
-                    onClick={() => toggleLanguage(lang)}
+                    selected={selected}
                     disabled={!basicEnabled || saving.basic || anySaving}
-                    className={selectableChipClass(selected, !basicEnabled || saving.basic || anySaving ? "opacity-60" : undefined)}
+                    onClick={() => toggleLanguage(lang)}
                   >
                     {translateProfileLabel(lang, locale)}
-                  </button>
+                  </SelectableChip>
                 );
               })}
             </div>

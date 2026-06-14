@@ -1,12 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { SelectableChip } from "@/components/ui/SelectableChip";
 import {
   FORM_FIELD_LABEL_CLASS,
   FORM_FIELD_LEGEND_CLASS,
   FORM_FIELD_OPTION_LABEL_CLASS,
-  selectableChipClass,
-  selectableChipIconClass,
 } from "@/lib/form-field-styles";
 import { isOtherOptionValue } from "@/lib/other-option";
 
@@ -63,15 +62,14 @@ export function ProfileChipMultiSelect({
         {items.map((opt) => {
           const isOn = selected.includes(opt.value);
           return (
-            <button
+            <SelectableChip
               key={opt.value}
-              type="button"
+              selected={isOn}
               disabled={disabled}
               onClick={() => handleToggle(opt.value)}
-              className={selectableChipClass(isOn)}
             >
               {opt.label}
-            </button>
+            </SelectableChip>
           );
         })}
       </div>
@@ -149,21 +147,15 @@ export function ProfileChipSingleSelect({
         {options.map((opt) => {
           const isOn = value === opt.value;
           return (
-            <button
+            <SelectableChip
               key={opt.value}
-              type="button"
+              selected={isOn}
               disabled={disabled}
-              aria-pressed={isOn}
+              icon={opt.icon}
               onClick={() => onChange(opt.value)}
-              className={selectableChipClass(isOn)}
             >
-              {opt.icon ? (
-                <span className={selectableChipIconClass(isOn)} aria-hidden>
-                  {opt.icon}
-                </span>
-              ) : null}
               {opt.label}
-            </button>
+            </SelectableChip>
           );
         })}
       </div>

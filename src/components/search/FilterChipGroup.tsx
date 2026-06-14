@@ -1,12 +1,9 @@
 "use client";
 
 import { CheckIcon } from "@/components/search/filter-icons";
+import { SelectableChip } from "@/components/ui/SelectableChip";
+import { SELECTABLE_CHIP_ICON_SELECTED_CLASS } from "@/lib/selectable-chip-tokens";
 import { useLanguage } from "@/context/LanguageContext";
-import {
-  SELECTABLE_CHIP_ICON_SELECTED_CLASS,
-  SELECTABLE_CHIP_ICON_UNSELECTED_CLASS,
-  selectableChipClass,
-} from "@/lib/selectable-chip-tokens";
 import { useMemo, useState, type ReactNode } from "react";
 
 export type FilterChipOption = {
@@ -68,26 +65,19 @@ export function FilterChipGroup({
         {visibleOptions.map((opt) => {
           const checked = selected.includes(opt.value);
           return (
-            <button
+            <SelectableChip
               key={opt.value}
-              type="button"
-              aria-pressed={checked}
+              selected={checked}
               onClick={() => toggle(opt.value)}
-              className={selectableChipClass(checked)}
+              icon={opt.icon}
+              trailing={
+                checked ? (
+                  <CheckIcon className={`h-3.5 w-3.5 shrink-0 ${SELECTABLE_CHIP_ICON_SELECTED_CLASS}`} />
+                ) : null
+              }
             >
-              {opt.icon ? (
-                <span
-                  className={checked ? SELECTABLE_CHIP_ICON_SELECTED_CLASS : SELECTABLE_CHIP_ICON_UNSELECTED_CLASS}
-                  aria-hidden
-                >
-                  {opt.icon}
-                </span>
-              ) : null}
-              <span>{opt.label}</span>
-              {checked ? (
-                <CheckIcon className={`h-3.5 w-3.5 shrink-0 ${SELECTABLE_CHIP_ICON_SELECTED_CLASS}`} />
-              ) : null}
-            </button>
+              {opt.label}
+            </SelectableChip>
           );
         })}
       </div>
