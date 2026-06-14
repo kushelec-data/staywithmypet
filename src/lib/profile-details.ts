@@ -116,6 +116,8 @@ export type ProfileDetails = {
   has_children?: boolean | null;
   has_garden?: boolean | null;
   has_nearby_park?: boolean | null;
+  /** Custom language(s) when "Other" is selected in `profiles.languages`. */
+  languages_other?: string | null;
 };
 
 function strFrom(value: unknown): string | null {
@@ -280,6 +282,7 @@ export function parseProfileDetails(raw: unknown): ProfileDetails {
     has_children: boolFrom(o.has_children),
     has_garden: boolFrom(o.has_garden),
     has_nearby_park: boolFrom(o.has_nearby_park),
+    languages_other: strFromOtherField(o.languages_other) || null,
   };
 }
 

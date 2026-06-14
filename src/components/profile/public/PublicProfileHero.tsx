@@ -8,7 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
-import { translateProfileLabel } from "@/lib/profile-translations";
+import { formatProfileLanguagesForDisplay } from "@/lib/profile-languages";
 import { formatProfileRoleBadge } from "@/lib/profile-mode";
 import type { PublicProfileView } from "@/lib/public-profile";
 
@@ -24,17 +24,16 @@ export function PublicProfileHero({
   reviewsCount = profile.rating_count,
 }: PublicProfileHeroProps) {
   const { t, locale } = useLanguage();
+  const languageLabels = formatProfileLanguagesForDisplay(
+    profile.languages,
+    profile.details?.languages_other,
+    locale,
+  );
   const chips = [
     formatProfileRoleBadge(profile.role, t.roles),
     ...(profile.nearbyLocation ? [profile.nearbyLocation] : []),
-    ...(profile.languages.length
-      ? [
-          profile.languages
-            .slice(0, 2)
-            .map((l) => translateProfileLabel(l.trim(), locale))
-            .filter(Boolean)
-            .join(", "),
-        ]
+    ...(languageLabels.length
+      ? [languageLabels.slice(0, 2).filter(Boolean).join(", ")]
       : []),
   ].filter(Boolean);
 

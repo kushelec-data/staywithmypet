@@ -29,8 +29,12 @@ import {
   normalizeBioForSave,
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
-import { SelectableChip } from "@/components/ui/SelectableChip";
+import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesSelector";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
+import {
+  languagesOtherFromDetails,
+  profileLanguagesOtherMissing,
+} from "@/lib/profile-languages";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { useRouter } from "next/navigation";
 import {
@@ -40,7 +44,6 @@ import {
 } from "@/lib/google-places-parse";
 import { getGoogleMapsApiKey } from "@/lib/google-places-loader";
 import { PROFILE_LOCATION_CITY_OPTIONS, PROFILE_LOCATION_DATALIST_ID } from "@/lib/location-datalist";
-import { languageOptions } from "@/lib/legacy/search-filters";
 import { translateProfileLabel } from "@/lib/profile-translations";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
@@ -103,6 +106,7 @@ function applyBasicFromProfile(
     setLatitude: (v: number | null) => void;
     setLongitude: (v: number | null) => void;
     setLanguages: (v: string[]) => void;
+    setLanguagesOther: (v: string) => void;
     setBio: (v: string) => void;
     setGooglePlaceId: (v: string | null) => void;
     setAvatarUrl: (v: string | null) => void;
@@ -118,6 +122,7 @@ function applyBasicFromProfile(
   setters.setLatitude(profile.latitude ?? null);
   setters.setLongitude(profile.longitude ?? null);
   setters.setLanguages([...(profile.languages ?? [])]);
+  setters.setLanguagesOther(languagesOtherFromDetails(profile.details));
   setters.setBio(profile.bio?.trim() ?? "");
 }
 
@@ -156,6 +161,7 @@ export function ProfileEditForm() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
+  const [languagesOther, setLanguagesOther] = useState("");
   const [bio, setBio] = useState("");
   const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -223,12 +229,6 @@ export function ProfileEditForm() {
     setBio(count > BIO_WORD_MAX ? truncateBioToMaxWords(next) : next);
   }
 
-  function toggleLanguage(lang: string) {
-    setLanguages((prev) =>
-      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang],
-    );
-  }
-
   useEffect(() => {
     if (profileLoading) return;
 
@@ -240,6 +240,7 @@ export function ProfileEditForm() {
         setLatitude,
         setLongitude,
         setLanguages,
+        setLanguagesOther,
         setBio,
         setGooglePlaceId,
         setAvatarUrl,
@@ -352,6 +353,7 @@ export function ProfileEditForm() {
       setLatitude,
       setLongitude,
       setLanguages,
+      setLanguagesOther,
       setBio,
       setGooglePlaceId,
       setAvatarUrl,
@@ -398,6 +400,10 @@ export function ProfileEditForm() {
       setErrors((prev) => ({ ...prev, basic: pe.basic.errorLanguages }));
       return;
     }
+    if (profileLanguagesOtherMissing(languages, languagesOther)) {
+      setErrors((prev) => ({ ...prev, basic: pe.basic.errorLanguageOther }));
+      return;
+    }
     if (!bioValid) {
       setErrors((prev) => ({
         ...prev,
@@ -422,6 +428,7 @@ export function ProfileEditForm() {
           displayName: trimmedName,
           location: hasGoogleCoords ? finalizeLocationText(location) || locationText : locationText,
           languages: [...languages],
+          languagesOther,
           bio: normalizeBioForSave(bio),
           address: hasGoogleCoords ? finalizeLocationText(address) || locationText : locationText,
           latitude,
@@ -685,24 +692,16 @@ export function ProfileEditForm() {
             </p>
           </div>
 
-          <div>
-            <span className="form-field-label">{pe.basic.languages}</span>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {languageOptions.map((lang) => {
-                const selected = languages.includes(lang);
-                return (
-                  <SelectableChip
-                    key={lang}
-                    selected={selected}
-                    disabled={!basicEnabled || saving.basic || anySaving}
-                    onClick={() => toggleLanguage(lang)}
-                  >
-                    {translateProfileLabel(lang, locale)}
-                  </SelectableChip>
-                );
-              })}
-            </div>
-          </div>
+          <ProfileLanguagesSelector
+            languages={languages}
+            languagesOther={languagesOther}
+            onLanguagesChange={setLanguages}
+            onLanguagesOtherChange={setLanguagesOther}
+            disabled={!basicEnabled || saving.basic || anySaving}
+            label={pe.basic.languages}
+            otherPlaceholder={pe.basic.languageOtherPlaceholder}
+            otherInputId="profile_edit_languages_other"
+          />
 
           <div>
             <label htmlFor="bio" className="form-field-label">

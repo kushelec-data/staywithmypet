@@ -21,6 +21,7 @@ import {
   mergeDetailsGooglePlace,
   mergeDetailsTrustFlags,
 } from "@/lib/profile-details";
+import { mergeLanguagesOtherIntoDetails } from "@/lib/profile-languages";
 import {
   mergePetFriendCalendarDates,
   mergePetFriendIntoDetails,
@@ -49,6 +50,7 @@ export type ProfileSetupInput = {
   role: ProfileRole;
   location: string;
   languages: string[];
+  languagesOther: string;
   bio: string;
   phoneDialCode: string;
   phoneNational: string;
@@ -330,6 +332,12 @@ export async function saveUserProfile(
     },
   );
 
+  detailsMerged = mergeLanguagesOtherIntoDetails(
+    detailsMerged,
+    input.languages,
+    input.languagesOther,
+  );
+
   const [completedBookings, reviewsCount] = await Promise.all([
     countCompletedBookingsForUser(supabase, userId),
     countReviewsAsReviewee(supabase, userId),
@@ -441,6 +449,7 @@ export type BasicProfileSectionInput = {
   displayName: string;
   location: string;
   languages: string[];
+  languagesOther: string;
   bio: string;
   address?: string | null;
   latitude?: number | null;
@@ -719,6 +728,12 @@ export async function saveBasicProfileSection(
       : {};
 
   detailsMerged = mergeDetailsGooglePlace(detailsMerged, input.googlePlaceId);
+
+  detailsMerged = mergeLanguagesOtherIntoDetails(
+    detailsMerged,
+    input.languages,
+    input.languagesOther,
+  );
 
   const canWriteGeo = await profilesGeoColumnsWritable(supabase);
 

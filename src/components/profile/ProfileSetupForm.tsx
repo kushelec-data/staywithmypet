@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/Button";
 import { useProfile } from "@/context/ProfileContext";
 import { useAuth } from "@/context/AuthContext";
 import type { ProfileRow } from "@/lib/profile-utils";
-import { languageOptions } from "@/lib/legacy/search-filters";
 import { GooglePlacesInput } from "@/components/location/GooglePlacesInput";
 import {
   finalizeLocationText,
@@ -50,11 +49,14 @@ import {
   normalizeBioForSave,
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
-import { SelectableChip } from "@/components/ui/SelectableChip";
+import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesSelector";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
+import {
+  languagesOtherFromDetails,
+  profileLanguagesOtherMissing,
+} from "@/lib/profile-languages";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useLanguage } from "@/context/LanguageContext";
-import { translateProfileLabel } from "@/lib/profile-translations";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -77,6 +79,7 @@ function applyProfileToForm(
     setLongitude: (v: number | null) => void;
     setAvailabilitySelectedDates: (v: string[]) => void;
     setLanguages: (v: string[]) => void;
+    setLanguagesOther: (v: string) => void;
     setBio: (v: string) => void;
     setTrustSafety: (v: TrustSafetyFormValues) => void;
     setGooglePlaceId: (v: string | null) => void;
@@ -96,6 +99,7 @@ function applyProfileToForm(
   const sched = profile.details?.availability_schedule;
   setters.setAvailabilitySelectedDates(normalizeAvailabilityDates(sched?.selected_dates ?? []));
   setters.setLanguages([...(profile.languages ?? [])]);
+  setters.setLanguagesOther(languagesOtherFromDetails(profile.details));
   setters.setBio(profile.bio?.trim() ?? "");
   const emergency = parseEmergencyContactFromProfile(profile);
   const mainE164 = profile.phone_e164?.trim() || profile.phone?.trim() || "";
@@ -154,6 +158,7 @@ export function ProfileSetupForm({
   const [longitude, setLongitude] = useState<number | null>(null);
   const [availabilitySelectedDates, setAvailabilitySelectedDates] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
+  const [languagesOther, setLanguagesOther] = useState("");
   const [bio, setBio] = useState("");
   const [trustSafety, setTrustSafety] = useState<TrustSafetyFormValues>(emptyTrustSafetyFormValues);
   const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
@@ -178,6 +183,7 @@ export function ProfileSetupForm({
       setLongitude,
       setAvailabilitySelectedDates,
       setLanguages,
+      setLanguagesOther,
       setBio,
       setTrustSafety,
       setGooglePlaceId,
@@ -249,18 +255,13 @@ export function ProfileSetupForm({
     setLongitude(null);
     setAvailabilitySelectedDates([]);
     setLanguages([]);
+    setLanguagesOther("");
     setBio("");
     setTrustSafety(emptyTrustSafetyFormValues);
     setGooglePlaceId(null);
     setAvatarUrl(null);
     setPetFriendForm(emptyPetFriendProfileForm());
   }, [profile, profileLoading, user, setters]);
-
-  function toggleLanguage(lang: string) {
-    setLanguages((prev) =>
-      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang],
-    );
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -278,6 +279,10 @@ export function ProfileSetupForm({
     }
     if (languages.length === 0) {
       setError(pe.errorLanguages);
+      return;
+    }
+    if (profileLanguagesOtherMissing(languages, languagesOther)) {
+      setError(setup.errorLanguageOther);
       return;
     }
     if (!bioValid) {
@@ -308,6 +313,7 @@ export function ProfileSetupForm({
       role,
       location: hasGoogleCoords ? finalizeLocationText(location) || locationText : locationText,
       languages: [...languages],
+      languagesOther,
       bio: normalizeBioForSave(bio),
       phoneDialCode: trustSafety.phoneDialCode || DEFAULT_PHONE_DIAL_CODE,
       phoneNational: trustSafety.phoneNational,
@@ -527,23 +533,12 @@ export function ProfileSetupForm({
           </div>
         ) : null}
 
-        <div className="sm:col-span-2">
-          <span className="form-field-label">{setup.languages}</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {languageOptions.map((lang) => {
-              const selected = languages.includes(lang);
-              return (
-                <SelectableChip
-                  key={lang}
-                  selected={selected}
-                  onClick={() => toggleLanguage(lang)}
-                >
-                  {translateProfileLabel(lang, locale)}
-                </SelectableChip>
-              );
-            })}
-          </div>
-        </div>
+        <ProfileLanguagesSelector
+          languages={languages}
+          languagesOther={languagesOther}
+          onLanguagesChange={setLanguages}
+          onLanguagesOtherChange={setLanguagesOther}
+        />
 
         <div className="sm:col-span-2">
           <label htmlFor="bio" className="form-field-label">

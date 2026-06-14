@@ -444,6 +444,8 @@ export const en = {
       myAvailability: "My availability",
       petCareAvailability: "Pet care availability",
       languages: "Languages",
+      languageOtherPlaceholder: "Write your language",
+      errorLanguageOther: "Please enter your language.",
       bioPlaceholders: {
         petParent:
           "I'm a pet lover with a busy schedule and I'm looking for trusted people who can spend time with my pet when I'm unavailable. My goal is to make sure my pet gets the care, attention, and companionship they deserve.",
@@ -756,6 +758,8 @@ export const en = {
       locationHintGoogle: "Start typing for Google address suggestions, or pick a city from the list.",
       locationHintList: "Pick a suggested city or type your area.",
       languages: "Languages",
+      languageOtherPlaceholder: "Write your language",
+      errorLanguageOther: "Please enter your language.",
       bio: "About Me",
       bioPlaceholders: {
         petParent:

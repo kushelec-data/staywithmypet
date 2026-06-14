@@ -5,6 +5,7 @@ import {
   DashboardInfoCard,
 } from "@/components/dashboard/DashboardInfoCard";
 import { useLanguage } from "@/context/LanguageContext";
+import { formatProfileLanguagesLine } from "@/lib/profile-languages";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import type { ProfileRow } from "@/lib/profile-utils";
 
@@ -13,7 +14,7 @@ type DashboardContactCardProps = {
 };
 
 export function DashboardContactCard({ profile }: DashboardContactCardProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const dh = t.dashboardHome;
   const acc = t.account;
   const ts = t.trustSafety;
@@ -29,7 +30,15 @@ export function DashboardContactCard({ profile }: DashboardContactCardProps) {
         />
         <DashboardDetailRow
           label={dh.languages}
-          value={profile.languages?.length ? profile.languages.join(", ") : "—"}
+          value={
+            profile.languages?.length
+              ? formatProfileLanguagesLine(
+                  profile.languages,
+                  profile.details?.languages_other,
+                  locale,
+                )
+              : "—"
+          }
         />
         <DashboardDetailRow
           label={dh.phone}

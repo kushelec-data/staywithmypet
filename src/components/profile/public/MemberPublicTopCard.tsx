@@ -11,7 +11,7 @@ import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificatio
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
-import { translateProfileLabel } from "@/lib/profile-translations";
+import { formatProfileLanguagesForDisplay } from "@/lib/profile-languages";
 import { formatProfileRoleBadge, resolveActiveMode } from "@/lib/profile-mode";
 import { PUBLIC_CARD_MINT } from "@/lib/public-layout";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
@@ -49,10 +49,11 @@ export function MemberPublicTopCard({
   const chips = [
     formatProfileRoleBadge(profile.role, t.roles),
     ...(profile.nearbyLocation ? [profile.nearbyLocation] : []),
-    ...profile.languages
-      .slice(0, 2)
-      .map((l) => translateProfileLabel(l.trim(), locale))
-      .filter(Boolean),
+    ...formatProfileLanguagesForDisplay(
+      profile.languages,
+      profile.details?.languages_other,
+      locale,
+    ).slice(0, 2),
   ];
   const friendAvailability = resolvedAvailability(profile.details).selected_dates ?? [];
   const shownAsFriend = isProfileShownAsPetFriend(profile);

@@ -445,6 +445,8 @@ export const et = {
       myAvailability: "Minu saadavus",
       petCareAvailability: "Lemmiku hoolduse saadavus",
       languages: "Keeled",
+      languageOtherPlaceholder: "Kirjuta oma keel",
+      errorLanguageOther: "Palun sisesta oma keel.",
       bioPlaceholders: {
         petParent:
           "Olen loomaarmastaja tiheda ajakavaga ja otsin usaldusväärseid inimesi, kes saaksid minu lemmikuga aega veeta, kui ma pole saadaval. Minu eesmärk on tagada, et mu lemmik saaks hooldust, tähelepanu ja seltsi, mida ta väärib.",
@@ -764,6 +766,8 @@ export const et = {
       locationHintGoogle: "Hakka kirjutama Google'i aadressisoovituste jaoks või vali linn nimekirjast.",
       locationHintList: "Vali soovitatud linn või kirjuta oma piirkond.",
       languages: "Keeled",
+      languageOtherPlaceholder: "Kirjuta oma keel",
+      errorLanguageOther: "Palun sisesta oma keel.",
       bio: "Minust",
       bioPlaceholders: {
         petParent:
