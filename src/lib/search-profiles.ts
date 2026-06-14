@@ -83,10 +83,39 @@ type PetFriendSearchRow = {
   active_mode: string | null;
   rating_avg: number | string | null;
   rating_count: number | null;
-  stay_count: number | null;
+  stay_count?: number | null;
   languages?: string[] | null;
   details?: unknown;
 };
+
+const PET_FRIEND_SEARCH_SELECT =
+  "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details";
+
+const PET_FRIEND_SEARCH_SELECT_FALLBACKS = [
+  "id, display_name, location, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",
+  "id, display_name, location, bio, avatar_url, role, active_mode, rating_avg, rating_count, languages, details",
+] as const;
+
+function isMissingColumnError(error: { message?: string } | null): boolean {
+  return Boolean(error?.message && /column/i.test(error.message));
+}
+
+function mapPetFriendSearchRows(data: PetFriendSearchRow[]): SearchProfile[] {
+  return data
+    .filter(isListableProfile)
+    .filter((row) =>
+      isDiscoverablePetFriend({
+        role: row.role as ProfileRole,
+        active_mode: row.active_mode,
+      }),
+    )
+    .map((row) =>
+      mapPetFriendSearchRow({
+        ...row,
+        role: row.role as ProfileRole,
+      }),
+    );
+}
 
 /** Resolve profile coords then blur for public map — never expose exact home location. */
 function resolveFriendMapPosition(
@@ -158,31 +187,33 @@ export function mapPetFriendSearchRow(row: PetFriendSearchRow): SearchProfile {
 export async function fetchPetFriendSearchProfiles(
   supabase: SupabaseClient,
 ): Promise<SearchProfile[]> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(
-      "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",
-    )
-    .eq("is_public", true)
-    .in("role", ["pet_friend", "both"])
-    .order("created_at", { ascending: false });
+  const selects = [PET_FRIEND_SEARCH_SELECT, ...PET_FRIEND_SEARCH_SELECT_FALLBACKS];
 
-  if (error) throw error;
+  for (let i = 0; i < selects.length; i += 1) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(selects[i])
+      .eq("is_public", true)
+      .in("role", ["pet_friend", "both"])
+      .order("created_at", { ascending: false });
 
-  return (data ?? [])
-    .filter(isListableProfile)
-    .filter((row) =>
-      isDiscoverablePetFriend({
-        role: row.role as ProfileRole,
-        active_mode: row.active_mode,
-      }),
-    )
-    .map((row) =>
-      mapPetFriendSearchRow({
-        ...row,
-        role: row.role as ProfileRole,
-      }),
-    );
+    if (!error) {
+      return mapPetFriendSearchRows((data ?? []) as unknown as PetFriendSearchRow[]);
+    }
+
+    if (!isMissingColumnError(error) || i === selects.length - 1) {
+      throw error;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[search-profiles] Using reduced profile columns for /find-care. Run supabase migrations for Google location fields.",
+        error.message,
+      );
+    }
+  }
+
+  return [];
 }
 
 export function searchProfileToMapMarker(profile: SearchProfile): SearchMapMarker | null {
