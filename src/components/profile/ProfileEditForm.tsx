@@ -29,6 +29,7 @@ import {
   normalizeBioForSave,
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
+import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { useRouter } from "next/navigation";
 import {
@@ -193,6 +194,10 @@ export function ProfileEditForm() {
   const bioWordCount = useMemo(() => countBioWords(bio), [bio]);
   const bioStatus = bioWordStatus(bioWordCount);
   const bioValid = isBioWordCountValid(bioWordCount);
+  const bioPlaceholder = useMemo(
+    () => bioPlaceholderForRole(role, pe.basic.bioPlaceholders),
+    [role, pe.basic.bioPlaceholders],
+  );
 
   const sectionComplete = useCallback(
     (section: ProfileEditSectionKey) => {
@@ -716,7 +721,7 @@ export function ProfileEditForm() {
               required
               disabled={!basicEnabled || saving.basic || anySaving}
               className="input-field mt-1 resize-y"
-              placeholder={pe.basic.bioPlaceholder}
+              placeholder={bioPlaceholder}
               aria-describedby="bio-word-counter"
             />
             <BioWordCounter id="bio-word-counter" wordCount={bioWordCount} status={bioStatus} />

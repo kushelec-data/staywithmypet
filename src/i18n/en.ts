@@ -444,7 +444,14 @@ export const en = {
       myAvailability: "My availability",
       petCareAvailability: "Pet care availability",
       languages: "Languages",
-      bioPlaceholder: "Tell Pet Parents and Pet Friends about yourself and your experience with animals.",
+      bioPlaceholders: {
+        petParent:
+          "I'm a pet lover with a busy schedule and I'm looking for trusted people who can spend time with my pet when I'm unavailable. My goal is to make sure my pet gets the care, attention, and companionship they deserve.",
+        petFriend:
+          "I enjoy spending time with animals and would love to help pet owners by providing companionship, walks, playtime, or care when needed. I'm responsible, reliable, and comfortable around pets.",
+        both:
+          "I'm both a pet owner and a pet lover. I enjoy connecting with animals and other members of the community while helping ensure pets receive the attention, care, and companionship they deserve.",
+      },
       accountType: "Account type",
       currentDashboardMode: "Current dashboard mode:",
       switchModeHint: "Switch between Pet Parent and Pet Friend modes from the sidebar.",
@@ -453,7 +460,7 @@ export const en = {
       roleBoth: "Both",
       roleBothDescription: "I have pets and also enjoy caring for other pets.",
       aboutMeDescriptionIntro: "Name, location, languages, and introduction.",
-      bioLabel: "Bio",
+      bioLabel: "About Me",
       saveError: "Could not save your profile.",
       locationGoogleHint:
         "Start typing for Google address suggestions, or pick a city from the list.",
@@ -749,8 +756,15 @@ export const en = {
       locationHintGoogle: "Start typing for Google address suggestions, or pick a city from the list.",
       locationHintList: "Pick a suggested city or type your area.",
       languages: "Languages",
-      bio: "Bio",
-      bioPlaceholder: "Tell Pet Parents and Pet Friends about yourself and your experience with pets.",
+      bio: "About Me",
+      bioPlaceholders: {
+        petParent:
+          "I'm a pet lover with a busy schedule and I'm looking for trusted people who can spend time with my pet when I'm unavailable. My goal is to make sure my pet gets the care, attention, and companionship they deserve.",
+        petFriend:
+          "I enjoy spending time with animals and would love to help pet owners by providing companionship, walks, playtime, or care when needed. I'm responsible, reliable, and comfortable around pets.",
+        both:
+          "I'm both a pet owner and a pet lover. I enjoy connecting with animals and other members of the community while helping ensure pets receive the attention, care, and companionship they deserve.",
+      },
       errorDisplayName: "Please enter your display name.",
       errorLocation: "Please enter your location.",
       errorLanguages: "Please select at least one language.",

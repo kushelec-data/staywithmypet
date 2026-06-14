@@ -50,6 +50,7 @@ import {
   normalizeBioForSave,
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
+import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useLanguage } from "@/context/LanguageContext";
 import { translateProfileLabel } from "@/lib/profile-translations";
@@ -206,6 +207,10 @@ export function ProfileSetupForm({
   const bioWordCount = useMemo(() => countBioWords(bio), [bio]);
   const bioStatus = bioWordStatus(bioWordCount);
   const bioValid = isBioWordCountValid(bioWordCount);
+  const bioPlaceholder = useMemo(
+    () => bioPlaceholderForRole(role, setup.bioPlaceholders),
+    [role, setup.bioPlaceholders],
+  );
 
   function handleBioChange(next: string) {
     const count = countBioWords(next);
@@ -556,7 +561,7 @@ export function ProfileSetupForm({
             onChange={(e) => handleBioChange(e.target.value)}
             required
             className="input-field mt-1 resize-y"
-            placeholder={setup.bioPlaceholder}
+            placeholder={bioPlaceholder}
             aria-describedby="bio-word-counter"
           />
           <BioWordCounter id="bio-word-counter" wordCount={bioWordCount} status={bioStatus} />

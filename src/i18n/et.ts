@@ -445,8 +445,14 @@ export const et = {
       myAvailability: "Minu saadavus",
       petCareAvailability: "Lemmiku hoolduse saadavus",
       languages: "Keeled",
-      bioPlaceholder:
-        "Räägi loomaomanikele ja loomasõpradele endast ja oma kogemusest loomadega.",
+      bioPlaceholders: {
+        petParent:
+          "Olen loomaarmastaja tiheda ajakavaga ja otsin usaldusväärseid inimesi, kes saaksid minu lemmikuga aega veeta, kui ma pole saadaval. Minu eesmärk on tagada, et mu lemmik saaks hooldust, tähelepanu ja seltsi, mida ta väärib.",
+        petFriend:
+          "Nautin aega loomadega veeta ja aitan hea meelega loomaomanikke, pakkudes seltsi, jalutisi, mänguaega või hooldust vajadusel. Olen vastutustundlik, usaldusväärne ja tunnen end loomade juures hästi.",
+        both:
+          "Olen nii loomaomanik kui ka loomaarmastaja. Nautin kontakti loomade ja teiste kogukonnaliikmetega, aidates tagada, et lemmikud saaksid tähelepanu, hooldust ja seltsi, mida nad väärivad.",
+      },
       accountType: "Konto tüüp",
       currentDashboardMode: "Praegune juhtpaneeli režiim:",
       switchModeHint: "Vaheta loomaomaniku ja loomasõbra režiimi külgmenüüst.",
@@ -457,7 +463,7 @@ export const et = {
       roleBoth: "Mõlemad rollid",
       roleBothDescription: "Mul on lemmikloomad ja naudin ka teiste lemmikute hooldamist.",
       aboutMeDescriptionIntro: "Nimi, asukoht, keeled ja tutvustus.",
-      bioLabel: "Bio",
+      bioLabel: "Minust",
       saveError: "Profiili salvestamine ebaõnnestus.",
       locationGoogleHint:
         "Alusta tippimist Google'i aadressisoovituste jaoks või vali linn nimekirjast.",
@@ -758,8 +764,15 @@ export const et = {
       locationHintGoogle: "Hakka kirjutama Google'i aadressisoovituste jaoks või vali linn nimekirjast.",
       locationHintList: "Vali soovitatud linn või kirjuta oma piirkond.",
       languages: "Keeled",
-      bio: "Bio",
-      bioPlaceholder: "Räägi Pet Parentidele ja Pet Friendidele endast ja kogemusest loomadega.",
+      bio: "Minust",
+      bioPlaceholders: {
+        petParent:
+          "Olen loomaarmastaja tiheda ajakavaga ja otsin usaldusväärseid inimesi, kes saaksid minu lemmikuga aega veeta, kui ma pole saadaval. Minu eesmärk on tagada, et mu lemmik saaks hooldust, tähelepanu ja seltsi, mida ta väärib.",
+        petFriend:
+          "Nautin aega loomadega veeta ja aitan hea meelega loomaomanikke, pakkudes seltsi, jalutisi, mänguaega või hooldust vajadusel. Olen vastutustundlik, usaldusväärne ja tunnen end loomade juures hästi.",
+        both:
+          "Olen nii loomaomanik kui ka loomaarmastaja. Nautin kontakti loomade ja teiste kogukonnaliikmetega, aidates tagada, et lemmikud saaksid tähelepanu, hooldust ja seltsi, mida nad väärivad.",
+      },
       errorDisplayName: "Palun sisesta kuvatav nimi.",
       errorLocation: "Palun sisesta asukoht.",
       errorLanguages: "Palun vali vähemalt üks keel.",
