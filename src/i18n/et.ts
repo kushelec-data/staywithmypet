@@ -66,6 +66,9 @@ export const et = {
     points: ["Vastutustundlik jagamine", "Kontrollitud kogukond", "Raha ei liigu kasutajate vahel"],
     joinCta: "Liitu kogukonnaga",
     copyright: "© {year} Stay With My Pet. Kõik õigused kaitstud.",
+    followUs: "Jälgi meid",
+    facebook: "Facebook",
+    instagram: "Instagram",
     groups: {
       petFriends: {
         title: "Loomasõbrad",

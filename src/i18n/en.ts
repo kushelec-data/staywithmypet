@@ -66,6 +66,9 @@ export const en = {
     points: ["Responsible sharing", "Verified community", "No money between users"],
     joinCta: "Join the community",
     copyright: "© {year} Stay With My Pet. All rights reserved.",
+    followUs: "Follow Us",
+    facebook: "Facebook",
+    instagram: "Instagram",
     groups: {
       petFriends: {
         title: "Pet Friends",
