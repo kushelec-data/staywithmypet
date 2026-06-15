@@ -1,10 +1,4 @@
 export const en = {
-  theme: {
-    label: "Theme",
-    light: "Light",
-    dark: "Dark",
-    system: "System",
-  },
   common: {
     close: "Close",
     cancel: "Cancel",

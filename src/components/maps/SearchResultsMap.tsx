@@ -3,7 +3,6 @@
 import { fixLeafletDefaultIcons } from "@/components/maps/leaflet-icon-fix";
 import { useLanguage } from "@/context/LanguageContext";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
-import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
@@ -15,7 +14,6 @@ const ESTONIA_CENTER: [number, number] = [58.75, 25.5];
 const DEFAULT_ZOOM = 7;
 
 const OSM_LIGHT = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const CARTO_DARK = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 
 function createBrandPinIcon(selected: boolean): L.DivIcon {
   const size = selected ? 36 : 28;
@@ -170,8 +168,6 @@ export function SearchResultsMap({
   ariaLabel = "Search results map",
 }: SearchResultsMapProps) {
   const { t } = useLanguage();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
   const containerRef = useRef<HTMLDivElement>(null);
   const containerReady = useMapContainerReady(containerRef);
 
@@ -198,12 +194,8 @@ export function SearchResultsMap({
           aria-label={ariaLabel}
         >
           <TileLayer
-            attribution={
-              isDark
-                ? '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
-                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }
-            url={isDark ? CARTO_DARK : OSM_LIGHT}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url={OSM_LIGHT}
           />
           <FitBounds markers={markers} />
           <FlyToSelected markers={markers} selectedId={selectedId} />

@@ -1,10 +1,4 @@
 export const et = {
-  theme: {
-    label: "Teema",
-    light: "Hele",
-    dark: "Tume",
-    system: "Süsteem",
-  },
   common: {
     close: "Sulge",
     cancel: "Tühista",

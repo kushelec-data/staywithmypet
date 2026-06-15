@@ -20,7 +20,7 @@ export function AboutPageClient() {
 
   return (
     <>
-      <PageHero badge={a.badge} title={a.title} description={a.subtitle} compact />
+      <PageHero badge={a.badge} title={a.title} compact />
 
       <section className={SECTION_PAD}>
         <div className={CONTENT_CONTAINER}>

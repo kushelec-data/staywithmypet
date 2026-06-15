@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
@@ -42,23 +41,20 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
       className={`${poppins.variable} ${inter.variable} h-full scroll-smooth overflow-x-hidden`}
     >
       <body className="flex min-h-full flex-col overflow-x-hidden bg-background font-sans text-foreground antialiased">
-        <ThemeProvider>
-          <LanguageProvider>
-            <AuthProvider>
-              <ProfileProvider>
-                <FavoritesProvider>
-                  <Navbar />
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                </FavoritesProvider>
-              </ProfileProvider>
-            </AuthProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ProfileProvider>
+              <FavoritesProvider>
+                <Navbar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </FavoritesProvider>
+            </ProfileProvider>
+          </AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

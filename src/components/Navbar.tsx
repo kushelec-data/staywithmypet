@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { NavbarSavedLink } from "@/components/navbar/NavbarSavedLink";
@@ -151,7 +150,6 @@ export function Navbar() {
           </ul>
 
           <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5 sm:gap-2">
-            <ThemeToggle className="hidden sm:block" />
             <LanguageSwitcher className="hidden sm:inline-flex" />
 
             {isLoggedIn ? (
@@ -255,7 +253,6 @@ export function Navbar() {
               )}
 
               <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 sm:hidden">
-                <ThemeToggle />
                 <LanguageSwitcher />
               </div>
             </div>
