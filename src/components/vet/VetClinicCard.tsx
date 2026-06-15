@@ -4,6 +4,8 @@ import type { VetClinic } from "@/data/vet-clinics";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   clinicMapUrl,
+  clinicWebsiteUrl,
+  formatClinicOpeningHours,
   formatPhoneDisplay,
   formatPhoneLink,
 } from "@/lib/vet-clinics";
@@ -15,10 +17,12 @@ type VetClinicCardProps = {
 };
 
 export function VetClinicCard({ clinic, compact = false }: VetClinicCardProps) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const labels = t.petPublicDetail;
   const tel = formatPhoneLink(clinic.phone);
   const mapHref = clinicMapUrl(clinic);
+  const websiteHref = clinicWebsiteUrl(clinic.website);
+  const openingHours = formatClinicOpeningHours(clinic.opening_hours, locale);
 
   return (
     <article
@@ -53,10 +57,10 @@ export function VetClinicCard({ clinic, compact = false }: VetClinicCardProps) {
               {clinic.address ? ` · ${clinic.address}` : ""}
             </span>
           </p>
-          {clinic.opening_hours ? (
+          {openingHours ? (
             <p className="mt-1 flex items-center gap-1 text-xs text-muted">
               <Clock className="h-3 w-3 shrink-0" aria-hidden />
-              {clinic.opening_hours}
+              {openingHours}
             </p>
           ) : null}
           {clinic.phone ? (
@@ -75,6 +79,16 @@ export function VetClinicCard({ clinic, compact = false }: VetClinicCardProps) {
             className="btn-interactive inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-teal px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-teal/20 hover:bg-brand-teal-hover"
           >
             {labels.call}
+          </a>
+        ) : null}
+        {websiteHref ? (
+          <a
+            href={websiteHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-interactive inline-flex min-h-[40px] items-center justify-center rounded-full border border-black/10 bg-surface px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm hover:border-brand-teal/30 hover:bg-mint/40"
+          >
+            {labels.website}
           </a>
         ) : null}
         <a

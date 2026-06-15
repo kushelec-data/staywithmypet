@@ -50,7 +50,7 @@ export function VetClinicList({
       <p className={`text-sm text-muted ${className}`}>
         {emptyMessage}{" "}
         <Link href={viewAllHref} className="font-semibold text-brand-teal hover:text-brand-pink">
-          View all clinics
+          {viewAllLabel}
         </Link>
       </p>
     );

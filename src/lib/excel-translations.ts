@@ -45,6 +45,8 @@ const EXCEL_EN_TO_ET: Record<string, string> = {
   Call: "Helista",
   Map: "Kaardil",
   "View all veterinary clinics": "Vaata kõiki loomakliinikuid",
+  "View all vet clinics": "Vaata kõiki loomakliinikuid",
+  Website: "Veebileht",
   "Emergency care & full clinic list": "Erakorralise abi ja kliinikute täielik nimekiri",
 };
 

@@ -61,6 +61,48 @@ export function formatPhoneDisplay(phone: string): string {
   return phone.trim() || "—";
 }
 
+export type ClinicLocale = "en" | "et";
+
+/** Normalize EN day labels; translate day abbreviations for ET display. */
+export function formatClinicOpeningHours(
+  hours: string | undefined,
+  locale: ClinicLocale,
+): string {
+  if (!hours?.trim()) return "";
+  const raw = hours.trim();
+  if (locale === "et") return translateEstonianClinicHours(raw);
+  return normalizeEnglishClinicHours(raw);
+}
+
+function normalizeEnglishClinicHours(hours: string): string {
+  return hours
+    .replace(/Mon\s*-\s*Fri/gi, "Mon–Fri")
+    .replace(/Mon\s*-\s*Sat/gi, "Mon–Sat")
+    .replace(/Mon\s*-\s*Sun/gi, "Mon–Sun");
+}
+
+function translateEstonianClinicHours(hours: string): string {
+  let h = hours;
+  h = h.replace(/Mon\s*[–-]\s*Fri/gi, "E–R");
+  h = h.replace(/Mon\s*[–-]\s*Sat/gi, "E–L");
+  h = h.replace(/Mon\s*[–-]\s*Sun/gi, "E–P");
+  h = h.replace(/\bMon\b/gi, "E");
+  h = h.replace(/\bTue\b/gi, "T");
+  h = h.replace(/\bWed\b/gi, "K");
+  h = h.replace(/\bThur\b/gi, "N");
+  h = h.replace(/\bThu\b/gi, "N");
+  h = h.replace(/\bFri\b/gi, "R");
+  h = h.replace(/\bSat\b/gi, "L");
+  h = h.replace(/\bSun\b/gi, "P");
+  return h;
+}
+
+export function clinicWebsiteUrl(website: string | undefined): string | null {
+  const w = website?.trim();
+  if (!w) return null;
+  return /^https?:\/\//i.test(w) ? w : `https://${w}`;
+}
+
 const ESTONIA_BOUNDS = {
   latMin: 57.5,
   latMax: 59.95,

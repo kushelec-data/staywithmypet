@@ -645,9 +645,10 @@ export const en = {
     vetClinicsDescription:
       "Veterinary clinics in this pet's area — verify hours before visiting.",
     emergencyClinicListLink: "Emergency care & full clinic list",
-    viewAllVetClinics: "View all veterinary clinics",
+    viewAllVetClinics: "View all vet clinics",
     call: "Call",
     map: "Map",
+    website: "Website",
   },
   bookingCalendar: {
     alreadyBooked: "Already booked",

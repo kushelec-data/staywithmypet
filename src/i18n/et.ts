@@ -655,6 +655,7 @@ export const et = {
     viewAllVetClinics: "Vaata kõiki loomakliinikuid",
     call: "Helista",
     map: "Kaardil",
+    website: "Veebileht",
   },
   bookingCalendar: {
     alreadyBooked: "Juba broneeritud",

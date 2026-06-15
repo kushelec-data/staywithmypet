@@ -75,6 +75,7 @@ for (const row of rows) {
   const name = (row[2] ?? "").trim();
   const address = (row[3] ?? "").trim();
   const phone = formatPhone(row[4]);
+  const website = (row[5] ?? "").trim() || undefined;
   const hours = (row[6] ?? "").trim() || undefined;
   if (!name) continue;
   if (!city) city = CITY_OVERRIDES[normKey(name)] ?? "";
@@ -84,6 +85,7 @@ for (const row of rows) {
     city,
     address,
     phone,
+    ...(website ? { website } : {}),
     ...(isEmergency(name, hours) ? { emergency: true } : {}),
     ...(hours ? { opening_hours: hours } : {}),
     ...(coords ? { latitude: coords.lat, longitude: coords.lng } : {}),
@@ -104,6 +106,7 @@ const lines = clinics.map((c) => {
   ];
   if (c.emergency) parts.push("emergency: true");
   if (c.opening_hours) parts.push(`opening_hours: ${esc(c.opening_hours)}`);
+  if (c.website) parts.push(`website: ${esc(c.website)}`);
   if (c.latitude != null) parts.push(`latitude: ${c.latitude}`);
   if (c.longitude != null) parts.push(`longitude: ${c.longitude}`);
   return `  { ${parts.join(", ")} }`;
@@ -117,6 +120,7 @@ export type VetClinic = {
   phone: string;
   emergency?: boolean;
   opening_hours?: string;
+  website?: string;
   latitude?: number;
   longitude?: number;
 };
