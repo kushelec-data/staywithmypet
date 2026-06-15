@@ -41,12 +41,14 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
       en: {
               "title": "What is home pet daycare?",
               "paragraphs": [
+                      "Daycare means your pet stays with a pet friend for several daytime hours. This includes feeding, play, rest, and companionship in a calm household setting.",
                       "It’s a gentle alternative to large daycare centres."
               ]
       },
       et: {
               "title": "Mis on kodune päevahoid?",
               "paragraphs": [
+                      "Päevahoid tähendab, et lemmik veedab mitu tundi päevas loomasõbraga. See hõlmab toitmist, mängu, puhkust ja seltsi rahulikus koduses õhkkonnas.",
                       "See on leebem alternatiiv suurtele päevahoiukeskustele."
               ]
       },
@@ -96,28 +98,25 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
                       "🏠 päev möödub päris kodus, mitte asutuses",
                       "👥 hoius on vähe loomi või ainult üks lemmik korraga",
                       "❤️ tähelepanu on personaalne ja rahulik",
-                      "vähem stressi, rohkem mugavust",
-                      "See loob keskkonna, kus lemmik saab olla tema ise."
+                      "vähem stressi, rohkem mugavust"
               ]
       },
     },
     howItWorks: {
       en: {
               "title": "How daycare works on Stay With My Pet",
-              "paragraphs": [
-                      "Pet friends apply and match"
-              ],
               "bullets": [
-                      "Owners define daytime care needs"
+                      "Owners define daytime care needs",
+                      "Pet friends apply and match",
+                      "Daycare takes place during agreed hours"
               ]
       },
       et: {
               "title": "Kuidas päevahoid Stay With My Petis toimib?",
-              "paragraphs": [
-                      "Loomasõbrad annavad märku, kui see sobib nende ajakavaga"
-              ],
               "bullets": [
-                      "Loomaomanik kirjeldab päevahoiu vajadused ja ootused"
+                      "Loomaomanik kirjeldab päevahoiu vajadused ja ootused",
+                      "Loomasõbrad annavad märku, kui see sobib nende ajakavaga",
+                      "Päevahoid toimub kokkulepitud kellaaegadel"
               ]
       },
     },
@@ -209,20 +208,20 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     howItWorks: {
       en: {
               "title": "How dog walks work on Stay With My Pet",
-              "paragraphs": [
-                      "Pet friends apply based on availability"
-              ],
               "bullets": [
-                      "Owners list walk needs and preferences"
+                      "Owners list walk needs and preferences",
+                      "Pet friends apply based on availability",
+                      "Matches are confirmed before walks begin",
+                      "Walks take place regularly or occasionally"
               ]
       },
       et: {
               "title": "Kuidas koerte jalutamine Stay With My Petis toimib?",
-              "paragraphs": [
-                      "Loomasõbrad annavad märku, kui see sobib nende ajakavaga"
-              ],
               "bullets": [
-                      "Loomaomanik kirjeldab jalutamise vajadused ja eelistused"
+                      "Loomaomanik kirjeldab jalutamise vajadused ja eelistused",
+                      "Loomasõbrad annavad märku, kui see sobib nende ajakavaga",
+                      "Sobivus kinnitatakse enne jalutuste algust",
+                      "Jalutuskäigud toimuvad kas regulaarselt või kokkuleppe alusel"
               ]
       },
     },
@@ -246,13 +245,23 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     whatIsIt: {
       en: {
               "title": "What is overnight pet care?",
+              "paragraphs": [
+                      "Overnight pet care means your pet is looked after continuously for a full 24-hour period. Care can take place either:",
+                      "This includes feeding, walks, playtime, rest, medication (if required), and companionship — just like your pet would receive at home."
+              ],
               "bullets": [
+                      "at the pet friend’s home, or",
                       "at your own home, depending on your pet’s needs and preferences."
               ]
       },
       et: {
               "title": "Mis on ööpäevaringne lemmikuhoid?",
+              "paragraphs": [
+                      "Ööpäevaringne hooldus tähendab, et sinu lemmiku eest hoolitsetakse katkematult 24 tundi. Hooldus võib toimuda:",
+                      "Hoid hõlmab toitmist, jalutuskäike, mängu, puhkust, ravimite andmist (vajadusel) ja eelkõige seltsi ning kohalolekut – nii nagu lemmik on harjunud kodus."
+              ],
               "bullets": [
+                      "loomasõbra kodus või",
                       "sinu enda kodus, olenevalt lemmiku vajadustest ja eelistustest."
               ]
       },
@@ -264,7 +273,8 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
                       "Dogs and cats who don’t do well in kennels or noisy environments",
                       "Pets who need routines, medication, or extra attention",
                       "Owners travelling for weekends, holidays, or work trips",
-                      "Senior pets or anxious animals who need calm, consistent care"
+                      "Senior pets or anxious animals who need calm, consistent care",
+                      "If your pet struggles with loneliness, stress, or unfamiliar surroundings, overnight care is often the most comfortable option."
               ]
       },
       et: {
@@ -273,7 +283,8 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
                       "koertele ja kassidele, kes ei tunne end hästi kennelis või mürarikkas keskkonnas",
                       "lemmikutele, kes vajavad kindlat rutiini, ravimeid või rohkem tähelepanu",
                       "loomaomanikele, kes reisivad nädalavahetuseks, puhkusele või töö tõttu",
-                      "eakatele või ärevatele loomadele, kellele on oluline rahu ja järjepidevus"
+                      "eakatele või ärevatele loomadele, kellele on oluline rahu ja järjepidevus",
+                      "Kui sinu lemmik ei talu üksindust, stressi või võõrast keskkonda, on ööpäevaringne hoid sageli kõige turvalisem ja mugavam valik."
               ]
       },
     },
@@ -310,27 +321,25 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     howItWorks: {
       en: {
               "title": "How overnight care works on Stay With My Pet",
-              "paragraphs": [
+              "bullets": [
                       "Pet owners create a detailed pet profile with routines and needs",
                       "Pet friends browse and apply based on availability and experience",
                       "Both sides choose the best match before confirming care",
                       "Overnight care takes place with clear expectations and trust",
-                      "Every match is based on mutual fit — not speed or volume."
-              ],
-              "bullets": [
+                      "Every match is based on mutual fit — not speed or volume.",
+                      "Unlike transactional pet-sitting services, Stay With My Pet is built on a community model. Pet friends choose care situations that truly fit them, which leads to more motivated, attentive, and caring experiences.",
                       "Your pet isn’t “one job among many” — they’re the focus."
               ]
       },
       et: {
               "title": "Kuidas ööpäevaringne hoid Stay With My Petis toimib?",
-              "paragraphs": [
+              "bullets": [
                       "Loomaomanik loob põhjaliku lemmiku profiili koos rutiinide ja vajadustega",
                       "Loomasõbrad annavad märku, kui see hoid neile sobib",
                       "Mõlemad pooled valivad endale sobivaima vaste enne kinnitamist",
                       "Hoid toimub selgete ootuste ja vastastikuse usalduse alusel",
-                      "Iga sobivus sünnib teadlikust valikust – mitte kiirusest ega mahust."
-              ],
-              "bullets": [
+                      "Iga sobivus sünnib teadlikust valikust – mitte kiirusest ega mahust.",
+                      "Stay With My Pet ei ole tehinguline hoidjateenus. Meie platvorm põhineb kogukonnal. Loomasõbrad valivad hooldused, mis neile päriselt sobivad – see tähendab rohkem pühendumist, hoolivust ja tähelepanu.",
                       "Sinu lemmik ei ole „üks töö teiste seas“ – ta on fookuses."
               ]
       },
@@ -355,6 +364,9 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     whatIsIt: {
       en: {
               "title": "What are pet home visits?",
+              "paragraphs": [
+                      "A pet friend visits your home to:"
+              ],
               "bullets": [
                       "Feed your pet",
                       "Refresh water",
@@ -365,6 +377,9 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
       },
       et: {
               "title": "Mis on kodukülastused?",
+              "paragraphs": [
+                      "Kodukülastuse puhul tuleb loomasõber sinu koju, et:"
+              ],
               "bullets": [
                       "toita sinu lemmikut",
                       "vahetada või lisada värsket vett",
@@ -411,28 +426,25 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
                       "Erinevalt kiirustavatest hoidjatest või asutustest:",
                       "🏠 lemmik jääb oma koju",
                       "🌿 hoid on rahulik ja personaalne",
-                      "🚗 puudub transport ja ümberharjumise stress",
-                      "See tähendab vähem ärevust ja rohkem kindlustunnet nii lemmikule kui ka loomaomanikule."
+                      "🚗 puudub transport ja ümberharjumise stress"
               ]
       },
     },
     howItWorks: {
       en: {
               "title": "How home visits work",
-              "paragraphs": [
-                      "Pet friends apply"
-              ],
               "bullets": [
-                      "Owners list visit needs"
+                      "Owners list visit needs",
+                      "Pet friends apply",
+                      "Visits take place as scheduled"
               ]
       },
       et: {
               "title": "Kuidas kodukülastused Stay With My Petis toimivad?",
-              "paragraphs": [
-                      "Loomasõbrad annavad märku, kui see sobib nende ajakavaga"
-              ],
               "bullets": [
-                      "Loomaomanik kirjeldab kodukülastuse vajadused"
+                      "Loomaomanik kirjeldab kodukülastuse vajadused",
+                      "Loomasõbrad annavad märku, kui see sobib nende ajakavaga",
+                      "Külastused toimuvad kokkulepitud aegadel"
               ]
       },
     },
@@ -455,10 +467,16 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     cardSummary: { en: "Feeding-only visits provide essential care without unnecessary extras.", et: "Toitmiskülastused sobivad olukordadesse, kus sinu lemmik on iseseisev, kuid vajab kindlat söögiaega ja värsket vett." },
     whatIsIt: {
       en: {
-              "title": "What are feeding-only visits?"
+              "title": "What are feeding-only visits?",
+              "paragraphs": [
+                      "A pet friend visits your home to feed your pet and ensure fresh water is available — nothing more, nothing less."
+              ]
       },
       et: {
-              "title": "Mis on toitmiskülastused?"
+              "title": "Mis on toitmiskülastused?",
+              "paragraphs": [
+                      "Toitmiskülastuse puhul tuleb loomasõber sinu koju, et anda lemmikule toit vastavalt juhistele, veenduda, et värske vesi on alati olemas. Ei midagi enamat ega vähemat – täpselt see, mida lemmik sel hetkel vajab."
+              ]
       },
     },
     whoIsItFor: {
@@ -468,8 +486,7 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
                       "Cats",
                       "Fish and reptiles",
                       "Rodents and birds",
-                      "Short absences",
-                      "Eriti hästi sobib see lemmikutele, kes tunnevad end kodus iseseisvalt ja ei vaja pidevat seltsi."
+                      "Short absences"
               ]
       },
       et: {
@@ -478,8 +495,7 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
                       "kassidele",
                       "kaladele ja roomajatele",
                       "närilistele ja lindudele",
-                      "lühemate äraolekute puhul",
-                      "Eriti hästi sobib see lemmikutele, kes tunnevad end kodus iseseisvalt ja ei vaja pidevat seltsi."
+                      "lühemate äraolekute puhul"
               ]
       },
     },
@@ -504,26 +520,24 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     howItWorks: {
       en: {
               "title": "How feeding visits work",
-              "paragraphs": [
-                      "Pet friends confirm availability"
-              ],
               "bullets": [
-                      "Owners set feeding instructions"
+                      "Owners set feeding instructions",
+                      "Pet friends confirm availability",
+                      "Visits take place as agreed"
               ]
       },
       et: {
               "title": "Kuidas toitmiskülastused toimivad?",
-              "paragraphs": [
-                      "Loomasõber kinnitab, et aeg sobib"
-              ],
               "bullets": [
-                      "Loomaomanik kirjeldab toitmisjuhised ja ootused"
+                      "Loomaomanik kirjeldab toitmisjuhised ja ootused",
+                      "Loomasõber kinnitab, et aeg sobib",
+                      "Külastused toimuvad kokkulepitud aegadel"
               ]
       },
     },
     cta: {
       title: { en: "Need simple feeding support?", et: "Vajad vaid lihtsat toitmisabi?" },
-      description: { en: "Explore play visits (Leads to “Play visits” page)", et: "👉 Tutvu mängu- ja seltsikülastustega" },
+      description: { en: "", et: "" },
       primaryLabel: { en: "Find pets that need feeding visits", et: "Leia lemmikuid, kes vajavad toitmiskülastusi sinu lähedal" },
       secondaryLabel: { en: "Explore play visits", et: "Tutvu mängu- ja seltsikülastustega" },
       secondaryHref: "/care/play-visits",
@@ -541,6 +555,9 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     whatIsIt: {
       en: {
               "title": "What are play visits?",
+              "paragraphs": [
+                      "A pet friend spends time:"
+              ],
               "bullets": [
                       "Playing",
                       "Cuddling",
@@ -550,6 +567,9 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
       },
       et: {
               "title": "Mis on mängukülastused?",
+              "paragraphs": [
+                      "Mängukülastuse ajal veedab loomasõber lemmikuga aega, mis hõlmab:"
+              ],
               "bullets": [
                       "mängimist",
                       "hellust ja lähedust",
@@ -607,20 +627,18 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     howItWorks: {
       en: {
               "title": "How play visits work",
-              "paragraphs": [
-                      "Pet friends match and visit"
-              ],
               "bullets": [
-                      "Owners describe interaction needs"
+                      "Owners describe interaction needs",
+                      "Pet friends match and visit",
+                      "Visits focus on engagement"
               ]
       },
       et: {
               "title": "Kuidas mängu- ja seltsikülastused Stay With My Petis toimivad?",
-              "paragraphs": [
-                      "Loomasõber ja lemmik leitakse vastastikuse sobivuse alusel"
-              ],
               "bullets": [
-                      "Loomaomanik kirjeldab, millist suhtlust lemmik vajab"
+                      "Loomaomanik kirjeldab, millist suhtlust lemmik vajab",
+                      "Loomasõber ja lemmik leitakse vastastikuse sobivuse alusel",
+                      "Külastused keskenduvad mängule, suhtlusele ja kohalolule"
               ]
       },
     },

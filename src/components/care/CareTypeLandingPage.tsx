@@ -4,10 +4,11 @@ import { PageCta } from "@/components/layout/PageCta";
 import { PageHero } from "@/components/layout/PageHero";
 import { PageMain } from "@/components/layout/PageMain";
 import { useLanguage } from "@/context/LanguageContext";
-import type { CareTypeContent, CareTypeSection } from "@/lib/care-types";
+import { getLocalizedCareType, type CareTypeContent, type CareTypeSection } from "@/lib/care-types";
 import { CONTENT_CONTAINER } from "@/lib/layout";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import Link from "next/link";
+import { useMemo } from "react";
 
 const SECTION_PAD = "py-10 lg:py-12";
 
@@ -40,19 +41,25 @@ type CareTypeLandingPageProps = {
 };
 
 export function CareTypeLandingPage({ care }: CareTypeLandingPageProps) {
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
+  const localized = useMemo(() => getLocalizedCareType(care, locale), [care, locale]);
   const learnMore =
     locale === "et" ? "Tagasi kõigi teenuste juurde" : "Back to all care types";
 
   return (
     <>
-      <PageHero variant="mint" badge="For Pet Parents" title={care.heroTitle} description={care.intro} />
+      <PageHero
+        variant="mint"
+        badge={t.services.eyebrow}
+        title={localized.heroTitle}
+        description={localized.intro}
+      />
 
       <PageMain>
-        <CareSectionBlock section={care.whatIsIt} />
-        <CareSectionBlock section={care.whoIsItFor} />
-        <CareSectionBlock section={care.whyChoose} />
-        <CareSectionBlock section={care.howItWorks} />
+        <CareSectionBlock section={localized.whatIsIt} />
+        <CareSectionBlock section={localized.whoIsItFor} />
+        <CareSectionBlock section={localized.whyChoose} />
+        <CareSectionBlock section={localized.howItWorks} />
 
         <section className="pb-8">
           <div className={CONTENT_CONTAINER}>
@@ -66,14 +73,14 @@ export function CareTypeLandingPage({ care }: CareTypeLandingPageProps) {
       </PageMain>
 
       <PageCta
-        title={care.cta.title}
-        description={care.cta.description}
-        primaryLabel={care.cta.primaryLabel}
-        primaryHref={care.findCareHref}
-        secondaryLabel={care.cta.secondaryLabel}
-        secondaryHref={care.cta.secondaryHref}
-        imageSrc={care.cta.imageSrc}
-        imageAlt={care.cta.imageAlt}
+        title={localized.cta.title}
+        description={localized.cta.description}
+        primaryLabel={localized.cta.primaryLabel}
+        primaryHref={localized.findCareHref}
+        secondaryLabel={localized.cta.secondaryLabel}
+        secondaryHref={localized.cta.secondaryHref}
+        imageSrc={localized.cta.imageSrc}
+        imageAlt={localized.cta.imageAlt}
       />
     </>
   );

@@ -141,10 +141,21 @@ function isEstonian(text) {
   return /\b(kuidas|lemmik|looma|hoid|jalut|päev|öö|kodu|sobib|vajab)\b/i.test(t) && !/\b(the|and|your|with|what|who|why|how)\b/i.test(t);
 }
 
+function isClearlyEnglish(text) {
+  const t = (text ?? "").trim();
+  if (!t) return false;
+  if (/^(Owners|Pet friends|Daycare|Find|Explore|What|Who|Why|How|The |Your |With |Unlike |Because |Ready |Need |See |Browse |Playing|Cuddling|Engaging|Feed |Refresh |Clean |Spend |Young |Social |Pets |Dogs |Cats |Fish |Working|Senior|Overnight|Home |Dog |It'|It\u2019)/i.test(t)) {
+    return true;
+  }
+  return /\b(the|and|your|our|with|for|who|care|pet|friend|means|visits|walks)\b/i.test(t);
+}
+
 function pickPair(en, et) {
-  const enT = (en ?? "").trim();
+  let enT = (en ?? "").trim();
   let etT = (et ?? "").trim();
-  if (!etT && isEstonian(enT)) etT = enT;
+  if (!etT && enT && !isClearlyEnglish(enT)) {
+    return { en: "", et: enT };
+  }
   return { en: enT, et: etT };
 }
 
@@ -293,6 +304,7 @@ function collectRowsUntil(rows, startIdx, kind) {
       continue;
     }
     if (/visits your home to:|spends time:/i.test(row.en)) {
+      paragraphs.push(pickPair(row.en, row.et));
       i++;
       while (!stop() && (looksLikeBullet(rows[i].en) || rows[i].en.length < 100)) {
         bullets.push(pickPair(rows[i].en, rows[i].et));
@@ -382,9 +394,11 @@ function parseCta(rows) {
       primary = { en: cleanCtaLabel(row.en), et: cleanCtaLabel(row.et) };
       continue;
     }
-    if (/^Find |^See pets|^Browse available|^Need simple|^Explore play/i.test(row.en)) {
+    if (/^Find |^See pets|^Browse available|^Need simple/i.test(row.en)) {
       if (!primary.en) primary = pickPair(row.en, row.et);
-      else if (!description.en) description = pickPair(row.en, row.et);
+      continue;
+    }
+    if (/^Explore play|^Explore other|^Compare care|^Learn how|^View daycare/i.test(row.en)) {
       continue;
     }
     if (row.et && /^👉/.test(row.et) && !primary.et) {
@@ -455,8 +469,7 @@ function buildLocaleCopy(rows, slug) {
 }
 
 function localizePair(pair, locale) {
-  if (locale === "et") return pair.et || (isEstonian(pair.en) ? pair.en : "");
-  if (isEstonian(pair.en) && !pair.et) return "";
+  if (locale === "et") return pair.et || "";
   return pair.en || "";
 }
 

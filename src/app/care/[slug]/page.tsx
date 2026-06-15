@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const care = getCareTypeBySlug(slug);
   if (!care) return { title: "Care" };
   return {
-    title: care.meta.title,
-    description: care.meta.description,
+    title: care.localeCopy.meta.title.en,
+    description: care.localeCopy.meta.description.en,
   };
 }
 
