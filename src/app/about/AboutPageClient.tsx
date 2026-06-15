@@ -5,6 +5,7 @@ import { PageHero } from "@/components/layout/PageHero";
 import { AppImage } from "@/components/ui/AppImage";
 import { CtaBanner } from "@/components/ui/CtaBanner";
 import { useLanguage } from "@/context/LanguageContext";
+import { getTranslations } from "@/i18n/translations";
 import { IMAGES } from "@/lib/images";
 import { CONTENT_CONTAINER } from "@/lib/layout";
 import { PUBLIC_CARD, PUBLIC_CARD_MINT, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
@@ -12,8 +13,9 @@ import { PUBLIC_CARD, PUBLIC_CARD_MINT, PUBLIC_SECTION_TITLE } from "@/lib/publi
 const SECTION_PAD = "py-10 lg:py-12";
 
 export function AboutPageClient() {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const a = t.about;
+  const founders = getTranslations(locale).about.founders;
 
   return (
     <>
@@ -86,8 +88,12 @@ export function AboutPageClient() {
             <p className="mx-auto mt-2 max-w-2xl text-sm text-muted sm:text-base">{a.teamIntro}</p>
           </div>
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-            {a.founders.map((founder) => (
-              <FounderCard key={founder.name} coFounderLabel={a.coFounderBadge} {...founder} />
+            {founders.map((founder) => (
+              <FounderCard
+                key={`${locale}-${founder.name}`}
+                coFounderLabel={a.coFounderBadge}
+                {...founder}
+              />
             ))}
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-muted sm:text-base">

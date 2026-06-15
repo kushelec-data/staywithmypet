@@ -1363,13 +1363,13 @@ export const et = {
       {
         name: "Gerly Kullamaa",
         role: "kaasasutaja ja CEO",
-        bio: "Olen pühendunud koeraomanik ja turundusvaldkonna professionaal enam kui 10-aastase kogemusega tähendusrikaste brändide loomisel. Minu isiklik teekond, kus tasakaalustan lemmiklooma pidamist, allergiaid ja kiiret elustiili, inspireeris mind looma lahendust, mis võimaldab jagada loomade rõõmu ilma liigse stressita. Usun, et ühendades hoolivad ja vastutustundlikud inimesed, saame muuta elu paremaks nii loomadele kui ka inimestele.",
+        bio: "",
         image: "/images/founders/gerly-kullamaa.jpg",
       },
       {
         name: "Kush Chadha",
         role: "kaasasutaja ja COO",
-        bio: "Minu taust on teaduse ja tehnoloogia valdkonnas ning mind inspireerib innovatsiooni kasutamine päriseluliste probleemide lahendamisel. Olen eluaegne loomaarmastaja ning mõistan nii lemmikloomade hoolduse emotsionaalset kui praktilist poolt. Minu eesmärk on luua turvaline ja usaldusväärne platvorm, mis aitab inimestel jagada armastust ja vastutust nutikal ja tähenduslikul viisil.",
+        bio: "",
         image: "/images/founders/kush-chadha.jpg",
       },
     ],
