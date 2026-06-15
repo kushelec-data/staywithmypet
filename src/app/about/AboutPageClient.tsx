@@ -5,7 +5,6 @@ import { PageHero } from "@/components/layout/PageHero";
 import { AppImage } from "@/components/ui/AppImage";
 import { CtaBanner } from "@/components/ui/CtaBanner";
 import { useLanguage } from "@/context/LanguageContext";
-import { founders } from "@/lib/founders";
 import { IMAGES } from "@/lib/images";
 import { CONTENT_CONTAINER } from "@/lib/layout";
 import { PUBLIC_CARD, PUBLIC_CARD_MINT, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
@@ -87,7 +86,7 @@ export function AboutPageClient() {
             <p className="mx-auto mt-2 max-w-2xl text-sm text-muted sm:text-base">{a.teamIntro}</p>
           </div>
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-            {founders.map((founder) => (
+            {a.founders.map((founder) => (
               <FounderCard key={founder.name} coFounderLabel={a.coFounderBadge} {...founder} />
             ))}
           </div>
@@ -136,7 +135,7 @@ export function AboutPageClient() {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground">{item.title}</p>
                     <p className="mt-1 text-sm leading-relaxed text-muted">{item.description}</p>
-                    {"footnote" in item && item.footnote ? (
+                    {"footnote" in item && typeof item.footnote === "string" && item.footnote ? (
                       <p className="mt-1 text-xs italic text-muted">{item.footnote}</p>
                     ) : null}
                   </div>

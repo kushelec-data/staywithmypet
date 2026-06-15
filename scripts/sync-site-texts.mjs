@@ -677,56 +677,125 @@ function parseOpeningPage(rows) {
   return { eyebrowEn, eyebrowEt, heroTitleEn, heroTitleEt, heroSubtitleEn, heroSubtitleEt, trust };
 }
 
-function parseAbout(rows) {
-  const maxR = Math.max(...Object.keys(rows).map(Number), 0);
-  const sections = { titleEn: "", titleEt: null, subtitleEn: "", subtitleEt: null, mission: [], story: [] };
-  const skipHeadings = new Set([
-    "Our Mission",
-    "Our Story",
-    "Our Team",
-    "Our Core Values",
-    "Why Choose Stay With My Pet",
-    "Why Choose StayWithMyPet",
-    "Here's why our users trust us:",
-    "Here’s why our users trust us:",
-  ]);
-
-  for (let r = 1; r <= maxR; r++) {
-    const { en, et } = pairRowTexts(rows, r);
-    if (r === 2) {
-      sections.titleEn = en || sections.titleEn;
-      sections.titleEt = et || sections.titleEt;
-      continue;
-    }
-    if (r === 3) {
-      sections.subtitleEn = en || sections.subtitleEn;
-      sections.subtitleEt = et || sections.subtitleEt;
-      continue;
-    }
-    if (!en || shouldSkip(en) || skipHeadings.has(en)) continue;
-    if (classifyLanguage(en) !== "en") continue;
-
-    let pairedEt =
-      et ||
-      findEtInSheet(rows, maxR, en) ||
-      ABOUT_ET_PHRASES[en] ||
-      ABOUT_ET_PHRASES[en.replace(/^\d+\.\s*/, "")] ||
-      null;
-    if (en.startsWith(CORE_VALUES_EN_PREFIX)) {
-      pairedEt = pairedEt || CORE_VALUES_ET;
-    }
-
-    if (r < 12) sections.mission.push({ en, et: pairedEt });
-    else if (r >= 14) sections.story.push({ en, et: pairedEt });
-  }
-
-  const coreIdx = sections.story.findIndex((p) => p.en.startsWith(CORE_VALUES_EN_PREFIX));
-  if (coreIdx >= 0 && !sections.story[coreIdx].et) {
-    sections.story[coreIdx].et = CORE_VALUES_ET;
-  }
-
-  return sections;
+function parseFounderRoleLine(text) {
+  const t = (text ?? "").trim();
+  if (!t) return "";
+  const parts = t.split(/\s*[–—]\s*/);
+  return parts.length > 1 ? parts.slice(1).join(" – ").trim() : t;
 }
+
+const ABOUT_INSURANCE_RE =
+  /extra peace of mind|insurance\*?\s+and\s+24|^\*for cats and dogs|kindlustus\*|24-tunnine veterinaarne|lisakindlus|praegu võtame maha/i;
+
+function isAboutInsuranceText(text) {
+  return ABOUT_INSURANCE_RE.test((text ?? "").trim());
+}
+
+function parseAbout(rows) {
+  const pair = (r) => {
+    const { en, et } = pairRowTexts(rows, r);
+    return { en: en || "", et: et || null };
+  };
+
+  const badgeEn = getCell(rows, 2, 2) || "";
+  const badgeEt = getCell(rows, 2, 4) || null;
+  const titleEn = getCell(rows, 3, 2) || "";
+  const titleEt = getCell(rows, 3, 4) || null;
+  const subtitleEn = titleEn;
+  const subtitleEt = titleEt;
+
+  const mission = [6, 8, 10].map(pair).filter((p) => p.en);
+
+  const story = [];
+  for (let r = 14; r <= 30; r++) {
+    const p = pair(r);
+    if (!p.en) continue;
+    if (/^Our (Story|Team)$/i.test(p.en)) break;
+    if (isAboutInsuranceText(p.en) || isAboutInsuranceText(p.et)) continue;
+    story.push(p);
+  }
+
+  const teamIntro = pair(27);
+  const teamClosing = pair(37);
+
+  const founderRows = [
+    { name: "Gerly Kullamaa", roleR: 29, bioR: 31 },
+    { name: "Kush Chadha", roleR: 33, bioR: 35 },
+  ];
+  const founders = founderRows.map(({ name, roleR, bioR }) => {
+    const role = pair(roleR);
+    const bio = pair(bioR);
+    return {
+      name,
+      roleEn: parseFounderRoleLine(role.en) || role.en,
+      roleEt: parseFounderRoleLine(role.et) || role.et,
+      bioEn: bio.en,
+      bioEt: bio.et,
+    };
+  });
+
+  const values = [];
+  for (let r = 41; r <= 55; r++) {
+    const titleRow = pair(r);
+    if (!/^\d+\.\s/.test(titleRow.en)) continue;
+    const descRow = pair(r + 1);
+    values.push({
+      titleEn: titleRow.en.replace(/^\d+\.\s*/, "").trim(),
+      titleEt: titleRow.et?.replace(/^\d+\.\s*/, "").trim() || null,
+      descriptionEn: descRow.en,
+      descriptionEt: descRow.et,
+    });
+    r += 1;
+  }
+
+  const whyChooseItems = [];
+  for (const r of [65, 67, 69, 71]) {
+    const row = pair(r);
+    if (!row.en || isAboutInsuranceText(row.en)) continue;
+    let titleEn = row.en;
+    let descriptionEn = "";
+    const colon = row.en.indexOf(":");
+    if (colon > 0) {
+      titleEn = row.en.slice(0, colon).trim();
+      descriptionEn = row.en.slice(colon + 1).trim();
+    }
+    const descRow = pair(r + 1);
+    if (isAboutInsuranceText(descRow.en) || isAboutInsuranceText(descRow.et)) continue;
+    const descriptionEt =
+      (descRow.et && isClearlyEstonian(descRow.et) ? descRow.et : null) ||
+      (descRow.en && isClearlyEstonian(descRow.en) ? descRow.en : null);
+    whyChooseItems.push({
+      titleEn,
+      titleEt: row.et || null,
+      descriptionEn,
+      descriptionEt,
+    });
+  }
+
+  const whyChooseClosing = pair(76);
+
+  return {
+    badgeEn,
+    badgeEt,
+    titleEn,
+    titleEt,
+    subtitleEn,
+    subtitleEt,
+    mission,
+    story,
+    teamIntro,
+    teamClosing,
+    founders,
+    values,
+    whyChooseItems,
+    whyChooseClosing,
+  };
+}
+
+const FOUNDER_IMAGES = {
+  "Gerly Kullamaa": "/images/founders/gerly-kullamaa.jpg",
+  "Kush Chadha": "/images/founders/kush-chadha.jpg",
+};
 
 function parseContact(rows) {
   const labels = {};
@@ -966,13 +1035,27 @@ const siteEnPartial = {
     items: faqItemsEn,
   },
   about: {
-    badge: "About us",
+    badge: about.badgeEn || "About us",
     title: about.subtitleEn || about.titleEn,
     subtitle: about.subtitleEn || "",
     missionTitle: "Our Mission",
     missionParagraphs: about.mission.map((p) => p.en),
     storyTitle: "Our Story",
     storyParagraphs: about.story.map((p) => p.en),
+    teamTitle: "Our Team",
+    teamIntro: about.teamIntro.en,
+    teamClosing: about.teamClosing.en,
+    founders: about.founders.map((f) => ({
+      name: f.name,
+      role: f.roleEn,
+      bio: f.bioEn,
+      image: FOUNDER_IMAGES[f.name],
+    })),
+    whyChooseItems: about.whyChooseItems.map((item) => ({
+      title: item.titleEn,
+      description: item.descriptionEn,
+    })),
+    whyChooseClosing: about.whyChooseClosing.en,
   },
   howItWorksPage: {
     title: howItWorks.titleEn,
@@ -1045,13 +1128,31 @@ const siteEtPartial = {
     items: faqItemsEt,
   },
   about: {
-    badge: track("about.badge", "About us", about.titleEt || ABOUT_ET_PHRASES["About us"]),
+    badge: track("about.badge", about.badgeEn || "About us", about.badgeEt || ABOUT_ET_PHRASES["About us"]),
     title: track("about.title", about.subtitleEn, about.subtitleEt),
     subtitle: track("about.subtitle", about.subtitleEn, about.subtitleEt),
     missionTitle: track("about.missionTitle", "Our Mission", "Meie missioon"),
     missionParagraphs: about.mission.map((p, i) => track(`about.mission[${i}]`, p.en, p.et)),
     storyTitle: track("about.storyTitle", "Our Story", "Meie lugu"),
     storyParagraphs: about.story.map((p, i) => track(`about.story[${i}]`, p.en, p.et)),
+    teamTitle: track("about.teamTitle", "Our Team", "Meie meeskond"),
+    teamIntro: track("about.teamIntro", about.teamIntro.en, about.teamIntro.et),
+    teamClosing: track("about.teamClosing", about.teamClosing.en, about.teamClosing.et),
+    founders: about.founders.map((f, i) => ({
+      name: f.name,
+      role: track(`about.founders[${i}].role`, f.roleEn, f.roleEt),
+      bio: track(`about.founders[${i}].bio`, f.bioEn, f.bioEt),
+      image: FOUNDER_IMAGES[f.name],
+    })),
+    whyChooseItems: about.whyChooseItems.map((item, i) => ({
+      title: track(`about.whyChoose[${i}].title`, item.titleEn, item.titleEt),
+      description: track(`about.whyChoose[${i}].description`, item.descriptionEn, item.descriptionEt),
+    })),
+    whyChooseClosing: track(
+      "about.whyChooseClosing",
+      about.whyChooseClosing.en,
+      about.whyChooseClosing.et,
+    ),
   },
   howItWorksPage: {
     title: track("howItWorksPage.title", howItWorks.titleEn, howItWorks.titleEt),

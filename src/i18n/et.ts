@@ -1359,6 +1359,20 @@ export const et = {
     teamClosing:
       "Oleme väike meeskond suure südamega — ühendame empaatiat, loovust ja tehnoloogiat, et lemmikloomade jagamine oleks usaldusväärne ja rõõmus.",
     coFounderBadge: "Kaasasutaja",
+    founders: [
+      {
+        name: "Gerly Kullamaa",
+        role: "kaasasutaja ja CEO",
+        bio: "Olen pühendunud koeraomanik ja turundusvaldkonna professionaal enam kui 10-aastase kogemusega tähendusrikaste brändide loomisel. Minu isiklik teekond, kus tasakaalustan lemmiklooma pidamist, allergiaid ja kiiret elustiili, inspireeris mind looma lahendust, mis võimaldab jagada loomade rõõmu ilma liigse stressita. Usun, et ühendades hoolivad ja vastutustundlikud inimesed, saame muuta elu paremaks nii loomadele kui ka inimestele.",
+        image: "/images/founders/gerly-kullamaa.jpg",
+      },
+      {
+        name: "Kush Chadha",
+        role: "kaasasutaja ja COO",
+        bio: "Minu taust on teaduse ja tehnoloogia valdkonnas ning mind inspireerib innovatsiooni kasutamine päriseluliste probleemide lahendamisel. Olen eluaegne loomaarmastaja ning mõistan nii lemmikloomade hoolduse emotsionaalset kui praktilist poolt. Minu eesmärk on luua turvaline ja usaldusväärne platvorm, mis aitab inimestel jagada armastust ja vastutust nutikal ja tähenduslikul viisil.",
+        image: "/images/founders/kush-chadha.jpg",
+      },
+    ],
     valuesTitle: "Meie väärtused",
     values: [
       {
@@ -1409,11 +1423,6 @@ export const et = {
       {
         title: "Kõik lemmikud on teretulnud",
         description: "Koerad, kassid, küülikud, linnud — iga loom väärib armastust.",
-      },
-      {
-        title: "Lisarahu",
-        description: "Kindlustus* ja ööpäevaringne veterinaarabi igal broneeringul.",
-        footnote: "*kassidele ja koertele",
       },
     ],
     whyChooseClosing:

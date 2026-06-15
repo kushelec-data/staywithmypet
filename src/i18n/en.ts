@@ -1351,6 +1351,20 @@ export const en = {
     teamClosing:
       "We're a small team with a big heart, combining empathy, creativity, and technology to make pet-sharing a trusted and joyful experience for everyone.",
     coFounderBadge: "Co-Founder",
+    founders: [
+      {
+        name: "Gerly Kullamaa",
+        role: "Co-Founder & CEO",
+        bio: "I'm a devoted dog owner and marketing professional with over 10 years of experience in building meaningful brands. Inspired by my own journey of balancing pet ownership with allergies and a busy lifestyle, I wanted to create a way for people to share the joy of pets without the stress. I believe that by connecting caring, responsible people, we can make life better for both pets and humans.",
+        image: "/images/founders/gerly-kullamaa.jpg",
+      },
+      {
+        name: "Kush Chadha",
+        role: "Co-Founder & COO",
+        bio: "With a background in science and technology, I'm passionate about using innovation to solve real-world problems. As a lifelong animal lover, I understand both the emotional and practical sides of pet care. My goal is to build a safe, reliable platform that helps people share love and responsibility — in a smart, meaningful way.",
+        image: "/images/founders/kush-chadha.jpg",
+      },
+    ],
     valuesTitle: "Our Core Values",
     values: [
       {
@@ -1406,11 +1420,6 @@ export const en = {
       {
         title: "All pets welcome",
         description: "Dogs, cats, rabbits, birds — every animal deserves love.",
-      },
-      {
-        title: "Extra peace of mind",
-        description: "Insurance* and 24-hour vet support included with every booking.",
-        footnote: "*for cats and dogs",
       },
     ],
     whyChooseClosing:
