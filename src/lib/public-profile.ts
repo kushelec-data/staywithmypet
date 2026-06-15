@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { computeProfileCompleteness } from "@/lib/profile-completeness";
 import { formatNearbyLocation } from "@/lib/location-public";
 import { resolveProfilePublicLocation } from "@/lib/profile-location";
@@ -22,10 +22,48 @@ import { calculateTrustScore } from "@/lib/trust-score";
 import { countReviewsAsReviewee } from "@/lib/bookings-stats";
 
 /** No raw phone numbers on public fetch. */
-const PUBLIC_PROFILE_SELECT = PUBLIC_PROFILE_COLUMNS;
+const PUBLIC_PROFILE_SELECT_TIERS = [
+  PUBLIC_PROFILE_COLUMNS,
+  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude, trust_score, phone_verified",
+  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude",
+] as const;
 
-const PUBLIC_PROFILE_SELECT_FALLBACK =
-  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude";
+async function queryPublicProfileRow(
+  supabase: SupabaseClient,
+  profileId: string,
+): Promise<ProfileDbRow | null> {
+  let lastError: PostgrestError | null = null;
+
+  for (const select of PUBLIC_PROFILE_SELECT_TIERS) {
+    const result = await supabase
+      .from("profiles")
+      .select(select as string)
+      .eq("id", profileId)
+      .maybeSingle();
+
+    if (!result.error) {
+      if (process.env.NODE_ENV === "development") {
+        console.info("[public-profile] profiles", { tier: select.slice(0, 48) });
+      }
+      return result.data as unknown as ProfileDbRow | null;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[public-profile] profiles query failed", result.error.message);
+    }
+
+    if (!/column/i.test(result.error.message)) {
+      throw new Error(formatSupabaseError(result.error));
+    }
+
+    lastError = result.error;
+  }
+
+  if (lastError) {
+    throw new Error(formatSupabaseError(lastError));
+  }
+  throw new Error("Could not load profile.");
+}
 
 export type PublicProfileView = {
   id: string;
@@ -216,28 +254,7 @@ export async function fetchPublicProfile(
   supabase: SupabaseClient,
   profileId: string,
 ): Promise<PublicProfileView | null> {
-  const full = await supabase
-    .from("profiles")
-    .select(PUBLIC_PROFILE_SELECT)
-    .eq("id", profileId)
-    .maybeSingle();
-
-  let data: ProfileDbRow | null = null;
-
-  if (full.error && /column/i.test(full.error.message)) {
-    const fb = await supabase
-      .from("profiles")
-      .select(PUBLIC_PROFILE_SELECT_FALLBACK)
-      .eq("id", profileId)
-      .maybeSingle();
-    if (fb.error) throw new Error(formatSupabaseError(fb.error));
-    data = fb.data as unknown as ProfileDbRow | null;
-  } else if (full.error) {
-    throw new Error(formatSupabaseError(full.error));
-  } else {
-    data = full.data as unknown as ProfileDbRow | null;
-  }
-
+  const data = await queryPublicProfileRow(supabase, profileId);
   if (!data) return null;
 
   const pets = await fetchPublicPetsForOwner(supabase, profileId);
