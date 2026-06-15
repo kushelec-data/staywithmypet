@@ -41,55 +41,55 @@ export const siteEtPartial = {
         answer: "Stay With My Pet on kogukonnapõhine lemmikloomade jagamise platvorm.\n\nLoomaomanikud – inimesed, kes vajavad aeg-ajalt abi oma lemmiku hooldamisel või seltsiks olemisel\n\nLoomasõbrad – vastutustundlikud loomaarmastajad, kes soovivad ajutiselt loomadega aega veeta\n\nMeie missioon on lihtne:\n\nRohkem armastust. Vähem üksindust. Nii lemmikloomadele kui inimestele.",
       },
       {
-        question: "2. Kuidas Stay With My Pet töötab?",
+        question: "Kuidas Stay With My Pet töötab?",
         answer: "Platvorm teeb lemmikloomade jagamise lihtsaks, paindlikuks ja läbipaistvaks:\n\nLoomaomanik loob enda ja oma lemmiklooma kohta profiili, kirjeldades looma rutiini, vajadusi ja iseloomu\n\nLoomasõber loob profiili, kus jagab oma kogemust, elustiili ja saadavust\n\nKasutajad saavad profiile vabalt sirvida\n\nTasulise liikmelisusega saab saata broneerimispäringuid, suhelda ja hoiukokkuleppeid kinnitada\n\nKõik hoiuga seotud detailid lepivad loomaomanik ja loomasõber omavahel otse kokku",
       },
       {
-        question: "3. Kes saavad Stay With My Pet’iga liituda?",
+        question: "Kes saavad Stay With My Pet’iga liituda?",
         answer: "Liituda saavad kõik vähemalt 18-aastased loomaarmastajad, kes hoolivad loomade heaolust.\n\nMeie kogukonda kuuluvad:\n\nLoomaomanikud, kes vajavad usaldusväärset abi reisimise või kiirete perioodide ajal\n\nPered ja tudengid, kes soovivad loomade seltsi\n\nInimesed, kes ei saa elustiili, allergiate või rahaliste põhjuste tõttu looma püsivalt pidada",
       },
       {
-        question: "4. Kas Stay With My Pet on tasuta?",
+        question: "Kas Stay With My Pet on tasuta?",
         answer: "Jah – osaliselt.\n\nTasuta saad:\n\nLuua loomaomaniku või loomasõbra profiili\n\nLisada oma lemmiklooma või registreeruda loomasõbrana\n\nSirvida lemmikloomade ja kasutajate profiile\n\nTasuline liikmelisus on vajalik, et:\n\nSaata ja vastu võtta sõnumeid\n\nJätta ja saada tagasisidet pärast hooldusperioodi\n\nSelline ligipääsupõhine mudel hoiab platvormi turvalise, õiglasena ja kogukonnakesksena.",
       },
       {
-        question: "5. Millised liikmelisuse võimalused on saadaval?",
+        question: "Millised liikmelisuse võimalused on saadaval?",
         answer: "Pakume kolme tasulist võimalust:\n\nÜhekordne broneering – avab suhtlemise ja ühe hoolduskorra mis tahes pikkuses\n\n3 kuu liikmelisus – piiramatu suhtlus ja broneeringud 3 kuu jooksul\n\n12 kuu liikmelisus – piiramatu suhtlus ja broneeringud terve aasta\n\nAktiivse 3- ja 12-kuulise liikmelisuse ajal ei ole broneeringute arvule ega kestusele piiranguid.",
       },
       {
-        question: "6. Milliseid lemmikloomi platvormilt leiab?",
+        question: "Milliseid lemmikloomi platvormilt leiab?",
         answer: "Stay With My Pet on avatud paljudele lemmikloomadele, sealhulgas:\n\nVäikeloomad nagu küülikud, hamstrid ja merisead\n\nLinnud, kalad ja teised sõbralikud loomad\n\nIgal lemmikloomal on põhjalik profiil, mis aitab leida parima võimaliku sobivuse loomaomaniku ja loomasõbra vahel.",
       },
       {
-        question: "7. Kas minu lemmikloom on broneeringu ajal kindlustatud?",
+        question: "Kas minu lemmikloom on broneeringu ajal kindlustatud?",
         answer: "Platvormi käivitamise hetkel kindlustust veel ei pakuta.\n\nTöötame aktiivselt selle nimel, et lähitulevikus lisada koerte ja kasside kindlustus\n\nMeie eesmärk on laiendada kindlustuskaitset aja jooksul ka teistele lemmikloomadele\n\nKui kindlustus muutub kättesaadavaks, jagame enne selle kasutuselevõttu selget ja detailset infot",
       },
       {
-        question: "8. Mis juhtub, kui broneeringu ajal tekib probleem?",
+        question: "Mis juhtub, kui broneeringu ajal tekib probleem?",
         answer: "Kui tekib olukord, mis vajab tähelepanu:\n\nVõta esmalt ühendust loomaomanikuga – tema tunneb oma lemmikut kõige paremini\n\nHooldusdetailid ja hädaolukorra juhised tuleks eelnevalt kokku leppida\n\nStay With My Pet ei paku meditsiinilist ega erakorralist abi, kuid:\n\nMeie veebilehel on nimekiri usaldusväärsetest loomakliinikutest, kuhu saab vajadusel otse pöörduda\n\nLemmiklooma heaolu on alati esikohal.",
       },
       {
-        question: "9. Kas ma saan enne broneerimist loomasõbra või loomaomanikuga kohtuda?",
+        question: "Kas ma saan enne broneerimist loomasõbra või loomaomanikuga kohtuda?",
         answer: "Jah – ja me julgustame seda tegema.\n\nSee aitab ootused selgeks rääkida, usaldust luua ja tagada, et loom tunneks end turvaliselt ja mugavalt.",
       },
       {
-        question: "10. Mis siis, kui lemmikloom ja loomasõber ei klapi?",
+        question: "Mis siis, kui lemmikloom ja loomasõber ei klapi?",
         answer: "Igal lemmikloomal on oma iseloom. Kui selgub, et sobivus ei ole õige:\n\nBroneeringu saab lõpetada\n\nVõimalik on leida teine loomasõber või loomaomanik\n\nKõige tähtsam on alati lemmiklooma mugavus, turvalisus ja heaolu.",
       },
       {
-        question: "11. Kuidas Stay With My Pet tagab turvalisuse ja usalduse?",
+        question: "Kuidas Stay With My Pet tagab turvalisuse ja usalduse?",
         answer: "Me keskendume vastutustundliku ja hooliva kogukonna loomisele:\n\nKasutajate isikusamasuse kontroll\n\nPõhjalikud profiilid ja tagasiside pärast hoiuperioodi\n\nSelged liikmelisustingimused ja kogukonnareeglid\n\nLäbipaistev ja otsene suhtlus kasutajate vahel\n\nUsaldus sünnib avatusest, jagatud vastutusest ja vastastikusest lugupidamisest.",
       },
       {
-        question: "12. Kas saan broneeringu või liikmelisuse tühistada?",
+        question: "Kas saan broneeringu või liikmelisuse tühistada?",
         answer: "Jah.\n\nBroneeringuid saab tühistada – soovitame seda teha võimalikult varakult\n\nLiikmelisust saab hallata vastavalt ostuhetkel kuvatud tingimustele\n\nTäpsed detailid leiad meie kasutustingimustest.",
       },
       {
-        question: "13. Mille poolest erineb Stay With My Pet tavapärastest lemmikloomahoidmise teenustest?",
+        question: "Mille poolest erineb Stay With My Pet tavapärastest lemmikloomahoidmise teenustest?",
         answer: "Stay With My Pet ei ole tehingupõhine teenus\n\nKasutajad ei maksa teineteisele\n\nNii loomaomanikud kui loomasõbrad tasuvad platvormi kasutustasu\n\nFookus on seltsil, paindlikkusel ja eetilisel hooldusel – mitte tunnipõhisel teenusel\n\nMe loome hoolivat kogukonda, mitte tööampsude platvormi.",
       },
       {
-        question: "14. Kuidas saab Stay With My Pet’iga ühendust võtta?",
+        question: "Kuidas saab Stay With My Pet’iga ühendust võtta?",
         answer: "Meil on hea meel aidata.\n\nKasuta meie veebilehel olevat kontaktivormi\n\nVõi kirjuta meile: info@staywithmypet.ee",
       },
     ],

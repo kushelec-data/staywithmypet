@@ -575,6 +575,10 @@ function extractNavPairs(rows) {
   return pairs;
 }
 
+function stripFaqQuestionPrefix(text) {
+  return (text ?? "").replace(/^\d+\.\s*/, "").trim();
+}
+
 function parseFaq(rows) {
   const maxR = Math.max(...Object.keys(rows).map(Number), 0);
   const titleEn = getCell(rows, 2, 2) || "Frequently Asked Questions (FAQ)";
@@ -593,7 +597,12 @@ function parseFaq(rows) {
       (en.endsWith("?") && en.length < 120 && !en.includes("\n"));
     if (isQuestion) {
       if (currentQ) items.push(currentQ);
-      currentQ = { questionEn: en.replace(/^\d+\.\s*/, ""), questionEt: et || null, answerEn: "", answerEt: null };
+      currentQ = {
+        questionEn: stripFaqQuestionPrefix(en),
+        questionEt: et ? stripFaqQuestionPrefix(et) : null,
+        answerEn: "",
+        answerEt: null,
+      };
     } else if (currentQ && !currentQ.answerEn) {
       currentQ.answerEn = en;
       currentQ.answerEt = et || null;
