@@ -1,6 +1,6 @@
 /**
- * Founder bios from EST and ENG texts.xlsx (Our Story sheet), via generated partials.
- * Loaded by locale so ET never falls back to English merge/base copy.
+ * Founder role + bio from EST and ENG texts.xlsx → Our Story sheet (rows 29–35).
+ * Synced into generated/site-en.ts and generated/site-et.ts via scripts/sync-site-texts.mjs.
  */
 import { siteEnPartial } from "./generated/site-en";
 import { siteEtPartial } from "./generated/site-et";
@@ -13,11 +13,9 @@ export type AboutFounder = {
   image: string;
 };
 
-const foundersByLocale: Record<Locale, readonly AboutFounder[]> = {
-  en: siteEnPartial.about.founders,
-  et: siteEtPartial.about.founders,
-};
-
 export function getAboutFounders(locale: Locale): readonly AboutFounder[] {
-  return foundersByLocale[locale] ?? foundersByLocale.en;
+  if (locale === "et") {
+    return siteEtPartial.about.founders;
+  }
+  return siteEnPartial.about.founders;
 }

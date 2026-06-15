@@ -1,9 +1,16 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import { defaultLocale, getTranslations, type Dictionary, type Locale } from "@/i18n/translations";
 
 const STORAGE_KEY = "swmp-locale";
+const LOCALE_CHANGE_EVENT = "swmp-locale-change";
 
 type LanguageContextValue = {
   locale: Locale;
@@ -19,19 +26,38 @@ function readStoredLocale(): Locale {
   return stored === "et" ? "et" : "en";
 }
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => readStoredLocale());
-  const [hydrated, setHydrated] = useState(false);
+function subscribeToLocale(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => onStoreChange();
+  window.addEventListener(LOCALE_CHANGE_EVENT, handler);
+  window.addEventListener("storage", handler);
+  return () => {
+    window.removeEventListener(LOCALE_CHANGE_EVENT, handler);
+    window.removeEventListener("storage", handler);
+  };
+}
 
-  useEffect(() => {
-    setLocaleState(readStoredLocale());
-    setHydrated(true);
-  }, []);
+function getLocaleSnapshot(): Locale {
+  return readStoredLocale();
+}
+
+function getLocaleServerSnapshot(): Locale {
+  return defaultLocale;
+}
+
+function notifyLocaleChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(LOCALE_CHANGE_EVENT));
+  }
+}
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const locale = useSyncExternalStore(subscribeToLocale, getLocaleSnapshot, getLocaleServerSnapshot);
 
   const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
     window.localStorage.setItem(STORAGE_KEY, next);
     document.documentElement.lang = next;
+    notifyLocaleChange();
     void fetch("/api/user/locale", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -40,12 +66,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       console.warn("[locale] failed to sync preference", err);
     });
   }, []);
-
-  useEffect(() => {
-    if (hydrated) {
-      document.documentElement.lang = locale;
-    }
-  }, [locale, hydrated]);
 
   const value = useMemo(
     () => ({

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { FounderCard } from "@/components/team/FounderCard";
 import { PageHero } from "@/components/layout/PageHero";
 import { AppImage } from "@/components/ui/AppImage";
@@ -15,7 +16,7 @@ const SECTION_PAD = "py-10 lg:py-12";
 export function AboutPageClient() {
   const { locale, t } = useLanguage();
   const a = t.about;
-  const founders = getAboutFounders(locale);
+  const founders = useMemo(() => getAboutFounders(locale), [locale]);
 
   return (
     <>
@@ -91,8 +92,11 @@ export function AboutPageClient() {
             {founders.map((founder) => (
               <FounderCard
                 key={`${locale}-${founder.name}`}
+                name={founder.name}
+                role={founder.role}
+                bio={founder.bio}
+                image={founder.image}
                 coFounderLabel={a.coFounderBadge}
-                {...founder}
               />
             ))}
           </div>
