@@ -5,7 +5,7 @@ import { PageHero } from "@/components/layout/PageHero";
 import { AppImage } from "@/components/ui/AppImage";
 import { CtaBanner } from "@/components/ui/CtaBanner";
 import { useLanguage } from "@/context/LanguageContext";
-import { getTranslations } from "@/i18n/translations";
+import { getAboutFounders } from "@/i18n/about-founders";
 import { IMAGES } from "@/lib/images";
 import { CONTENT_CONTAINER } from "@/lib/layout";
 import { PUBLIC_CARD, PUBLIC_CARD_MINT, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
@@ -15,7 +15,7 @@ const SECTION_PAD = "py-10 lg:py-12";
 export function AboutPageClient() {
   const { locale, t } = useLanguage();
   const a = t.about;
-  const founders = getTranslations(locale).about.founders;
+  const founders = getAboutFounders(locale);
 
   return (
     <>
