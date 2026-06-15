@@ -73,6 +73,8 @@ export async function submitContactFormAction(
     message,
   });
 
+  console.log("[contact] send result", result);
+
   if (!result.ok) {
     return { ok: false, error: result.reason };
   }

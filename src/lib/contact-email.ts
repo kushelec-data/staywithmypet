@@ -1,9 +1,10 @@
 import "server-only";
 
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { escapeHtml } from "@/lib/emails/layout";
 
 export const CONTACT_FORM_RECIPIENT = "info@staywithmypet.ee";
+const CONTACT_FORM_FROM = "info@staywithmypet.ee";
 
 export type ContactFormPayload = {
   fullName: string;
@@ -17,16 +18,33 @@ export type SendContactFormResult =
   | { ok: true }
   | { ok: false; reason: "no_api_key" | "send_failed" };
 
-function emailFromAddress(): string {
-  return process.env.EMAIL_FROM?.trim() || "StayWithMyPet <hello@staywithmypet.ee>";
+function readSmtpConfig():
+  | {
+      host: string;
+      port: number;
+      user: string;
+      password: string;
+    }
+  | null {
+  const host = process.env.SMTP_HOST?.trim() || "mail.spacemail.com";
+  const portRaw = process.env.SMTP_PORT?.trim() || "465";
+  const port = Number.parseInt(portRaw, 10);
+  const user = process.env.SMTP_USER?.trim();
+  const password = process.env.SMTP_PASSWORD?.trim();
+
+  if (!user || !password || !Number.isFinite(port)) {
+    return null;
+  }
+
+  return { host, port, user, password };
 }
 
 export async function sendContactFormEmail(
   payload: ContactFormPayload,
 ): Promise<SendContactFormResult> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
-    console.warn("[contact] RESEND_API_KEY not set — cannot send contact form");
+  const smtp = readSmtpConfig();
+  if (!smtp) {
+    console.warn("[contact] SMTP credentials not set — cannot send contact form");
     return { ok: false, reason: "no_api_key" };
   }
 
@@ -61,9 +79,32 @@ export async function sendContactFormEmail(
   `.trim();
 
   try {
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from: emailFromAddress(),
+    const { host, port, user, password } = smtp;
+    const secure = port === 465;
+
+    console.log("[contact:smtp] config", {
+      host,
+      port,
+      secure,
+      user,
+      hasPassword: Boolean(password),
+    });
+
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: {
+        user,
+        pass: password,
+      },
+    });
+
+    console.log("[contact] from", CONTACT_FORM_FROM);
+    console.log("[contact] recipient", CONTACT_FORM_RECIPIENT);
+
+    const info = await transporter.sendMail({
+      from: CONTACT_FORM_FROM,
       to: CONTACT_FORM_RECIPIENT,
       replyTo: payload.email,
       subject: mailSubject,
@@ -71,14 +112,21 @@ export async function sendContactFormEmail(
       text,
     });
 
-    if (error) {
-      console.error("[contact] Resend error", error);
-      return { ok: false, reason: "send_failed" };
-    }
+    console.log("[contact] smtp response", info);
 
     return { ok: true };
   } catch (err) {
-    console.error("[contact] send failed", err);
+    console.error("[contact:smtp] error", {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      hasPassword: Boolean(process.env.SMTP_PASSWORD),
+      message: err instanceof Error ? err.message : String(err),
+      code: (err as { code?: string })?.code,
+      command: (err as { command?: string })?.command,
+      response: (err as { response?: string })?.response,
+      responseCode: (err as { responseCode?: number })?.responseCode,
+    });
     return { ok: false, reason: "send_failed" };
   }
 }
