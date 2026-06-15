@@ -11,6 +11,7 @@ import {
   petSearchTypeOptions,
 } from "@/lib/pet-search-filter-config";
 import type { Locale } from "@/i18n/translations";
+import { getTranslations } from "@/i18n/translations";
 import {
   petFriendSearchCareTypeOptions,
   petFriendSearchExperienceOptions,
@@ -18,7 +19,6 @@ import {
   petFriendSearchLanguageOptions,
   petFriendSearchTypeOptions,
 } from "@/lib/pet-friend-search-filter-config";
-import { getListingSearchLabelEt } from "@/lib/listing-search-translations";
 import { formatDate } from "@/lib/date-format";
 import type { PetFriendSearchFilterState } from "@/lib/pet-friend-search";
 import type { PetSearchFilterState } from "@/lib/public-pet-search";
@@ -145,10 +145,7 @@ export function buildPetSearchActiveChips(
   if (filters.verifiedOnly) {
     chips.push({
       id: "verified",
-      label:
-        locale === "et"
-          ? (getListingSearchLabelEt("Verified", "pet") ?? "Verified")
-          : "Verified",
+      label: getTranslations(locale).searchFilters.verifiedOnly,
       onRemove: () => onChange({ ...filters, verifiedOnly: false }),
     });
   }
@@ -254,10 +251,7 @@ export function buildPetFriendSearchActiveChips(
   if (filters.verifiedOnly) {
     chips.push({
       id: "verified",
-      label:
-        locale === "et"
-          ? (getListingSearchLabelEt("Verified", "petFriend") ?? "Verified")
-          : "Verified",
+      label: getTranslations(locale).searchFilters.verifiedOnly,
       onRemove: () => onChange({ ...filters, verifiedOnly: false }),
     });
   }

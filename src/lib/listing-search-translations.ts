@@ -98,7 +98,7 @@ const PET_LISTING_PAIRS: Pair[] = [
   ["Cat-friendly", "Sobib kassidega"],
   ["Active", "Mänguhimuline"],
   ["Walks", "Ainult jalutuskäigud"],
-  ["Verified profiles only", "Kinnitatud"],
+  ["Verified profiles only", "Näita ainult kontrollitud profiile"],
 ];
 
 const PET_FRIEND_LISTING_PAIRS: Pair[] = [

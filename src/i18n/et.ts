@@ -1724,7 +1724,7 @@ export const et = {
     careLocationAny: "Kõik asukohad",
     careType: "Hoiutüüp",
     verification: "Kinnitamine",
-    verifiedOnly: "Kinnitatud",
+    verifiedOnly: "Näita ainult kontrollitud profiile",
     languages: "Räägitavad keeled",
     petTypesAccepted: "Loomaliik",
     petTypesAcceptedHint: "Millise loomaliigi eest ollakse valmis hoolitsema",
