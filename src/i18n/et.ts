@@ -1,4 +1,8 @@
 export const et = {
+  legalDates: {
+    effectiveDate: "Jõustumise kuupäev: 15. juuni 2026",
+    lastUpdated: "Viimati uuendatud: 15. juuni 2026",
+  },
   common: {
     close: "Sulge",
     cancel: "Tühista",

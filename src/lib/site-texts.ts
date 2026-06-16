@@ -19,8 +19,12 @@ export const legalDocuments = {
     titleEt: "Privaatsuspoliitika",
     blocks: [
       {
-        en: "Effective Date:12/20/2025",
-        et: "Jõustumiskuupäev: 20.12.2025",
+        en: "Effective Date: 15 June 2026",
+        et: "Jõustumise kuupäev: 15. juuni 2026",
+      },
+      {
+        en: "Last Updated: 15 June 2026",
+        et: "Viimati uuendatud: 15. juuni 2026",
       },
       {
         en: "Your privacy is important to us. This Privacy Policy explains how Stay With My Pet (“we”, “us”, “our”) collects, uses, stores, and protects your personal data when you use our website, mobile application, or related services (collectively, “the Service”).",
@@ -473,11 +477,15 @@ export const legalDocuments = {
     titleEt: "Kasutustingimused",
     blocks: [
       {
-        en: "Effective Date: [DD Month YYYY]",
-        et: "Jõustumiskuupäev: [PP kuu AAAA]",
+        en: "Effective Date: 15 June 2026",
+        et: "Jõustumise kuupäev: 15. juuni 2026",
       },
       {
-        en: "Last Updated: [DD Month YYYY]",
+        en: "Last Updated: 15 June 2026",
+        et: "Viimati uuendatud: 15. juuni 2026",
+      },
+      {
+        en: 'These Terms of Use ("Terms") govern your access to and use of the Stay With My Pet website, web application, and related services (collectively, the "Service"), operated by Lareflexion OÜ, registry code 16757645 ("Stay With My Pet", "we", "us", "our").',
         et: "Käesolevad kasutustingimused („Tingimused“) reguleerivad teie juurdepääsu ja kasutamist Stay With My Pet veebilehele, veebirakendusele ja seotud teenustele (edaspidi ühiselt „Teenust“), mida haldab Lareflexion OÜ, registrikood 16757645 („Stay With My Pet“, „meie“, „meid“, „meie oma“).",
       },
       {
@@ -1322,12 +1330,30 @@ export const legalDocuments = {
   },
 } as const;
 
+function isLegalDateMetadataLine(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  return (
+    /^\[DD Month/i.test(t) ||
+    /^\[PP kuu/i.test(t) ||
+    /^\[TODO\]/i.test(t) ||
+    /^\[INSERT DATE\]/i.test(t) ||
+    /^Effective Date:/i.test(t) ||
+    /^Last Updated:/i.test(t) ||
+    /^Jõustumiskuupäev:/i.test(t) ||
+    /^Jõustumise kuupäev:/i.test(t) ||
+    /^Viimati uuendatud:/i.test(t)
+  );
+}
+
 export function getLegalDocument(slug: keyof typeof legalDocuments, locale: Locale): {
   title: string;
   paragraphs: string[];
 } {
   const doc = legalDocuments[slug];
   const title = locale === "et" ? doc.titleEt : doc.titleEn;
-  const paragraphs = doc.blocks.map((b) => (locale === "et" && b.et ? b.et : b.en));
+  const paragraphs = doc.blocks
+    .map((b) => (locale === "et" && b.et ? b.et : b.en))
+    .filter((p) => !isLegalDateMetadataLine(p));
   return { title, paragraphs };
 }

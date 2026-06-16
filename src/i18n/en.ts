@@ -1,4 +1,8 @@
 export const en = {
+  legalDates: {
+    effectiveDate: "Effective Date: 15 June 2026",
+    lastUpdated: "Last Updated: 15 June 2026",
+  },
   common: {
     close: "Close",
     cancel: "Cancel",
