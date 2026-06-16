@@ -2,6 +2,7 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { fetchUserProfile } from "@/lib/profile-load";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { AuthRequiredError, ForbiddenError } from "@/lib/security/assert-owner";
+import { isMissingColumnError, supabaseErrorDetail } from "@/lib/supabase-errors";
 
 export const AVATARS_BUCKET = "avatars";
 const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
@@ -110,6 +111,12 @@ function mapStorageUploadError(message: string): AvatarUploadError {
 
 function mapProfileUpdateError(error: PostgrestError): AvatarUploadError {
   const lower = error.message.toLowerCase();
+  if (isMissingColumnError(error, "avatar_url")) {
+    return new AvatarUploadError(
+      "profile_update_failed",
+      "Photo uploaded, but your profile could not be updated. The database is missing the avatar_url column — run the latest Supabase migrations, then try again.",
+    );
+  }
   if (
     error.code === "42501" ||
     error.code === "PGRST301" ||
@@ -125,6 +132,11 @@ function mapProfileUpdateError(error: PostgrestError): AvatarUploadError {
     "profile_update_failed",
     "Photo uploaded, but your profile could not be updated. Please try again.",
   );
+}
+
+/** profiles.avatar_url is the canonical column (see initial_schema.sql). */
+function buildAvatarProfileUpdatePayload(publicUrl: string): { avatar_url: string } {
+  return { avatar_url: publicUrl };
 }
 
 /** @deprecated Use AvatarUploadError messages from uploadProfileAvatar instead. */
@@ -211,13 +223,29 @@ export async function uploadProfileAvatar(
   const publicUrl = urlData.publicUrl;
   avatarUploadLog("public url", { publicUrl });
 
+  const updatePayload = buildAvatarProfileUpdatePayload(publicUrl);
+  avatarUploadLog("profile update payload", {
+    table: "profiles",
+    id: userId,
+    columns: Object.keys(updatePayload),
+    avatar_url: publicUrl,
+  });
+
   const { error: updateError } = await supabase
     .from("profiles")
-    .update({ avatar_url: publicUrl })
+    .update(updatePayload)
     .eq("id", userId);
 
   if (updateError) {
-    avatarUploadErrorLog("profile update result", { ok: false, error: updateError });
+    const detail = supabaseErrorDetail(updateError as PostgrestError);
+    avatarUploadErrorLog("profile update result", {
+      ok: false,
+      payload: updatePayload,
+      code: detail?.code ?? null,
+      message: detail?.message ?? updateError.message,
+      details: detail?.details ?? null,
+      hint: detail?.hint ?? null,
+    });
     await supabase.storage.from(AVATARS_BUCKET).remove([storagePath]);
     throw mapProfileUpdateError(updateError as PostgrestError);
   }
