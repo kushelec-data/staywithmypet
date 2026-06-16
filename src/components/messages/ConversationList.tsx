@@ -10,6 +10,11 @@ import {
   ACCOUNT_LIST_ITEM_ACTIVE_CLASS,
   ACCOUNT_LIST_ITEM_INACTIVE_CLASS,
 } from "@/lib/account-ui";
+import {
+  MESSAGES_AVATAR_RING_CLASS,
+  MESSAGES_META_TEXT_CLASS,
+  MESSAGES_META_TEXT_MUTED_CLASS,
+} from "@/lib/messages-ui";
 
 type ConversationListProps = {
   conversations: ConversationSummary[];
@@ -66,22 +71,22 @@ function ConversationListItem({
           <span className="flex items-baseline justify-between gap-1.5">
             <span
               className={`line-clamp-1 text-[0.8125rem] leading-tight ${
-                hasUnread ? "font-bold text-foreground" : "font-semibold text-foreground"
+                hasUnread ? "font-bold text-[#2B2B2B]" : "font-semibold text-[#2B2B2B]"
               }`}
             >
               {displayName}
             </span>
             {conversation.lastMessageAt ? (
-              <span className="shrink-0 text-[0.625rem] tabular-nums text-[#4b4b4b] dark:text-muted">
+              <span className={`shrink-0 text-[0.625rem] tabular-nums ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
                 {formatInboxTime(conversation.lastMessageAt)}
               </span>
             ) : null}
           </span>
 
-          <span className="mt-px block min-w-0 text-[0.6875rem] leading-snug text-[#4b4b4b] dark:text-muted">
+          <span className={`mt-px block min-w-0 text-[0.6875rem] leading-snug ${MESSAGES_META_TEXT_CLASS}`}>
             <span className="font-medium">{conversation.otherPartyName}</span>
             {conversation.dateLabel ? (
-              <span className="break-words text-[#4b4b4b]/80 dark:text-muted/80">
+              <span className={`break-words ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
                 {" "}
                 · {conversation.dateLabel}
               </span>
@@ -91,13 +96,13 @@ function ConversationListItem({
           {conversation.lastMessagePreview ? (
             <span
               className={`mt-0.5 block line-clamp-1 text-[0.6875rem] leading-snug ${
-                hasUnread ? "font-medium text-foreground" : "text-[#4b4b4b] dark:text-muted"
+                hasUnread ? "font-medium text-[#2B2B2B]" : MESSAGES_META_TEXT_CLASS
               }`}
             >
               {conversation.lastMessagePreview}
             </span>
           ) : (
-            <span className="mt-0.5 block text-[0.6875rem] italic text-[#4b4b4b]/80 dark:text-muted/80">
+            <span className={`mt-0.5 block text-[0.6875rem] italic ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
               {t.messages.noMessagesYet}
             </span>
           )}
@@ -137,13 +142,13 @@ function ConversationThumb({
       <img
         src={url}
         alt=""
-        className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-black/[0.06] dark:ring-white/10"
+        className={`h-9 w-9 shrink-0 rounded-full object-cover ${MESSAGES_AVATAR_RING_CLASS}`}
       />
     );
   }
 
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lavender/50 text-xs font-semibold text-brand-teal ring-1 ring-black/[0.06] dark:ring-white/10">
+    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#DDEEDF] text-xs font-semibold text-brand-teal ${MESSAGES_AVATAR_RING_CLASS}`}>
       {initial}
     </div>
   );

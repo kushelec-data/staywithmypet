@@ -8,6 +8,13 @@ import {
   type ChatMessage,
 } from "@/lib/messaging";
 import { useLanguage } from "@/context/LanguageContext";
+import {
+  MESSAGES_AVATAR_RING_CLASS,
+  MESSAGES_DATE_DIVIDER_CLASS,
+  MESSAGES_META_TEXT_CLASS,
+  MESSAGES_META_TEXT_MUTED_CLASS,
+  MESSAGES_RECEIVED_BUBBLE_CLASS,
+} from "@/lib/messages-ui";
 
 type MessageThreadProps = {
   messages: ChatMessage[];
@@ -21,9 +28,7 @@ type MessageThreadProps = {
 function DateDivider({ label }: { label: string }) {
   return (
     <div className="my-2 flex justify-center py-0.5" role="separator">
-      <span className="rounded-full bg-black/[0.05] px-2.5 py-0.5 text-[0.6875rem] font-medium text-[#4b4b4b]/75 dark:bg-white/[0.06] dark:text-muted">
-        [ {label} ]
-      </span>
+      <span className={MESSAGES_DATE_DIVIDER_CLASS}>[ {label} ]</span>
     </div>
   );
 }
@@ -40,13 +45,15 @@ function IncomingAvatar({
       <img
         src={url}
         alt=""
-        className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-black/5 dark:ring-white/10"
+        className={`h-7 w-7 shrink-0 rounded-full object-cover ${MESSAGES_AVATAR_RING_CLASS}`}
       />
     );
   }
 
   return (
-    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-lavender/50 text-[0.625rem] font-semibold text-brand-teal ring-1 ring-black/5 dark:ring-white/10">
+    <div
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#DDEEDF] text-[0.625rem] font-semibold text-brand-teal ${MESSAGES_AVATAR_RING_CLASS}`}
+    >
       {initial}
     </div>
   );
@@ -65,7 +72,7 @@ export function MessageThread({
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center py-8">
-        <p className="text-sm text-[#4b4b4b] dark:text-muted">{t.messages.loadingThread}</p>
+        <p className={`text-sm ${MESSAGES_META_TEXT_CLASS}`}>{t.messages.loadingThread}</p>
       </div>
     );
   }
@@ -76,8 +83,8 @@ export function MessageThread({
         <p className="text-xl" aria-hidden>
           👋
         </p>
-        <p className="mt-2 text-sm font-semibold text-foreground">{emptyTitle}</p>
-        <p className="mt-1 max-w-xs text-xs leading-relaxed text-[#4b4b4b] dark:text-muted">
+        <p className="mt-2 text-sm font-semibold text-[#2B2B2B]">{emptyTitle}</p>
+        <p className={`mt-1 max-w-xs text-xs leading-relaxed ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
           {emptyHint}
         </p>
       </div>
@@ -134,7 +141,7 @@ export function MessageThread({
                             className={`max-w-full px-3 py-1.5 ${radius} ${
                               group.isOwn
                                 ? "bg-brand-teal text-white shadow-sm shadow-brand-teal/20"
-                                : "border border-black/[0.06] bg-[#fffaf2] text-foreground shadow-sm dark:border-white/10 dark:bg-surface"
+                                : MESSAGES_RECEIVED_BUBBLE_CLASS
                             }`}
                           >
                             <p className="whitespace-pre-wrap break-words text-[0.8125rem] leading-snug">
@@ -142,7 +149,9 @@ export function MessageThread({
                             </p>
                           </div>
                           {isLastInGroup ? (
-                            <p className="mt-0.5 px-1 text-[0.625rem] tabular-nums text-[#4b4b4b] dark:text-muted">
+                            <p
+                              className={`mt-0.5 px-1 text-[0.625rem] tabular-nums ${MESSAGES_META_TEXT_MUTED_CLASS}`}
+                            >
                               {formatMessageTime(message.createdAt)}
                             </p>
                           ) : null}

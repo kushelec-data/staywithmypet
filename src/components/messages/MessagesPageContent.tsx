@@ -3,7 +3,7 @@
 import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { AccountEmptyState } from "@/components/account/AccountEmptyState";
 import { AccountLayout } from "@/components/account/AccountLayout";
-import { ACCOUNT_MESSAGES_PANEL_CLASS } from "@/lib/account-ui";
+import { MESSAGES_PANEL_CLASS } from "@/lib/messages-ui";
 import { ConversationList } from "@/components/messages/ConversationList";
 import { ChatPanel } from "@/components/messages/ChatPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -192,12 +192,12 @@ export function MessagesPageContent() {
     >
       <div className="flex h-[min(78dvh,720px)] min-h-[min(320px,65dvh)] w-full max-w-full min-w-0 flex-col gap-3 overflow-hidden sm:min-h-[420px] lg:flex-row lg:gap-4">
         <aside
-          className={`${ACCOUNT_MESSAGES_PANEL_CLASS} w-full shrink-0 lg:w-[340px] ${
+          className={`${MESSAGES_PANEL_CLASS} w-full shrink-0 lg:w-[340px] ${
             showMobileChat ? "hidden lg:flex" : "flex"
           }`}
         >
-          <div className="shrink-0 border-b border-[#E5E2D8] px-4 py-3">
-            <h2 className="text-sm font-semibold text-foreground">{t.messages.conversations}</h2>
+          <div className="shrink-0 border-b border-[#E4DED2] bg-[#F6F2EA] px-4 py-3">
+            <h2 className="text-sm font-semibold text-[#2B2B2B]">{t.messages.conversations}</h2>
           </div>
 
           {loadError ? (
@@ -210,7 +210,7 @@ export function MessagesPageContent() {
           ) : null}
 
           {listLoading ? (
-            <p className="px-4 py-10 text-sm text-muted">{t.messages.loading}</p>
+            <p className={`px-4 py-10 text-sm text-[#8A8276]`}>{t.messages.loading}</p>
           ) : conversations.length === 0 ? (
             <AccountEmptyState
               className="flex-1 justify-center py-10"
@@ -234,7 +234,7 @@ export function MessagesPageContent() {
         </aside>
 
         <section
-          className={`${ACCOUNT_MESSAGES_PANEL_CLASS} min-h-0 min-w-0 flex-1 ${
+          className={`${MESSAGES_PANEL_CLASS} min-h-0 min-w-0 flex-1 ${
             showMobileChat ? "flex" : "hidden lg:flex"
           }`}
         >
@@ -253,7 +253,7 @@ export function MessagesPageContent() {
               <p className="text-2xl" aria-hidden>
                 💬
               </p>
-              <p className="mt-2 text-xs text-muted">{t.messages.selectConversation}</p>
+              <p className="mt-2 text-xs text-[#8A8276]">{t.messages.selectConversation}</p>
             </div>
           )}
         </section>

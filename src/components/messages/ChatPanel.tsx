@@ -1,11 +1,22 @@
 "use client";
 
 import { BookingReviewBanner } from "@/components/messages/BookingReviewBanner";
-import { STATUS_ALERT_ERROR_CLASS, STATUS_ALERT_ERROR_COMPACT_CLASS, STATUS_ALERT_WARNING_COMPACT_CLASS } from "@/lib/status-colors";
+import { STATUS_ALERT_ERROR_COMPACT_CLASS, STATUS_ALERT_WARNING_COMPACT_CLASS } from "@/lib/status-colors";
 import { MessageThread } from "@/components/messages/MessageThread";
 import { ReportUserModal } from "@/components/trust/ReportUserModal";
 import { useLanguage } from "@/context/LanguageContext";
 import { bookingDetailsHref } from "@/lib/bookings";
+import {
+  MESSAGES_CHAT_ROOT_CLASS,
+  MESSAGES_HEADER_CLASS,
+  MESSAGES_INPUT_BAR_CLASS,
+  MESSAGES_META_TEXT_CLASS,
+  MESSAGES_META_TEXT_MUTED_CLASS,
+  MESSAGES_AVATAR_RING_CLASS,
+  MESSAGES_SOFT_HOVER_CLASS,
+  MESSAGES_TEXTAREA_CLASS,
+  MESSAGES_THREAD_SCROLL_CLASS,
+} from "@/lib/messages-ui";
 import {
   canSendInConversation,
   fetchMessages,
@@ -244,13 +255,13 @@ export function ChatPanel({
         : m.typeMessage;
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col bg-[#fffaf2] dark:bg-[#252320]">
-      <header className="sticky top-0 z-10 shrink-0 border-b border-black/[0.06] bg-[#fffaf2]/95 px-3 py-2.5 backdrop-blur-sm dark:border-white/10 dark:bg-[#252320]/95 sm:px-4">
+    <div className={MESSAGES_CHAT_ROOT_CLASS}>
+      <header className={MESSAGES_HEADER_CLASS}>
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-brand-teal hover:bg-mint/50 lg:hidden"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-brand-teal hover:bg-[#DDEEDF] lg:hidden"
             aria-label={m.backToList}
           >
             <svg
@@ -269,33 +280,35 @@ export function ChatPanel({
             <img
               src={thumbUrl}
               alt=""
-              className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-black/[0.06] dark:ring-white/10"
+              className={`h-9 w-9 shrink-0 rounded-full object-cover ${MESSAGES_AVATAR_RING_CLASS}`}
             />
           ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lavender/50 text-xs font-semibold text-brand-teal ring-1 ring-black/[0.06] dark:ring-white/10">
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#DDEEDF] text-xs font-semibold text-brand-teal ${MESSAGES_AVATAR_RING_CLASS}`}
+            >
               {thumbInitial}
             </div>
           )}
 
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-1">
-              <h2 className="min-w-0 truncate text-sm font-semibold text-foreground">{displayName}</h2>
+              <h2 className="min-w-0 truncate text-sm font-semibold text-[#2B2B2B]">{displayName}</h2>
               <span
                 className={`${statusDisplay.badgeClasses} w-fit max-w-full shrink-0 !px-1.5 !py-0 !text-[0.5625rem]`}
               >
                 {statusDisplay.label}
               </span>
             </div>
-            <p className="min-w-0 text-[0.6875rem] leading-snug text-[#4b4b4b] dark:text-muted">
+            <p className={`min-w-0 text-[0.6875rem] leading-snug ${MESSAGES_META_TEXT_CLASS}`}>
               <span className="font-medium">{conversation.otherPartyName}</span>
               {conversation.dateLabel ? (
-                <span className="break-words text-[#4b4b4b]/80 dark:text-muted/80">
+                <span className={`break-words ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
                   {" "}
                   · {conversation.dateLabel}
                 </span>
               ) : null}
               {conversation.careType ? (
-                <span className="break-words text-[#4b4b4b]/80 dark:text-muted/80">
+                <span className={`break-words ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
                   {" "}
                   · {conversation.careType}
                 </span>
@@ -307,7 +320,7 @@ export function ChatPanel({
             {conversation.bookingId ? (
               <Link
                 href={bookingDetailsHref(conversation.bookingId)}
-                className="inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium text-brand-teal hover:bg-mint/40"
+                className="inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium text-brand-teal hover:bg-[#DDEEDF]"
               >
                 {m.viewBooking}
               </Link>
@@ -315,7 +328,7 @@ export function ChatPanel({
             <button
               type="button"
               onClick={() => setReportOpen(true)}
-              className="inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium text-[#4b4b4b] hover:bg-black/[0.04] dark:text-muted dark:hover:bg-white/[0.06]"
+              className={`inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
             >
               {ts.reportUser}
             </button>
@@ -323,7 +336,7 @@ export function ChatPanel({
               <button
                 type="button"
                 onClick={() => void handleBlock()}
-                className="inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium text-[#4b4b4b] hover:bg-black/[0.04] dark:text-muted dark:hover:bg-white/[0.06]"
+                className={`inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
               >
                 {ts.blockUser}
               </button>
@@ -342,7 +355,7 @@ export function ChatPanel({
       ) : null}
       {cancelledBookingGraceExpired ? (
         <p
-          className="shrink-0 border-b border-black/[0.06] bg-[#f3f0ea] px-4 py-2.5 text-xs leading-relaxed text-muted dark:border-white/10 dark:bg-[#2a2824]"
+          className={`shrink-0 border-b border-[#E4DED2] bg-[#F3EFE6] px-4 py-2.5 text-xs leading-relaxed ${MESSAGES_META_TEXT_MUTED_CLASS}`}
           role="status"
         >
           {m.cancelledBookingChatEndedBanner}
@@ -353,10 +366,7 @@ export function ChatPanel({
         <BookingReviewBanner bookingId={conversation.bookingId} petName={conversation.petName} />
       ) : null}
 
-      <div
-        ref={scrollContainerRef}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain scroll-smooth bg-[#f8f5ef]/60 px-2 dark:bg-[#1c1b19]/40 sm:px-3"
-      >
+      <div ref={scrollContainerRef} className={MESSAGES_THREAD_SCROLL_CLASS}>
         <MessageThread
           messages={messages}
           loading={loading}
@@ -378,10 +388,7 @@ export function ChatPanel({
         </p>
       ) : null}
 
-      <form
-        onSubmit={handleSend}
-        className="sticky bottom-0 z-10 shrink-0 border-t border-black/[0.06] bg-[#f8f6f1] px-3 py-2.5 dark:border-white/10 dark:bg-[#2a2824] sm:px-4"
-      >
+      <form onSubmit={handleSend} className={MESSAGES_INPUT_BAR_CLASS}>
         {emojiOpen ? (
           <div className="mb-1.5 flex gap-1">
             {QUICK_EMOJIS.map((emoji) => (
@@ -389,7 +396,7 @@ export function ChatPanel({
                 key={emoji}
                 type="button"
                 onClick={() => insertEmoji(emoji)}
-                className="rounded-full px-2 py-0.5 text-base hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                className={`rounded-full px-2 py-0.5 text-base ${MESSAGES_SOFT_HOVER_CLASS}`}
               >
                 {emoji}
               </button>
@@ -401,7 +408,7 @@ export function ChatPanel({
             type="button"
             onClick={() => setEmojiOpen((v) => !v)}
             disabled={!canSend}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base text-muted hover:bg-black/[0.04] disabled:opacity-40 dark:hover:bg-white/[0.06]"
+            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base ${MESSAGES_META_TEXT_MUTED_CLASS} ${MESSAGES_SOFT_HOVER_CLASS} disabled:opacity-40`}
             aria-label={t.messagesUi.insertEmoji}
           >
             😊
@@ -416,7 +423,7 @@ export function ChatPanel({
             onChange={(e) => setDraft(e.target.value)}
             placeholder={inputPlaceholder}
             disabled={sending || !canSend}
-            className="max-h-24 min-h-[40px] min-w-0 flex-1 resize-none rounded-full border border-black/[0.08] bg-[#fffaf2] px-4 py-2 text-sm leading-snug outline-none transition focus:border-brand-teal/40 focus:ring-2 focus:ring-brand-teal/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#35322d]"
+            className={MESSAGES_TEXTAREA_CLASS}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();

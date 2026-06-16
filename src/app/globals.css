@@ -311,6 +311,29 @@ body {
   --dashboard-card-border: rgba(140, 190, 150, 0.22);
 }
 
+/* Messages — always warm light palette, even when site is in dark mode */
+.dark .messages-area {
+  --foreground: #2b2b2b;
+  --muted: #8a8276;
+  --surface: #fdfbf6;
+  --dashboard-card-bg: #f9f6ef;
+  --dashboard-card-border: #e4ded2;
+  --dashboard-light: #ddeedf;
+  color: #2b2b2b;
+}
+
+.messages-area {
+  color: #2b2b2b;
+}
+
+.messages-area .text-foreground {
+  color: #2b2b2b;
+}
+
+.messages-area .text-muted {
+  color: #8a8276;
+}
+
 .account-card,
 .dashboard-card {
   background: var(--dashboard-card-bg);
