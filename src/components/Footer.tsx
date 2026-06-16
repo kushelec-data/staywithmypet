@@ -111,6 +111,12 @@ export function Footer() {
   const year = new Date().getFullYear();
   const g = t.footer.groups;
 
+  const legalLinks = [
+    { href: "/terms", label: g.company.terms ?? "Terms of Use" },
+    { href: "/privacy", label: g.company.privacy ?? "Privacy Policy" },
+    { href: "/safety", label: g.company.safety ?? "Safety Guidelines" },
+  ];
+
   const footerGroups = [
     {
       title: g.petFriends.title,
@@ -137,9 +143,6 @@ export function Footer() {
         { href: "/about", label: g.company.about },
         { href: "/contact", label: g.company.contact },
         { href: "/care/emergency", label: g.company.vetClinics ?? "Vet clinics" },
-        { href: "/terms", label: g.company.terms ?? "Terms of Use" },
-        { href: "/privacy", label: g.company.privacy ?? "Privacy Policy" },
-        { href: "/safety", label: g.company.safety ?? "Safety Guidelines" },
       ],
     },
   ];
@@ -196,11 +199,32 @@ export function Footer() {
           <FooterSocialLinks />
         </div>
 
-        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-center text-xs text-muted sm:mt-8 sm:flex-row sm:pt-6 sm:text-left sm:text-sm">
-          <p>{t.footer.copyright.replace("{year}", String(year))}</p>
-          <a href="mailto:info@staywithmypet.ee" className="font-medium text-brand-teal hover:text-brand-pink">
-            info@staywithmypet.ee
-          </a>
+        <div className="mt-6 border-t border-border pt-6 sm:mt-8 sm:pt-6">
+          <nav aria-label="Legal" className="min-w-0">
+            <ul className="flex flex-wrap items-center justify-center gap-2">
+              {legalLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="legal-footer-link inline-flex rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors sm:px-3.5 sm:text-sm"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="mt-4 flex flex-col items-center justify-between gap-3 text-center sm:mt-5 sm:flex-row sm:text-left">
+            <p className="text-xs text-muted sm:text-sm">
+              {t.footer.copyright.replace("{year}", String(year))}
+            </p>
+            <a
+              href="mailto:info@staywithmypet.ee"
+              className="text-xs font-medium text-brand-teal hover:text-brand-pink sm:text-sm"
+            >
+              info@staywithmypet.ee
+            </a>
+          </div>
         </div>
       </div>
     </footer>

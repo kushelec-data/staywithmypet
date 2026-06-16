@@ -353,6 +353,22 @@ body {
   color: var(--brand-teal);
 }
 
+.legal-footer-link:hover {
+  border-color: color-mix(in srgb, var(--brand-teal) 35%, transparent);
+  background: color-mix(in srgb, var(--mint) 55%, var(--surface));
+  color: var(--brand-teal);
+}
+
+.legal-document-card {
+  color: var(--foreground);
+}
+
+.dark .legal-document-card {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
 .section-pad {
   padding-top: clamp(2.75rem, 7vw, 7.5rem);
   padding-bottom: clamp(2.75rem, 7vw, 7.5rem);
