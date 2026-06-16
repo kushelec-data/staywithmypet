@@ -1805,7 +1805,8 @@ export const en = {
     profileCreateFailed: "Your account was created but the profile could not be saved. Contact support.",
     signupSuccess: "Account created! Taking you to your dashboard…",
     loginSuccess: "Welcome back! Taking you to your dashboard…",
-    checkEmail: "Check your email for a confirmation link, then log in.",
+    checkEmail:
+      "Account created! Check your email for a confirmation link, then log in.",
     login: {
       title: "Welcome back",
       subtitle: "Log in to manage your pets and bookings.",

@@ -24,7 +24,8 @@ import { passwordMeetsPolicy } from "@/lib/password-policy";
 import { createClient } from "@/lib/supabase";
 import { rateLimitMessage, checkRateLimit } from "@/lib/security/rate-limit";
 import { PasswordInput } from "@/components/ui/PasswordInput";
-import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type AuthFormProps = {
   mode: "login" | "signup";
@@ -33,12 +34,15 @@ type AuthFormProps = {
 export function AuthForm({ mode }: AuthFormProps) {
   const { t } = useLanguage();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const submitGenerationRef = useRef(0);
   const isSignup = mode === "signup";
   const copy = isSignup ? t.auth.signup : t.auth.login;
 
@@ -57,6 +61,31 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [signupDebug, setSignupDebug] = useState<SignupDebugSnapshot | null>(null);
   const showSignupDebug = isSignupDebugEnabled();
+
+  const isSubmitActive = useCallback(
+    (generation: number) => mountedRef.current && generation === submitGenerationRef.current,
+    [],
+  );
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      submitGenerationRef.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
+    setLoading(false);
+  }, [pathname, mode]);
+
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setLoading(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("passwordReset") === "1") {
@@ -80,29 +109,38 @@ export function AuthForm({ mode }: AuthFormProps) {
     });
   }
 
-  async function goAfterAuth(message: string) {
+  async function goAfterAuth(message: string, generation: number) {
+    if (!isSubmitActive(generation)) return;
     setSuccess(message);
+    setLoading(false);
+
     const {
       data: { user: sessionUser },
     } = await supabase.auth.getUser();
+    if (!isSubmitActive(generation)) return;
+
     let destination = DASHBOARD_PATH;
     if (sessionUser) {
       const profile = await fetchUserProfile(supabase, sessionUser.id);
+      if (!isSubmitActive(generation)) return;
       if (profile && profile.id !== sessionUser.id) {
         await supabase.auth.signOut();
         setError(t.auth.profileSessionMismatch);
-        setLoading(false);
         return;
       }
       destination = resolvePostLoginPath(profile, searchParams.get("next"));
     }
+
     await new Promise((resolve) => setTimeout(resolve, 600));
+    if (!isSubmitActive(generation)) return;
     router.push(destination);
     router.refresh();
   }
 
   async function handleEmailAuth(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const generation = ++submitGenerationRef.current;
+
     setError(null);
     setSuccess(null);
     setInfo(null);
@@ -114,18 +152,19 @@ export function AuthForm({ mode }: AuthFormProps) {
     const name = String(form.get("name") ?? "").trim();
     const passwordField = isSignup ? password : String(form.get("password") ?? "");
 
-    const rateAction = isSignup ? "auth_signup" : "auth_login";
-    const limit = checkRateLimit(rateAction, email.toLowerCase() || "anonymous");
-    if (!limit.ok) {
-      setError(rateLimitMessage(limit.retryAfterSec));
-      setLoading(false);
-      return;
-    }
-
     try {
+      const rateAction = isSignup ? "auth_signup" : "auth_login";
+      const limit = checkRateLimit(rateAction, email.toLowerCase() || "anonymous");
+      if (!limit.ok) {
+        if (isSubmitActive(generation)) {
+          setError(rateLimitMessage(limit.retryAfterSec));
+        }
+        return;
+      }
+
       if (isSignup) {
         if (!passwordMeetsPolicy(passwordField)) {
-          setError(t.auth.weakPassword);
+          if (isSubmitActive(generation)) setError(t.auth.weakPassword);
           return;
         }
         const emailRedirectTo = getAuthCallbackUrl(DASHBOARD_PATH);
@@ -137,6 +176,8 @@ export function AuthForm({ mode }: AuthFormProps) {
             emailRedirectTo,
           },
         });
+
+        if (!isSubmitActive(generation)) return;
 
         logSignupResponseDev(data, signUpError, emailRedirectTo);
         if (showSignupDebug) {
@@ -150,7 +191,8 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         if (data.session && data.user) {
           await finishSession(name);
-          await goAfterAuth(t.auth.signupSuccess);
+          if (!isSubmitActive(generation)) return;
+          await goAfterAuth(t.auth.signupSuccess, generation);
           return;
         }
 
@@ -168,11 +210,15 @@ export function AuthForm({ mode }: AuthFormProps) {
         password: passwordField,
       });
 
+      if (!isSubmitActive(generation)) return;
+
       if (signInError) throw signInError;
 
       await finishSession();
-      await goAfterAuth(t.auth.loginSuccess);
+      if (!isSubmitActive(generation)) return;
+      await goAfterAuth(t.auth.loginSuccess, generation);
     } catch (err) {
+      if (!isSubmitActive(generation)) return;
       if (isSignup) {
         const message = err instanceof Error ? err.message : t.auth.errorGeneric;
         setError(message || t.auth.errorGeneric);
@@ -180,11 +226,14 @@ export function AuthForm({ mode }: AuthFormProps) {
         setError(formatAuthError(err, authMessages));
       }
     } finally {
-      setLoading(false);
+      if (isSubmitActive(generation)) {
+        setLoading(false);
+      }
     }
   }
 
   async function handleGoogle() {
+    const generation = ++submitGenerationRef.current;
     setError(null);
     setSuccess(null);
     setInfo(null);
@@ -207,8 +256,13 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       if (oauthError) throw oauthError;
     } catch (err) {
-      setError(formatAuthError(err, authMessages));
-      setLoading(false);
+      if (isSubmitActive(generation)) {
+        setError(formatAuthError(err, authMessages));
+      }
+    } finally {
+      if (isSubmitActive(generation)) {
+        setLoading(false);
+      }
     }
   }
 

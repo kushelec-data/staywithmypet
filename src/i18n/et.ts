@@ -1808,7 +1808,8 @@ export const et = {
     profileCreateFailed: "Konto loodi, kuid profiili ei õnnestunud salvestada. Võta ühendust toega.",
     signupSuccess: "Konto loodud! Suuname sind juhtpaneelile…",
     loginSuccess: "Tere tulemast tagasi! Suuname sind juhtpaneelile…",
-    checkEmail: "Kontrolli e-posti kinnituse lingi jaoks, seejärel logi sisse.",
+    checkEmail:
+      "Konto loodud! Kontrolli oma e-posti kinnituse lingi jaoks ja logi seejärel sisse.",
     login: {
       title: "Tere tulemast tagasi",
       subtitle: "Logi sisse, et hallata lemmikuid ja broneeringuid.",
