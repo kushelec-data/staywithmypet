@@ -8,6 +8,7 @@ import {
   calendarCellClassName,
   calendarCellStyle,
   calendarLegendBackground,
+  CALENDAR_COLORS,
   type CalendarCellFill,
   type CalendarLegendKind,
   CALENDAR_LEGEND,
@@ -139,15 +140,22 @@ export const PASTEL_DEFAULT_TODAY_SELECT_CELL = DEFAULT_TODAY_SELECT_CELL;
 export function legendSwatchStyle(
   kind: CalendarLegendKind | "past" | "selected",
 ): CSSProperties {
-  if (kind === "past" || kind === "selected") {
+  if (kind === "past") {
     return {
       backgroundColor: calendarLegendBackground("unavailable"),
-      borderColor: "rgba(0, 0, 0, 0.08)",
+      borderColor: CALENDAR_COLORS.border,
+    };
+  }
+  if (kind === "selected") {
+    return {
+      backgroundColor: calendarLegendBackground("available"),
+      borderColor: CALENDAR_COLORS.selectedBorder,
+      borderWidth: 2,
     };
   }
   return {
     backgroundColor: calendarLegendBackground(kind),
-    borderColor: "rgba(0, 0, 0, 0.08)",
+    borderColor: CALENDAR_COLORS.border,
   };
 }
 

@@ -2,6 +2,12 @@
  * Account area design system — single source of truth.
  * Sync with `.account-area` in `src/app/globals.css`.
  */
+import {
+  STATUS_ALERT_ERROR_CLASS,
+  STATUS_ALERT_SUCCESS_CLASS,
+  statusScoreTextClass,
+} from "@/lib/status-colors";
+
 export const ACCOUNT_COLORS = {
   primary: "#2E6B3F",
   primaryHover: "#255A34",
@@ -116,16 +122,12 @@ export const ACCOUNT_LIST_ITEM_ACTIVE_CLASS =
 export const ACCOUNT_LIST_ITEM_INACTIVE_CLASS =
   "rounded-2xl hover:bg-[#F8F6F1]";
 
-export const ACCOUNT_ALERT_ERROR_CLASS =
-  "rounded-xl border border-brand-pink/25 bg-brand-pink-muted/40 px-3 py-2 text-sm text-brand-pink";
+export const ACCOUNT_ALERT_ERROR_CLASS = STATUS_ALERT_ERROR_CLASS;
 
-export const ACCOUNT_ALERT_SUCCESS_CLASS =
-  "rounded-xl border border-[#E5E2D8] bg-[#DDEEDF]/80 px-3 py-2 text-sm text-[#2E6B3F]";
+export const ACCOUNT_ALERT_SUCCESS_CLASS = STATUS_ALERT_SUCCESS_CLASS;
 
 export function accountScoreTextClass(percent: number): string {
-  if (percent >= 70) return ACCOUNT_SCORE_TEXT_CLASS;
-  if (percent >= 40) return "text-amber-700 dark:text-amber-400";
-  return "text-red-600 dark:text-red-400";
+  return statusScoreTextClass(percent);
 }
 
 export function accountProgressFillClass(_percent: number): string {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { STATUS_ALERT_ERROR_CLASS, STATUS_ALERT_SUCCESS_CLASS } from "@/lib/status-colors";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
@@ -328,7 +329,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             </div>
             {isSignup && <p className="text-xs text-muted">{t.auth.signup.terms}</p>}
             {error ? (
-              <p className="rounded-xl bg-error-bg px-3 py-2 text-sm text-error-text" role="alert">
+              <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
                 {error}
               </p>
             ) : null}
@@ -336,7 +337,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               <SignupDebugPanel snapshot={signupDebug} />
             ) : null}
             {success ? (
-              <p className="rounded-xl bg-success-bg px-3 py-2 text-sm font-medium text-success-text" role="status">
+              <p className={STATUS_ALERT_SUCCESS_CLASS} role="status">
                 {success}
               </p>
             ) : null}

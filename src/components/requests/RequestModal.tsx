@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { RequestBookingCalendar } from "@/components/calendar/RequestBookingCalendar";
 import { Button } from "@/components/ui/Button";
 import { careTypeRequestOptions } from "@/lib/care-type-options";
@@ -222,7 +223,7 @@ export function RequestModal({
 
         {displayError ? (
           <p
-            className="mt-4 whitespace-pre-wrap rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink"
+            className={`mt-4 whitespace-pre-wrap ${STATUS_ALERT_ERROR_CLASS}`}
             role="alert"
           >
             {displayError}

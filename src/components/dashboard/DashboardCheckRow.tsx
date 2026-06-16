@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { DASHBOARD_LINK_CLASS, DASHBOARD_STATUS_COMPLETE_CLASS } from "@/lib/dashboard-theme";
+import {
+  STATUS_CHECK_COMPLETE_CLASS,
+  STATUS_CHECK_MISSING_CLASS,
+  STATUS_CHECK_PENDING_CLASS,
+  STATUS_CHECK_PENDING_TEXT_CLASS,
+} from "@/lib/status-colors";
+import { DASHBOARD_LINK_CLASS } from "@/lib/dashboard-theme";
 
 export type DashboardCheckStatus = "completed" | "pending" | "missing";
 
@@ -17,15 +23,15 @@ export function DashboardCheckRow({ status, label, hint, href }: DashboardCheckR
     status === "completed" ? "✓" : status === "pending" ? "○" : "—";
   const iconClass =
     status === "completed"
-      ? DASHBOARD_STATUS_COMPLETE_CLASS
+      ? STATUS_CHECK_COMPLETE_CLASS
       : status === "pending"
-        ? "border border-amber-400/60 bg-amber-50 text-amber-700"
-        : "border border-[#E5E2D8] bg-[#F8F6F1] text-muted";
+        ? STATUS_CHECK_PENDING_CLASS
+        : STATUS_CHECK_MISSING_CLASS;
   const textClass =
     status === "completed"
       ? "text-foreground"
       : status === "pending"
-        ? "text-amber-800"
+        ? STATUS_CHECK_PENDING_TEXT_CLASS
         : "text-muted";
 
   const labelNode =

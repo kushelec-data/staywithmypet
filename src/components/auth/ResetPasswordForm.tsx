@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS, STATUS_ALERT_WARNING_CLASS } from "@/lib/status-colors";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -26,9 +27,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 function RecoveryDebugPanel({ snapshot }: { snapshot: NonNullable<ReturnType<typeof captureRecoveryUrlDebug>> }) {
   return (
-    <aside className="mt-4 rounded-2xl border border-amber-300/70 bg-amber-50/90 p-4 text-left text-xs">
-      <p className="font-semibold uppercase tracking-wide text-amber-900">Recovery debug (dev/test)</p>
-      <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all font-mono text-amber-950">
+    <aside className={`mt-4 p-4 text-left text-xs ${STATUS_ALERT_WARNING_CLASS} rounded-2xl`}>
+      <p className="font-semibold uppercase tracking-wide text-status-warning-text">Recovery debug (dev/test)</p>
+      <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all font-mono text-status-warning-text">
         {JSON.stringify(snapshot, null, 2)}
       </pre>
     </aside>
@@ -253,7 +254,7 @@ export function ResetPasswordForm() {
                 />
               </div>
               {error ? (
-                <p className="rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+                <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
                   {error}
                 </p>
               ) : null}

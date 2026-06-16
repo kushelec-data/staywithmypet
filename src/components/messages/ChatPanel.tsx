@@ -1,6 +1,7 @@
 "use client";
 
 import { BookingReviewBanner } from "@/components/messages/BookingReviewBanner";
+import { STATUS_ALERT_ERROR_CLASS, STATUS_ALERT_ERROR_COMPACT_CLASS, STATUS_ALERT_WARNING_COMPACT_CLASS } from "@/lib/status-colors";
 import { MessageThread } from "@/components/messages/MessageThread";
 import { ReportUserModal } from "@/components/trust/ReportUserModal";
 import { useLanguage } from "@/context/LanguageContext";
@@ -333,7 +334,7 @@ export function ChatPanel({
 
       {cancelledBookingGraceActive && cancelledGraceEndLabel ? (
         <p
-          className="shrink-0 border-b border-amber-200/80 bg-amber-50 px-4 py-2.5 text-xs leading-relaxed text-amber-950 dark:border-amber-500/20 dark:bg-amber-950/40 dark:text-amber-100"
+          className={`shrink-0 ${STATUS_ALERT_WARNING_COMPACT_CLASS}`}
           role="status"
         >
           {m.cancelledBookingChatGraceBanner.replace("{date}", cancelledGraceEndLabel)}
@@ -370,7 +371,7 @@ export function ChatPanel({
 
       {error ? (
         <p
-          className="mx-3 mb-1 shrink-0 rounded-lg bg-brand-pink-muted/50 px-2.5 py-1.5 text-xs text-brand-pink"
+          className={`mx-3 mb-1 shrink-0 ${STATUS_ALERT_ERROR_COMPACT_CLASS}`}
           role="alert"
         >
           {error}

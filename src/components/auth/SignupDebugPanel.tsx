@@ -1,3 +1,4 @@
+import { STATUS_ALERT_WARNING_CLASS } from "@/lib/status-colors";
 import {
   EXPECTED_PRODUCTION_SIGNUP_CALLBACK,
   type SignupDebugSnapshot,
@@ -10,9 +11,9 @@ type SignupDebugPanelProps = {
 
 function DebugRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[9rem_1fr] gap-2 border-b border-amber-200/80 py-1.5 last:border-b-0">
-      <dt className="font-medium text-amber-950">{label}</dt>
-      <dd className="break-all font-mono text-xs text-amber-900">{value}</dd>
+    <div className="grid grid-cols-[9rem_1fr] gap-2 border-b border-status-warning-border py-1.5 last:border-b-0">
+      <dt className="font-medium text-status-warning-text">{label}</dt>
+      <dd className="break-all font-mono text-xs text-status-warning-text">{value}</dd>
     </div>
   );
 }
@@ -20,13 +21,13 @@ function DebugRow({ label, value }: { label: string; value: string }) {
 export function SignupDebugPanel({ snapshot }: SignupDebugPanelProps) {
   return (
     <aside
-      className="mt-6 rounded-2xl border border-amber-300/70 bg-amber-50/90 p-4 text-left"
+      className={`mt-6 p-4 text-left ${STATUS_ALERT_WARNING_CLASS} rounded-2xl`}
       aria-label="Signup debug (non-production only)"
     >
-      <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+      <p className="text-xs font-semibold uppercase tracking-wide text-status-warning-text">
         Signup debug (dev/test only)
       </p>
-      <p className="mt-1 text-xs text-amber-800">
+      <p className="mt-1 text-xs text-status-warning-text">
         Outcome: <span className="font-mono">{signupOutcomeLabel(snapshot)}</span>
       </p>
       <dl className="mt-3">

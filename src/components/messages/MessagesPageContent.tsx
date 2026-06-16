@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { AccountEmptyState } from "@/components/account/AccountEmptyState";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { ACCOUNT_MESSAGES_PANEL_CLASS } from "@/lib/account-ui";
@@ -201,7 +202,7 @@ export function MessagesPageContent() {
 
           {loadError ? (
             <p
-              className="mx-3 my-2 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink"
+              className={`mx-3 my-2 ${STATUS_ALERT_ERROR_CLASS}`}
               role="alert"
             >
               {loadError}

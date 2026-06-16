@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import { STATUS_ALERT_ERROR_COMPACT_CLASS } from "@/lib/status-colors";
 import { useLanguage } from "@/context/LanguageContext";
 import type { Dictionary } from "@/i18n/translations";
 import {
@@ -361,7 +362,7 @@ export function NotificationsBell() {
 
           {error ? (
             <p
-              className="mx-3 my-2 shrink-0 rounded-lg bg-brand-pink-muted/50 px-3 py-2 text-xs text-brand-pink"
+              className={`mx-3 my-2 shrink-0 ${STATUS_ALERT_ERROR_COMPACT_CLASS}`}
               role="alert"
             >
               {error}

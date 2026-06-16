@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import type { RoleModeSearchPage } from "@/lib/role-mode-search";
@@ -45,7 +46,7 @@ export function RoleModeGuardModal({
         </p>
         <p className="mt-3 text-sm leading-relaxed text-foreground">{copy.message}</p>
         {error ? (
-          <p className="mt-3 rounded-xl bg-brand-pink-muted/40 px-3 py-2 text-sm text-brand-pink" role="alert">
+          <p className={`mt-3 ${STATUS_ALERT_ERROR_CLASS}`} role="alert">
             {error}
           </p>
         ) : null}

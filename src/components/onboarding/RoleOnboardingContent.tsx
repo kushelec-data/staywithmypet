@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { RoleOnboardingIllustration } from "@/components/onboarding/RoleOnboardingIllustration";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
@@ -143,7 +144,7 @@ export function RoleOnboardingContent() {
 
             {error ? (
               <p
-                className="rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink"
+                className={STATUS_ALERT_ERROR_CLASS}
                 role="alert"
               >
                 {error}

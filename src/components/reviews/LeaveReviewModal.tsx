@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
 import { StarRatingPicker } from "@/components/reviews/StarRatingPicker";
 import { useLanguage } from "@/context/LanguageContext";
@@ -168,7 +169,7 @@ export function LeaveReviewModal({
           </div>
 
           {(localError || error) ? (
-            <p className="rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+            <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
               {localError ?? error}
             </p>
           ) : null}

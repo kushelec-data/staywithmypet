@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_WARNING_CLASS } from "@/lib/status-colors";
 import { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -465,7 +466,7 @@ export function MembershipPageContent({
 
       {cancelError ? (
         <p
-          className="mb-4 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          className={`mb-4 rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`}
           role="alert"
         >
           {cancelError}
@@ -474,7 +475,7 @@ export function MembershipPageContent({
 
       {stripeEnabled && stripeConfigMessage ? (
         <p
-          className="mb-4 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          className={`mb-4 rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`}
           role="alert"
         >
           {stripeConfigMessage}

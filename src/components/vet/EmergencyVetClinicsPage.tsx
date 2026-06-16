@@ -5,6 +5,7 @@ import { PageMain } from "@/components/layout/PageMain";
 import { VetClinicList } from "@/components/vet/VetClinicList";
 import { useProfile } from "@/context/ProfileContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { STATUS_SURFACE_WARNING_CLASS } from "@/lib/status-colors";
 import { CONTENT_CONTAINER } from "@/lib/layout";
 import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import { VET_CLINICS } from "@/data/vet-clinics";
@@ -84,7 +85,7 @@ export function EmergencyVetClinicsPage() {
 
         <section className="pb-12">
           <div className={CONTENT_CONTAINER}>
-            <div className={`${PUBLIC_CARD} max-w-3xl border-amber-200/60 bg-amber-50/40`}>
+            <div className={`${PUBLIC_CARD} max-w-3xl ${STATUS_SURFACE_WARNING_CLASS}`}>
               <h2 className={PUBLIC_SECTION_TITLE}>{v.disclaimerTitle}</h2>
               <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-muted">
                 {v.disclaimer.map((item) => (

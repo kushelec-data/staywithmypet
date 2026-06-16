@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import type { ReactNode } from "react";
 
@@ -57,7 +58,7 @@ export function ProfileEditStepPanel({
 
       {error ? (
         <p
-          className="mb-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink"
+          className={`mb-4 ${STATUS_ALERT_ERROR_CLASS}`}
           role="alert"
         >
           {error}

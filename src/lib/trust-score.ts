@@ -1,4 +1,5 @@
 import { isBioCompleteForProfile } from "@/lib/profile-completeness";
+import { statusProgressFillClass, statusScoreTextClass } from "@/lib/status-colors";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 
 /** Profile fields used for trust scoring (dashboard + public). */
@@ -171,17 +172,13 @@ export function buildTrustBreakdown(
 }
 
 export function trustScoreTierClass(percent: number): string {
-  if (percent >= 90) return "text-brand-teal";
-  if (percent >= 70) return "text-brand-teal/90";
-  if (percent >= 40) return "text-amber-700";
-  return "text-red-600";
+  if (percent >= 90) return "text-status-available-text";
+  return statusScoreTextClass(percent);
 }
 
 export function trustScoreBarClass(percent: number): string {
-  if (percent >= 90) return "bg-brand-teal";
-  if (percent >= 70) return "bg-brand-teal/80";
-  if (percent >= 40) return "bg-amber-500";
-  return "bg-red-500/80";
+  if (percent >= 90) return "bg-status-available-text";
+  return statusProgressFillClass(percent);
 }
 
 export function trustInputFromProfileSnapshot(args: {

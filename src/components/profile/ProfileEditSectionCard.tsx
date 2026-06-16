@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
 import { ACCOUNT_CARD_CLASS, ACCOUNT_SECTION_DESCRIPTION, ACCOUNT_SECTION_TITLE } from "@/lib/account-ui";
 import { Check, Pencil } from "lucide-react";
@@ -106,7 +107,7 @@ export function ProfileEditSectionCard({
       ) : null}
 
       {error ? (
-        <p className="mt-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+        <p className={`mt-4 ${STATUS_ALERT_ERROR_CLASS}`} role="alert">
           {error}
         </p>
       ) : null}

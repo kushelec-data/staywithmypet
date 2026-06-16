@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { useEffect, useRef } from "react";
@@ -45,7 +46,7 @@ export function CompleteBookingModal({
         </p>
 
         {error ? (
-          <p className="mt-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+          <p className={`mt-4 ${STATUS_ALERT_ERROR_CLASS}`} role="alert">
             {error}
           </p>
         ) : null}

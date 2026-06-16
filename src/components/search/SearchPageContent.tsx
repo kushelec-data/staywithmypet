@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { PetCard } from "@/components/pets/PetCard";
 import { OwnerCard } from "@/components/owners/OwnerCard";
@@ -487,7 +488,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
             />
             {loadError ? (
               <p
-                className="rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink"
+                className={STATUS_ALERT_ERROR_CLASS}
                 role="alert"
               >
                 {loadError}
@@ -573,7 +574,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
 
           {loadError ? (
             <p
-              className="mt-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink"
+              className={`mt-4 ${STATUS_ALERT_ERROR_CLASS}`}
               role="alert"
             >
               {loadError}

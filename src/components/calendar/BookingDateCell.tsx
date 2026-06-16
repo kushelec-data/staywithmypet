@@ -60,7 +60,7 @@ export function BookingDateCell({
                   className="object-cover"
                 />
               ) : (
-                <span className="flex h-full w-full items-center justify-center bg-[#FCE2E2] text-[0.5rem] font-bold text-[#333333]">
+                <span className="flex h-full w-full items-center justify-center text-[0.5rem] font-bold text-[#333333]" style={{ backgroundColor: CALENDAR_COLORS.booked }}>
                   {slice.displayName.charAt(0).toUpperCase() || "?"}
                 </span>
               )}

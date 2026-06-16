@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_WARNING_CLASS } from "@/lib/status-colors";
 import { PetPublicMobileCta } from "@/components/pets/PetPublicMobileCta";
 import { PetPublicParentCard } from "@/components/pets/PetPublicParentCard";
 import { PetPublicReviewsBlock } from "@/components/pets/PetPublicReviewsBlock";
@@ -113,7 +114,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
     >
       {notListedPublicly && isOwnerPreview ? (
         <p
-          className="mb-4 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          className={`mb-4 ${STATUS_ALERT_WARNING_CLASS}`}
           role="status"
         >
           Preview only — turn on public listing in pet settings so others can find this page.

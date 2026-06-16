@@ -27,6 +27,25 @@
   --success-bg: #eef8f2;
   --success-text: #265d32;
 
+  /* Unified status palette (see src/lib/status-colors.ts) */
+  --status-available-bg: #c8edd6;
+  --status-available-text: #1f5c32;
+  --status-available-border: rgba(31, 92, 50, 0.22);
+  --status-booked-bg: #f5d0d6;
+  --status-booked-text: #8b3340;
+  --status-booked-border: rgba(196, 61, 77, 0.22);
+  --status-pending-bg: #ffe08a;
+  --status-pending-text: #7a5510;
+  --status-pending-border: rgba(180, 130, 20, 0.35);
+  --status-unavailable-bg: #cdd1d8;
+  --status-unavailable-text: #5c5c5c;
+  --status-unavailable-border: rgba(0, 0, 0, 0.1);
+  --status-selected-border: #265d32;
+  --status-today-border: #3d8b52;
+  --status-warning-bg: #fff0c4;
+  --status-warning-text: #7a5510;
+  --status-warning-border: rgba(245, 180, 60, 0.45);
+
   /* Nav active + accents */
   --brand-pink: #f06a7a;
   --brand-pink-muted: #fde8eb;
@@ -82,6 +101,24 @@
   --success-bg: #1e3324;
   --success-text: #a0e480;
 
+  --status-available-bg: #2a4034;
+  --status-available-text: #a0e480;
+  --status-available-border: rgba(160, 228, 128, 0.25);
+  --status-booked-bg: #3d2830;
+  --status-booked-text: #f0a0a8;
+  --status-booked-border: rgba(240, 160, 168, 0.25);
+  --status-pending-bg: #3d3520;
+  --status-pending-text: #f0d080;
+  --status-pending-border: rgba(240, 208, 128, 0.3);
+  --status-unavailable-bg: #2a2e32;
+  --status-unavailable-text: #b8b0a3;
+  --status-unavailable-border: rgba(184, 176, 163, 0.2);
+  --status-selected-border: #3d8b52;
+  --status-today-border: #4a9d5c;
+  --status-warning-bg: #3d3520;
+  --status-warning-text: #f0d080;
+  --status-warning-border: rgba(240, 208, 128, 0.3);
+
   --brand-pink: #e87a88;
   --brand-pink-muted: #3d2830;
   --brand-pink-hover: #f06a7a;
@@ -108,6 +145,21 @@
   --color-error-text: var(--error-text);
   --color-success-bg: var(--success-bg);
   --color-success-text: var(--success-text);
+  --color-status-available-bg: var(--status-available-bg);
+  --color-status-available-text: var(--status-available-text);
+  --color-status-available-border: var(--status-available-border);
+  --color-status-booked-bg: var(--status-booked-bg);
+  --color-status-booked-text: var(--status-booked-text);
+  --color-status-booked-border: var(--status-booked-border);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-text: var(--status-pending-text);
+  --color-status-pending-border: var(--status-pending-border);
+  --color-status-unavailable-bg: var(--status-unavailable-bg);
+  --color-status-unavailable-text: var(--status-unavailable-text);
+  --color-status-unavailable-border: var(--status-unavailable-border);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-text: var(--status-warning-text);
+  --color-status-warning-border: var(--status-warning-border);
   --color-brand-teal: var(--brand-teal);
   --color-brand-teal-hover: var(--brand-teal-hover);
   --color-brand-pink: var(--brand-pink);

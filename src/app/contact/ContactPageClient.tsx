@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS, STATUS_ALERT_SUCCESS_CLASS } from "@/lib/status-colors";
 import { submitContactFormAction } from "@/app/actions/contact";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -79,7 +80,7 @@ export function ContactPageClient() {
         >
           {success ? (
             <p
-              className="rounded-xl bg-success-bg px-3 py-2 text-sm font-medium text-success-text"
+              className={STATUS_ALERT_SUCCESS_CLASS}
               role="status"
             >
               {c.successMessage}
@@ -88,7 +89,7 @@ export function ContactPageClient() {
 
           {error ? (
             <p
-              className="rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink"
+              className={STATUS_ALERT_ERROR_CLASS}
               role="alert"
             >
               {error}

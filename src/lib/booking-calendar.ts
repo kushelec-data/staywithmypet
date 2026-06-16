@@ -19,12 +19,12 @@ export type CalendarBookingColor = {
 };
 
 const BOOKING_COLOR_PALETTE: CalendarBookingColor[] = [
-  { index: 0, bg: "bg-emerald-100", ring: "ring-emerald-300/70", text: "text-emerald-900", tint: "rgba(16, 185, 129, 0.22)" },
-  { index: 1, bg: "bg-sky-100", ring: "ring-sky-300/70", text: "text-sky-900", tint: "rgba(14, 165, 233, 0.22)" },
-  { index: 2, bg: "bg-violet-100", ring: "ring-violet-300/70", text: "text-violet-900", tint: "rgba(139, 92, 246, 0.22)" },
-  { index: 3, bg: "bg-amber-100", ring: "ring-amber-300/70", text: "text-amber-900", tint: "rgba(245, 158, 11, 0.24)" },
-  { index: 4, bg: "bg-rose-100", ring: "ring-rose-300/70", text: "text-rose-900", tint: "rgba(244, 63, 94, 0.2)" },
-  { index: 5, bg: "bg-teal-100", ring: "ring-teal-300/70", text: "text-teal-900", tint: "rgba(20, 184, 166, 0.22)" },
+  { index: 0, bg: "bg-status-booked-bg", ring: "ring-status-booked-border", text: "text-status-booked-text", tint: "rgba(245, 208, 214, 0.55)" },
+  { index: 1, bg: "bg-status-pending-bg", ring: "ring-status-pending-border", text: "text-status-pending-text", tint: "rgba(255, 224, 138, 0.55)" },
+  { index: 2, bg: "bg-status-available-bg", ring: "ring-status-available-border", text: "text-status-available-text", tint: "rgba(200, 237, 214, 0.55)" },
+  { index: 3, bg: "bg-status-booked-bg/80", ring: "ring-status-booked-border", text: "text-status-booked-text", tint: "rgba(245, 208, 214, 0.45)" },
+  { index: 4, bg: "bg-status-pending-bg/80", ring: "ring-status-pending-border", text: "text-status-pending-text", tint: "rgba(255, 224, 138, 0.45)" },
+  { index: 5, bg: "bg-status-unavailable-bg", ring: "ring-status-unavailable-border", text: "text-status-unavailable-text", tint: "rgba(205, 209, 216, 0.55)" },
 ];
 
 export function hashBookingColor(seed: string): CalendarBookingColor {

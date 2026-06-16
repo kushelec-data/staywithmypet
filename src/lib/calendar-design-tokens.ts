@@ -1,18 +1,8 @@
 import type { CSSProperties } from "react";
+import { CALENDAR_STATUS_HEX } from "@/lib/status-colors";
 
-/** Shared calendar design tokens — matches product reference (June 2026 calendar). */
-export const CALENDAR_COLORS = {
-  available: "#DDF4E3",
-  booked: "#FCE2E2",
-  pending: "#FFF2CC",
-  unavailable: "#E5E7EB",
-  todayBorder: "#2E7D32",
-  selectedBorder: "#1F6B3D",
-  surface: "#FFFFFF",
-  text: "#333333",
-  textMuted: "#5C5C5C",
-  border: "rgba(0, 0, 0, 0.08)",
-} as const;
+/** Shared calendar design tokens — colours from `status-colors.ts`. */
+export const CALENDAR_COLORS = CALENDAR_STATUS_HEX;
 
 export type CalendarLegendKind = "available" | "booked" | "pending" | "unavailable";
 
@@ -83,7 +73,7 @@ export function calendarCellStyle(options: {
   if (options.isSelected) {
     style.borderColor = CALENDAR_COLORS.selectedBorder;
     style.borderWidth = 2;
-    style.boxShadow = "0 1px 3px rgba(31, 107, 61, 0.18)";
+    style.boxShadow = "0 1px 3px rgba(38, 93, 50, 0.18)";
   } else if (options.isToday) {
     style.borderColor = CALENDAR_COLORS.todayBorder;
     style.borderWidth = 2;

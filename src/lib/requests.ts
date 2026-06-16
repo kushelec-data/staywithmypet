@@ -1,4 +1,5 @@
 import { formatCareTypeLabel } from "@/lib/care-type-options";
+import { statusBadgeClass } from "@/lib/status-colors";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { DateFormatLocale } from "@/lib/date-format";
@@ -126,18 +127,16 @@ export function requestStatusLabel(status: RequestRow["status"]): string {
 }
 
 export function requestStatusBadgeClasses(status: RequestRow["status"]): string {
-  const base = "inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold tracking-wide ring-1";
   switch (status) {
     case "accepted":
-      return `${base} bg-emerald-50 text-emerald-800 ring-emerald-200/70`;
+      return statusBadgeClass("booked");
     case "declined":
-      return `${base} bg-red-50 text-red-700 ring-red-200/70`;
+      return statusBadgeClass("error");
     case "cancelled":
-      return `${base} bg-neutral-100 text-neutral-600 ring-neutral-200/80`;
     case "completed":
-      return `${base} bg-sky-50 text-sky-800 ring-sky-200/70`;
+      return statusBadgeClass("unavailable");
     default:
-      return `${base} bg-amber-50 text-amber-800 ring-amber-200/70`;
+      return statusBadgeClass("pending");
   }
 }
 

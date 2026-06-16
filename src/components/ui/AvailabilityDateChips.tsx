@@ -1,3 +1,7 @@
+import {
+  STATUS_CHIP_AVAILABLE_CLASS,
+  STATUS_CHIP_AVAILABLE_OVERFLOW_CLASS,
+} from "@/lib/status-colors";
 import { formatAvailabilityDates, type DateFormatLocale } from "@/lib/date-format";
 import { DASHBOARD_TAG_CLASS } from "@/lib/dashboard-theme";
 
@@ -14,10 +18,8 @@ export type AvailabilityDateChipsProps = {
   tone?: "default" | "dashboard";
 };
 
-const chipDefault =
-  "rounded-full bg-mint/55 px-2.5 py-0.5 text-[0.7rem] font-semibold text-brand-teal dark:bg-mint/20 dark:text-mint";
-const chipOverflowDefault =
-  "rounded-full border border-brand-teal/25 bg-cream/70 px-2.5 py-0.5 text-[0.7rem] font-semibold text-brand-teal dark:border-brand-teal/35 dark:bg-cream/10 dark:text-brand-teal/90";
+const chipDefault = STATUS_CHIP_AVAILABLE_CLASS;
+const chipOverflowDefault = STATUS_CHIP_AVAILABLE_OVERFLOW_CLASS;
 const chipDashboard = `${DASHBOARD_TAG_CLASS} px-2.5 py-0.5 text-[0.7rem]`;
 const chipOverflowDashboard = `${DASHBOARD_TAG_CLASS} px-2.5 py-0.5 text-[0.7rem] opacity-90`;
 

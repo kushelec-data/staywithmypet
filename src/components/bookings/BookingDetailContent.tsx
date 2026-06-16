@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import Link from "next/link";
 import { BookingCompleteAction } from "@/components/bookings/BookingCompleteAction";
 import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBookingGuidanceNote";
@@ -162,7 +163,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
       {loading ? (
         <p className="text-sm text-muted">{b.loading}</p>
       ) : error ? (
-        <p className="rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+        <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
           {error}
         </p>
       ) : booking && user ? (
@@ -250,7 +251,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
           />
 
           {actionError ? (
-            <p className="mt-4 rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+            <p className={`mt-4 ${STATUS_ALERT_ERROR_CLASS}`} role="alert">
               {actionError}
             </p>
           ) : null}

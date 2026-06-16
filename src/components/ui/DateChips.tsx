@@ -1,3 +1,10 @@
+import {
+  STATUS_CHIP_AVAILABLE_CLASS,
+  STATUS_CHIP_AVAILABLE_COMPACT_CLASS,
+  STATUS_CHIP_AVAILABLE_OVERFLOW_CLASS,
+  STATUS_CHIP_AVAILABLE_OVERFLOW_COMPACT_CLASS,
+} from "@/lib/status-colors";
+
 type DateChipsProps = {
   labels: string[];
   isos?: string[];
@@ -10,14 +17,10 @@ type DateChipsProps = {
   compact?: boolean;
 };
 
-const chipPrimary =
-  "rounded-full bg-brand-teal px-2.5 py-0.5 text-[0.7rem] font-semibold text-white dark:bg-brand-teal/90";
-const chipOverflow =
-  "rounded-full border border-brand-teal/30 bg-mint/40 px-2.5 py-0.5 text-[0.7rem] font-semibold text-brand-teal dark:border-brand-teal/40 dark:bg-mint/25";
-const chipPrimaryCompact =
-  "rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold leading-tight text-white dark:bg-brand-teal/90";
-const chipOverflowCompact =
-  "rounded-full border border-brand-teal/30 bg-mint/40 px-2 py-0.5 text-[0.65rem] font-semibold leading-tight text-brand-teal dark:border-brand-teal/40 dark:bg-mint/25";
+const chipPrimary = STATUS_CHIP_AVAILABLE_CLASS;
+const chipOverflow = STATUS_CHIP_AVAILABLE_OVERFLOW_CLASS;
+const chipPrimaryCompact = STATUS_CHIP_AVAILABLE_COMPACT_CLASS;
+const chipOverflowCompact = STATUS_CHIP_AVAILABLE_OVERFLOW_COMPACT_CLASS;
 
 /** Rounded availability date pills for cards and summaries. */
 export function DateChips({

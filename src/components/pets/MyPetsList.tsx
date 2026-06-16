@@ -1,5 +1,6 @@
 "use client";
 
+import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { PetIntroCard } from "@/components/pets/PetIntroCard";
 import { PetManageActions } from "@/components/pets/PetManageActions";
 import { Button } from "@/components/ui/Button";
@@ -45,7 +46,7 @@ export function MyPetsList({ userId }: MyPetsListProps) {
 
   if (error) {
     return (
-      <p className="rounded-xl bg-brand-pink-muted/50 px-3 py-2 text-sm text-brand-pink" role="alert">
+      <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
         {error}
       </p>
     );
