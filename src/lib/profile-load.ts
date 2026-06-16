@@ -7,9 +7,15 @@ import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils";
 import { toFriendlyClientMessage } from "@/lib/security/errors";
+import { isMissingColumnError, supabaseErrorDetail } from "@/lib/supabase-errors";
 
+/** Columns present in committed Supabase migrations (safe default read list). */
 export const PROFILE_SELECT =
-  "id, display_name, avatar_url, bio, location, address, formatted_address, city, country, postal_code, google_place_id, public_location, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score, is_public, rating_avg, rating_count, membership_status, details, created_at";
+  "id, display_name, avatar_url, bio, location, address, formatted_address, city, country, postal_code, google_place_id, public_location, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, is_public, rating_avg, rating_count, membership_status, details, created_at";
+
+/** Optional trust/phone columns (RUN_THIS_trust_phase1.sql only — not in all databases). */
+const PROFILE_SELECT_TRUST =
+  "phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score";
 
 const PROFILE_SELECT_FALLBACKS = [
   "id, display_name, avatar_url, bio, location, address, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, is_public, rating_avg, rating_count, membership_status, details, created_at",
@@ -20,8 +26,59 @@ const PROFILE_SELECT_FALLBACKS = [
   "id, display_name, avatar_url, bio, location, phone",
 ] as const;
 
+const PROFILE_WRITE_STRIP_KEYS = [
+  "phone_country_code",
+  "phone_number",
+  "phone_e164",
+  "phone_verified",
+  "emergency_contact_name",
+  "emergency_contact_phone_country_code",
+  "emergency_contact_phone_number",
+  "emergency_contact_phone_e164",
+  "trust_score",
+  "formatted_address",
+  "city",
+  "country",
+  "postal_code",
+  "google_place_id",
+  "public_location",
+  "address",
+  "latitude",
+  "longitude",
+  "membership_status",
+  "active_mode",
+  "role_chosen_at",
+  "languages",
+  "details",
+] as const;
+
 /** Log reduced-column fallback at most once per select string per page load. */
 const warnedSelects = new Set<string>();
+let trustColumnsReadable: boolean | null = null;
+
+async function profilesTrustColumnsReadable(supabase: SupabaseClient): Promise<boolean> {
+  if (trustColumnsReadable !== null) return trustColumnsReadable;
+  const { error } = await supabase.from("profiles").select("phone_e164").limit(1);
+  trustColumnsReadable = !error;
+  return trustColumnsReadable;
+}
+
+async function enrichProfileDbRowWithTrustColumns(
+  supabase: SupabaseClient,
+  userId: string,
+  row: ProfileDbRow,
+): Promise<ProfileDbRow> {
+  if (!(await profilesTrustColumnsReadable(supabase))) return row;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(PROFILE_SELECT_TRUST)
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error || !data) return row;
+  return { ...row, ...(data as Partial<ProfileDbRow>) };
+}
 
 export type ProfileDbRow = {
   id: string;
@@ -146,8 +203,57 @@ export async function attachMemberships(
   return applyMembershipsToProfile(profile, memberships);
 }
 
-function isMissingColumnError(error: PostgrestError): boolean {
-  return /column/i.test(error.message);
+function stripProfileWriteColumns(row: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...row };
+  for (const key of PROFILE_WRITE_STRIP_KEYS) {
+    delete next[key];
+  }
+  return next;
+}
+
+/** Upsert profile row without `.select()` (avoids 400s when optional columns are absent). */
+export async function upsertProfileRowAndReload(
+  supabase: SupabaseClient,
+  userId: string,
+  row: Record<string, unknown>,
+  logLabel: string,
+): Promise<ProfileRow> {
+  let payload = { ...row };
+  let strippedOptional = false;
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+
+    if (!error) {
+      const reloaded = await fetchUserProfile(supabase, userId);
+      if (!reloaded) {
+        throw new Error("Profile saved but could not be loaded.");
+      }
+      return reloaded;
+    }
+
+    if (isMissingColumnError(error) && !strippedOptional) {
+      payload = stripProfileWriteColumns(payload);
+      strippedOptional = true;
+      continue;
+    }
+
+    if (isMissingColumnError(error)) {
+      const next = { ...payload };
+      const match = error.message.match(/'([^']+)'/);
+      const missing = match?.[1];
+      if (missing && missing in next) {
+        delete next[missing];
+        payload = next;
+        continue;
+      }
+    }
+
+    console.error(`[profile] ${logLabel} error`, supabaseErrorDetail(error));
+    throw new Error(formatSupabaseError(error));
+  }
+
+  throw new Error("Profile could not be saved.");
 }
 
 export async function fetchUserProfile(
@@ -182,8 +288,9 @@ export async function fetchUserProfile(
           );
         }
       }
-      const mapped = mapProfileRow(row);
-      return attachMemberships(supabase, mapped, row);
+      const enriched = await enrichProfileDbRowWithTrustColumns(supabase, userId, row);
+      const mapped = mapProfileRow(enriched);
+      return attachMemberships(supabase, mapped, enriched);
     }
 
     if (!isMissingColumnError(error)) {

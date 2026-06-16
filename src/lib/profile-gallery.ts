@@ -1,9 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import {
+  fetchUserProfile,
   formatSupabaseError,
-  mapProfileRow,
-  PROFILE_SELECT,
-  type ProfileDbRow,
 } from "@/lib/profile-load";
 import { parseProfileDetails } from "@/lib/profile-details";
 import type { ProfileRow } from "@/lib/profile-utils";
@@ -64,20 +62,17 @@ async function persistGallery(
     row.avatar_url = avatarUrl;
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(row)
-    .eq("id", userId)
-    .select(PROFILE_SELECT)
-    .single();
+  const { error } = await supabase.from("profiles").update(row).eq("id", userId);
 
   if (error) {
     throw new Error(formatSupabaseError(error as PostgrestError));
   }
-  if (!data) {
+
+  const reloaded = await fetchUserProfile(supabase, userId);
+  if (!reloaded) {
     throw new Error("Could not update profile photos.");
   }
-  return mapProfileRow(data as unknown as ProfileDbRow);
+  return reloaded;
 }
 
 function galleryStoragePath(userId: string, file: File): string {

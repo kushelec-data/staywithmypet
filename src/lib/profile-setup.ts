@@ -10,12 +10,9 @@ import {
 } from "@/lib/profile-mode";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import {
-  attachMemberships,
   fetchUserProfile,
   formatSupabaseError,
-  mapProfileRow,
-  PROFILE_SELECT,
-  type ProfileDbRow,
+  upsertProfileRowAndReload,
 } from "@/lib/profile-load";
 import {
   mergeDetailsGooglePlace,
@@ -413,51 +410,7 @@ export async function saveUserProfile(
 
   console.log("[profile] save payload", { ...row, details: "[merged]" });
 
-  let { data, error } = await supabase
-    .from("profiles")
-    .upsert(row, { onConflict: "id" })
-    .select(PROFILE_SELECT)
-    .single();
-
-  if (error && /column/i.test(error.message)) {
-    const {
-      phone_country_code: _a,
-      phone_number: _b,
-      phone_e164: _c,
-      phone_verified: _d,
-      emergency_contact_name: _e,
-      emergency_contact_phone_country_code: _f,
-      emergency_contact_phone_number: _g,
-      emergency_contact_phone_e164: _h,
-      trust_score: _i,
-      details: det,
-      ...minimal
-    } = row;
-    const retry = await supabase
-      .from("profiles")
-      .upsert({ ...minimal, details: det }, { onConflict: "id" })
-      .select(PROFILE_SELECT)
-      .single();
-    data = retry.data;
-    error = retry.error;
-  }
-
-  if (error) {
-    console.error("[profile] save error", error);
-    throw new Error(formatSupabaseError(error));
-  }
-
-  if (!data) {
-    const reloaded = await fetchUserProfile(supabase, userId);
-    if (!reloaded) throw new Error("Profile saved but could not be loaded.");
-    console.log("[profile] saved (reloaded)", reloaded);
-    return reloaded;
-  }
-
-  const dbRow = data as unknown as ProfileDbRow;
-  const saved = await attachMemberships(supabase, mapProfileRow(dbRow), dbRow);
-  console.log("[profile] saved", saved);
-  return saved;
+  return upsertProfileRowAndReload(supabase, userId, row, "save");
 }
 
 export type BasicProfileSectionInput = {
@@ -674,52 +627,7 @@ async function persistProfilePartial(
   logLabel: string,
 ): Promise<ProfileRow> {
   console.log(`[profile] ${logLabel} payload`, { ...row, details: row.details ? "[merged]" : undefined });
-
-  let { data, error } = await supabase
-    .from("profiles")
-    .upsert(row, { onConflict: "id" })
-    .select(PROFILE_SELECT)
-    .single();
-
-  if (error && /column/i.test(error.message)) {
-    const reloaded = await fetchUserProfile(supabase, userId);
-    if (reloaded) return reloaded;
-
-    const {
-      phone_country_code: _a,
-      phone_number: _b,
-      phone_e164: _c,
-      phone_verified: _d,
-      emergency_contact_name: _e,
-      emergency_contact_phone_country_code: _f,
-      emergency_contact_phone_number: _g,
-      emergency_contact_phone_e164: _h,
-      trust_score: _i,
-      details: det,
-      ...minimal
-    } = row;
-    const retry = await supabase
-      .from("profiles")
-      .upsert({ ...minimal, details: det }, { onConflict: "id" })
-      .select(PROFILE_SELECT)
-      .single();
-    data = retry.data;
-    error = retry.error;
-  }
-
-  if (error) {
-    console.error(`[profile] ${logLabel} error`, error);
-    throw new Error(formatSupabaseError(error));
-  }
-
-  if (!data) {
-    const reloaded = await fetchUserProfile(supabase, userId);
-    if (!reloaded) throw new Error("Profile saved but could not be loaded.");
-    return reloaded;
-  }
-
-  const dbRow = data as unknown as ProfileDbRow;
-  return attachMemberships(supabase, mapProfileRow(dbRow), dbRow);
+  return upsertProfileRowAndReload(supabase, userId, row, logLabel);
 }
 
 export async function saveBasicProfileSection(

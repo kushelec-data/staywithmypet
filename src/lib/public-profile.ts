@@ -24,8 +24,8 @@ import { countReviewsAsReviewee } from "@/lib/bookings-stats";
 /** No raw phone numbers on public fetch. */
 const PUBLIC_PROFILE_SELECT_TIERS = [
   PUBLIC_PROFILE_COLUMNS,
-  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude, trust_score, phone_verified",
   "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude",
+  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details",
 ] as const;
 
 async function queryPublicProfileRow(
