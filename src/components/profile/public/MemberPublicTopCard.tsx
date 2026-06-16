@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
@@ -16,8 +17,8 @@ import { formatProfileRoleBadge, resolveActiveMode } from "@/lib/profile-mode";
 import { PUBLIC_CARD_MINT } from "@/lib/public-layout";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
 import {
-  isProfileShownAsPetFriend,
   isProfileShownAsPetParent,
+  profileCanReceiveCareRequests,
   PUBLIC_OWNER_PETS_SECTION_ID,
   type PublicProfileView,
 } from "@/lib/public-profile";
@@ -40,9 +41,11 @@ export function MemberPublicTopCard({
   ownerPets = [],
 }: MemberPublicTopCardProps) {
   const { t, locale } = useLanguage();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { profile: viewerProfile } = useProfile();
   const isSelf = user?.id === profile.id;
+  const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
   const viewerMode = viewerProfile
     ? resolveActiveMode(viewerProfile.role, viewerProfile.active_mode)
     : null;
@@ -56,7 +59,7 @@ export function MemberPublicTopCard({
     ).slice(0, 2),
   ];
   const friendAvailability = resolvedAvailability(profile.details).selected_dates ?? [];
-  const shownAsFriend = isProfileShownAsPetFriend(profile);
+  const canReceiveRequest = profileCanReceiveCareRequests(profile);
   const shownAsParent = isProfileShownAsPetParent(profile);
 
   const viewPetsHref =
@@ -75,10 +78,13 @@ export function MemberPublicTopCard({
         <Button href="/profile/edit" variant="outline" size="sm" className="w-full justify-center">
           {t.dashboardHome.editProfile}
         </Button>
+        <p className="text-center text-[0.65rem] leading-snug text-muted">
+          {t.publicProfileUi.thisIsYourProfile}
+        </p>
       </>
     );
-  } else if (shownAsFriend && (viewerMode === "pet_parent" || viewerMode === null)) {
-    mainCta = (
+  } else if (canReceiveRequest) {
+    mainCta = user ? (
       <SendRequestButton
         target={{
           kind: "profile",
@@ -89,6 +95,10 @@ export function MemberPublicTopCard({
         size="md"
         className="w-full justify-center"
       />
+    ) : (
+      <Button href={loginHref} size="md" className="w-full justify-center">
+        {t.publicProfileUi.logInToSendRequest}
+      </Button>
     );
   } else if (shownAsParent && viewerMode === "pet_friend" && ownerPets.length > 0) {
     mainCta = (

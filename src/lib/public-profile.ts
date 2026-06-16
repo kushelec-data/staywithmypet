@@ -293,13 +293,20 @@ export function showPublicPetsSection(profile: PublicProfileView): boolean {
 
 export const PUBLIC_OWNER_PETS_SECTION_ID = "owner-pets";
 
+/** Whether this member can receive care requests as a Pet Friend on their public profile. */
+export function profileCanReceiveCareRequests(
+  profile: Pick<PublicProfileView, "role" | "active_mode">,
+): boolean {
+  if (profile.role === "pet_friend" || profile.role === "both") return true;
+  if (profile.role === "pet_parent") return false;
+  return profile.active_mode === "pet_friend";
+}
+
 /** How this member presents on their public profile (both-role uses active_mode). */
 export function isProfileShownAsPetFriend(
   profile: Pick<PublicProfileView, "role" | "active_mode">,
 ): boolean {
-  if (profile.role === "pet_friend") return true;
-  if (profile.role === "pet_parent") return false;
-  return profile.active_mode === "pet_friend";
+  return profileCanReceiveCareRequests(profile);
 }
 
 export function isProfileShownAsPetParent(

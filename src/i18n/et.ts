@@ -1132,6 +1132,8 @@ export const et = {
     getInTouch: "Võta ühendust",
     signInToRequest: "Hoolduspäringu saatmiseks logi sisse.",
     sendRequest: "Saada päring",
+    logInToSendRequest: "Logi sisse päringu saatmiseks",
+    thisIsYourProfile: "See on sinu profiil.",
     careAndHome: "Hooldus ja kodu",
     whatMemberOffers: "Mida see liige pakub",
     petCarePreferences: "Lemmikuhoolduse eelistused",

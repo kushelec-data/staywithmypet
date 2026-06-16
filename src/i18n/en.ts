@@ -1122,7 +1122,9 @@ export const en = {
   publicProfileUi: {
     getInTouch: "Get in touch",
     signInToRequest: "Sign in to send a care request.",
-    sendRequest: "Send a request",
+    sendRequest: "Send request",
+    logInToSendRequest: "Log in to send request",
+    thisIsYourProfile: "This is your profile.",
     careAndHome: "Care & home",
     whatMemberOffers: "What this member offers",
     petCarePreferences: "Pet care preferences",
