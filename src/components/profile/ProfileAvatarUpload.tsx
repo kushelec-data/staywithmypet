@@ -74,14 +74,24 @@ export function ProfileAvatarUpload({
     setUploading(true);
     try {
       const updated = await uploadProfileAvatar(supabase, userId, file);
-      const nextUrl = resolveSanitizedAvatarUrl(userId, updated.avatar_url);
-      setPreviewUrl(nextUrl);
+      const canonicalUrl = updated.avatar_url?.trim() || null;
+      const nextUrl = resolveSanitizedAvatarUrl(userId, canonicalUrl) ?? canonicalUrl;
       if (nextUrl) {
-        onAvatarUpdated(nextUrl);
+        const preview = `${nextUrl}${nextUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
+        setPreviewUrl(preview);
+        onAvatarUpdated(canonicalUrl ?? nextUrl);
+      } else {
+        console.error("[avatar-upload] preview url missing after successful upload", { canonicalUrl });
+        setError(t.media.uploadAvatarError);
       }
       setCropSession(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.media.uploadAvatarError);
+      console.error("[avatar-upload] error", err);
+      if (err instanceof Error && err.message.trim()) {
+        setError(err.message);
+      } else {
+        setError(t.media.uploadAvatarError);
+      }
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
