@@ -27,7 +27,6 @@ import {
   countBioWords,
   isBioWordCountValid,
   normalizeBioForSave,
-  truncateBioToMaxWords,
 } from "@/lib/bio-words";
 import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesSelector";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
@@ -143,6 +142,7 @@ export function ProfileEditForm() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const dashboardRedirectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bioUserEditedRef = useRef(false);
   const [openAvailabilityPanel, setOpenAvailabilityPanel] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
@@ -212,9 +212,23 @@ export function ProfileEditForm() {
     [editing, activeStepId],
   );
 
+  function logBio(message: string, detail?: Record<string, unknown>): void {
+    if (detail) {
+      console.info(`[bio] ${message}`, detail);
+    } else {
+      console.info(`[bio] ${message}`);
+    }
+  }
+
   function handleBioChange(next: string) {
+    bioUserEditedRef.current = true;
     const count = countBioWords(next);
-    setBio(count > BIO_WORD_MAX ? truncateBioToMaxWords(next) : next);
+    const valid = isBioWordCountValid(count);
+    const status = bioWordStatus(count);
+    logBio("current value", { length: next.length, text: next });
+    logBio("word count", { count });
+    logBio("validation result", { valid, status });
+    setBio(next);
   }
 
   useEffect(() => {
@@ -226,7 +240,11 @@ export function ProfileEditForm() {
         setProfileLocation,
         setLanguages,
         setLanguagesOther,
-        setBio,
+        setBio: (value) => {
+          if (!bioUserEditedRef.current) {
+            setBio(value);
+          }
+        },
         setAvatarUrl,
       });
       applyTrustFromProfile(profile, setTrustSafety);
@@ -330,6 +348,9 @@ export function ProfileEditForm() {
 
   async function afterSectionSave(section: ProfileEditSectionKey, saved: ProfileRow) {
     setProfileRow(saved);
+    if (section === "basic") {
+      bioUserEditedRef.current = false;
+    }
     applyBasicFromProfile(saved, {
       setDisplayName,
       setProfileLocation,
@@ -391,6 +412,12 @@ export function ProfileEditForm() {
       return;
     }
     if (!bioValid) {
+      logBio("validation result", {
+        valid: false,
+        wordCount: bioWordCount,
+        status: bioStatus,
+        reason: bioWordCount < BIO_WORD_MIN ? "too_few" : "too_many",
+      });
       setErrors((prev) => ({
         ...prev,
         basic:
@@ -400,6 +427,9 @@ export function ProfileEditForm() {
       }));
       return;
     }
+
+    const bioPayload = normalizeBioForSave(bio);
+    logBio("save payload", { bio: bioPayload, wordCount: bioWordCount });
 
     setSaving((prev) => ({ ...prev, basic: true }));
     setErrors((prev) => ({ ...prev, basic: null }));
@@ -413,7 +443,7 @@ export function ProfileEditForm() {
           location: profileLocationToSaveInput(profileLocation),
           languages: [...languages],
           languagesOther,
-          bio: normalizeBioForSave(bio),
+          bio: bioPayload,
         },
         {
           user,
@@ -421,8 +451,13 @@ export function ProfileEditForm() {
           preserveRole: profile?.role_chosen_at ? profile.role : undefined,
         },
       );
+      logBio("save result", { ok: true, bio: saved.bio, wordCount: countBioWords(saved.bio ?? "") });
       await afterSectionSave("basic", saved);
     } catch (err) {
+      logBio("save result", {
+        ok: false,
+        message: err instanceof Error ? err.message : String(err),
+      });
       const message = err instanceof Error ? err.message : t.profileEdit.saveProfileError;
       setErrors((prev) => ({ ...prev, basic: message }));
     } finally {
