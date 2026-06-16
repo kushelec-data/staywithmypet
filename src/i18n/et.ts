@@ -693,6 +693,7 @@ export const et = {
   reviews: {
     leaveReview: "Jäta arvustus",
     alreadySubmitted: "Arvustus saadetud — aitäh!",
+    duplicateBookingReview: "Oled selle broneeringu kohta juba arvustuse esitanud.",
     modalTitleFriend: "Hinda lemmiku sõpra",
     modalTitlePet: "Hinda lemmiku kogemust",
     modalSubtitle: "Jaga kogemust: {name}",

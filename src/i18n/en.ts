@@ -684,6 +684,7 @@ export const en = {
   reviews: {
     leaveReview: "Leave review",
     alreadySubmitted: "Review submitted — thank you!",
+    duplicateBookingReview: "You have already submitted a review for this booking.",
     modalTitleFriend: "Review your Pet Friend",
     modalTitlePet: "Review pet experience",
     modalSubtitle: "Share your experience with {name}",

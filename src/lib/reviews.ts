@@ -89,6 +89,23 @@ export type SubmitReviewInput = {
   tags: string[];
 };
 
+export class DuplicateReviewError extends Error {
+  constructor() {
+    super("DUPLICATE_REVIEW");
+    this.name = "DuplicateReviewError";
+  }
+}
+
+export function isDuplicateReviewError(error: unknown): boolean {
+  if (error instanceof DuplicateReviewError) return true;
+  if (!isPostgrestError(error)) return false;
+  if (error.code === "23505") return true;
+  const blob = `${error.message} ${error.details ?? ""} ${error.hint ?? ""}`;
+  return /reviews_one_per_reviewer_per_booking|duplicate key|unique constraint|already exists/i.test(
+    blob,
+  );
+}
+
 function formatReviewDate(createdAt: string): string {
   try {
     return new Date(createdAt).toLocaleDateString(undefined, {
@@ -167,6 +184,24 @@ export async function fetchMyReviewsForBookings(
   return new Map((data ?? []).map((r) => [r.booking_id as string, r as ReviewRow]));
 }
 
+export async function fetchMyReviewForBooking(
+  supabase: SupabaseClient,
+  userId: string,
+  bookingId: string,
+): Promise<ReviewRow | null> {
+  const map = await fetchMyReviewsForBookings(supabase, userId, [bookingId]);
+  return map.get(bookingId) ?? null;
+}
+
+export async function fetchMyReviewDisplayForBooking(
+  supabase: SupabaseClient,
+  userId: string,
+  bookingId: string,
+): Promise<ReviewDisplay | null> {
+  const map = await fetchMyReviewDisplaysForBookings(supabase, userId, [bookingId]);
+  return map.get(bookingId) ?? null;
+}
+
 /** Current user's reviews for bookings, enriched for display. */
 export async function fetchMyReviewDisplaysForBookings(
   supabase: SupabaseClient,
@@ -219,6 +254,11 @@ export async function submitReview(
     throw new Error(`Review text must be at most ${REVIEW_TEXT_MAX} characters.`);
   }
 
+  const existing = await fetchMyReviewForBooking(supabase, userId, input.bookingId);
+  if (existing) {
+    throw new DuplicateReviewError();
+  }
+
   const payload: Record<string, unknown> = {
     booking_id: input.bookingId,
     reviewer_id: userId,
@@ -236,7 +276,12 @@ export async function submitReview(
 
   const { error } = await supabase.from("reviews").insert(payload);
 
-  if (error) throw error;
+  if (error) {
+    if (isDuplicateReviewError(error)) {
+      throw new DuplicateReviewError();
+    }
+    throw error;
+  }
 }
 
 async function enrichReviews(
@@ -332,15 +377,21 @@ export function aggregatePetExperienceTags(reviews: ReviewDisplay[]): { tag: str
     .sort((a, b) => b.count - a.count);
 }
 
-export function formatReviewError(error: unknown): string {
+export function formatReviewError(
+  error: unknown,
+  options?: { duplicateMessage?: string },
+): string {
+  if (isDuplicateReviewError(error)) {
+    return (
+      options?.duplicateMessage ??
+      "You have already submitted a review for this booking."
+    );
+  }
   if (isPostgrestError(error)) {
     if (isMissingRelationError(error)) {
       return "Reviews are not set up yet. Run supabase/RUN_THIS_reviews_request_id.sql in the Supabase SQL Editor.";
     }
     const msg = formatSupabaseError(error);
-    if (/duplicate key|unique constraint|one_per_reviewer/i.test(msg)) {
-      return "You have already submitted a review for this booking.";
-    }
     if (/only allowed after|completed/i.test(msg)) {
       return "Reviews are only available after the booking is completed.";
     }

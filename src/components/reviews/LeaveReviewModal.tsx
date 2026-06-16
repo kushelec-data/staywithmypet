@@ -24,6 +24,7 @@ type LeaveReviewModalProps = {
   targetLabel: string;
   submitting: boolean;
   error: string | null;
+  submitDisabled?: boolean;
   onClose: () => void;
   onSubmit: (values: LeaveReviewSubmitValues) => void;
 };
@@ -34,6 +35,7 @@ export function LeaveReviewModal({
   targetLabel,
   submitting,
   error,
+  submitDisabled = false,
   onClose,
   onSubmit,
 }: LeaveReviewModalProps) {
@@ -176,7 +178,12 @@ export function LeaveReviewModal({
           <Button type="button" variant="ghost" size="sm" disabled={submitting} onClick={onClose}>
             {r.cancel}
           </Button>
-          <Button type="submit" variant="primary" size="sm" disabled={submitting}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            disabled={submitting || submitDisabled}
+          >
             {submitting ? r.submitting : r.submit}
           </Button>
         </div>

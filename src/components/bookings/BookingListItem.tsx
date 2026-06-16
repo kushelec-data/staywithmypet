@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { BookingCompleteAction } from "@/components/bookings/BookingCompleteAction";
 import { BookingReviewAction } from "@/components/reviews/BookingReviewAction";
-import { SubmittedReviewCard } from "@/components/reviews/SubmittedReviewCard";
 import {
   bookingDetailsHref,
   bookingStatusBadgeClasses,
@@ -171,17 +170,12 @@ export function BookingListItem({
               />
             ) : null}
             {tab === "completed" ? (
-              myReview ? (
-                <div className="w-full sm:max-w-md">
-                  <SubmittedReviewCard review={myReview} compact />
-                </div>
-              ) : (
-                <BookingReviewAction
-                  booking={booking}
-                  userId={userId}
-                  onSubmitted={onReviewSubmitted}
-                />
-              )
+              <BookingReviewAction
+                booking={booking}
+                userId={userId}
+                existingReview={myReview}
+                onSubmitted={onReviewSubmitted}
+              />
             ) : null}
             {showCancel && onCancel ? (
               <Button
