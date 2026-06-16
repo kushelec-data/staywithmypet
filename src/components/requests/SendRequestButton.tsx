@@ -12,7 +12,6 @@ import {
   validateCareRequestForm,
 } from "@/lib/request-validation";
 import {
-  createCareRequest,
   fetchRequesterPets,
   logRequestSubmitFailure,
   resolveRequesterProfileId,
@@ -289,19 +288,15 @@ export function SendRequestButton({
     setSubmitting(true);
     setError(null);
     try {
-      const { requestId } = await createCareRequest(supabase, {
+      const { submitCareRequestAction } = await import("@/app/actions/care-requests");
+      await submitCareRequestAction({
         petId,
         petParentId,
         petFriendId,
-        senderId,
         receiverId,
         message: values.message,
         careType: values.careType,
         selectedDates: values.selectedDates,
-      });
-      const { sendRequestReceivedEmailAction } = await import("@/app/actions/email-events");
-      void sendRequestReceivedEmailAction(requestId.trim()).catch((deliveryErr) => {
-        console.error("[request:delivery] post-create delivery failed", deliveryErr);
       });
       setOpen(false);
       setSuccess(true);

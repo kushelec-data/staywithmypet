@@ -71,6 +71,7 @@ function replacePlaceholders(text: string, vars: EmailTemplateVars, ctx: EmailTe
     ["[Auto Renewal]", vars.autoRenew],
     ["[Saatja nimi]", senderName],
     ["[Sender Name]", senderName],
+    ["[Message]", ctx.message?.trim() || ""],
     ["[Review link]", vars.reviewLink],
     ["[Message link]", vars.messageLinkWithConversation],
     ["[Booking details]", vars.viewBookingUrl],

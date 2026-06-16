@@ -106,13 +106,19 @@ export async function deliverCareRequestNotifications(
 ): Promise<void> {
   const row = await loadRequestForDelivery(requestId);
   if (!row) {
-    trace("request row not found for delivery", { requestId });
+    console.error("[request-email] error", {
+      requestId,
+      stage: "load_request",
+      reason: "row_not_found_or_no_admin",
+    });
     return;
   }
 
   if (row.sender_id !== sessionUserId) {
-    console.warn("[request:delivery] sender mismatch — skipping delivery", {
+    console.error("[request-email] error", {
       requestId,
+      stage: "sender_verify",
+      reason: "sender_mismatch",
       sessionUserId,
       senderId: row.sender_id,
     });
@@ -127,10 +133,28 @@ export async function deliverCareRequestNotifications(
     petFriendId: row.pet_friend_id,
   });
 
-  await ensureInAppRequestReceivedNotification(requestId);
+  try {
+    await ensureInAppRequestReceivedNotification(requestId);
+  } catch (err) {
+    console.error("[request-email] error", {
+      requestId,
+      stage: "in_app_notification",
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 
-  await Promise.all([
+  const results = await Promise.allSettled([
     triggerRequestSentEmail(requestId),
     triggerRequestReceivedEmail(requestId),
   ]);
+
+  for (const result of results) {
+    if (result.status === "rejected") {
+      console.error("[request-email] error", {
+        requestId,
+        stage: "email_trigger",
+        message: result.reason instanceof Error ? result.reason.message : String(result.reason),
+      });
+    }
+  }
 }

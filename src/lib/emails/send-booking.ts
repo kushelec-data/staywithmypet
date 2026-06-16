@@ -1,9 +1,10 @@
 import "server-only";
 
 import {
-  queueEmailEvent,
   scheduleTransactionalEmail,
+  sendTransactionalEmail,
   type SendTransactionalEmailInput,
+  type SendTransactionalEmailResult,
 } from "@/lib/email-send";
 import type { EmailEventType, EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
 
@@ -37,6 +38,14 @@ function toEventType(type: BookingEmailType): EmailEventType {
 }
 
 export function sendBookingEmail(input: SendBookingEmailInput): void {
+  void sendBookingEmailAsync(input).catch((err) => {
+    console.error("[email] sendBookingEmail failed", err);
+  });
+}
+
+export async function sendBookingEmailAsync(
+  input: SendBookingEmailInput,
+): Promise<SendTransactionalEmailResult> {
   const eventType = toEventType(input.type);
   const payload: SendTransactionalEmailInput = {
     eventType,
@@ -47,12 +56,11 @@ export function sendBookingEmail(input: SendBookingEmailInput): void {
   };
 
   if (input.scheduleAt) {
-    void scheduleTransactionalEmail({
+    return scheduleTransactionalEmail({
       ...payload,
       scheduledFor: input.scheduleAt,
     });
-    return;
   }
 
-  queueEmailEvent(payload);
+  return sendTransactionalEmail(payload);
 }

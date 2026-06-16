@@ -36,7 +36,7 @@ function emailFromAddress(): string {
   return process.env.EMAIL_FROM?.trim() || "StayWithMyPet <hello@staywithmypet.ee>";
 }
 
-async function resolveRecipientEmail(userId: string): Promise<string | null> {
+export async function resolveRecipientEmail(userId: string): Promise<string | null> {
   const admin = createAdminClient();
   if (!admin) return null;
 

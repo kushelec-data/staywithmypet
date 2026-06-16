@@ -38,6 +38,7 @@ export type EmailTemplateContext = {
   membershipEndDate?: string | null;
   autoRenew?: boolean;
   locale?: "en" | "et";
+  message?: string | null;
   senderName?: string;
   conversationId?: string;
 };

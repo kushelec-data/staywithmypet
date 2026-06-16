@@ -13,6 +13,7 @@ import { resolveActiveMode } from "@/lib/profile-mode";
 import { fetchUserProfile } from "@/lib/profile-load";
 import type { ProfileRole } from "@/lib/profile-setup";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { deliverCareRequestNotifications } from "@/lib/request-delivery";
 import { fetchOwnerPetIntros } from "@/lib/pet-intro";
@@ -62,24 +63,56 @@ export async function sendProfileCompletedEmailAction(): Promise<void> {
 
 export async function sendRequestReceivedEmailAction(requestId: string): Promise<void> {
   const userId = await requireUserId();
-  if (!userId || !requestId?.trim()) return;
+  if (!userId || !requestId?.trim()) {
+    console.warn("[request-email] error", { stage: "action", reason: "no_session_or_request_id" });
+    return;
+  }
 
-  const supabase = await createClient();
-  const { data } = await supabase
+  const admin = createAdminClient();
+  if (!admin) {
+    console.error("[request-email] error", {
+      requestId,
+      stage: "action",
+      reason: "no_admin_client",
+    });
+    return;
+  }
+
+  const { data, error } = await admin
     .from("requests")
     .select("sender_id")
-    .eq("id", requestId)
+    .eq("id", requestId.trim())
     .maybeSingle();
 
-  if (!data || data.sender_id !== userId) {
-    console.warn("[request:delivery] email action skipped — sender mismatch or missing row", {
+  if (error) {
+    console.error("[request-email] error", {
       requestId,
+      stage: "action",
+      reason: "load_failed",
+      message: error.message,
+    });
+    return;
+  }
+
+  if (!data || data.sender_id !== userId) {
+    console.warn("[request-email] error", {
+      requestId,
+      stage: "action",
+      reason: "sender_mismatch_or_missing_row",
       userId,
     });
     return;
   }
 
-  await deliverCareRequestNotifications(requestId.trim(), userId);
+  try {
+    await deliverCareRequestNotifications(requestId.trim(), userId);
+  } catch (err) {
+    console.error("[request-email] error", {
+      requestId,
+      stage: "action",
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 export async function sendRequestStatusEmailsAction(

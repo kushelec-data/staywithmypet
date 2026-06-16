@@ -1,6 +1,7 @@
 import "server-only";
 
-import { sendBookingEmail } from "@/lib/emails/send-booking";
+import { sendBookingEmail, sendBookingEmailAsync } from "@/lib/emails/send-booking";
+import { resolveRecipientEmail } from "@/lib/email-send";
 import { queueEmailEvent } from "@/lib/email-send";
 import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
 import { speciesDisplayLabel, type PetSpecies } from "@/lib/pet-data";
@@ -21,6 +22,7 @@ type RequestEmailRow = {
   date_from: string | null;
   date_to: string | null;
   requested_dates: string[] | null;
+  message: string | null;
 };
 
 type BookingEmailRow = {
@@ -57,7 +59,7 @@ async function loadRequest(requestId: string): Promise<RequestEmailRow | null> {
   const { data, error } = await admin
     .from("requests")
     .select(
-      "id, sender_id, receiver_id, pet_parent_id, pet_friend_id, pet_id, care_type, date_from, date_to, requested_dates",
+      "id, sender_id, receiver_id, pet_parent_id, pet_friend_id, pet_id, care_type, date_from, date_to, requested_dates, message",
     )
     .eq("id", requestId)
     .maybeSingle();
@@ -124,6 +126,7 @@ function requestContext(
   row: RequestEmailRow,
   pet: { name: string; typeLabel: string },
   otherPartyName: string,
+  senderName?: string,
 ): EmailTemplateContext {
   return {
     petName: pet.name,
@@ -133,6 +136,8 @@ function requestContext(
     dateTo: row.date_to,
     requestedDates: row.requested_dates,
     otherPartyName,
+    senderName: senderName ?? otherPartyName,
+    message: row.message,
   };
 }
 
@@ -200,46 +205,113 @@ export function triggerPhoneVerified(userId: string, recipientName?: string): vo
 
 export async function triggerRequestSentEmail(requestId: string): Promise<void> {
   const row = await loadRequest(requestId);
-  if (!row?.sender_id) return;
+  if (!row?.sender_id) {
+    console.warn("[request-email] error", { requestId, stage: "request_sent", reason: "missing_row" });
+    return;
+  }
 
-  const [pet, senderName, otherName] = await Promise.all([
+  const role = roleForUserOnRequest(row, row.sender_id);
+  const templateKey = role === "pet_parent" ? "request_sent_parent" : "request_sent_friend";
+  console.info("[request-email] template selected", {
+    requestId,
+    eventType: "request_sent",
+    templateKey,
+    recipientUserId: row.sender_id,
+    role,
+  });
+
+  const [pet, senderName, otherName, recipientEmail] = await Promise.all([
     loadPet(row.pet_id),
     loadDisplayName(row.sender_id),
     loadDisplayName(row.receiver_id),
+    resolveRecipientEmail(row.sender_id),
   ]);
 
-  sendBookingEmail({
+  console.info("[request-email] recipient email", {
+    requestId,
+    eventType: "request_sent",
+    userId: row.sender_id,
+    email: recipientEmail ?? "(none)",
+  });
+
+  const result = await sendBookingEmailAsync({
     type: "request_sent",
-    role: roleForUserOnRequest(row, row.sender_id),
+    role,
     userId: row.sender_id,
     data: {
       recipientName: senderName,
-      ...requestContext(row, pet, otherName),
+      senderName,
+      ...requestContext(row, pet, otherName, senderName),
     },
     requestId: row.id,
   });
+
+  console.info("[request-email] send result", { requestId, eventType: "request_sent", ...result });
+  if (!result.sent) {
+    console.error("[request-email] error", {
+      requestId,
+      eventType: "request_sent",
+      reason: result.reason ?? "unknown",
+    });
+  }
 }
 
 export async function triggerRequestReceivedEmail(requestId: string): Promise<void> {
   const row = await loadRequest(requestId);
-  if (!row?.receiver_id) return;
+  if (!row?.receiver_id) {
+    console.warn("[request-email] error", {
+      requestId,
+      stage: "request_received",
+      reason: "missing_row_or_receiver",
+    });
+    return;
+  }
 
-  const [pet, senderName, recipientName] = await Promise.all([
+  const role = roleForUserOnRequest(row, row.receiver_id);
+  const templateKey =
+    role === "pet_parent" ? "request_received_parent" : "request_received_friend";
+  console.info("[request-email] template selected", {
+    requestId,
+    eventType: "request_received",
+    templateKey,
+    recipientUserId: row.receiver_id,
+    role,
+  });
+
+  const [pet, senderName, recipientName, recipientEmail] = await Promise.all([
     loadPet(row.pet_id),
     loadDisplayName(row.sender_id),
     loadDisplayName(row.receiver_id),
+    resolveRecipientEmail(row.receiver_id),
   ]);
 
-  sendBookingEmail({
+  console.info("[request-email] recipient email", {
+    requestId,
+    eventType: "request_received",
+    userId: row.receiver_id,
+    email: recipientEmail ?? "(none)",
+  });
+
+  const result = await sendBookingEmailAsync({
     type: "request_received",
-    role: roleForUserOnRequest(row, row.receiver_id),
+    role,
     userId: row.receiver_id,
     data: {
       recipientName,
-      ...requestContext(row, pet, senderName),
+      senderName,
+      ...requestContext(row, pet, senderName, senderName),
     },
     requestId: row.id,
   });
+
+  console.info("[request-email] send result", { requestId, eventType: "request_received", ...result });
+  if (!result.sent) {
+    console.error("[request-email] error", {
+      requestId,
+      eventType: "request_received",
+      reason: result.reason ?? "unknown",
+    });
+  }
 }
 
 export async function triggerRequestStatusEmails(
