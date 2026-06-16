@@ -9,6 +9,7 @@ import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
+import { translatePetFriendChipLabel } from "@/lib/profile-option-labels";
 import type { SearchProfile } from "@/lib/search-profiles";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
 
@@ -139,7 +140,7 @@ export function OwnerCard({
                     compact ? "px-2 py-0.5 text-[0.65rem]" : "px-2.5 py-0.5 text-[0.7rem]"
                   }`}
                 >
-                  {chip}
+                  {translatePetFriendChipLabel(chip, locale)}
                 </li>
               ))}
             </ul>
@@ -162,7 +163,7 @@ export function OwnerCard({
               }`}
             >
               <EyeIcon />
-              <span>View profile</span>
+              <span>{t.common.viewProfile}</span>
             </Link>
           </div>
         </div>

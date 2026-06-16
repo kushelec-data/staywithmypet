@@ -10,6 +10,11 @@ export function profileOptionLabel(labelEn: string, locale: Locale): string {
   return translateProfileLabel(labelEn, locale);
 }
 
+/** Pet Friend listing / search preference chip (English source label from buildPetFriendPreferenceChips). */
+export function translatePetFriendChipLabel(labelEn: string, locale: Locale): string {
+  return translateProfileLabel(labelEn, locale);
+}
+
 export function toProfileStringChipOptions(
   values: readonly string[],
   locale: Locale,

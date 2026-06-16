@@ -13,6 +13,7 @@ import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
 import { placeholderPetImage } from "@/lib/images";
 import type { Pet } from "@/lib/pets";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
+import { translatePetFriendChipLabel } from "@/lib/profile-option-labels";
 import type { SearchProfile } from "@/lib/search-profiles";
 
 function LocationIcon() {
@@ -190,12 +191,14 @@ export function SearchMapFriendCard({
   onSelect,
   onOpenAvailability,
 }: SearchMapFriendCardProps) {
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
   const profileHref = `/users/${profile.id}`;
   const availability = buildPetAvailabilityCardPreview(profile.availabilityDates, 3, locale);
 
   const avatarSrc = profile.avatarUrl?.trim() ? profile.avatarUrl : null;
-  const careBadges = profile.preferenceChips.slice(0, 3);
+  const careBadges = profile.preferenceChips.slice(0, 3).map((chip) =>
+    translatePetFriendChipLabel(chip, locale),
+  );
 
   return (
     <>
@@ -288,7 +291,7 @@ export function SearchMapFriendCard({
               className="inline-flex flex-1 items-center justify-center rounded-lg bg-brand-teal px-2 py-1.5 text-[0.7rem] font-semibold text-white hover:bg-brand-teal/90"
               onClick={(e) => e.stopPropagation()}
             >
-              View profile
+              {t.common.viewProfile}
             </Link>
           </div>
         </div>
