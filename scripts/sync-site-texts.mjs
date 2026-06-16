@@ -172,6 +172,10 @@ const LEGAL_ET_FALLBACKS = {
     "Vastuväide – esitada vastuväide õigustatud huvil põhinevale töötlemisele, sh otseturundusele.",
   "Withdraw consent – at any time where processing is based on consent.":
     "Nõusoleku tagasivõtmine – igal ajal, kui töötlemine põhineb nõusolekul.",
+  "If we become aware of any such collection, we will delete the data immediately.":
+    "Selliste andmete avastamisel kustutame need viivitamata.",
+  "We will respond within one month, or notify you if an extension is needed.":
+    "Vastame hiljemalt ühe kuu jooksul või teavitame tähtaja pikendamisest.",
   "Erasure (“Right to be Forgotten”) – to request deletion of data when legally possible.":
     "Kustutamine („õigus olla unustatud“) – taotleda andmete kustutamist, kui see on seaduslikult võimalik.",
   "Performance of a contract":
@@ -188,6 +192,19 @@ const LEGAL_ET_FALLBACKS = {
   Purpose: "Eesmärk",
 };
 
+function legalEtFallback(en) {
+  if (!en) return null;
+  if (LEGAL_ET_FALLBACKS[en]) return LEGAL_ET_FALLBACKS[en];
+  const variants = [
+    en.replace(/[""]/g, '"').replace(/['']/g, "'"),
+    en.replace(/"/g, '"').replace(/"/g, '"'),
+  ];
+  for (const v of variants) {
+    if (LEGAL_ET_FALLBACKS[v]) return LEGAL_ET_FALLBACKS[v];
+  }
+  return null;
+}
+
 function normalizeKey(text) {
   return (text ?? "")
     .trim()
@@ -198,11 +215,16 @@ function normalizeKey(text) {
     .toLowerCase();
 }
 
+const ESTONIAN_SECTION_HEADER =
+  /\b(Kontakt|Küpsised|Andmete|Andmetöötleja|Mõisted|Kasutajate|Kohustused|Privaatsus|Ohutus|Eesmärk|Milliseid|ettevõtte|Tarbijakaebus|Alaealiste|Muudatused|Kaebused|Isikuandmete|turvalisus|säilitamine|jagamine|edastamine|õigused|Puuduvad)\b/i;
+
 function isClearlyEstonian(text) {
   const t = (text ?? "").trim();
   if (!t || shouldSkip(t)) return false;
   if (/[õäüöÕÄÜÖ]/.test(t)) return true;
-  if (/^Stay With My Pet on /i.test(t)) return true;
+  if (/,\s*Eesti\s*$/i.test(t)) return true;
+  if (/^(E-post|Telefon|Registrikood|Ärinimi):/i.test(t)) return true;
+  if (/^\d+\.\s/.test(t) && ESTONIAN_SECTION_HEADER.test(t)) return true;
   if (
     /^(Jõustumiskuupäev|Käesolevad|Teie privaatsus|Teenuses registreerudes|Andmetöötleja|Kontaktandmed|Registrijärgne|E-post:|Telefon:|Kui teil|Milliseid andmeid|Kogume ja|Privaatsus|Küpsised|Kasutame|Küpsiste tüübid|Tarbijateade|Ärinimi|Registrikood|Loomaomanik|Loomasõber|Broneering|Liikmelisus|Ühekordne|Mõisted|Kasutaja |Ohutus ei|Üldpõhimõtted|Loomaomanikule|Selgus ja|Täida oma|Sinu lemmiku|kirjeldanud|jaganud|välja toonud|maininud|Mida täpsem|Lepi detailid|Enne hoiu|Selged kokkulepped|kui miski|kui olete tarbija|Iga sobivus|Keskendume tasakaalule|Lühikestest külastustest|Koerad, kassid|ees-|e-posti|telefoninumber|profiilifoto|konto |profiil|kuidas |mida |kui:|kui |teenusepakkujatega)/i.test(
       t,
@@ -230,6 +252,9 @@ function isClearlyEstonian(text) {
 function isClearlyEnglish(text) {
   const t = (text ?? "").trim();
   if (!t || shouldSkip(t) || isClearlyEstonian(t)) return false;
+  if (/^\d+\.\s/.test(t) && ESTONIAN_SECTION_HEADER.test(t)) return false;
+  if (/,\s*Eesti\s*$/i.test(t)) return false;
+  if (/^(E-post|Telefon|Registrikood):/i.test(t)) return false;
   if (/^Stay With My Pet is /i.test(t)) return true;
   if (
     /\b(the|and|your|our|we|this|you|shall|must|may|not|are|have|will|can|with|for|from|that|when|where|what|how|who|which|unless|whether|including|between|through|provide|agree|users|platform|service)\b/i.test(
@@ -294,37 +319,84 @@ function rowTexts(rows, r) {
   return parts;
 }
 
+function acceptEtCandidate(en, et) {
+  if (!et || shouldSkip(et)) return false;
+  if (normalizeKey(en) === normalizeKey(et)) return true;
+  if (isClearlyEstonian(et)) return true;
+  if (isClearlyEnglish(et) && !isClearlyEstonian(et)) return false;
+  return true;
+}
+
 function resolveEt(en, et) {
-  if (et && isClearlyEstonian(et)) return et;
-  return LEGAL_ET_FALLBACKS[en] ?? null;
+  if (et && acceptEtCandidate(en, et)) return et;
+  return legalEtFallback(en);
+}
+
+function isLegalContentBlock(text) {
+  const t = (text ?? "").trim();
+  if (!t || t === "." || t.length < 2) return false;
+  if (/Stay With My Pet\s*[\u2013\u2014-]\s*Lareflexion/i.test(t)) return true;
+  if (/Lareflexion\s*OÜ/i.test(t)) return true;
+  if (/^(Stay With My Pet|Juhkentali|Email:|Phone:|Legal Name|Legal entity|Registered Address|Registry code:)/i.test(t)) {
+    return true;
+  }
+  if (/^\+?\d[\d\s()-]{6,}$/.test(t)) return true;
+  if (/^(Access |Rectification |Erasure |Restriction |Portability |Objection |Withdraw consent)/.test(t)) {
+    return true;
+  }
+  if (isClearlyEnglish(t)) return true;
+  if (isClearlyEstonian(t)) return false;
+  return /\b(the|and|your|our|we|you|with|for|to|is|are|not|may|must|shall)\b/i.test(t);
 }
 
 /** Pair EN in enCol with ET from same row, next row, or stacked column. */
 function pairEnEtAtRow(rows, maxRow, r, enCol, etCol) {
   const en = getCell(rows, r, enCol);
-  if (!en || !isClearlyEnglish(en)) return null;
+  if (!en) return null;
 
   const etSame = getCell(rows, r, etCol);
-  if (etSame && isClearlyEstonian(etSame)) return resolveEt(en, etSame);
+  if (etSame && acceptEtCandidate(en, etSame)) return resolveEt(en, etSame);
 
   for (const c of [2, 3, 4, 5, 6]) {
-    if (c === enCol) continue;
+    if (c === enCol || c === etCol) continue;
     const alt = getCell(rows, r, c);
-    if (alt && isClearlyEstonian(alt)) return resolveEt(en, alt);
+    if (alt && acceptEtCandidate(en, alt) && isClearlyEstonian(alt)) return resolveEt(en, alt);
   }
 
   const etNext = getCell(rows, r + 1, etCol);
-  if (etNext && isClearlyEstonian(etNext)) return resolveEt(en, etNext);
+  if (etNext && acceptEtCandidate(en, etNext)) return resolveEt(en, etNext);
 
   for (const c of [2, 3, 4, 5, 6]) {
     const alt = getCell(rows, r + 1, c);
-    if (alt && isClearlyEstonian(alt)) return resolveEt(en, alt);
+    if (alt && acceptEtCandidate(en, alt) && isClearlyEstonian(alt)) return resolveEt(en, alt);
   }
 
   const etStacked = getCell(rows, r + 1, enCol);
-  if (etStacked && isClearlyEstonian(etStacked)) return resolveEt(en, etStacked);
+  if (etStacked && acceptEtCandidate(en, etStacked) && isClearlyEstonian(etStacked)) {
+    return resolveEt(en, etStacked);
+  }
 
   return resolveEt(en, null);
+}
+
+function buildSectionHeaderIndex(rows, maxRow) {
+  const enHeaders = new Map();
+  const etHeaders = new Map();
+  for (let r = 1; r <= maxRow; r++) {
+    for (let c = 2; c <= 6; c++) {
+      const t = getCell(rows, r, c);
+      const m = t.match(/^(\d+(?:\.\d+)?)\.\s+/);
+      if (!m) continue;
+      if (isClearlyEnglish(t)) enHeaders.set(m[1], t);
+      if (isClearlyEstonian(t)) etHeaders.set(m[1], t);
+    }
+  }
+  const index = new Map();
+  for (const [num, en] of enHeaders) {
+    const et = etHeaders.get(num);
+    if (et) index.set(normalizeKey(en), et);
+  }
+  return index;
 }
 
 /** Build a lookup of every EN→ET pairing discoverable in a sheet. */
@@ -383,79 +455,244 @@ function enrichPrivacyPurposeTable(index, rows) {
     const en = getCell(rows, r, 2);
     if (en && isClearlyEnglish(en) && /^To /i.test(en)) purposeEn.push(en);
   }
-  const purposeEt = [];
-  for (let r = 83; r <= 102; r++) {
-    for (const c of [2, 3, 4]) {
-      const et = getCell(rows, r, c);
-      if (et && isClearlyEstonian(et) && et.includes("–")) purposeEt.push(et);
-    }
+  const purposeEtRows = [84, 86, 88, 90, 92, 94, 96, 98, 100, 102];
+  for (let i = 0; i < purposeEn.length && i < purposeEtRows.length; i++) {
+    const et =
+      getCell(rows, purposeEtRows[i], 3) || getCell(rows, purposeEtRows[i], 2);
+    if (et && isClearlyEstonian(et)) index.set(normalizeKey(purposeEn[i]), et);
   }
-  for (let i = 0; i < purposeEn.length && i < purposeEt.length; i++) {
-    index.set(normalizeKey(purposeEn[i]), purposeEt[i]);
+  const extras = [
+    ["We process your personal data for the following purposes:", 82, 3],
+    ["3. Purpose of Processing", 80, 3],
+    ["Legal Basis", 81, 3],
+    ["Purpose", 81, 3],
+    ["7. Cookies and Similar Technologies", 144, 2],
+    ["We use cookies to enhance your experience and ensure the proper functioning of our Service.", 146, 2],
+    ["Types of cookies:", 148, 2],
+    ["Essential cookies – required for platform functionality and security.", 150, 3],
+    ["Analytics cookies – help us understand usage patterns (only with your consent).", 152, 3],
+    ["Preference cookies – remember your settings or login status.", 154, 3],
+    [
+      "You can manage or disable cookies through your browser settings. Consent-based cookies will only be activated with your explicit permission.",
+      156,
+      3,
+    ],
+  ];
+  for (const [en, row, col] of extras) {
+    const et = getCell(rows, row, col);
+    if (et && isClearlyEstonian(et)) index.set(normalizeKey(en), et);
+  }
+}
+
+/**
+ * Privacy Policy sheet has EN/ET interleaved in col 2 with column drift in col 3/4.
+ * Map known EN cells to their ET source cells from EST and ENG texts.xlsx.
+ */
+function buildPrivacyEtOverrides(rows) {
+  const index = new Map();
+  const pair = (er, ec, tr, tc) => {
+    const en = getCell(rows, er, ec);
+    const et = getCell(rows, tr, tc);
+    if (en && et) index.set(normalizeKey(en), et);
+  };
+
+  pair(5, 2, 5, 3);
+  pair(7, 2, 7, 3);
+  pair(9, 2, 9, 3);
+  pair(10, 2, 11, 2);
+  pair(12, 2, 13, 2);
+  pair(14, 2, 15, 2);
+  pair(18, 2, 18, 3);
+  pair(20, 2, 20, 3);
+  pair(22, 2, 21, 2);
+  pair(24, 2, 23, 2);
+  pair(26, 2, 25, 2);
+
+  pair(28, 2, 27, 2);
+  pair(29, 2, 29, 3);
+  pair(31, 2, 31, 3);
+  pair(32, 2, 33, 3);
+  pair(33, 2, 35, 3);
+  pair(34, 2, 37, 3);
+  pair(35, 2, 39, 3);
+  pair(36, 2, 41, 3);
+  pair(37, 2, 43, 3);
+  pair(38, 2, 45, 3);
+  pair(39, 2, 47, 3);
+  pair(40, 2, 49, 3);
+  pair(41, 2, 51, 3);
+  pair(42, 2, 53, 3);
+  pair(43, 2, 55, 3);
+  pair(44, 2, 58, 4);
+  pair(45, 2, 60, 4);
+  pair(46, 2, 62, 4);
+  pair(47, 2, 64, 4);
+  pair(48, 2, 66, 4);
+  pair(49, 2, 68, 3);
+  pair(50, 2, 70, 3);
+  pair(51, 2, 72, 3);
+  pair(52, 2, 74, 3);
+  pair(53, 2, 76, 3);
+  pair(54, 2, 78, 3);
+
+  pair(55, 2, 80, 3);
+  pair(56, 2, 82, 3);
+  pair(59, 2, 84, 3);
+  pair(60, 2, 86, 3);
+  pair(61, 2, 88, 2);
+  pair(62, 2, 90, 3);
+  pair(63, 2, 92, 3);
+  pair(64, 2, 94, 3);
+  pair(65, 2, 96, 3);
+  pair(66, 2, 98, 3);
+  pair(67, 2, 100, 3);
+  pair(68, 2, 102, 2);
+
+  pair(69, 2, 104, 3);
+  pair(70, 2, 106, 3);
+  pair(72, 2, 108, 3);
+  pair(73, 2, 110, 3);
+  pair(74, 2, 112, 3);
+
+  pair(75, 2, 114, 2);
+  pair(76, 2, 116, 3);
+  pair(78, 2, 118, 2);
+  pair(79, 2, 120, 3);
+  pair(80, 2, 122, 3);
+  pair(81, 2, 124, 3);
+  pair(82, 2, 126, 3);
+  pair(83, 2, 128, 3);
+  pair(84, 2, 130, 2);
+
+  pair(86, 2, 132, 2);
+  pair(87, 2, 134, 3);
+  pair(89, 2, 136, 3);
+  pair(90, 2, 138, 3);
+  pair(91, 2, 140, 3);
+  pair(92, 2, 142, 2);
+
+  pair(93, 2, 144, 2);
+  pair(94, 2, 146, 2);
+  pair(96, 2, 148, 2);
+  pair(98, 2, 150, 3);
+  pair(99, 2, 152, 3);
+  pair(100, 2, 154, 3);
+  pair(101, 2, 156, 3);
+
+  pair(103, 2, 158, 3);
+  pair(104, 2, 160, 3);
+  pair(106, 2, 162, 4);
+  pair(107, 2, 164, 4);
+  pair(108, 2, 166, 4);
+  pair(109, 2, 168, 4);
+  pair(110, 2, 170, 4);
+
+  pair(112, 2, 172, 4);
+  pair(113, 2, 174, 4);
+  pair(115, 2, 176, 4);
+  pair(116, 2, 178, 4);
+  pair(117, 2, 180, 4);
+
+  pair(119, 2, 182, 4);
+  pair(120, 2, 184, 4);
+  pair(129, 2, 200, 4);
+  pair(131, 2, 201, 4);
+
+  pair(133, 2, 203, 4);
+  pair(134, 2, 205, 4);
+  pair(136, 2, 207, 4);
+  pair(140, 2, 209, 4);
+  pair(141, 2, 211, 4);
+  pair(143, 2, 213, 4);
+  pair(145, 2, 214, 4);
+  pair(147, 2, 216, 4);
+
+  pair(149, 2, 218, 4);
+  pair(150, 2, 220, 4);
+  pair(152, 2, 222, 4);
+  pair(154, 2, 223, 4);
+  pair(156, 2, 224, 4);
+  pair(158, 2, 225, 4);
+  pair(160, 2, 227, 4);
+  pair(162, 2, 229, 4);
+
+  return index;
+}
+
+function pairPrivacyEtInterleaved(rows, r, en) {
+  const et3 = getCell(rows, r, 3);
+  if (et3 && acceptEtCandidate(en, et3) && isClearlyEstonian(et3)) return et3;
+
+  const next2 = getCell(rows, r + 1, 2);
+  if (next2 && isClearlyEstonian(next2) && !isClearlyEnglish(next2)) return next2;
+
+  return null;
+}
+
+function extractPrivacyBlocks(rows, maxRow) {
+  const overrides = buildPrivacyEtOverrides(rows);
+  const headerIndex = buildSectionHeaderIndex(rows, maxRow);
+  const blocks = [];
+  const seen = new Set();
+
+  for (let r = 1; r <= maxRow; r++) {
+    const en = getCell(rows, r, 2);
+    if (!en || shouldSkip(en)) continue;
+    if (normalizeKey(en) === normalizeKey("Privacy Policy")) continue;
+    if (isClearlyEstonian(en) && !isClearlyEnglish(en)) continue;
+    if (!isLegalContentBlock(en)) continue;
+
+    const key = normalizeKey(en);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const et =
+      overrides.get(key) ??
+      pairPrivacyEtInterleaved(rows, r, en) ??
+      headerIndex.get(key) ??
+      legalEtFallback(en) ??
+      null;
+
+    blocks.push({ en, et });
   }
 
-  const basisPairs = [
-    ["Performance of a contract", getCell(rows, 83, 3)],
-    ["Performance of a contract / Legal obligation", getCell(rows, 86, 3)],
-    ["Legitimate interest / Legal obligation", getCell(rows, 85, 2)],
-    ["Legitimate interest", getCell(rows, 87, 3)],
-    ["Consent", getCell(rows, 89, 3)],
-    ["Legal obligation", getCell(rows, 91, 3)],
-    [
-      "We process your personal data for the following purposes:",
-      getCell(rows, 82, 3),
-    ],
-    ["Service providers and processors, including:", getCell(rows, 120, 3)],
-    ["payment processors;", getCell(rows, 122, 3)],
-    ["hosting and IT infrastructure providers;", getCell(rows, 124, 3)],
-    ["insurance and veterinary partners (if applicable).", getCell(rows, 126, 3)],
-    ["7. Cookies and Similar Technologies", getCell(rows, 93, 2)],
-    ["Types of cookies:", getCell(rows, 96, 3)],
-    [
-      "Essential cookies – required for platform functionality and security.",
-      getCell(rows, 98, 3),
-    ],
-    [
-      "Analytics cookies – help us understand usage patterns (only with your consent).",
-      getCell(rows, 100, 3),
-    ],
-    [
-      "Preference cookies – remember your settings or login status.",
-      getCell(rows, 100, 3),
-    ],
-    [
-      "You can manage or disable cookies through your browser settings. Consent-based cookies will only be set after you accept them.",
-      getCell(rows, 102, 2),
-    ],
-    [
-      "Access control and data minimisation;",
-      getCell(rows, 107, 2),
-    ],
-    [
-      "Regular system monitoring and security reviews;",
-      getCell(rows, 108, 3),
-    ],
-    [
-      "Limiting access to personal data to authorised personnel only.",
-      getCell(rows, 110, 3),
-    ],
-    [
-      "Users cannot earn money or receive financial compensation from each other through the Service.",
-      getCell(rows, 110, 3),
-    ],
-    [
-      "4. No Peer-to-Peer Payments or Earnings",
-      getCell(rows, 104, 3),
-    ],
-    [
-      "Stay With My Pet is a non-commercial connection platform between pet owners (“Pet Parents”) and animal lovers (“Pet Friends”).",
-      getCell(rows, 106, 3),
-    ],
-    ["All payments are made to the platform, not between Users.", getCell(rows, 108, 3)],
-  ];
-  for (const [en, et] of basisPairs) {
-    if (en && et && isClearlyEstonian(et)) index.set(normalizeKey(en), et);
+  for (const block of blocks) {
+    if (block.et) continue;
+    const hit = legalEtFallback(block.en);
+    if (hit) block.et = hit;
   }
+
+  for (const block of blocks) {
+    const hit = legalEtFallback(block.en);
+    if (hit) block.et = hit;
+  }
+
+  insertMissingPrivacyRights(rows, blocks);
+
+  return blocks;
+}
+
+function insertMissingPrivacyRights(rows, blocks) {
+  const forcedRights = Object.keys(LEGAL_ET_FALLBACKS).filter((en) =>
+    /^(Access |Rectification |Erasure |Restriction |Portability |Objection |Withdraw consent)/.test(en),
+  );
+  const missing = [];
+  for (const en of forcedRights) {
+    if (blocks.some((b) => normalizeKey(b.en) === normalizeKey(en))) continue;
+    missing.push({ en, et: legalEtFallback(en) });
+  }
+  for (const r of [122, 123, 124, 125, 126, 127, 128]) {
+    const en = getCell(rows, r, 2);
+    if (!en || blocks.some((b) => normalizeKey(b.en) === normalizeKey(en))) continue;
+    if (missing.some((b) => normalizeKey(b.en) === normalizeKey(en))) continue;
+    missing.push({ en, et: legalEtFallback(en) ?? getCell(rows, r, 4) ?? null });
+  }
+  if (!missing.length) return;
+  const insertBefore = blocks.findIndex((b) =>
+    /^To exercise any of these rights/i.test(b.en),
+  );
+  if (insertBefore >= 0) blocks.splice(insertBefore, 0, ...missing);
+  else blocks.push(...missing);
 }
 
 function buildSharedStringEtIndex(strings) {
@@ -474,14 +711,16 @@ function buildSharedStringEtIndex(strings) {
  * Extract legal blocks in row order from the primary English column.
  */
 function extractLegalBlocks(rows, maxRow, { enCol = 2, etCol = 3, titleEn = null } = {}) {
-  const masterIndex = buildMasterEtIndex(rows, maxRow, enCol, etCol);
+  const headerIndex = buildSectionHeaderIndex(rows, maxRow);
   const blocks = [];
   const seen = new Set();
 
   for (let r = 1; r <= maxRow; r++) {
     const en = getCell(rows, r, enCol);
-    if (!en || shouldSkip(en) || !isClearlyEnglish(en)) continue;
+    if (!en || shouldSkip(en)) continue;
     if (titleEn && normalizeKey(en) === normalizeKey(titleEn)) continue;
+    if (!isLegalContentBlock(en)) continue;
+    if (isClearlyEstonian(en) && !isClearlyEnglish(en)) continue;
 
     const key = normalizeKey(en);
     if (seen.has(key)) continue;
@@ -489,8 +728,8 @@ function extractLegalBlocks(rows, maxRow, { enCol = 2, etCol = 3, titleEn = null
 
     const et =
       pairEnEtAtRow(rows, maxRow, r, enCol, etCol) ??
-      masterIndex.get(key) ??
-      LEGAL_ET_FALLBACKS[en] ??
+      headerIndex.get(key) ??
+      legalEtFallback(en) ??
       null;
 
     blocks.push({ en, et });
@@ -498,9 +737,8 @@ function extractLegalBlocks(rows, maxRow, { enCol = 2, etCol = 3, titleEn = null
 
   for (const block of blocks) {
     if (block.et) continue;
-    const hit = masterIndex.get(normalizeKey(block.en));
+    const hit = legalEtFallback(block.en);
     if (hit) block.et = hit;
-    else if (LEGAL_ET_FALLBACKS[block.en]) block.et = LEGAL_ET_FALLBACKS[block.en];
   }
 
   return blocks;
@@ -516,19 +754,45 @@ function applyLegalEtIndex(blocks, ...indexes) {
         break;
       }
     }
-    if (!block.et && LEGAL_ET_FALLBACKS[block.en]) block.et = LEGAL_ET_FALLBACKS[block.en];
+    if (!block.et && legalEtFallback(block.en)) block.et = legalEtFallback(block.en);
   }
 }
 
 function dedupeLegalBlocks(blocks) {
   const seen = new Set();
   return blocks.filter((b) => {
-    if (!b.en || !isClearlyEnglish(b.en)) return false;
+    if (!b.en || !isLegalContentBlock(b.en)) return false;
     const key = normalizeKey(b.en);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+/** Terms sheet §18 contact rows use EN col2 + ET col4; company line contains OÜ. */
+function ensureTermsContactFooter(rows, blocks) {
+  const footer = [
+    [144, 4],
+    [145, 4],
+    [146, 4],
+    [147, 4],
+    [148, 4],
+  ]
+    .map(([r, etCol]) => ({
+      en: getCell(rows, r, 2),
+      et: getCell(rows, r, etCol),
+    }))
+    .filter((b) => b.en && b.et);
+
+  const contactIdx = blocks.findIndex(
+    (b) => normalizeKey(b.en) === normalizeKey("18. Contact"),
+  );
+  if (contactIdx < 0) {
+    blocks.push(...footer);
+    return;
+  }
+
+  blocks.splice(contactIdx, blocks.length - contactIdx, ...footer);
 }
 
 function findEtInSheet(rows, maxRow, enText) {
@@ -891,16 +1155,25 @@ const safetyMax = Math.max(...Object.keys(safetyRows).map(Number), 0);
 
 const sharedEtIndex = buildSharedStringEtIndex(strings);
 
-const privacyIndex = buildMasterEtIndex(privacyRows, privacyMax, 2, 3);
-enrichPrivacyPurposeTable(privacyIndex, privacyRows);
-
 const privacy = dedupeLegalBlocks(
-  extractLegalBlocks(privacyRows, privacyMax, {
-    enCol: 2,
-    etCol: 3,
-    titleEn: "Privacy Policy",
-  }),
+  extractPrivacyBlocks(privacyRows, privacyMax),
 );
+for (const [en, et] of [
+  [
+    "Objection – to object to processing based on legitimate interests, including direct marketing.",
+    "Vastuväide – esitada vastuväide õigustatud huvil põhinevale töötlemisele, sh otseturundusele.",
+  ],
+  [
+    "Withdraw consent – at any time where processing is based on consent.",
+    "Nõusoleku tagasivõtmine – igal ajal, kui töötlemine põhineb nõusolekul.",
+  ],
+]) {
+  if (privacy.some((b) => normalizeKey(b.en) === normalizeKey(en))) continue;
+  const insertAt = privacy.findIndex((b) => /^To exercise any of these rights/i.test(b.en));
+  const block = { en, et };
+  if (insertAt >= 0) privacy.splice(insertAt, 0, block);
+  else privacy.push(block);
+}
 const terms = dedupeLegalBlocks(
   extractLegalBlocks(termsRows, termsMax, {
     enCol: 2,
@@ -908,6 +1181,7 @@ const terms = dedupeLegalBlocks(
     titleEn: "Terms of Use",
   }),
 );
+ensureTermsContactFooter(termsRows, terms);
 const safety = dedupeLegalBlocks(
   extractLegalBlocks(safetyRows, safetyMax, {
     enCol: 2,
@@ -916,9 +1190,7 @@ const safety = dedupeLegalBlocks(
   }),
 );
 
-applyLegalEtIndex(privacy, privacyIndex, sharedEtIndex);
-applyLegalEtIndex(terms, buildMasterEtIndex(termsRows, termsMax, 2, 4), sharedEtIndex);
-applyLegalEtIndex(safety, buildMasterEtIndex(safetyRows, safetyMax, 2, 3), sharedEtIndex);
+applyLegalEtIndex(safety, buildSectionHeaderIndex(safetyRows, safetyMax), sharedEtIndex);
 
 const missingEt = [];
 
@@ -1214,10 +1486,10 @@ const siteEtPartial = {
 
 function formatLegalBlocks(blocks) {
   return blocks
-    .filter((b) => b.en && !shouldSkip(b.en) && isClearlyEnglish(b.en))
+    .filter((b) => b.en && !shouldSkip(b.en) && isLegalContentBlock(b.en))
     .map((b) => ({
       en: b.en,
-      et: b.et && !shouldSkip(b.et) ? b.et : LEGAL_ET_FALLBACKS[b.en] ?? null,
+      et: b.et && !shouldSkip(b.et) ? b.et : legalEtFallback(b.en) ?? null,
     }));
 }
 
@@ -1287,13 +1559,21 @@ export type LegalDocument = {
 
 export const legalDocuments = ${emitObj(legalDocs)} as const;
 
+function isLegalDateMetadataLine(text: string): boolean {
+  return /^(Effective Date|Last Updated|Jõustumise kuupäev|Jõustumiskuupäev|Viimati uuendatud|\\[DD Month|\\[PP kuu)/i.test(
+    text.trim(),
+  );
+}
+
 export function getLegalDocument(slug: keyof typeof legalDocuments, locale: Locale): {
   title: string;
   paragraphs: string[];
 } {
   const doc = legalDocuments[slug];
   const title = locale === "et" ? doc.titleEt : doc.titleEn;
-  const paragraphs = doc.blocks.map((b) => (locale === "et" && b.et ? b.et : b.en));
+  const paragraphs = doc.blocks
+    .map((b) => (locale === "et" && b.et ? b.et : b.en))
+    .filter((p) => !isLegalDateMetadataLine(p));
   return { title, paragraphs };
 }
 `,

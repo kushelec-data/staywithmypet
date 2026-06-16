@@ -19,12 +19,8 @@ export const legalDocuments = {
     titleEt: "Privaatsuspoliitika",
     blocks: [
       {
-        en: "Effective Date: 15 June 2026",
-        et: "Jõustumise kuupäev: 15. juuni 2026",
-      },
-      {
-        en: "Last Updated: 15 June 2026",
-        et: "Viimati uuendatud: 15. juuni 2026",
+        en: "Effective Date:12/20/2025",
+        et: "Jõustumiskuupäev: 20.12.2025",
       },
       {
         en: "Your privacy is important to us. This Privacy Policy explains how Stay With My Pet (“we”, “us”, “our”) collects, uses, stores, and protects your personal data when you use our website, mobile application, or related services (collectively, “the Service”).",
@@ -52,27 +48,27 @@ export const legalDocuments = {
       },
       {
         en: "Stay With My Pet",
-        et: "Kontaktandmed:",
+        et: "Stay With My Pet",
       },
       {
         en: "Registered Address: Juhkentali 16/1, Tallinn, Eestonia",
-        et: "Registrijärgne aadress: Juhkentali 16/1, Tallinn, Eesti",
+        et: "Juhkentali 16/1, Tallinn, Eesti",
       },
       {
         en: "Email Address: info@staywithmypet.ee",
-        et: "Telefon: +372 5901 7916",
+        et: "E-post: info@staywithmypet.ee",
       },
       {
         en: "Phone Number: +372 5901 7916",
-        et: "Kui teil on küsimusi või muresid seoses isikuandmete töötlemisega, võtke meiega ühendust ülaltoodud kontaktidel.",
+        et: "Telefon: +372 5901 7916",
       },
       {
         en: "If you have questions or concerns about your data, you may contact us using the details above.",
-        et: "2. Milliseid andmeid me kogume",
+        et: "Kui teil on küsimusi või muresid seoses isikuandmete töötlemisega, võtke meiega ühendust ülaltoodud kontaktidel.",
       },
       {
         en: "2. Information We Collect",
-        et: "Kogume ja töötleme isikuandmeid, mis on vajalikud Teenuse turvaliseks ja tõhusaks osutamiseks, sealhulgas:",
+        et: "2. Milliseid andmeid me kogume",
       },
       {
         en: "We collect and process personal data necessary to provide our Service safely and effectively. This includes:",
@@ -88,311 +84,311 @@ export const legalDocuments = {
       },
       {
         en: "Email address, phone number",
-        et: "ees- ja perekonnanimi",
+        et: "e-posti aadress ja telefoninumber",
       },
       {
         en: "Residential area or city (not exact address, unless required for a confirmed booking)",
-        et: "e-posti aadress ja telefoninumber",
+        et: "elukoha piirkond või linn (mitte täpne aadress, v.a kinnitatud broneeringu korral)",
       },
       {
         en: "Profile photo (optional)",
-        et: "e-posti aadress ja telefoninumber",
+        et: "profiilipilt (valikuline)",
       },
       {
         en: "(b) Account and Profile Data",
-        et: "elukoha piirkond või linn (mitte täpne aadress, v.a kinnitatud broneeringu korral)",
+        et: "(b) Konto- ja profiiliandmed",
       },
       {
         en: "Role type (Pet Parent, Pet Friend, or both)",
-        et: "elukoha piirkond või linn (mitte täpne aadress, v.a kinnitatud broneeringu korral)",
+        et: "kasutajaroll (Loomaomanik, Loomasõber või mõlemad)",
       },
       {
         en: "Profile description and preferences",
-        et: "profiilipilt (valikuline)",
+        et: "profiili kirjeldus ja eelistused",
       },
       {
         en: "Pet information (name, age, species, breed, vaccination status, temperament)",
-        et: "profiilipilt (valikuline)",
+        et: "lemmiklooma andmed (nimi, vanus, liik, tõug, vaktsineerimise info, iseloom)",
       },
       {
         en: "Availability and home environment details (e.g. presence of garden, other pets, family members)",
-        et: "(b) Konto- ja profiiliandmed",
+        et: "saadavus ja kodukeskkonna info (nt aia olemasolu, teised lemmikud, pereliikmed)",
       },
       {
         en: "(c) Subscription and Transaction Data",
-        et: "(b) Konto- ja profiiliandmed",
+        et: "(c) Tellimuse ja maksetega seotud andmed",
       },
       {
         en: "Subscription plan details (one-time, 3-month, or 12-month)",
-        et: "kasutajaroll (Loomaomanik, Loomasõber või mõlemad)",
+        et: "tellimuspaketi andmed (ühekordne, 3-kuuline või 12-kuuline)",
       },
       {
         en: "Payment method (credit/debit card or other method)",
-        et: "kasutajaroll (Loomaomanik, Loomasõber või mõlemad)",
+        et: "makseviis (pangakaart või muu meetod)",
       },
       {
         en: "Payment confirmation and transaction history (processed via a secure third-party provider; we do not store full card details)",
-        et: "profiili kirjeldus ja eelistused",
-      },
-      {
-        en: "Renewal and cancellation data",
-        et: "profiili kirjeldus ja eelistused",
-      },
-      {
-        en: "(d) Communication and Interaction Data",
-        et: "lemmiklooma andmed (nimi, vanus, liik, tõug, vaktsineerimise info, iseloom)",
-      },
-      {
-        en: "Messages exchanged between Users via the platform",
-        et: "lemmiklooma andmed (nimi, vanus, liik, tõug, vaktsineerimise info, iseloom)",
-      },
-      {
-        en: "Booking requests and confirmations",
-        et: "saadavus ja kodukeskkonna info (nt aia olemasolu, teised lemmikud, pereliikmed)",
-      },
-      {
-        en: "Reviews, feedback, or ratings",
-        et: "saadavus ja kodukeskkonna info (nt aia olemasolu, teised lemmikud, pereliikmed)",
-      },
-      {
-        en: "Support or complaint correspondence with the Stay With My Pet team",
-        et: "(c) Tellimuse ja maksetega seotud andmed",
-      },
-      {
-        en: "(e) Technical and Usage Data",
-        et: "(c) Tellimuse ja maksetega seotud andmed",
-      },
-      {
-        en: "IP address, device type, browser version, operating system",
-        et: "tellimuspaketi andmed (ühekordne, 3-kuuline või 12-kuuline)",
-      },
-      {
-        en: "Log data (time and date of visits, pages viewed, actions taken)",
-        et: "tellimuspaketi andmed (ühekordne, 3-kuuline või 12-kuuline)",
-      },
-      {
-        en: "Cookies and similar technologies (see section 7)",
-        et: "makseviis (pangakaart või muu meetod)",
-      },
-      {
-        en: "3. Purpose of Processing",
-        et: "makseviis (pangakaart või muu meetod)",
-      },
-      {
-        en: "We process your personal data for the following purposes:",
-        et: "maksete kinnitused ja tehinguajalugu",
-      },
-      {
-        en: "Legal Basis",
-        et: "maksete kinnitused ja tehinguajalugu",
-      },
-      {
-        en: "Purpose",
         et: "(makseid töötleb turvaline kolmas osapool; me ei säilita täielikke kaardiandmeid)",
       },
       {
-        en: "To register your account and manage your user profile",
+        en: "Renewal and cancellation data",
         et: "pikendamise ja tühistamise info",
       },
       {
-        en: "To provide access to the Service and facilitate Bookings",
-        et: "pikendamise ja tühistamise info",
-      },
-      {
-        en: "To process payments and manage subscriptions",
+        en: "(d) Communication and Interaction Data",
         et: "(d) Suhtlus- ja kasutusandmed",
       },
       {
-        en: "To ensure the safety and wellbeing of pets",
-        et: "(d) Suhtlus- ja kasutusandmed",
-      },
-      {
-        en: "To enable communication between Pet Parents and Pet Friends",
+        en: "Messages exchanged between Users via the platform",
         et: "kasutajatevahelised sõnumid platvormil",
       },
       {
-        en: "To maintain community trust (e.g. identity verification, reviews)",
-        et: "kasutajatevahelised sõnumid platvormil",
-      },
-      {
-        en: "To send administrative notifications (e.g. subscription updates, service alerts)",
+        en: "Booking requests and confirmations",
         et: "broneeringupäringud ja kinnitused",
       },
       {
-        en: "To send marketing communications (where consent is given)",
-        et: "broneeringupäringud ja kinnitused",
-      },
-      {
-        en: "To improve our platform and user experience",
+        en: "Reviews, feedback, or ratings",
         et: "hinnangud, tagasiside ja arvustused",
       },
       {
-        en: "To comply with legal and regulatory obligations",
-        et: "hinnangud, tagasiside ja arvustused",
-      },
-      {
-        en: "4. No Peer-to-Peer Payments or Earnings",
+        en: "Support or complaint correspondence with the Stay With My Pet team",
         et: "suhtlus klienditoega või kaebused",
       },
       {
-        en: "Stay With My Pet is a non-commercial connection platform between pet owners (“Pet Parents”) and pet lovers (“Pet Friends”).",
-        et: "suhtlus klienditoega või kaebused",
-      },
-      {
-        en: "All payments are made to the platform, not between Users.",
+        en: "(e) Technical and Usage Data",
         et: "(e) Tehnilised ja kasutusandmed",
       },
       {
-        en: "Users cannot earn money or receive financial compensation from each other through the Service.",
+        en: "IP address, device type, browser version, operating system",
         et: "IP-aadress, seadme tüüp, brauseri versioon, operatsioonisüsteem",
       },
       {
-        en: "This structure ensures transparency, fairness, and a focus on animal welfare and companionship, not profit.",
-        et: "IP-aadress, seadme tüüp, brauseri versioon, operatsioonisüsteem",
-      },
-      {
-        en: "5. Data Sharing and Disclosure",
+        en: "Log data (time and date of visits, pages viewed, actions taken)",
         et: "logiandmed (külastuste aeg ja kuupäev, vaadatud lehed, tehtud toimingud)",
       },
       {
-        en: "We will only share your personal data when necessary for the operation of the Service, or when required by law. We may share data with:",
-        et: "logiandmed (külastuste aeg ja kuupäev, vaadatud lehed, tehtud toimingud)",
-      },
-      {
-        en: "Other Users, when necessary for a confirmed booking (e.g. first name, general location, pet details).",
+        en: "Cookies and similar technologies (see section 7)",
         et: "küpsised ja sarnased tehnoloogiad (vt punkt 7)",
       },
       {
-        en: "Service providers and processors, including:",
+        en: "3. Purpose of Processing",
         et: "3. Isikuandmete töötlemise eesmärgid ja õiguslik alus",
       },
       {
-        en: "payment processors;",
-        et: "3. Isikuandmete töötlemise eesmärgid ja õiguslik alus",
-      },
-      {
-        en: "hosting and IT infrastructure providers;",
-        et: "Õiguslik alus",
-      },
-      {
-        en: "insurance and veterinary partners (if applicable).",
+        en: "We process your personal data for the following purposes:",
         et: "Töötleme isikuandmeid järgmistel eesmärkidel ja õiguslikel alustel:",
       },
       {
-        en: "Public authorities, if required to comply with legal obligations, such as for safety, animal welfare, or regulatory inquiries.",
-        et: "Lepingu täitmine",
+        en: "Legal Basis",
+        et: "Õiguslik alus",
       },
       {
-        en: "All service providers are contractually bound to handle your data in accordance with applicable data protection laws and only for the purposes defined by Stay With My Pet.",
+        en: "Purpose",
+        et: "Eesmärk",
+      },
+      {
+        en: "To register your account and manage your user profile",
         et: "konto loomine ja kasutajaprofiili haldamine – lepingu täitmine",
       },
       {
-        en: "6. Data Retention",
+        en: "To provide access to the Service and facilitate Bookings",
         et: "Teenuse osutamine ja broneeringute võimaldamine – lepingu täitmine",
       },
       {
-        en: "We retain your personal data only for as long as necessary to fulfil the purposes for which it was collected, or as required by law.",
-        et: "Õigustatud huvi",
+        en: "To process payments and manage subscriptions",
+        et: "maksete töötlemine ja tellimuste haldamine – lepingu täitmine / õiguslik kohustus",
       },
       {
-        en: "Profile and booking data are retained while your account is active.",
-        et: "Nõusolek",
-      },
-      {
-        en: "Transaction data may be stored for up to 7 years to comply with accounting and tax regulations.",
+        en: "To ensure the safety and wellbeing of pets",
         et: "lemmikloomade ohutuse ja heaolu tagamine – õigustatud huvi / õiguslik kohustus",
       },
       {
-        en: "Communications and review data may be retained for community integrity and dispute resolution.",
-        et: "Õiguslik kohustus",
-      },
-      {
-        en: "Once data is no longer required, it is securely deleted or anonymised.",
+        en: "To enable communication between Pet Parents and Pet Friends",
         et: "suhtluse võimaldamine loomaomanike ja loomasõprade vahel – lepingu täitmine",
       },
       {
-        en: "7. Cookies and Similar Technologies",
+        en: "To maintain community trust (e.g. identity verification, reviews)",
         et: "kogukonna usaldusväärsuse tagamine (nt profiilikinnitused, arvustused) – õigustatud huvi",
       },
       {
-        en: "We use cookies to enhance your experience and ensure the proper functioning of our Service.",
-        et: "kogukonna usaldusväärsuse tagamine (nt profiilikinnitused, arvustused) – õigustatud huvi",
-      },
-      {
-        en: "Types of cookies:",
+        en: "To send administrative notifications (e.g. subscription updates, service alerts)",
         et: "haldusteadete saatmine (nt tellimuse teated, teenuse muudatused) – lepingu täitmine",
       },
       {
-        en: "Essential cookies – required for platform functionality and security.",
+        en: "To send marketing communications (where consent is given)",
         et: "turundussõnumite saatmine (kui olete andnud nõusoleku) – nõusolek",
       },
       {
-        en: "Analytics cookies – help us understand usage patterns (only with your consent).",
+        en: "To improve our platform and user experience",
         et: "platvormi arendamine ja kasutajakogemuse parandamine – õigustatud huvi",
       },
       {
-        en: "Preference cookies – remember your settings or login status.",
-        et: "platvormi arendamine ja kasutajakogemuse parandamine – õigustatud huvi",
-      },
-      {
-        en: "You can manage or disable cookies through your browser settings. Consent-based cookies will only be activated with your explicit permission.",
+        en: "To comply with legal and regulatory obligations",
         et: "seadusest tulenevate kohustuste täitmine – õiguslik kohustus",
       },
       {
-        en: "8. Data Security",
+        en: "4. No Peer-to-Peer Payments or Earnings",
         et: "4. Puuduvad kasutajatevahelised maksed või tasud",
       },
       {
-        en: "We apply appropriate technical and organisational measures to protect personal data from unauthorised access, loss, or misuse, including:",
-        et: "4. Puuduvad kasutajatevahelised maksed või tasud",
-      },
-      {
-        en: "Secure (SSL/TLS) encryption of communications;",
+        en: "Stay With My Pet is a non-commercial connection platform between pet owners (“Pet Parents”) and pet lovers (“Pet Friends”).",
         et: "Stay With My Pet on mitteäriline ühendusplatvorm, mis ühendab loomaomanikke ja loomasõpru.",
       },
       {
-        en: "Access control and data minimisation;",
+        en: "All payments are made to the platform, not between Users.",
         et: "kõik maksed tehakse platvormile, mitte kasutajate vahel",
       },
       {
-        en: "Regular system monitoring and security reviews;",
-        et: "kõik maksed tehakse platvormile, mitte kasutajate vahel",
-      },
-      {
-        en: "Limiting access to personal data to authorised personnel only.",
+        en: "Users cannot earn money or receive financial compensation from each other through the Service.",
         et: "kasutajad ei saa Teenuse kaudu üksteiselt tasu ega rahalist hüvitist",
       },
       {
-        en: "Despite these measures, no online service can guarantee absolute security. You are responsible for maintaining the confidentiality of your login credentials.",
-        et: "kasutajad ei saa Teenuse kaudu üksteiselt tasu ega rahalist hüvitist",
-      },
-      {
-        en: "9. International Data Transfers",
+        en: "This structure ensures transparency, fairness, and a focus on animal welfare and companionship, not profit.",
         et: "see mudel toetab läbipaistvust, õiglust ning keskendumist loomade heaolule ja seltsile, mitte kasumile",
       },
       {
-        en: "If your personal data is transferred outside the European Economic Area (EEA), we ensure adequate protection through:",
+        en: "5. Data Sharing and Disclosure",
         et: "5. Andmete jagamine ja avaldamine",
       },
       {
-        en: "EU Commission adequacy decisions, or",
+        en: "We will only share your personal data when necessary for the operation of the Service, or when required by law. We may share data with:",
         et: "Jagame isikuandmeid ainult juhul, kui see on Teenuse osutamiseks vajalik või tuleneb seadusest. Võime jagada andmeid:",
       },
       {
-        en: "Standard Contractual Clauses (SCCs) approved by the European Commission.",
-        et: "Jagame isikuandmeid ainult juhul, kui see on Teenuse osutamiseks vajalik või tuleneb seadusest. Võime jagada andmeid:",
-      },
-      {
-        en: "We ensure that such transfers comply with GDPR requirements.",
+        en: "Other Users, when necessary for a confirmed booking (e.g. first name, general location, pet details).",
         et: "teiste kasutajatega, kinnitatud broneeringu korral (nt eesnimi, üldine asukoht, lemmiku info)",
       },
       {
-        en: "10. Your Rights",
+        en: "Service providers and processors, including:",
         et: "teenusepakkujatega, sh:",
       },
       {
+        en: "payment processors;",
+        et: "makseteenuse osutajad",
+      },
+      {
+        en: "hosting and IT infrastructure providers;",
+        et: "IT- ja majutusteenuse pakkujad",
+      },
+      {
+        en: "insurance and veterinary partners (if applicable).",
+        et: "kindlustus- ja veterinaarpartnerid (vajaduse korral)",
+      },
+      {
+        en: "Public authorities, if required to comply with legal obligations, such as for safety, animal welfare, or regulatory inquiries.",
+        et: "avalike asutustega, kui see on vajalik õigusaktide täitmiseks, ohutuse või loomade heaolu tagamiseks",
+      },
+      {
+        en: "All service providers are contractually bound to handle your data in accordance with applicable data protection laws and only for the purposes defined by Stay With My Pet.",
+        et: "Kõik teenusepakkujad on lepinguliselt kohustatud töötlema isikuandmeid üksnes vastavalt meie juhistele ja kehtivatele andmekaitsenõuetele.",
+      },
+      {
+        en: "6. Data Retention",
+        et: "6. Andmete säilitamine",
+      },
+      {
+        en: "We retain your personal data only for as long as necessary to fulfil the purposes for which it was collected, or as required by law.",
+        et: "Säilitame isikuandmeid ainult nii kaua, kui see on vajalik töötlemise eesmärkide täitmiseks või seadusest tulenevalt kohustuslik.",
+      },
+      {
+        en: "Profile and booking data are retained while your account is active.",
+        et: "profiili- ja broneeringuandmeid säilitatakse konto aktiivsuse ajal",
+      },
+      {
+        en: "Transaction data may be stored for up to 7 years to comply with accounting and tax regulations.",
+        et: "tehinguandmeid säilitatakse kuni 7 aastat vastavalt raamatupidamis- ja maksunõuetele",
+      },
+      {
+        en: "Communications and review data may be retained for community integrity and dispute resolution.",
+        et: "suhtlus- ja arvustusandmeid võidakse säilitada kogukonna terviklikkuse ja vaidluste lahendamise eesmärgil",
+      },
+      {
+        en: "Once data is no longer required, it is securely deleted or anonymised.",
+        et: "Kui andmeid ei ole enam vaja, kustutatakse või anonüümitakse need turvaliselt.",
+      },
+      {
+        en: "7. Cookies and Similar Technologies",
+        et: "7. Küpsised ja sarnased tehnoloogiad",
+      },
+      {
+        en: "We use cookies to enhance your experience and ensure the proper functioning of our Service.",
+        et: "Kasutame küpsiseid ja sarnaseid tehnoloogiaid Teenuse toimimise ja kasutajakogemuse parandamiseks.",
+      },
+      {
+        en: "Types of cookies:",
+        et: "Küpsiste tüübid:",
+      },
+      {
+        en: "Essential cookies – required for platform functionality and security.",
+        et: "hädavajalikud küpsised – Teenuse toimimiseks ja turvalisuse tagamiseks",
+      },
+      {
+        en: "Analytics cookies – help us understand usage patterns (only with your consent).",
+        et: "analüütikaküpsised – kasutusstatistika kogumiseks (ainult teie nõusolekul)",
+      },
+      {
+        en: "Preference cookies – remember your settings or login status.",
+        et: "eelistusküpsised – kasutajaseadete ja sisselogimisoleku meeldejätmiseks",
+      },
+      {
+        en: "You can manage or disable cookies through your browser settings. Consent-based cookies will only be activated with your explicit permission.",
+        et: "Küpsiseid saab hallata või keelata brauseri seadete kaudu. Nõusolekupõhised küpsised aktiveeritakse ainult teie loal.",
+      },
+      {
+        en: "8. Data Security",
+        et: "8. Andmete turvalisus",
+      },
+      {
+        en: "We apply appropriate technical and organisational measures to protect personal data from unauthorised access, loss, or misuse, including:",
+        et: "Rakendame asjakohaseid tehnilisi ja korralduslikke meetmeid, et kaitsta isikuandmeid volitamata juurdepääsu, kadumise või väärkasutuse eest, sealhulgas:",
+      },
+      {
+        en: "Secure (SSL/TLS) encryption of communications;",
+        et: "krüpteeritud andmeside (SSL/TLS)",
+      },
+      {
+        en: "Access control and data minimisation;",
+        et: "ligipääsupiirangud ja andmete minimaalsus",
+      },
+      {
+        en: "Regular system monitoring and security reviews;",
+        et: "regulaarne süsteemide jälgimine ja turvakontroll",
+      },
+      {
+        en: "Limiting access to personal data to authorised personnel only.",
+        et: "ligipääs isikuandmetele ainult volitatud isikutel",
+      },
+      {
+        en: "Despite these measures, no online service can guarantee absolute security. You are responsible for maintaining the confidentiality of your login credentials.",
+        et: "Ükski veebiteenus ei saa siiski tagada absoluutset turvalisust. Kasutaja vastutab oma sisselogimisandmete konfidentsiaalsuse eest.",
+      },
+      {
+        en: "9. International Data Transfers",
+        et: "9. Isikuandmete edastamine väljapoole ELi",
+      },
+      {
+        en: "If your personal data is transferred outside the European Economic Area (EEA), we ensure adequate protection through:",
+        et: "Kui isikuandmeid edastatakse Euroopa Majanduspiirkonnast väljapoole, tagame piisava kaitse:",
+      },
+      {
+        en: "EU Commission adequacy decisions, or",
+        et: "Euroopa Komisjoni piisavusotsuste alusel või",
+      },
+      {
+        en: "Standard Contractual Clauses (SCCs) approved by the European Commission.",
+        et: "Euroopa Komisjoni poolt heaks kiidetud standardsete lepingutingimuste (SCC) kaudu",
+      },
+      {
+        en: "We ensure that such transfers comply with GDPR requirements.",
+        et: "Kõik edastused vastavad GDPR nõuetele.",
+      },
+      {
+        en: "10. Your Rights",
+        et: "10. Teie õigused",
+      },
+      {
         en: "Under the GDPR and Estonian Personal Data Protection Act, you have the following rights:",
-        et: "teenusepakkujatega, sh:",
+        et: "GDPR-i ja Eesti isikuandmete kaitse seaduse kohaselt on teil järgmised õigused:",
       },
       {
         en: "Access – to request a copy of your personal data.",
@@ -400,75 +396,83 @@ export const legalDocuments = {
       },
       {
         en: "Rectification – to correct inaccurate or incomplete data.",
-        et: "IT- ja majutusteenuse pakkujad",
+        et: "Parandamine – nõuda ebatäpsete või puudulike andmete korrigeerimist.",
       },
       {
         en: "Erasure (“Right to be Forgotten”) – to request deletion of data when legally possible.",
-        et: "IT- ja majutusteenuse pakkujad",
+        et: "Kustutamine („õigus olla unustatud“) – taotleda andmete kustutamist, kui see on seaduslikult võimalik.",
       },
       {
         en: "Restriction – to limit how your data is processed in specific situations.",
-        et: "kindlustus- ja veterinaarpartnerid (vajaduse korral)",
+        et: "Töötlemise piiramine – piirata andmete töötlemist teatud olukordades.",
       },
       {
         en: "Portability – to receive your data in a structured, machine-readable format.",
-        et: "kindlustus- ja veterinaarpartnerid (vajaduse korral)",
+        et: "Andmete ülekantavus – saada oma andmed struktureeritud, masinloetavas vormingus.",
+      },
+      {
+        en: "Objection – to object to processing based on legitimate interests, including direct marketing.",
+        et: "Vastuväide – esitada vastuväide õigustatud huvil põhinevale töötlemisele, sh otseturundusele.",
+      },
+      {
+        en: "Withdraw consent – at any time where processing is based on consent.",
+        et: "Nõusoleku tagasivõtmine – igal ajal, kui töötlemine põhineb nõusolekul.",
       },
       {
         en: "To exercise any of these rights, please contact us at [info@staywithmypet.ee].",
-        et: "Kõik teenusepakkujad on lepinguliselt kohustatud töötlema isikuandmeid üksnes vastavalt meie juhistele ja kehtivatele andmekaitsenõuetele.",
+        et: "Õiguste kasutamiseks kirjutage info@staywithmypet.ee",
       },
       {
         en: "We will respond within one month, or notify you if an extension is needed.",
-        et: "6. Andmete säilitamine",
+        et: "Vastame hiljemalt ühe kuu jooksul või teavitame tähtaja pikendamisest.",
       },
       {
         en: "11. Children’s Data",
-        et: "Säilitame isikuandmeid ainult nii kaua, kui see on vajalik töötlemise eesmärkide täitmiseks või seadusest tulenevalt kohustuslik.",
+        et: "11. Alaealiste andmed",
       },
       {
         en: "The Service is not intended for users under 18 years of age.",
-        et: "Säilitame isikuandmeid ainult nii kaua, kui see on vajalik töötlemise eesmärkide täitmiseks või seadusest tulenevalt kohustuslik.",
+        et: "Teenust ei ole ette nähtud alla 18-aastastele isikutele.",
       },
       {
         en: "We do not knowingly collect or process personal data from minors.",
-        et: "profiili- ja broneeringuandmeid säilitatakse konto aktiivsuse ajal",
+        et: "Me ei kogu ega töötle teadlikult alaealiste isikuandmeid. Selliste andmete avastamisel kustutame need viivitamata.",
       },
       {
         en: "If we become aware of any such collection, we will delete the data immediately.",
-        et: "tehinguandmeid säilitatakse kuni 7 aastat vastavalt raamatupidamis- ja maksunõuetele",
+        et: "Selliste andmete avastamisel kustutame need viivitamata.",
       },
       {
         en: "12. Changes to This Policy",
-        et: "suhtlus- ja arvustusandmeid võidakse säilitada kogukonna terviklikkuse ja vaidluste lahendamise eesmärgil",
+        et: "12. Privaatsustingimuste muutmine",
       },
       {
         en: "We may update this Privacy Policy from time to time to reflect changes in our practices or legal obligations.",
-        et: "Kui andmeid ei ole enam vaja, kustutatakse või anonüümitakse need turvaliselt.",
+        et: "Võime käesolevaid privaatsustingimusi aeg-ajalt uuendada, et kajastada muudatusi meie tegevuses või õigusaktides.",
       },
       {
         en: "Any significant updates will be communicated via email or through the platform.",
-        et: "7. Küpsised ja sarnased tehnoloogiad",
+        et: "Olulistest muudatustest teavitame e-posti teel või Teenuse kaudu.",
       },
       {
         en: "The latest version will always be available on our website.",
-        et: "Kasutame küpsiseid ja sarnaseid tehnoloogiaid Teenuse toimimise ja kasutajakogemuse parandamiseks.",
+        et: "Kehtiv versioon on alati kättesaadav meie veebilehel.",
       },
       {
         en: "Continued use of the Service after changes means you accept the updated Policy.",
-        et: "Küpsiste tüübid:",
+        et: "Teenuse jätkuv kasutamine pärast muudatusi tähendab, et nõustute uuendatud tingimustega.",
       },
       {
         en: "13. Contact and Complaints",
-        et: "hädavajalikud küpsised – Teenuse toimimiseks ja turvalisuse tagamiseks",
+        et: "13. Kontakt ja kaebused",
       },
       {
         en: "If you have any questions, requests, or concerns regarding this Privacy Policy or your data, please contact:",
-        et: "hädavajalikud küpsised – Teenuse toimimiseks ja turvalisuse tagamiseks",
+        et: "Küsimuste, taotluste või kaebuste korral võtke meiega ühendust:",
       },
       {
         en: "If you are not satisfied with our response, you have the right to lodge a complaint with the Estonian Data Protection Inspectorate (Andmekaitse Inspektsioon) or your local data protection authority within the EU.",
-        et: "krüpteeritud andmeside (SSL/TLS)",
+        et: "Kui te ei ole meie vastusega rahul, on teil õigus esitada kaebus Andmekaitse Inspektsioonile või oma asukohajärgsele Euroopa Liidu andmekaitseasutusele.",
       },
     ],
   },
@@ -477,15 +481,11 @@ export const legalDocuments = {
     titleEt: "Kasutustingimused",
     blocks: [
       {
-        en: "Effective Date: 15 June 2026",
-        et: "Jõustumise kuupäev: 15. juuni 2026",
+        en: "Effective Date: [DD Month YYYY]",
+        et: "Jõustumiskuupäev: [PP kuu AAAA]",
       },
       {
-        en: "Last Updated: 15 June 2026",
-        et: "Viimati uuendatud: 15. juuni 2026",
-      },
-      {
-        en: 'These Terms of Use ("Terms") govern your access to and use of the Stay With My Pet website, web application, and related services (collectively, the "Service"), operated by Lareflexion OÜ, registry code 16757645 ("Stay With My Pet", "we", "us", "our").',
+        en: "Last Updated: [DD Month YYYY]",
         et: "Käesolevad kasutustingimused („Tingimused“) reguleerivad teie juurdepääsu ja kasutamist Stay With My Pet veebilehele, veebirakendusele ja seotud teenustele (edaspidi ühiselt „Teenust“), mida haldab Lareflexion OÜ, registrikood 16757645 („Stay With My Pet“, „meie“, „meid“, „meie oma“).",
       },
       {
@@ -966,11 +966,23 @@ export const legalDocuments = {
       },
       {
         en: "18. Contact",
+        et: "18. Kontakt",
+      },
+      {
+        en: "Stay With My Pet – Lareflexion OÜ",
         et: "Stay With My Pet – Lareflexion OÜ",
       },
       {
         en: "Juhkentali 16/1, Tallinn, Estonia",
+        et: "Juhkentali 16/1, Tallinn, Eesti",
+      },
+      {
+        en: "Email: info@staywithmypet.ee",
         et: "E-post: info@staywithmypet.ee",
+      },
+      {
+        en: "Phone: +372 5901 7916",
+        et: "Telefon: +372 5901 7916",
       },
     ],
   },
@@ -1331,18 +1343,8 @@ export const legalDocuments = {
 } as const;
 
 function isLegalDateMetadataLine(text: string): boolean {
-  const t = text.trim();
-  if (!t) return false;
-  return (
-    /^\[DD Month/i.test(t) ||
-    /^\[PP kuu/i.test(t) ||
-    /^\[TODO\]/i.test(t) ||
-    /^\[INSERT DATE\]/i.test(t) ||
-    /^Effective Date:/i.test(t) ||
-    /^Last Updated:/i.test(t) ||
-    /^Jõustumiskuupäev:/i.test(t) ||
-    /^Jõustumise kuupäev:/i.test(t) ||
-    /^Viimati uuendatud:/i.test(t)
+  return /^(Effective Date|Last Updated|Jõustumise kuupäev|Jõustumiskuupäev|Viimati uuendatud|\[DD Month|\[PP kuu)/i.test(
+    text.trim(),
   );
 }
 
