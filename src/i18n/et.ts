@@ -499,9 +499,19 @@ export const et = {
       copyPublicLink: "Kopeeri avaliku profiili link",
       copyLinkPrompt: "Kopeeri selle lemmiku avalik link:",
       photosVideos: "Fotod ja videod",
+      galleryHintOptional:
+        "Lisa uusi faile galerii asendamiseks või täiendamiseks (valikuline).",
+      galleryHintCreate:
+        "Lisa 1–6 fotot või videot. Esimene fail on peamine kuulutuse pilt.",
+      mainPhoto: "Peamine",
+      removePhoto: "Eemalda foto",
       uploadPhotosVideos: "Laadi üles fotosid või videoid",
-      uploadHint: "Pildid või MP4/WebM · max 25 MB iga fail",
+      uploadHint: "Pildid või MP4/WebM · kuni 25 MB faili kohta",
       removeFile: "Eemalda fail",
+      deletePhotoError: "Lemmiku foto eemaldamine ebaõnnestus.",
+      maxFilesError: "Saad lisada kuni {max} faili.",
+      invalidMediaTypeError:
+        "Failid peavad olema pildid (JPEG, PNG, WebP) või videod (MP4, WebM).",
       profilePhoto: "Profiilifoto",
       profilePhotos: "Profiilifotod",
       uploadProfilePhoto: "Laadi üles oma profiilipilt",

@@ -495,10 +495,20 @@ export const en = {
       linkCopied: "Link copied",
       copyPublicLink: "Copy public profile link",
       copyLinkPrompt: "Copy this pet's public link:",
-      photosVideos: "Photos & videos",
+      photosVideos: "Photos & Videos",
+      galleryHintOptional:
+        "Add new files to replace or extend the gallery (optional).",
+      galleryHintCreate:
+        "Add 1–6 photos or videos. The first file is the main listing image.",
+      mainPhoto: "Main",
+      removePhoto: "Remove photo",
       uploadPhotosVideos: "Upload photos or videos",
       uploadHint: "Images or MP4/WebM · max 25 MB each",
       removeFile: "Remove file",
+      deletePhotoError: "Could not remove pet photo.",
+      maxFilesError: "You can add up to {max} files.",
+      invalidMediaTypeError:
+        "Files must be images (JPEG, PNG, WebP) or videos (MP4, WebM).",
       profilePhoto: "Profile photo",
       profilePhotos: "Profile photos",
       uploadProfilePhoto: "Upload your profile photo",

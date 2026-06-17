@@ -42,6 +42,7 @@ import {
 } from "@/lib/pet-breeds";
 import {
   fetchPetPhotosForOwner,
+  deletePetPhotoForOwner,
   replacePetPhotoImage,
   uploadAndAttachPetPhotos,
   validatePetPhotoFiles,
@@ -111,7 +112,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [form, setForm] = useState<PetProfileFormInput>(emptyForm);
   const [photos, setPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<ExistingPetPhotoItem[]>([]);
-  const [replacingExistingPhoto, setReplacingExistingPhoto] = useState(false);
+  const [existingPhotoBusy, setExistingPhotoBusy] = useState(false);
   const [loadingPet, setLoadingPet] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,19 +181,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         setDobError(null);
         const loadedPhotos = await fetchPetPhotosForOwner(supabase, ownerId, petId!);
         if (cancelled) return;
-        setExistingPhotos(
-          loadedPhotos
-            .map((photo) => ({
-              id: photo.id,
-              url: photo.public_url?.trim() || "",
-              isPrimary: photo.is_primary,
-              mediaType:
-                photo.media_type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(photo.public_url ?? "")
-                  ? ("video" as const)
-                  : ("image" as const),
-            }))
-            .filter((photo) => photo.url.length > 0),
-        );
+        setExistingPhotos(mapLoadedPhotos(loadedPhotos));
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : t.account.petsPage.loadPetError);
@@ -208,31 +197,55 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     };
   }, [petId, user, supabase]);
 
+  function mapLoadedPhotos(
+    loadedPhotos: Awaited<ReturnType<typeof fetchPetPhotosForOwner>>,
+  ): ExistingPetPhotoItem[] {
+    return loadedPhotos
+      .map((photo) => ({
+        id: photo.id,
+        url: photo.public_url?.trim() || "",
+        isPrimary: photo.is_primary,
+        mediaType:
+          photo.media_type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(photo.public_url ?? "")
+            ? ("video" as const)
+            : ("image" as const),
+      }))
+      .filter((photo) => photo.url.length > 0);
+  }
+
+  async function refreshExistingPhotos() {
+    if (!user?.id || !petId) return;
+    const loadedPhotos = await fetchPetPhotosForOwner(supabase, user.id, petId);
+    setExistingPhotos(mapLoadedPhotos(loadedPhotos));
+  }
+
   async function handleReplaceExistingPhoto(photoId: string, file: File) {
     if (!user?.id || !petId) return;
-    setReplacingExistingPhoto(true);
+    setExistingPhotoBusy(true);
     setError(null);
     try {
       await replacePetPhotoImage(supabase, user.id, petId, photoId, file);
-      const loadedPhotos = await fetchPetPhotosForOwner(supabase, user.id, petId);
-      setExistingPhotos(
-        loadedPhotos
-          .map((photo) => ({
-            id: photo.id,
-            url: photo.public_url?.trim() || "",
-            isPrimary: photo.is_primary,
-            mediaType:
-              photo.media_type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(photo.public_url ?? "")
-                ? ("video" as const)
-                : ("image" as const),
-          }))
-          .filter((photo) => photo.url.length > 0),
-      );
+      await refreshExistingPhotos();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.account.petsPage.updatePhotoError);
       throw err;
     } finally {
-      setReplacingExistingPhoto(false);
+      setExistingPhotoBusy(false);
+    }
+  }
+
+  async function handleRemoveExistingPhoto(photoId: string) {
+    if (!user?.id || !petId) return;
+    setExistingPhotoBusy(true);
+    setError(null);
+    try {
+      await deletePetPhotoForOwner(supabase, user.id, petId, photoId);
+      await refreshExistingPhotos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.account.petsPage.deletePhotoError);
+      throw err;
+    } finally {
+      setExistingPhotoBusy(false);
     }
   }
 
@@ -328,6 +341,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         setError(err instanceof Error ? err.message : "Please add at least one photo or video.");
         return;
       }
+    } else if (existingPhotos.length + photos.length < 1) {
+      setError("Please add at least one photo or video.");
+      return;
     }
 
     const hasGoogleCoords = payload.latitude != null && payload.longitude != null;
@@ -390,8 +406,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           disabled={saving}
           optional={isEdit}
           existingPhotos={existingPhotos}
-          replacingExisting={replacingExistingPhoto}
+          existingPhotoBusy={existingPhotoBusy}
           onReplaceExistingPhoto={isEdit && petId ? handleReplaceExistingPhoto : undefined}
+          onRemoveExistingPhoto={isEdit && petId ? handleRemoveExistingPhoto : undefined}
         />
       </PetFormSection>
 

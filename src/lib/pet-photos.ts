@@ -377,6 +377,108 @@ export async function replacePetPhotoImage(
   }
 
   if (photo.storage_path !== storagePath) {
-    await supabase.storage.from(PET_PHOTOS_BUCKET).remove([photo.storage_path]);
+    await removePetPhotoStorageObjects(supabase, [photo.storage_path]);
+  }
+}
+
+function warnStorageDeleteFailure(storagePath: string, message: string): void {
+  console.warn(`[pet-photos] storage delete failed for ${storagePath}: ${message}`);
+}
+
+async function removePetPhotoStorageObjects(
+  supabase: SupabaseClient,
+  storagePaths: string[],
+): Promise<void> {
+  if (!storagePaths.length) return;
+  const { error } = await supabase.storage.from(PET_PHOTOS_BUCKET).remove(storagePaths);
+  if (error) {
+    for (const path of storagePaths) {
+      warnStorageDeleteFailure(path, error.message);
+    }
+  }
+}
+
+async function promoteNextPrimaryPhoto(supabase: SupabaseClient, petId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("pet_photos")
+    .select("id")
+    .eq("pet_id", petId)
+    .order("sort_order", { ascending: true })
+    .limit(1);
+
+  if (error) {
+    throw new Error(error.message || "Could not update main pet photo.");
+  }
+
+  const nextId = data?.[0]?.id;
+  if (!nextId) return;
+
+  const { error: updateError } = await supabase
+    .from("pet_photos")
+    .update({ is_primary: true })
+    .eq("id", nextId)
+    .eq("pet_id", petId);
+
+  if (updateError) {
+    throw new Error(updateError.message || "Could not update main pet photo.");
+  }
+}
+
+/** Deletes a saved pet photo (DB row + storage). Promotes the next photo if main was removed. */
+export async function deletePetPhotoForOwner(
+  supabase: SupabaseClient,
+  ownerId: string,
+  petId: string,
+  photoId: string,
+): Promise<void> {
+  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertOwner(ownerId, sessionUserId);
+  assertRateLimit("file_upload", sessionUserId);
+
+  const { data: pet, error: petError } = await supabase
+    .from("pets")
+    .select("id")
+    .eq("id", petId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (petError) {
+    throw new Error(petError.message || "Could not load pet photo.");
+  }
+  if (!pet) {
+    throw new Error("Pet not found.");
+  }
+
+  const { data: photo, error: photoError } = await supabase
+    .from("pet_photos")
+    .select("id, storage_path, is_primary")
+    .eq("id", photoId)
+    .eq("pet_id", petId)
+    .maybeSingle();
+
+  if (photoError) {
+    throw new Error(photoError.message || "Could not load pet photo.");
+  }
+  if (!photo) {
+    throw new Error("Pet photo not found.");
+  }
+
+  const { error: deleteError } = await supabase
+    .from("pet_photos")
+    .delete()
+    .eq("id", photoId)
+    .eq("pet_id", petId);
+
+  if (deleteError) {
+    throw new Error(deleteError.message || "Could not remove pet photo.");
+  }
+
+  if (photo.is_primary) {
+    await promoteNextPrimaryPhoto(supabase, petId);
+  }
+
+  if (photo.storage_path?.trim()) {
+    await removePetPhotoStorageObjects(supabase, [photo.storage_path.trim()]);
   }
 }
