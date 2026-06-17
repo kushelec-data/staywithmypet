@@ -1282,7 +1282,8 @@ export const et = {
     ],
     cta: {
       title: "Ei ole kindel, milline tee sulle sobib?",
-      description: "Sõbrad otsivad lemmikloomi. Omanikud leiavad usaldusväärset abi.",
+      description:
+        "Loomasõbrad otsivad lemmikloomi, kellega aega veeta. Loomaomanikud leiavad usaldusväärset hooldust oma lemmikutele.",
       primary: "Otsi lemmikloomi",
       secondary: "Leia abi",
     },

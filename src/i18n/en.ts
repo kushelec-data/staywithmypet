@@ -1272,7 +1272,7 @@ export const en = {
     ],
     cta: {
       title: "Not sure which journey is right for you?",
-      description: "Pet Friends search for pets to spend time with. Pet Parents find trusted help for their own pets.",
+      description: "Pet Friends search for pets to spend time with. Pet Parents find trusted care for their own pets.",
       primary: "Search pets",
       secondary: "Find care",
     },
