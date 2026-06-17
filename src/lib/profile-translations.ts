@@ -11,6 +11,7 @@
  */
 
 import type { Locale } from "@/i18n/translations";
+import { getPetDisplayLabelEt, translatePetDisplayLabel } from "@/lib/pet-display-translations";
 
 type Pair = readonly [en: string, et: string];
 
@@ -328,7 +329,14 @@ const PROFILE_OPTION_PAIRS: Pair[] = [
   ["Friendly with cats", "Kassisõbralik"],
   ["Protective", "Kaitsev"],
   ["Yes / No", "Jah / Ei"],
+  ["Needs medication", "Vajab ravimeid"],
+  ["Short walks", "Lühikesed jalutuskäigud"],
+  ["Long walks", "Pikad jalutuskäigud"],
+  ["High activity", "Kõrge aktiivsus"],
+  ["Outdoor play", "Õues mängimine"],
   ["None", "Puudub"],
+  ["dog", "koer"],
+  ["cat", "kass"],
   ["1x per day", "1x päevas"],
   ["2x per day", "2x päevas"],
   ["more", "Rohkem"],
@@ -524,7 +532,7 @@ export function translateProfileLabel(text: string | null | undefined, locale: L
   if (!text?.trim()) return "";
   const trimmed = text.trim();
   if (locale !== "et") return trimmed;
-  return lookupEt(trimmed) ?? trimmed;
+  return lookupEt(trimmed) ?? translatePetDisplayLabel(trimmed, locale) ?? trimmed;
 }
 
 export function translateProfileLabels(values: string[], locale: Locale): string[] {

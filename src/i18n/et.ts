@@ -274,7 +274,7 @@ export const et = {
     browsePets: "Leia lemmikuid",
     browseFriends: "Leia lemmikloomasõber",
     viewPets: "Vaata lemmikuid",
-    viewPet: "Vaata lemmikut",
+    viewPet: "Vaata lemmiklooma",
     emptyTitle: "Päringuid pole veel",
     emptyDescription:
       "Sirvi kuulutusi ja saada hoolduspäring — või oota, kuni keegi sinuga ühendust võtab.",

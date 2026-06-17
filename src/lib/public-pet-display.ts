@@ -1,7 +1,8 @@
 import { formatBookingDates, formatDate } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
-import { speciesDisplayLabel, genderDisplayLabel } from "@/lib/pet-data";
+import { translatePetDisplayLabel, translatePetLocationArea, translatePetSpecies } from "@/lib/pet-display-translations";
+import { genderDisplayLabel } from "@/lib/pet-data";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { translateProfileLabel, translateProfileLabels } from "@/lib/profile-translations";
 import type { Locale } from "@/i18n/translations";
@@ -29,15 +30,20 @@ export type PublicPetQuickFact = {
 };
 
 
-export function buildPublicPetSubtitle(pet: PublicSearchPet): string {
+export function buildPublicPetSubtitle(pet: PublicSearchPet, locale: Locale = "en"): string {
   const weight = pet.weightDisplayShort?.trim() || null;
-  return [pet.breed ?? pet.speciesLabel, weight, pet.locationArea].filter(Boolean).join(" · ");
+  const typeLabel = pet.breed?.trim()
+    ? translatePetDisplayLabel(pet.breed, locale)
+    : translatePetSpecies(pet.species, locale);
+  return [typeLabel, weight, pet.locationArea ? translatePetLocationArea(pet.locationArea, locale) : null]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export function buildPublicPetChips(pet: PublicSearchPet, locale: Locale = "en"): string[] {
   const chips: string[] = [];
-  const species = speciesDisplayLabel(pet.species, pet.breed);
-  if (species) chips.push(translateProfileLabel(species, locale));
+  const species = translatePetSpecies(pet.species, locale);
+  if (species) chips.push(species);
   if (pet.weightDisplayShort?.trim()) chips.push(pet.weightDisplayShort.trim());
   for (const tag of pet.personalityTags.slice(0, 4)) {
     if (tag.trim()) chips.push(translateProfileLabel(tag.trim(), locale));

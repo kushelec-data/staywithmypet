@@ -10,6 +10,11 @@ import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
+import {
+  translatePetAgeLabel,
+  translatePetDisplayLabel,
+  translatePetLocationArea,
+} from "@/lib/pet-display-translations";
 import { placeholderPetImage } from "@/lib/images";
 import type { Pet } from "@/lib/pets";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
@@ -60,7 +65,7 @@ export function SearchMapPetCard({
   onSelect,
   onOpenAvailability,
 }: SearchMapPetCardProps) {
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
   const detailHref = `/pet/${pet.id}`;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(pet.availabilityDates, 3, locale);
@@ -78,9 +83,11 @@ export function SearchMapPetCard({
     }
     setCalendarOpen(true);
   }
-  const metaParts = [pet.breed, pet.weightDisplayShort ?? pet.sizeLabel, pet.age].filter(
-    (part) => part && part !== "—",
-  );
+  const metaParts = [
+    pet.breed ? translatePetDisplayLabel(pet.breed, locale) : null,
+    pet.weightDisplayShort ?? (pet.sizeLabel ? translatePetDisplayLabel(pet.sizeLabel, locale) : null),
+    pet.age && pet.age !== "—" ? translatePetAgeLabel(pet.age, locale) : null,
+  ].filter((part): part is string => Boolean(part && part !== "—"));
   const metaLine = metaParts.join(" · ");
   const imageSrc = pet.image?.trim() ? pet.image : placeholderPetImage(pet.id);
 
@@ -128,7 +135,7 @@ export function SearchMapPetCard({
             {pet.location && pet.location !== "—" ? (
               <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
                 <LocationIcon />
-                <span className="truncate">{pet.location}</span>
+                <span className="truncate">{translatePetLocationArea(pet.location, locale)}</span>
               </p>
             ) : null}
           </div>
@@ -147,7 +154,7 @@ export function SearchMapPetCard({
               className="inline-flex flex-1 items-center justify-center rounded-lg bg-brand-teal px-2 py-1.5 text-[0.7rem] font-semibold text-white hover:bg-brand-teal/90"
               onClick={(e) => e.stopPropagation()}
             >
-              View pet
+              {t.requests.viewPet}
             </Link>
             <button
               type="button"
@@ -158,7 +165,7 @@ export function SearchMapPetCard({
               className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-brand-teal/25 bg-mint/35 px-2 py-1.5 text-[0.7rem] font-semibold text-brand-teal hover:bg-mint/55"
             >
               <CalendarIcon />
-              Calendar
+              {t.findCare.checkCalendar}
             </button>
           </div>
         </div>

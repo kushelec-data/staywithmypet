@@ -126,7 +126,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           pet={pet}
           photoUrl={photoUrl}
           photoUrls={photos}
-          subtitle={buildPublicPetSubtitle(pet)}
+          subtitle={buildPublicPetSubtitle(pet, locale)}
           chips={buildPublicPetChips(pet, locale)}
           shortBio={shortBio}
           quickFacts={buildPublicPetQuickFacts(pet, locale)}

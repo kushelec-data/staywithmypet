@@ -8,7 +8,12 @@ import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { DateChips } from "@/components/ui/DateChips";
 import { useLanguage } from "@/context/LanguageContext";
 import { buildPetAvailabilityCardPreview } from "@/lib/pet-availability-card";
-import { speciesDisplayLabel } from "@/lib/pet-data";
+import {
+  translatePetAgeLabel,
+  translatePetDisplayLabel,
+  translatePetLocationArea,
+  translatePetSpecies,
+} from "@/lib/pet-display-translations";
 import { placeholderPetImage } from "@/lib/images";
 import type { Pet } from "@/lib/pets";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
@@ -73,7 +78,7 @@ export function PetCard({
   compact?: boolean;
   onOpenAvailability?: (item: SearchAvailabilityItem) => void;
 }) {
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
   const detailHref = `/pet/${pet.id}`;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const availability = buildPetAvailabilityCardPreview(pet.availabilityDates, 3, locale);
@@ -91,11 +96,13 @@ export function PetCard({
     }
     setCalendarOpen(true);
   }
-  const tagline = pet.cardTagline ?? "";
-  const speciesLabel = speciesDisplayLabel(pet.species, null);
-  const metaParts = [pet.breed, pet.weightDisplayShort ?? pet.sizeLabel, pet.age].filter(
-    (part) => part && part !== "—",
-  );
+  const tagline = pet.cardTagline ? translatePetDisplayLabel(pet.cardTagline, locale) : "";
+  const speciesLabel = translatePetSpecies(pet.species, locale);
+  const metaParts = [
+    pet.breed ? translatePetDisplayLabel(pet.breed, locale) : null,
+    pet.weightDisplayShort ?? (pet.sizeLabel ? translatePetDisplayLabel(pet.sizeLabel, locale) : null),
+    pet.age && pet.age !== "—" ? translatePetAgeLabel(pet.age, locale) : null,
+  ].filter((part): part is string => Boolean(part && part !== "—"));
   const metaLine = metaParts.join(" · ");
   const imageSrc = pet.image?.trim() ? pet.image : placeholderPetImage(pet.id);
 
@@ -131,7 +138,9 @@ export function PetCard({
               compact
             />
             <span
-              className={`absolute z-10 rounded-full bg-surface font-semibold capitalize text-foreground shadow-md ring-1 ring-border ${
+              className={`absolute z-10 rounded-full bg-surface font-semibold text-foreground shadow-md ring-1 ring-border ${
+                locale === "et" ? "normal-case" : "capitalize"
+              } ${
                 compact
                   ? "right-2 top-2 px-2 py-0.5 text-[0.65rem]"
                   : "right-3 top-3 px-3 py-1.5 text-xs"
@@ -170,7 +179,7 @@ export function PetCard({
                 }`}
               >
                 <LocationIcon />
-                <span>{pet.location}</span>
+                <span>{translatePetLocationArea(pet.location, locale)}</span>
               </p>
             ) : null}
           </div>
@@ -197,7 +206,7 @@ export function PetCard({
               }`}
             >
               <CalendarIcon />
-              <span>Check calendar</span>
+              <span>{t.findCare.checkCalendar}</span>
               <ExternalIcon />
             </button>
 
@@ -208,7 +217,7 @@ export function PetCard({
               }`}
             >
               <EyeIcon />
-              <span>View pet</span>
+              <span>{t.requests.viewPet}</span>
             </Link>
           </div>
         </div>
