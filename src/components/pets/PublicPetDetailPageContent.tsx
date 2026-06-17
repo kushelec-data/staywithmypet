@@ -108,15 +108,24 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
   const { shortBio, about } = resolvePublicPetContent(pet);
 
   const careColumns = buildPublicPetCareColumns(pet, locale);
-  const careDetails = buildPublicPetCareDetails(pet, locale, {
-    healthDetails: detail.healthDetails,
-    feedingSchedule: detail.feedingSchedule,
-    feedingHabits: detail.feedingHabits,
-    positiveTraits: detail.positiveTraits,
-    behaviourNotes: detail.behaviourNotes,
-    additionalInfo: detail.additionalInfo,
-    friendRequirements: detail.friendRequirements,
-  });
+  const careDetails = buildPublicPetCareDetails(
+    pet,
+    locale,
+    {
+      healthDetails: detail.healthDetails,
+      feedingSchedule: detail.feedingSchedule,
+      feedingHabits: detail.feedingHabits,
+      positiveTraits: detail.positiveTraits,
+      behaviourNotes: detail.behaviourNotes,
+      additionalInfo: detail.additionalInfo,
+      friendRequirements: detail.friendRequirements,
+    },
+    {
+      excludeTexts: [about, shortBio, pet.additionalNotes].filter(
+        (value): value is string => Boolean(value?.trim()),
+      ),
+    },
+  );
 
   return (
     <PublicPageShell
@@ -156,10 +165,12 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           </div>
         ) : null}
 
-        {about && about !== pet.additionalNotes?.trim() ? (
+        {about ? (
           <section className={PUBLIC_CARD}>
             <h2 className={PUBLIC_SECTION_TITLE}>{detail.aboutPet.replace("{name}", pet.name)}</h2>
-            <p className="mt-3 max-w-prose text-sm leading-relaxed text-foreground/90">{about}</p>
+            <p className="mt-3 w-full text-sm leading-relaxed text-foreground/90 sm:text-[0.9375rem] sm:leading-7">
+              {about}
+            </p>
           </section>
         ) : null}
 

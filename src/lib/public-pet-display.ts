@@ -129,6 +129,7 @@ export function buildPublicPetQuickFacts(
 }
 
 export type PublicCareDetailItem = {
+  id: string;
   label: string;
   value: string;
 };
@@ -143,30 +144,104 @@ export type PublicPetCareDetailLabels = {
   friendRequirements: string;
 };
 
+export type BuildPublicPetCareDetailsOptions = {
+  /** Skip detail values that match these texts (e.g. About section body). */
+  excludeTexts?: string[];
+};
+
+const CARE_DETAIL_PLACEHOLDER_VALUES = new Set([
+  "none",
+  "no",
+  "n/a",
+  "na",
+  "not specified",
+  "not applicable",
+  "nil",
+  "unknown",
+  "puudub",
+  "ei",
+  "tundmatu",
+  "-",
+  "—",
+  "–",
+]);
+
+function normalizeCareDetailText(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+export function isPlaceholderCareDetailValue(value: string | null | undefined): boolean {
+  const normalized = normalizeCareDetailText(value ?? "");
+  if (!normalized) return true;
+  if (CARE_DETAIL_PLACEHOLDER_VALUES.has(normalized)) return true;
+  return /^[-–—]+$/.test(normalized);
+}
+
+function isDuplicateCareDetailText(value: string, excludeTexts: string[]): boolean {
+  const normalized = normalizeCareDetailText(value);
+  if (!normalized) return false;
+
+  return excludeTexts.some((candidate) => {
+    const other = normalizeCareDetailText(candidate);
+    if (!other) return false;
+    if (normalized === other) return true;
+    if (normalized.length >= 24 && other.includes(normalized)) return true;
+    if (other.length >= 24 && normalized.includes(other)) return true;
+    return false;
+  });
+}
+
+function meaningfulCareDetailValue(
+  raw: string | null | undefined,
+  locale: Locale,
+  excludeTexts: string[],
+): string | null {
+  const trimmed = raw?.trim();
+  if (!trimmed || isPlaceholderCareDetailValue(trimmed)) return null;
+
+  const translated = translateProfileLabel(trimmed, locale);
+  if (isPlaceholderCareDetailValue(translated)) return null;
+  if (isDuplicateCareDetailText(translated, excludeTexts)) return null;
+
+  return translated;
+}
+
 export function buildPublicPetCareDetails(
   pet: PublicSearchPet,
   locale: Locale,
   labels: PublicPetCareDetailLabels,
+  options: BuildPublicPetCareDetailsOptions = {},
 ): PublicCareDetailItem[] {
+  const excludeTexts = options.excludeTexts ?? [];
   const items: PublicCareDetailItem[] = [];
-  const push = (label: string, raw: string | null | undefined) => {
-    const value = raw?.trim();
+
+  const push = (id: string, label: string, raw: string | null | undefined) => {
+    const value = meaningfulCareDetailValue(raw, locale, excludeTexts);
     if (!value) return;
-    items.push({ label, value: translateProfileLabel(value, locale) });
+    items.push({ id, label, value });
   };
 
-  push(labels.healthDetails, pet.healthCharacteristics);
-  push(labels.feedingSchedule, pet.feedingSchedule);
-  push(labels.feedingHabits, pet.eatingHabits);
-  push(labels.positiveTraits, pet.positiveTraits);
-  push(labels.behaviourNotes, pet.challengingTraits);
-  push(labels.additionalInfo, pet.additionalNotes);
+  push("healthDetails", labels.healthDetails, pet.healthCharacteristics);
+  push("feedingSchedule", labels.feedingSchedule, pet.feedingSchedule);
+  push("feedingHabits", labels.feedingHabits, pet.eatingHabits);
+  push("positiveTraits", labels.positiveTraits, pet.positiveTraits);
+  push("behaviourNotes", labels.behaviourNotes, pet.challengingTraits);
+  push("additionalInfo", labels.additionalInfo, pet.additionalNotes);
 
-  if (pet.friendRequirements.length) {
-    items.push({
-      label: labels.friendRequirements,
-      value: translateProfileLabels(pet.friendRequirements, locale).join(", "),
-    });
+  const friendValues = translateProfileLabels(
+    pet.friendRequirements.filter((value) => !isPlaceholderCareDetailValue(value)),
+    locale,
+  ).filter((value) => !isPlaceholderCareDetailValue(value));
+
+  if (friendValues.length) {
+    const joined = friendValues.join(", ");
+    if (!isDuplicateCareDetailText(joined, excludeTexts)) {
+      items.push({
+        id: "friendRequirements",
+        label: labels.friendRequirements,
+        value: joined,
+      });
+    }
   }
 
   return items;
@@ -190,10 +265,6 @@ export function buildPublicPetCareColumns(
   const medication: string[] = [];
   if (pet.requiresMedication === true) {
     medication.push(translateProfileLabel("Needs medication", locale));
-    const healthNotes = pet.healthCharacteristics?.trim();
-    if (healthNotes) {
-      medication.push(translateProfileLabel(healthNotes, locale));
-    }
   } else {
     medication.push(translateProfileLabel("No medication", locale));
   }
