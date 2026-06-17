@@ -131,7 +131,7 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     },
   },
   "walks": {
-    name: { en: "Walks", et: "Jalutised" },
+    name: { en: "Walks", et: "Jalutuskäigud" },
     meta: {
       title: { en: "Dog Walks & Outdoor Care", et: "Koerte jalutamine ja aktiivne aeg õues" },
       description: { en: "Dog walks through Stay With My Pet offer consistent, one-to-one outdoor care that keeps your dog active, calm, and happy — even when your schedule is full. Instead of short, task-focused walks, our approach is personal, routine-based, and built on trust between your dog and a familiar person.", et: "Stay With My Peti kaudu pakutavad koerte jalutuskäigud on rahulikud, personaalsed ja üks-ühele. Need aitavad hoida sinu koera aktiivse, tasakaalus ja rõõmsana ka siis, kui sinu enda päevad on pikad või ajagraafik tihe. Me ei paku kiireid „ära-tehtud“ jalutusi. Meie lähenemine põhineb rutiinil, järjepidevusel ja usaldusel, mis tekib koera ja tuttava inimese vahel." },

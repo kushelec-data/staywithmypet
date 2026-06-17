@@ -44,7 +44,7 @@ const STATIC = {
     },
   },
   walks: {
-    name: { en: "Walks", et: "Jalutised" },
+    name: { en: "Walks", et: "Jalutuskäigud" },
     secondaryHref: "/#services",
     secondaryLabel: { en: "Explore other care options", et: "Tutvu ka teiste hoiuvõimalustega" },
   },

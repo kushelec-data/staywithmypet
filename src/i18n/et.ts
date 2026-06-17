@@ -976,7 +976,7 @@ export const et = {
     cta: "Leia oma lemmikule sobiv loomasõber →",
     items: [
       { title: "Päevahoid", description: "Päevane selts, mis tundub nagu teine kodu, mitte asutus.", icon: "🏠" },
-      { title: "Jalutised", description: "Kindlad jalutised sinu lemmiku rütmi järgi — ka kui sinu päev on kiire.", icon: "🦮" },
+      { title: "Jalutuskäigud", description: "Kindlad jalutuskäigud sinu lemmiku rütmi järgi — ka kui sinu päev on kiire.", icon: "🦮" },
       { title: "Ööhoid", description: "Armastav ööhoid, kui lemmik vajab kodu — mitte hotelli.", icon: "🌙" },
       { title: "Kodukülastused", description: "Hooldus lemmiku enda kodus.", icon: "💚" },
       { title: "Ainult toitmine", description: "Lihtne, usaldusväärne toitmine, kui muud pole vaja.", icon: "🍽️" },
