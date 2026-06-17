@@ -128,6 +128,50 @@ export function buildPublicPetQuickFacts(
   return facts;
 }
 
+export type PublicCareDetailItem = {
+  label: string;
+  value: string;
+};
+
+export type PublicPetCareDetailLabels = {
+  healthDetails: string;
+  feedingSchedule: string;
+  feedingHabits: string;
+  positiveTraits: string;
+  behaviourNotes: string;
+  additionalInfo: string;
+  friendRequirements: string;
+};
+
+export function buildPublicPetCareDetails(
+  pet: PublicSearchPet,
+  locale: Locale,
+  labels: PublicPetCareDetailLabels,
+): PublicCareDetailItem[] {
+  const items: PublicCareDetailItem[] = [];
+  const push = (label: string, raw: string | null | undefined) => {
+    const value = raw?.trim();
+    if (!value) return;
+    items.push({ label, value: translateProfileLabel(value, locale) });
+  };
+
+  push(labels.healthDetails, pet.healthCharacteristics);
+  push(labels.feedingSchedule, pet.feedingSchedule);
+  push(labels.feedingHabits, pet.eatingHabits);
+  push(labels.positiveTraits, pet.positiveTraits);
+  push(labels.behaviourNotes, pet.challengingTraits);
+  push(labels.additionalInfo, pet.additionalNotes);
+
+  if (pet.friendRequirements.length) {
+    items.push({
+      label: labels.friendRequirements,
+      value: translateProfileLabels(pet.friendRequirements, locale).join(", "),
+    });
+  }
+
+  return items;
+}
+
 export function buildPublicPetCareColumns(
   pet: PublicSearchPet,
   locale: Locale = "en",
@@ -143,12 +187,16 @@ export function buildPublicPetCareColumns(
   const walks = pet.walkNeeds?.trim()
     ? [translateProfileLabel(pet.walkNeeds.trim(), locale)]
     : [translateProfileLabel("None", locale)];
-  const medication =
-    pet.requiresMedication === true
-      ? [translateProfileLabel("Needs medication", locale)]
-      : pet.requiresMedication === false
-        ? [translateProfileLabel("No medication", locale)]
-        : [translateProfileLabel("Not specified", locale)];
+  const medication: string[] = [];
+  if (pet.requiresMedication === true) {
+    medication.push(translateProfileLabel("Needs medication", locale));
+    const healthNotes = pet.healthCharacteristics?.trim();
+    if (healthNotes) {
+      medication.push(translateProfileLabel(healthNotes, locale));
+    }
+  } else {
+    medication.push(translateProfileLabel("No medication", locale));
+  }
 
   return { services, walks, medication };
 }

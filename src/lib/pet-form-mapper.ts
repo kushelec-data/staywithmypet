@@ -60,7 +60,10 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
     size: normalizePetWeightStorageValue(str(record, "size_label")) ?? "5_10_kg",
     energyLevel: str(record, "energy_level") || "Medium",
     temperament: strArr(record, "temperament"),
-    requiresMedication: Boolean(record.requires_medication ?? details(record).requires_medication),
+    requiresMedication: (() => {
+      const value = record.requires_medication ?? details(record).requires_medication;
+      return typeof value === "boolean" ? value : false;
+    })(),
     healthCharacteristics: str(record, "health_characteristics"),
     feedingSchedule: str(record, "feeding_schedule"),
     walkNeeds: str(record, "walk_needs") || "None",

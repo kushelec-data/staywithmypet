@@ -6,6 +6,7 @@ import { PetPublicParentCard } from "@/components/pets/PetPublicParentCard";
 import { PetPublicReviewsBlock } from "@/components/pets/PetPublicReviewsBlock";
 import { PetPublicTopCard } from "@/components/pets/PetPublicTopCard";
 import { PublicCareColumnsCard } from "@/components/public/PublicCareColumnsCard";
+import { PublicPetCareDetailsCard } from "@/components/public/PublicPetCareDetailsCard";
 import { PublicCompactAvailabilityCard } from "@/components/public/PublicCompactAvailabilityCard";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { PublicQuickInfoCard } from "@/components/public/PublicQuickInfoCard";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { fetchPublicPetProfile } from "@/lib/public-pet";
 import {
   buildPublicPetCareColumns,
+  buildPublicPetCareDetails,
   buildPublicPetChips,
   buildPublicPetQuickFacts,
   buildPublicPetQuickInfo,
@@ -106,6 +108,15 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
   const { shortBio, about } = resolvePublicPetContent(pet);
 
   const careColumns = buildPublicPetCareColumns(pet, locale);
+  const careDetails = buildPublicPetCareDetails(pet, locale, {
+    healthDetails: detail.healthDetails,
+    feedingSchedule: detail.feedingSchedule,
+    feedingHabits: detail.feedingHabits,
+    positiveTraits: detail.positiveTraits,
+    behaviourNotes: detail.behaviourNotes,
+    additionalInfo: detail.additionalInfo,
+    friendRequirements: detail.friendRequirements,
+  });
 
   return (
     <PublicPageShell
@@ -135,7 +146,17 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
 
         <PublicCareColumnsCard columns={careColumns} />
 
-        {about ? (
+        <PublicPetCareDetailsCard items={careDetails} title={detail.careDetails} />
+
+        {isOwnPet ? (
+          <div className="flex justify-start">
+            <Button href={`/pets/${pet.id}/edit`} variant="outline" size="sm">
+              {detail.backToEditPet}
+            </Button>
+          </div>
+        ) : null}
+
+        {about && about !== pet.additionalNotes?.trim() ? (
           <section className={PUBLIC_CARD}>
             <h2 className={PUBLIC_SECTION_TITLE}>{detail.aboutPet.replace("{name}", pet.name)}</h2>
             <p className="mt-3 max-w-prose text-sm leading-relaxed text-foreground/90">{about}</p>

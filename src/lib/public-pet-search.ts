@@ -50,6 +50,10 @@ export type PublicSearchPet = PetIntroDisplay &
     spayedNeutered: boolean;
     healthCharacteristics: string | null;
     positiveTraits: string | null;
+    challengingTraits: string | null;
+    feedingSchedule: string | null;
+    eatingHabits: string | null;
+    friendRequirements: string[];
     /** Owner-written description (additional_notes). */
     additionalNotes: string | null;
   };
@@ -87,7 +91,7 @@ export const emptyPetSearchFilters = (): PetSearchFilterState => ({
 });
 
 const PUBLIC_PET_SELECT =
-  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, pet_photos ( public_url, is_primary, sort_order ), profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )";
+  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, pet_photos ( public_url, is_primary, sort_order ), profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )";
 
 type OwnerJoin = {
   id: string;
@@ -146,6 +150,29 @@ function pickBool(column: unknown, details: Record<string, unknown>, key: string
   const d = details[key];
   if (typeof d === "boolean") return d;
   return null;
+}
+
+function pickMedicationFlag(
+  column: unknown,
+  details: Record<string, unknown>,
+  key: string,
+): boolean {
+  const value = pickBool(column, details, key);
+  return value === true;
+}
+
+function pickStringList(column: unknown, details: Record<string, unknown>, key: string): string[] {
+  const col = column ?? details[key];
+  if (Array.isArray(col)) {
+    return col.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
+  }
+  if (typeof col === "string" && col.trim()) {
+    return col
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
 }
 
 function pickTemperament(row: PetIntroRow, details: Record<string, unknown>): string[] {
@@ -229,7 +256,7 @@ function mapRowToPublicSearchPet(
     breed: intro.breed,
     energyLevel: strFrom(row.energy_level) ?? strFrom(details.energy_level),
     temperamentTags: pickTemperament(row, details),
-    requiresMedication: pickBool(row.requires_medication, details, "requires_medication"),
+    requiresMedication: pickMedicationFlag(row.requires_medication, details, "requires_medication"),
     walkNeeds: strFrom(row.walk_needs) ?? strFrom(details.walk_needs),
     careLocation,
     careTypes: pickCareTypesFromRow(row, details),
@@ -261,6 +288,10 @@ function mapRowToPublicSearchPet(
     healthCharacteristics:
       strFrom(row.health_characteristics) ?? strFrom(details.health_characteristics),
     positiveTraits: strFrom(row.positive_traits) ?? strFrom(details.positive_traits),
+    challengingTraits: strFrom(row.challenging_traits) ?? strFrom(details.challenging_traits),
+    feedingSchedule: strFrom(row.feeding_schedule) ?? strFrom(details.feeding_schedule),
+    eatingHabits: strFrom(row.eating_habits) ?? strFrom(details.eating_habits),
+    friendRequirements: pickStringList(row.friend_requirements, details, "friend_requirements"),
     additionalNotes:
       strFrom(row.additional_notes) ?? strFrom(details.additional_notes),
   };
