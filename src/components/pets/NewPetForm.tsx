@@ -54,6 +54,11 @@ import {
   toProfileLabeledChipOptions,
   toProfileStringChipOptions,
 } from "@/lib/profile-option-labels";
+import { PetDateOfBirthField } from "@/components/pets/PetDateOfBirthField";
+import {
+  formatPetDobForDisplay,
+  validatePetDateOfBirthDisplay,
+} from "@/lib/pet-date-of-birth";
 import { translateProfileLabel } from "@/lib/profile-translations";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -110,6 +115,8 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [breedFieldError, setBreedFieldError] = useState<string | null>(null);
+  const [dobDisplay, setDobDisplay] = useState("");
+  const [dobError, setDobError] = useState<string | null>(null);
   const { locale, t } = useLanguage();
   const petsCopy = t.account.petsPage;
   const pl = useCallback((en: string) => translateProfileLabel(en, locale), [locale]);
@@ -166,7 +173,10 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           setError("Pet not found.");
           return;
         }
-        setForm(mapPetRecordToFormInput(row));
+        const mapped = mapPetRecordToFormInput(row);
+        setForm(mapped);
+        setDobDisplay(formatPetDobForDisplay(mapped.dateOfBirth));
+        setDobError(null);
         const loadedPhotos = await fetchPetPhotosForOwner(supabase, ownerId, petId!);
         if (cancelled) return;
         setExistingPhotos(
@@ -284,6 +294,21 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     }
     setBreedFieldError(null);
 
+    const dobValidation = validatePetDateOfBirthDisplay(dobDisplay);
+    if (!dobValidation.ok) {
+      const copy = t.account.petsPage;
+      const message =
+        dobValidation.reason === "future"
+          ? copy.dobFuture
+          : dobValidation.reason === "invalid_date"
+            ? copy.dobInvalidDate
+            : copy.dobInvalidFormat;
+      setDobError(message);
+      setError(message);
+      return;
+    }
+    setDobError(null);
+
     const otherError = validateOtherOptionFields([
       { selected: payload.careTypes, otherText: payload.careTypesOther, fieldLabel: "care type" },
       ...(payload.gender === "Other"
@@ -307,6 +332,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     const hasGoogleCoords = payload.latitude != null && payload.longitude != null;
     const savePayload: PetProfileFormInput = {
       ...payload,
+      dateOfBirth: dobValidation.iso,
       location: hasGoogleCoords
         ? finalizeLocationText(payload.location) || locationText
         : locationText,
@@ -454,18 +480,17 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             error={breedFieldError}
           />
         )}
-        <div>
-          <label htmlFor="dob" className="form-field-label">
-            {pl("Date of Birth")}
-          </label>
-          <input
-            id="dob"
-            type="date"
-            value={form.dateOfBirth}
-            onChange={(e) => patch("dateOfBirth", e.target.value)}
-            className="input-field mt-1"
-          />
-        </div>
+        <PetDateOfBirthField
+          id="dob"
+          label={pl("Date of Birth")}
+          display={dobDisplay}
+          onDisplayChange={setDobDisplay}
+          onIsoChange={(iso) => patch("dateOfBirth", iso)}
+          error={dobError}
+          onError={setDobError}
+          disabled={saving}
+          placeholder={petsCopy.dobPlaceholder}
+        />
         <div>
           <label htmlFor="gender" className="form-field-label">
             {pl("Gender")}

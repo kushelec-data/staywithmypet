@@ -4,6 +4,7 @@ import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/
 import { IMAGES, placeholderPetImage } from "@/lib/images";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { resolveBreedForSave } from "@/lib/pet-breeds";
+import { normalizePetDobToIso } from "@/lib/pet-date-of-birth";
 import { pickPrimaryPhotoUrl, uploadAndAttachPetPhotos } from "@/lib/pet-photos";
 
 export type PetSpecies = "dog" | "cat" | "rabbit" | "bird" | "other";
@@ -84,9 +85,10 @@ export function genderDisplayLabel(gender: string | null | undefined, genderOthe
 }
 
 function buildPetDetails(input: PetProfileFormInput): Record<string, unknown> {
+  const dobIso = normalizePetDobToIso(input.dateOfBirth);
   return {
     species_form: input.speciesForm,
-    date_of_birth: input.dateOfBirth || null,
+    date_of_birth: dobIso || null,
     gender: input.gender || null,
     energy_level: input.energyLevel || null,
     requires_medication: input.requiresMedication,
@@ -139,7 +141,8 @@ function buildPetRow(ownerId: string, input: PetProfileFormInput) {
     .filter(Boolean)
     .join("\n");
 
-  const ageLabel = input.dateOfBirth.trim() || null;
+  const dobIso = normalizePetDobToIso(input.dateOfBirth);
+  const ageLabel = dobIso || null;
 
   const tags = [
     ...input.temperament,
@@ -156,7 +159,7 @@ function buildPetRow(ownerId: string, input: PetProfileFormInput) {
     breed:
       resolveBreedForSave(input.speciesForm, input.breedSelection, input.breedOther) || null,
     age_label: ageLabel,
-    date_of_birth: input.dateOfBirth.trim() || null,
+    date_of_birth: dobIso || null,
     gender: input.gender || null,
     size_label: input.size || null,
     energy_level: input.energyLevel || null,

@@ -516,6 +516,10 @@ export const et = {
       breedOtherPlaceholder: "Kirjuta tõug",
       errorSelectBreed: "Palun vali tõug.",
       errorEnterBreed: "Palun sisesta tõug.",
+      dobPlaceholder: "PP.KK.AAAA",
+      dobInvalidFormat: "Sisesta kuupäev kujul PP.KK.AAAA.",
+      dobInvalidDate: "See kuupäev ei ole kehtiv.",
+      dobFuture: "Sünnikuupäev ei tohi olla tulevikus.",
     },
   },
   dashboardHome: {

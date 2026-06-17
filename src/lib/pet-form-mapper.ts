@@ -3,6 +3,7 @@ import { toDbSpecies } from "@/lib/pet-data";
 import { breedFormStateFromStored } from "@/lib/pet-breeds";
 import { normalizePetWeightStorageValue } from "@/lib/pet-weight";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
+import { normalizePetDobToIso } from "@/lib/pet-date-of-birth";
 import { pickCareTypesFromRow } from "@/lib/pet-care-type";
 
 type PetDbRecord = Record<string, unknown>;
@@ -54,7 +55,7 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
     species: toDbSpecies(speciesForm),
     breedSelection,
     breedOther,
-    dateOfBirth: str(record, "date_of_birth") || str(record, "age_label"),
+    dateOfBirth: normalizePetDobToIso(str(record, "date_of_birth") || str(record, "age_label")),
     gender: str(record, "gender"),
     size: normalizePetWeightStorageValue(str(record, "size_label")) ?? "5_10_kg",
     energyLevel: str(record, "energy_level") || "Medium",
