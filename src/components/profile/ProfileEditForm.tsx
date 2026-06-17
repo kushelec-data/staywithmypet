@@ -86,6 +86,14 @@ import {
   type ProfileLocationFormState,
 } from "@/lib/profile-location";
 import { createClient } from "@/lib/supabase";
+import { FormDraftStatus } from "@/components/forms/FormDraftStatus";
+import { useFormDraftStorage } from "@/hooks/useFormDraftStorage";
+import {
+  buildProfileEditDraftFromProfile,
+  emptyProfileEditDraft,
+  type ProfileEditDraftData,
+} from "@/lib/form-drafts/profile-edit-draft";
+import { formDraftStorageKey } from "@/lib/form-draft-storage";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 function profileEditStepFromQuery(step: string | null): ProfileEditSectionKey | null {
@@ -148,6 +156,7 @@ export function ProfileEditForm() {
   const bioUserEditedRef = useRef(false);
   const originalLocationKeyRef = useRef("");
   const originalLocationSnapshotRef = useRef<ProfileLocationFormState>(EMPTY_PROFILE_LOCATION_FORM);
+  const formInitializedRef = useRef(false);
   const [openAvailabilityPanel, setOpenAvailabilityPanel] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
@@ -191,13 +200,68 @@ export function ProfileEditForm() {
   const activeStepId = visibleSteps[activeStepIndex] ?? visibleSteps[0];
   const availabilityUx = availabilityUxForProfile(role, activeMode);
 
-  const bioWordCount = useMemo(() => getWordCount(bio), [bio]);
-  const bioStatus = bioWordStatus(bioWordCount);
-  const bioValid = isBioWordCountValid(bioWordCount);
   const bioPlaceholder = useMemo(
     () => bioPlaceholderForRole(role, pe.basic.bioPlaceholders),
     [role, pe.basic.bioPlaceholders],
   );
+
+  const draftKey = useMemo(
+    () => (user?.id ? formDraftStorageKey(["profile-edit", user.id]) : ""),
+    [user?.id],
+  );
+
+  const draftData = useMemo(
+    (): ProfileEditDraftData => ({
+      displayName,
+      profileLocation,
+      languages,
+      languagesOther,
+      bio,
+      trustSafety,
+      petFriendForm,
+      petParentForm,
+      activeStepIndex,
+    }),
+    [
+      displayName,
+      profileLocation,
+      languages,
+      languagesOther,
+      bio,
+      trustSafety,
+      petFriendForm,
+      petParentForm,
+      activeStepIndex,
+    ],
+  );
+
+  const applyProfileEditDraft = useCallback((draft: ProfileEditDraftData) => {
+    bioUserEditedRef.current = Boolean(draft.bio.trim());
+    originalLocationKeyRef.current = profileLocationDisplayKey(draft.profileLocation);
+    originalLocationSnapshotRef.current = draft.profileLocation;
+    setDisplayName(draft.displayName);
+    setProfileLocation(draft.profileLocation);
+    setLanguages([...draft.languages]);
+    setLanguagesOther(draft.languagesOther);
+    setBio(draft.bio);
+    setTrustSafety(draft.trustSafety);
+    setPetFriendForm(draft.petFriendForm);
+    setPetParentForm(draft.petParentForm);
+    if (typeof draft.activeStepIndex === "number") {
+      setActiveStepIndex(Math.max(0, draft.activeStepIndex));
+    }
+  }, []);
+
+  const { draftStatus, clearDraft, markHydratedFromServer } = useFormDraftStorage({
+    key: draftKey,
+    data: draftData,
+    enabled: Boolean(user?.id && draftKey && !profileLoading),
+    onRestore: applyProfileEditDraft,
+  });
+
+  const bioWordCount = useMemo(() => getWordCount(bio), [bio]);
+  const bioStatus = bioWordStatus(bioWordCount);
+  const bioValid = isBioWordCountValid(bioWordCount);
 
   const sectionComplete = useCallback(
     (section: ProfileEditSectionKey) => {
@@ -237,34 +301,39 @@ export function ProfileEditForm() {
   }
 
   useEffect(() => {
-    if (profileLoading) return;
+    if (profileLoading || formInitializedRef.current) return;
 
     if (profile) {
-      const loadedLocation = profileLocationFromRow(profile);
-      originalLocationKeyRef.current = profileLocationDisplayKey(loadedLocation);
-      originalLocationSnapshotRef.current = loadedLocation;
-      applyBasicFromProfile(profile, {
-        setDisplayName,
-        setProfileLocation,
-        setLanguages,
-        setLanguagesOther,
-        setBio: (value) => {
-          if (!bioUserEditedRef.current) {
-            setBio(value);
-          }
-        },
-        setAvatarUrl,
-      });
-      applyTrustFromProfile(profile, setTrustSafety);
-      setPetFriendForm(
-        petFriendFormFromDetailsRaw(
-          profile.details,
-          normalizeAvailabilityDates(
-            profile.details?.availability_schedule?.selected_dates ?? [],
+      formInitializedRef.current = true;
+      const baseline = buildProfileEditDraftFromProfile(profile, 0);
+      const restored = markHydratedFromServer(baseline);
+      if (!restored) {
+        const loadedLocation = profileLocationFromRow(profile);
+        originalLocationKeyRef.current = profileLocationDisplayKey(loadedLocation);
+        originalLocationSnapshotRef.current = loadedLocation;
+        applyBasicFromProfile(profile, {
+          setDisplayName,
+          setProfileLocation,
+          setLanguages,
+          setLanguagesOther,
+          setBio: (value) => {
+            if (!bioUserEditedRef.current) {
+              setBio(value);
+            }
+          },
+          setAvatarUrl,
+        });
+        applyTrustFromProfile(profile, setTrustSafety);
+        setPetFriendForm(
+          petFriendFormFromDetailsRaw(
+            profile.details,
+            normalizeAvailabilityDates(
+              profile.details?.availability_schedule?.selected_dates ?? [],
+            ),
           ),
-        ),
-      );
-      setPetParentForm(petParentFormFromDetailsRaw(profile.details));
+        );
+        setPetParentForm(petParentFormFromDetailsRaw(profile.details));
+      }
 
       const steps = visibleProfileEditSteps(
         profile.role ?? "pet_friend",
@@ -287,9 +356,13 @@ export function ProfileEditForm() {
     }
 
     if (user) {
-      setDisplayName(resolveProfileDisplayName(user, null));
+      formInitializedRef.current = true;
+      const restored = markHydratedFromServer(emptyProfileEditDraft());
+      if (!restored) {
+        setDisplayName(resolveProfileDisplayName(user, null));
+      }
     }
-  }, [profile, profileLoading, user]);
+  }, [profile, profileLoading, user, markHydratedFromServer]);
 
   useEffect(() => {
     const hashStep = profileEditStepFromHash(window.location.hash);
@@ -390,6 +463,7 @@ export function ProfileEditForm() {
       [section]: isFinalStep ? pe.wizard.finalStepSavedRedirect : pe.sectionSaved,
     }));
     setErrors((prev) => ({ ...prev, [section]: null }));
+    clearDraft();
     if (isFinalStep) {
       if (dashboardRedirectRef.current) clearTimeout(dashboardRedirectRef.current);
       dashboardRedirectRef.current = setTimeout(() => {
@@ -807,7 +881,9 @@ export function ProfileEditForm() {
   });
 
   return (
-    <ProfileEditWizard
+    <>
+      <FormDraftStatus status={draftStatus} className="mb-3" />
+      <ProfileEditWizard
       steps={wizardSteps}
       activeIndex={activeStepIndex}
       onActiveIndexChange={setActiveStepIndex}
@@ -825,5 +901,6 @@ export function ProfileEditForm() {
         editingModeHint: pe.wizard.editingModeHint,
       }}
     />
+    </>
   );
 }

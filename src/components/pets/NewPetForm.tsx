@@ -62,8 +62,12 @@ import {
   validatePetDateOfBirthDisplay,
 } from "@/lib/pet-date-of-birth";
 import { translateProfileLabel } from "@/lib/profile-translations";
+import { FormDraftStatus } from "@/components/forms/FormDraftStatus";
+import { useFormDraftStorage } from "@/hooks/useFormDraftStorage";
+import { buildPetFormDraft, type PetFormDraftData } from "@/lib/form-drafts/pet-form-draft";
+import { formDraftStorageKey } from "@/lib/form-draft-storage";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const emptyForm = (): PetProfileFormInput => ({
   name: "",
@@ -119,6 +123,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [breedFieldError, setBreedFieldError] = useState<string | null>(null);
   const [dobDisplay, setDobDisplay] = useState("");
   const [dobError, setDobError] = useState<string | null>(null);
+  const formInitializedRef = useRef(false);
   const { locale, t } = useLanguage();
   const petsCopy = t.account.petsPage;
   const pl = useCallback((en: string) => translateProfileLabel(en, locale), [locale]);
@@ -160,6 +165,35 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     [locale],
   );
 
+  const draftKey = useMemo(() => {
+    if (!user?.id) return "";
+    if (isEdit && petId) {
+      return formDraftStorageKey(["pet-edit", user.id, petId]);
+    }
+    return formDraftStorageKey(["pet-new", user.id]);
+  }, [user?.id, isEdit, petId]);
+
+  const draftData = useMemo(() => buildPetFormDraft(form, dobDisplay), [form, dobDisplay]);
+
+  const applyPetFormDraft = useCallback((draft: PetFormDraftData) => {
+    setForm({ ...draft.form });
+    setDobDisplay(draft.dobDisplay);
+    setDobError(null);
+  }, []);
+
+  const { draftStatus, clearDraft, markHydratedFromServer } = useFormDraftStorage({
+    key: draftKey,
+    data: draftData,
+    enabled: Boolean(user?.id && draftKey && !loadingPet),
+    onRestore: applyPetFormDraft,
+  });
+
+  useEffect(() => {
+    if (!user?.id || isEdit || formInitializedRef.current) return;
+    formInitializedRef.current = true;
+    markHydratedFromServer(buildPetFormDraft(emptyForm(), ""));
+  }, [user?.id, isEdit, markHydratedFromServer]);
+
   useEffect(() => {
     if (!petId || !user?.id) return;
     const ownerId = user.id;
@@ -176,8 +210,15 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           return;
         }
         const mapped = mapPetRecordToFormInput(row);
-        setForm(mapped);
-        setDobDisplay(formatPetDobForDisplay(mapped.dateOfBirth));
+        const dob = formatPetDobForDisplay(mapped.dateOfBirth);
+        if (!formInitializedRef.current) {
+          formInitializedRef.current = true;
+          const restored = markHydratedFromServer(buildPetFormDraft(mapped, dob));
+          if (!restored) {
+            setForm(mapped);
+            setDobDisplay(dob);
+          }
+        }
         setDobError(null);
         const loadedPhotos = await fetchPetPhotosForOwner(supabase, ownerId, petId!);
         if (cancelled) return;
@@ -195,7 +236,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     return () => {
       cancelled = true;
     };
-  }, [petId, user, supabase]);
+  }, [petId, user, supabase, markHydratedFromServer]);
 
   function mapLoadedPhotos(
     loadedPhotos: Awaited<ReturnType<typeof fetchPetPhotosForOwner>>,
@@ -373,6 +414,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       }
       await refreshProfile();
       notifyDashboardRefresh();
+      clearDraft();
       router.push("/pets");
       router.refresh();
     } catch (err) {
@@ -388,6 +430,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FormDraftStatus status={draftStatus} />
       {error ? (
         <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
           {error}

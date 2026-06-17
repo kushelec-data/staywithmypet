@@ -58,8 +58,16 @@ import {
 } from "@/lib/profile-languages";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useLanguage } from "@/context/LanguageContext";
+import { FormDraftStatus } from "@/components/forms/FormDraftStatus";
+import { useFormDraftStorage } from "@/hooks/useFormDraftStorage";
+import {
+  buildProfileSetupDraftFromProfile,
+  emptyProfileSetupDraft,
+  type ProfileSetupDraftData,
+} from "@/lib/form-drafts/profile-setup-draft";
+import { formDraftStorageKey } from "@/lib/form-draft-storage";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const DASHBOARD_PATH = "/dashboard";
 
@@ -159,6 +167,56 @@ export function ProfileSetupForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const formInitializedRef = useRef(false);
+
+  const draftKey = useMemo(
+    () => (user?.id ? formDraftStorageKey(["profile-setup", user.id]) : ""),
+    [user?.id],
+  );
+
+  const draftData = useMemo(
+    (): ProfileSetupDraftData => ({
+      displayName,
+      role,
+      profileLocation,
+      availabilitySelectedDates,
+      languages,
+      languagesOther,
+      bio,
+      trustSafety,
+      petFriendForm,
+    }),
+    [
+      displayName,
+      role,
+      profileLocation,
+      availabilitySelectedDates,
+      languages,
+      languagesOther,
+      bio,
+      trustSafety,
+      petFriendForm,
+    ],
+  );
+
+  const applyProfileSetupDraft = useCallback((draft: ProfileSetupDraftData) => {
+    setDisplayName(draft.displayName);
+    setRole(draft.role);
+    setProfileLocation(draft.profileLocation);
+    setAvailabilitySelectedDates([...draft.availabilitySelectedDates]);
+    setLanguages([...draft.languages]);
+    setLanguagesOther(draft.languagesOther);
+    setBio(draft.bio);
+    setTrustSafety(draft.trustSafety);
+    setPetFriendForm(draft.petFriendForm);
+  }, []);
+
+  const { draftStatus, clearDraft, markHydratedFromServer } = useFormDraftStorage({
+    key: draftKey,
+    data: draftData,
+    enabled: Boolean(user?.id && draftKey && !profileLoading),
+    onRestore: applyProfileSetupDraft,
+  });
 
   const activeMode = resolveActiveMode(profile?.role ?? role, profile?.active_mode);
   const availabilityUx = availabilityUxForProfile(profile?.role ?? role, activeMode);
@@ -209,40 +267,49 @@ export function ProfileSetupForm({
   }
 
   useEffect(() => {
-    if (profileLoading) return;
+    if (profileLoading || formInitializedRef.current) return;
 
     if (profile) {
-      applyProfileToForm(profile, setters);
-      setPetFriendForm(
-        petFriendFormFromDetailsRaw(
-          profile.details,
-          normalizeAvailabilityDates(
-            profile.details?.availability_schedule?.selected_dates ?? [],
+      formInitializedRef.current = true;
+      const baseline = buildProfileSetupDraftFromProfile(profile);
+      const restored = markHydratedFromServer(baseline);
+      if (!restored) {
+        applyProfileToForm(profile, setters);
+        setPetFriendForm(
+          petFriendFormFromDetailsRaw(
+            profile.details,
+            normalizeAvailabilityDates(
+              profile.details?.availability_schedule?.selected_dates ?? [],
+            ),
           ),
-        ),
-      );
-      if (!profile.display_name?.trim() && user) {
-        setDisplayName(resolveProfileDisplayName(user, null));
+        );
+        if (!profile.display_name?.trim() && user) {
+          setDisplayName(resolveProfileDisplayName(user, null));
+        }
       }
       return;
     }
+
+    formInitializedRef.current = true;
+    const restored = markHydratedFromServer(emptyProfileSetupDraft());
+    if (restored) return;
 
     if (user) {
       setDisplayName(resolveProfileDisplayName(user, null));
     } else {
       setDisplayName("");
+      setRole("pet_friend");
+      setProfileLocation(EMPTY_PROFILE_LOCATION_FORM);
+      setLocationFieldError(null);
+      setAvailabilitySelectedDates([]);
+      setLanguages([]);
+      setLanguagesOther("");
+      setBio("");
+      setTrustSafety(emptyTrustSafetyFormValues);
+      setAvatarUrl(null);
+      setPetFriendForm(emptyPetFriendProfileForm());
     }
-    setRole("pet_friend");
-    setProfileLocation(EMPTY_PROFILE_LOCATION_FORM);
-    setLocationFieldError(null);
-    setAvailabilitySelectedDates([]);
-    setLanguages([]);
-    setLanguagesOther("");
-    setBio("");
-    setTrustSafety(emptyTrustSafetyFormValues);
-    setAvatarUrl(null);
-    setPetFriendForm(emptyPetFriendProfileForm());
-  }, [profile, profileLoading, user, setters]);
+  }, [profile, profileLoading, user, setters, markHydratedFromServer]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -340,6 +407,7 @@ export function ProfileSetupForm({
       const { sendProfileCompletedEmailAction } = await import("@/app/actions/email-events");
       void sendProfileCompletedEmailAction();
       setSuccess(setup.profileSavedSuccess);
+      clearDraft();
       router.push(DASHBOARD_PATH);
       router.refresh();
     } catch (err) {
@@ -357,6 +425,7 @@ export function ProfileSetupForm({
 
   return (
     <form onSubmit={handleSubmit} className="account-card space-y-6 p-6 sm:p-8">
+      <FormDraftStatus status={draftStatus} />
       {success ? (
         <p className="rounded-xl bg-mint/50 px-3 py-2 text-sm font-medium text-brand-teal" role="status">
           {success}

@@ -31,6 +31,8 @@ export const et = {
     perNight: "/ öö",
     stays: "külastust",
     year: "{year}",
+    draftSaved: "Mustand salvestatud",
+    draftRestored: "Salvestamata mustand taastati",
   },
   navbar: {
     searchPets: "Otsi lemmikloomi",

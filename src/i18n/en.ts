@@ -31,6 +31,8 @@ export const en = {
     perNight: "/ night",
     stays: "stays",
     year: "{year}",
+    draftSaved: "Draft saved",
+    draftRestored: "Unsaved draft restored",
   },
   navbar: {
     searchPets: "Search pets",
