@@ -24,7 +24,7 @@ import {
   BIO_WORD_MAX,
   BIO_WORD_MIN,
   bioWordStatus,
-  countBioWords,
+  getWordCount,
   isBioWordCountValid,
   normalizeBioForSave,
 } from "@/lib/bio-words";
@@ -186,7 +186,7 @@ export function ProfileEditForm() {
   const activeStepId = visibleSteps[activeStepIndex] ?? visibleSteps[0];
   const availabilityUx = availabilityUxForProfile(role, activeMode);
 
-  const bioWordCount = useMemo(() => countBioWords(bio), [bio]);
+  const bioWordCount = useMemo(() => getWordCount(bio), [bio]);
   const bioStatus = bioWordStatus(bioWordCount);
   const bioValid = isBioWordCountValid(bioWordCount);
   const bioPlaceholder = useMemo(
@@ -222,7 +222,7 @@ export function ProfileEditForm() {
 
   function handleBioChange(next: string) {
     bioUserEditedRef.current = true;
-    const count = countBioWords(next);
+    const count = getWordCount(next);
     const valid = isBioWordCountValid(count);
     const status = bioWordStatus(count);
     logBio("current value", { length: next.length, text: next });
@@ -451,7 +451,7 @@ export function ProfileEditForm() {
           preserveRole: profile?.role_chosen_at ? profile.role : undefined,
         },
       );
-      logBio("save result", { ok: true, bio: saved.bio, wordCount: countBioWords(saved.bio ?? "") });
+      logBio("save result", { ok: true, bio: saved.bio, wordCount: getWordCount(saved.bio ?? "") });
       await afterSectionSave("basic", saved);
     } catch (err) {
       logBio("save result", {
@@ -710,7 +710,7 @@ export function ProfileEditForm() {
               placeholder={bioPlaceholder}
               aria-describedby="bio-word-counter"
             />
-            <BioWordCounter id="bio-word-counter" wordCount={bioWordCount} status={bioStatus} />
+            <BioWordCounter id="bio-word-counter" bio={bio} />
           </div>
         </>
       );

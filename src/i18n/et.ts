@@ -791,9 +791,11 @@ export const et = {
       errorLocation: "Palun sisesta asukoht.",
       errorLocationPlaceRequired: "Palun vali aadress soovituste hulgast.",
       errorLanguages: "Palun vali vähemalt üks keel.",
-      errorBioMin: "Kirjuta biosse vähemalt 20 sõna.",
+      errorBioMin: "Vaja on vähemalt 20 sõna.",
       errorBioMax: "Bio ei tohi ületada {max} sõna.",
       bioWordCount: "{count} / {max} sõna",
+      bioDescriptionGood: "Profiilikirjeldus on hea.",
+      bioDescriptionExcellent: "Suurepärane profiilikirjeldus.",
     },
     gallery: {
       photosHint: "Laadi üles kuni {max} fotot. Vali üks pea profiilipildiks.",

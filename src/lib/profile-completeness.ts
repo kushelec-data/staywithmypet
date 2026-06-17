@@ -1,4 +1,4 @@
-import { countBioWords } from "@/lib/bio-words";
+import { getWordCount } from "@/lib/bio-words";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
 import {
   hasCarePreferences,
@@ -110,7 +110,7 @@ export function profileNeedsPetListingForMode(activeMode: ProfileActiveMode): bo
 }
 
 export function isBioCompleteForProfile(bio: string | null | undefined): boolean {
-  return countBioWords(bio ?? "") >= PROFILE_COMPLETENESS_BIO_MIN_WORDS;
+  return getWordCount(bio ?? "") >= PROFILE_COMPLETENESS_BIO_MIN_WORDS;
 }
 
 export function isPhoneOnFile(profile: {
@@ -244,7 +244,7 @@ export function completenessItemStatus(
 ): CompletenessCheckStatus {
   if (item.done) return "completed";
   if (item.id === "bio") {
-    const words = countBioWords(profile.bio ?? "");
+    const words = getWordCount(profile.bio ?? "");
     if (words > 0 && words < PROFILE_COMPLETENESS_BIO_MIN_WORDS) return "pending";
   }
   return "missing";

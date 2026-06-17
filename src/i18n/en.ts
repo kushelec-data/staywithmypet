@@ -783,9 +783,11 @@ export const en = {
       errorLocation: "Please enter your location.",
       errorLocationPlaceRequired: "Please select an address from the suggestions.",
       errorLanguages: "Please select at least one language.",
-      errorBioMin: "Write at least 20 words in your bio.",
+      errorBioMin: "Minimum 20 words required.",
       errorBioMax: "Bio cannot exceed {max} words.",
       bioWordCount: "{count} / {max} words",
+      bioDescriptionGood: "Profile description looks good.",
+      bioDescriptionExcellent: "Excellent profile description.",
     },
     gallery: {
       photosHint: "Upload up to {max} photos. Choose one as your main profile photo.",

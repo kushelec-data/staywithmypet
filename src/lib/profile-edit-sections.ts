@@ -1,4 +1,4 @@
-import { countBioWords, isBioWordCountValid } from "@/lib/bio-words";
+import { getWordCount, isBioWordCountValid } from "@/lib/bio-words";
 import { hasSavedProfileLocation } from "@/lib/profile-location";
 import {
   hasCarePreferences,
@@ -88,7 +88,7 @@ export function isProfileEditSectionComplete(
     case "basic":
       return isBasicProfileSectionComplete(
         profile,
-        bioValid ?? isBioWordCountValid(countBioWords(profile?.bio ?? "")),
+        bioValid ?? isBioWordCountValid(getWordCount(profile?.bio ?? "")),
       );
     case "trust":
       return isTrustSafetySectionComplete(profile);

@@ -37,8 +37,7 @@ import { resolveActiveMode } from "@/lib/profile-mode";
 import {
   BIO_WORD_MAX,
   BIO_WORD_MIN,
-  bioWordStatus,
-  countBioWords,
+  getWordCount,
   isBioWordCountValid,
   normalizeBioForSave,
   truncateBioToMaxWords,
@@ -196,8 +195,7 @@ export function ProfileSetupForm({
   }
 
   const showFriendProfileSections = role === "pet_friend" || role === "both";
-  const bioWordCount = useMemo(() => countBioWords(bio), [bio]);
-  const bioStatus = bioWordStatus(bioWordCount);
+  const bioWordCount = useMemo(() => getWordCount(bio), [bio]);
   const bioValid = isBioWordCountValid(bioWordCount);
   const bioPlaceholder = useMemo(
     () => bioPlaceholderForRole(role, setup.bioPlaceholders),
@@ -205,7 +203,7 @@ export function ProfileSetupForm({
   );
 
   function handleBioChange(next: string) {
-    const count = countBioWords(next);
+    const count = getWordCount(next);
     setBio(count > BIO_WORD_MAX ? truncateBioToMaxWords(next) : next);
   }
 
@@ -517,7 +515,7 @@ export function ProfileSetupForm({
             placeholder={bioPlaceholder}
             aria-describedby="bio-word-counter"
           />
-          <BioWordCounter id="bio-word-counter" wordCount={bioWordCount} status={bioStatus} />
+          <BioWordCounter id="bio-word-counter" bio={bio} />
         </div>
         </ProfileCollapsibleSection>
 
