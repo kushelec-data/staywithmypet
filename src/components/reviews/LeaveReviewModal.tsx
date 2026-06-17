@@ -2,6 +2,7 @@
 
 import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { StarRatingPicker } from "@/components/reviews/StarRatingPicker";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -150,10 +151,10 @@ export function LeaveReviewModal({
             <label htmlFor="review-text" className="text-sm font-semibold text-foreground">
               {r.textLabel}
             </label>
-            <textarea
+            <AutoResizeTextarea
               id="review-text"
               name="text"
-              rows={3}
+              minRows={3}
               minLength={REVIEW_TEXT_MIN}
               maxLength={REVIEW_TEXT_MAX}
               required
@@ -161,7 +162,7 @@ export function LeaveReviewModal({
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={textPlaceholder}
-              className="mt-2 w-full resize-none rounded-xl border border-black/10 bg-cream/30 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+              className="mt-2 w-full rounded-xl border border-black/10 bg-cream/30 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
             />
             <p className="mt-1 text-right text-xs text-muted">
               {text.length}/{REVIEW_TEXT_MAX}

@@ -8,6 +8,7 @@ import type { ProfileRow } from "@/lib/profile-utils";
 import { ProfileLocationField } from "@/components/profile/ProfileLocationField";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import { BioWordCounter } from "@/components/profile/BioWordCounter";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { ProfileAvatarUpload } from "@/components/profile/ProfileAvatarUpload";
 import { ProfileGalleryUpload } from "@/components/profile/ProfileGalleryUpload";
 import { ProfileRoleStatusCard } from "@/components/profile/ProfileRoleStatusCard";
@@ -504,14 +505,14 @@ export function ProfileSetupForm({
           <label htmlFor="bio" className="form-field-label">
             {setup.bioLabel}
           </label>
-          <textarea
+          <AutoResizeTextarea
             id="bio"
             name="bio"
-            rows={4}
+            minRows={4}
             value={bio}
             onChange={(e) => handleBioChange(e.target.value)}
             required
-            className="input-field mt-1 resize-y"
+            className="input-field mt-1"
             placeholder={bioPlaceholder}
             aria-describedby="bio-word-counter"
           />

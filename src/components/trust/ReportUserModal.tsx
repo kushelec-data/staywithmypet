@@ -2,6 +2,7 @@
 
 import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { useLanguage } from "@/context/LanguageContext";
 import { REPORT_REASONS, formatTrustSafetyError, submitReport } from "@/lib/trust-safety";
 import { createClient } from "@/lib/supabase";
@@ -110,14 +111,14 @@ export function ReportUserModal({
                 <label htmlFor="report-details" className="text-sm font-semibold text-foreground">
                   {ts.reportDetailsLabel}
                 </label>
-                <textarea
+                <AutoResizeTextarea
                   id="report-details"
-                  rows={3}
+                  minRows={3}
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                   disabled={submitting}
                   placeholder={ts.reportDetailsPlaceholder}
-                  className="input-field mt-1 resize-y"
+                  className="input-field mt-1"
                 />
               </div>
             </>

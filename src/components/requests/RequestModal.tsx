@@ -3,6 +3,7 @@
 import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { RequestBookingCalendar } from "@/components/calendar/RequestBookingCalendar";
 import { Button } from "@/components/ui/Button";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { careTypeRequestOptions } from "@/lib/care-type-options";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -200,14 +201,14 @@ export function RequestModal({
 
           <label className="block text-sm">
             <span className="font-medium text-foreground">{t.requests.message}</span>
-            <textarea
+            <AutoResizeTextarea
               name="message"
-              rows={4}
+              minRows={4}
               maxLength={REQUEST_MESSAGE_MAX_CHARS}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t.requests.messagePlaceholder}
-              className="mt-1.5 w-full resize-y rounded-xl border border-black/10 bg-background px-3 py-2.5 text-sm"
+              className="mt-1.5 w-full rounded-xl border border-black/10 bg-background px-3 py-2.5 text-sm"
             />
             <p
               className={`mt-1 text-xs ${

@@ -2,6 +2,7 @@
 
 import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { PetFormChipGroup, PetFormSection } from "@/components/pets/PetFormSection";
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
 import { PetPhotoUpload, type ExistingPetPhotoItem } from "@/components/pets/PetPhotoUpload";
@@ -596,12 +597,12 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           <label htmlFor="health" className="form-field-label">
             {pl("Health characteristics")}
           </label>
-          <textarea
+          <AutoResizeTextarea
             id="health"
-            rows={2}
+            minRows={2}
             value={form.healthCharacteristics}
             onChange={(e) => patch("healthCharacteristics", e.target.value)}
-            className="input-field mt-1 resize-y"
+            className="input-field mt-1"
           />
         </div>
         <div>
@@ -636,48 +637,48 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           <label htmlFor="eating" className="form-field-label">
             {pl("Eating habits")}
           </label>
-          <textarea
+          <AutoResizeTextarea
             id="eating"
-            rows={2}
+            minRows={2}
             value={form.eatingHabits}
             onChange={(e) => patch("eatingHabits", e.target.value)}
-            className="input-field mt-1 resize-y"
+            className="input-field mt-1"
           />
         </div>
         <div>
           <label htmlFor="positive" className="form-field-label">
             {pl("Positive traits")}
           </label>
-          <textarea
+          <AutoResizeTextarea
             id="positive"
-            rows={2}
+            minRows={2}
             value={form.positiveTraits}
             onChange={(e) => patch("positiveTraits", e.target.value)}
-            className="input-field mt-1 resize-y"
+            className="input-field mt-1"
           />
         </div>
         <div>
           <label htmlFor="challenging" className="form-field-label">
             {pl("Challenging traits")}
           </label>
-          <textarea
+          <AutoResizeTextarea
             id="challenging"
-            rows={2}
+            minRows={2}
             value={form.challengingTraits}
             onChange={(e) => patch("challengingTraits", e.target.value)}
-            className="input-field mt-1 resize-y"
+            className="input-field mt-1"
           />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="notes" className="form-field-label">
             {pl("Additional Notes")}
           </label>
-          <textarea
+          <AutoResizeTextarea
             id="notes"
-            rows={3}
+            minRows={3}
             value={form.additionalNotes}
             onChange={(e) => patch("additionalNotes", e.target.value)}
-            className="input-field mt-1 resize-y"
+            className="input-field mt-1"
           />
         </div>
       </PetFormSection>
@@ -712,12 +713,12 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           <label htmlFor="availability" className="form-field-label">
             Availability notes
           </label>
-          <textarea
+          <AutoResizeTextarea
             id="availability"
-            rows={2}
+            minRows={2}
             value={form.availability}
             onChange={(e) => patch("availability", e.target.value)}
-            className="input-field mt-1 resize-y"
+            className="input-field mt-1"
             placeholder="Extra context (e.g. flexible evenings, school holidays)"
           />
         </div>

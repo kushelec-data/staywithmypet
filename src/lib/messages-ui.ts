@@ -34,7 +34,7 @@ export const MESSAGES_INPUT_BAR_CLASS =
   "sticky bottom-0 z-10 shrink-0 border-t border-[#E4DED2] bg-[#F6F2EA] px-3 py-2.5 sm:px-4";
 
 export const MESSAGES_TEXTAREA_CLASS =
-  "max-h-24 min-h-[40px] min-w-0 flex-1 resize-none rounded-full border border-[#E4DED2] bg-white px-4 py-2 text-sm leading-snug text-[#2B2B2B] placeholder:text-[#8A8276] outline-none transition focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/15 disabled:cursor-not-allowed disabled:opacity-60";
+  "max-h-24 min-h-[40px] min-w-0 flex-1 rounded-full border border-[#E4DED2] bg-white px-4 py-2 text-sm leading-snug text-[#2B2B2B] placeholder:text-[#8A8276] outline-none transition focus:border-brand-teal/50 focus:ring-2 focus:ring-brand-teal/15 disabled:cursor-not-allowed disabled:opacity-60";
 
 export const MESSAGES_RECEIVED_BUBBLE_CLASS =
   "border border-[#E4DED2] bg-[#FDFBF6] text-[#2B2B2B] shadow-sm";

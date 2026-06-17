@@ -1,6 +1,7 @@
 "use client";
 
 import { ProfileChipMultiSelect } from "@/components/profile/form/ProfileFormFields";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { useLanguage } from "@/context/LanguageContext";
 import { toProfileLabeledChipOptions, toProfileStringChipOptions } from "@/lib/profile-option-labels";
 import { careTypeOptions, petTypeOptions } from "@/lib/profile-friend-options";
@@ -68,14 +69,14 @@ export function PetParentProfileFormSection({
         <label htmlFor="own_pets_summary" className="form-field-label">
           {labels.ownPetsSummary}
         </label>
-        <textarea
+        <AutoResizeTextarea
           id="own_pets_summary"
-          rows={3}
+          minRows={3}
           disabled={disabled}
           value={form.ownPetsSummary}
           onChange={(e) => patch(form, onChange, { ownPetsSummary: e.target.value })}
           placeholder={labels.ownPetsSummaryPlaceholder}
-          className="input-field mt-1 resize-y"
+          className="input-field mt-1"
         />
       </div>
 
@@ -83,14 +84,14 @@ export function PetParentProfileFormSection({
         <label htmlFor="care_needs_notes" className="form-field-label">
           {labels.careNeeds}
         </label>
-        <textarea
+        <AutoResizeTextarea
           id="care_needs_notes"
-          rows={3}
+          minRows={3}
           disabled={disabled}
           value={form.careNeedsNotes}
           onChange={(e) => patch(form, onChange, { careNeedsNotes: e.target.value })}
           placeholder={labels.careNeedsPlaceholder}
-          className="input-field mt-1 resize-y"
+          className="input-field mt-1"
         />
       </div>
 
@@ -98,14 +99,14 @@ export function PetParentProfileFormSection({
         <label htmlFor="home_location_notes" className="form-field-label">
           {labels.homeLocationNotes}
         </label>
-        <textarea
+        <AutoResizeTextarea
           id="home_location_notes"
-          rows={2}
+          minRows={2}
           disabled={disabled}
           value={form.homeLocationNotes}
           onChange={(e) => patch(form, onChange, { homeLocationNotes: e.target.value })}
           placeholder={labels.homeLocationNotesPlaceholder}
-          className="input-field mt-1 resize-y"
+          className="input-field mt-1"
         />
       </div>
 

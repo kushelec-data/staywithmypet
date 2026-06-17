@@ -4,6 +4,7 @@ import { BookingReviewBanner } from "@/components/messages/BookingReviewBanner";
 import { STATUS_ALERT_ERROR_COMPACT_CLASS, STATUS_ALERT_WARNING_COMPACT_CLASS } from "@/lib/status-colors";
 import { MessageThread } from "@/components/messages/MessageThread";
 import { ReportUserModal } from "@/components/trust/ReportUserModal";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { useLanguage } from "@/context/LanguageContext";
 import { bookingDetailsHref } from "@/lib/bookings";
 import {
@@ -416,9 +417,9 @@ export function ChatPanel({
           <label htmlFor={`message_body_${conversationId}`} className="sr-only">
             {m.typeMessage}
           </label>
-          <textarea
+          <AutoResizeTextarea
             id={`message_body_${conversationId}`}
-            rows={1}
+            minRows={1}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={inputPlaceholder}

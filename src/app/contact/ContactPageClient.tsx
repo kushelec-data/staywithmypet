@@ -4,6 +4,7 @@ import { STATUS_ALERT_ERROR_CLASS, STATUS_ALERT_SUCCESS_CLASS } from "@/lib/stat
 import { submitContactFormAction } from "@/app/actions/contact";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { PhoneCountryFields } from "@/components/profile/PhoneCountryFields";
 import { useLanguage } from "@/context/LanguageContext";
 import { DEFAULT_PHONE_DIAL_CODE } from "@/lib/phone-eu";
@@ -141,12 +142,12 @@ export function ContactPageClient() {
             <label htmlFor="message" className="text-sm font-medium text-foreground">
               {c.message}
             </label>
-            <textarea
+            <AutoResizeTextarea
               id="message"
               name="message"
-              rows={5}
+              minRows={5}
               required
-              className="input-field mt-1 resize-y"
+              className="input-field mt-1"
             />
           </div>
           <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>

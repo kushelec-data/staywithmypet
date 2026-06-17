@@ -2,6 +2,7 @@
 
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
 import { ProfileCollapsibleSection } from "@/components/profile/ProfileCollapsibleSection";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import {
   ProfileChipMultiSelect,
   ProfileChipSingleSelect,
@@ -285,14 +286,14 @@ export function PetFriendProfileFormSections({
             <label htmlFor="availability_notes" className="form-field-label">
               Additional availability notes
             </label>
-            <textarea
+            <AutoResizeTextarea
               id="availability_notes"
-              rows={2}
+              minRows={2}
               disabled={disabled}
               value={form.availabilityNotes}
               onChange={(e) => patch(form, onChange, { availabilityNotes: e.target.value })}
               placeholder="e.g. Flexible evenings, school holidays"
-              className="input-field mt-1 resize-y"
+              className="input-field mt-1"
             />
           </div>
         </ProfileCollapsibleSection>

@@ -1,6 +1,7 @@
 "use client";
 
 import { BioWordCounter } from "@/components/profile/BioWordCounter";
+import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { ProfileLocationField } from "@/components/profile/ProfileLocationField";
 import { PetFriendProfileFormSections } from "@/components/profile/PetFriendProfileFormSections";
 import { PetParentProfileFormSection } from "@/components/profile/PetParentProfileFormSection";
@@ -718,15 +719,15 @@ export function ProfileEditForm() {
             <label htmlFor="bio" className="form-field-label">
               {pe.basic.bio}
             </label>
-            <textarea
+            <AutoResizeTextarea
               id="bio"
               name="bio"
-              rows={4}
+              minRows={4}
               value={bio}
               onChange={(e) => handleBioChange(e.target.value)}
               required
               disabled={!basicEnabled || saving.basic || anySaving}
-              className="input-field mt-1 resize-y"
+              className="input-field mt-1"
               placeholder={bioPlaceholder}
               aria-describedby="bio-word-counter"
             />
