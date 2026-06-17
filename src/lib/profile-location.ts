@@ -80,6 +80,12 @@ export function clearProfileLocationConfirmation(
   state: ProfileLocationFormState,
   typedValue: string,
 ): ProfileLocationFormState {
+  const trimmed = typedValue.trim();
+  const previous = profileLocationDisplayKey(state);
+  if (trimmed === previous && state.placeConfirmed) {
+    return state;
+  }
+
   return {
     ...state,
     formattedAddress: typedValue,
@@ -93,6 +99,22 @@ export function clearProfileLocationConfirmation(
     publicLocation: null,
     placeConfirmed: false,
   };
+}
+
+/** Normalized display text for comparing original vs edited location. */
+export function profileLocationDisplayKey(state: ProfileLocationFormState): string {
+  return state.formattedAddress.trim() || state.location.trim();
+}
+
+/** Use saved coords/place id when the user did not change location text. */
+export function resolveProfileLocationForSave(
+  current: ProfileLocationFormState,
+  original: ProfileLocationFormState,
+): ProfileLocationFormState {
+  if (profileLocationDisplayKey(current) === profileLocationDisplayKey(original)) {
+    return original;
+  }
+  return current;
 }
 
 function googlePlaceIdFromDetails(details: ProfileDetails | undefined): string | null {
@@ -120,8 +142,8 @@ export function profileLocationFromRow(
   const formattedAddress =
     profile.formatted_address?.trim() || profile.address?.trim() || profile.location?.trim() || "";
   const googlePlaceId = profile.google_place_id?.trim() || googlePlaceIdFromDetails(profile.details);
-  const hasCoords = profile.latitude != null && profile.longitude != null;
-  const placeConfirmed = Boolean(googlePlaceId && hasCoords && formattedAddress);
+  const hasSavedAddress = Boolean(formattedAddress);
+  const placeConfirmed = hasSavedAddress;
 
   return {
     formattedAddress,
@@ -195,11 +217,24 @@ export function mustSelectGooglePlaceForSave(): boolean {
 
 export type ProfileLocationValidationError = "empty" | "placeRequired";
 
+export type ProfileLocationValidationOptions = {
+  /** When editing, unchanged saved location text skips Google re-selection. */
+  originalDisplayKey?: string | null;
+};
+
 export function validateProfileLocationForSave(
   state: ProfileLocationFormState,
+  options?: ProfileLocationValidationOptions,
 ): { ok: true } | { ok: false; error: ProfileLocationValidationError } {
   const text = state.formattedAddress.trim() || state.location.trim();
   if (!text) return { ok: false, error: "empty" };
+
+  const currentKey = profileLocationDisplayKey(state);
+  const originalKey = options?.originalDisplayKey?.trim() ?? "";
+  if (originalKey && currentKey === originalKey) {
+    return { ok: true };
+  }
+
   if (mustSelectGooglePlaceForSave() && !isProfileLocationPlaceConfirmed(state)) {
     return { ok: false, error: "placeRequired" };
   }

@@ -77,8 +77,10 @@ import {
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import {
   EMPTY_PROFILE_LOCATION_FORM,
+  profileLocationDisplayKey,
   profileLocationFromRow,
   profileLocationToSaveInput,
+  resolveProfileLocationForSave,
   validateProfileLocationForSave,
   type ProfileLocationFormState,
 } from "@/lib/profile-location";
@@ -143,6 +145,8 @@ export function ProfileEditForm() {
   const router = useRouter();
   const dashboardRedirectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bioUserEditedRef = useRef(false);
+  const originalLocationKeyRef = useRef("");
+  const originalLocationSnapshotRef = useRef<ProfileLocationFormState>(EMPTY_PROFILE_LOCATION_FORM);
   const [openAvailabilityPanel, setOpenAvailabilityPanel] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
@@ -235,6 +239,9 @@ export function ProfileEditForm() {
     if (profileLoading) return;
 
     if (profile) {
+      const loadedLocation = profileLocationFromRow(profile);
+      originalLocationKeyRef.current = profileLocationDisplayKey(loadedLocation);
+      originalLocationSnapshotRef.current = loadedLocation;
       applyBasicFromProfile(profile, {
         setDisplayName,
         setProfileLocation,
@@ -334,6 +341,9 @@ export function ProfileEditForm() {
     setEditing((prev) => ({ ...prev, [section]: true }));
     setErrors((prev) => ({ ...prev, [section]: null }));
     setSuccess((prev) => ({ ...prev, [section]: null }));
+    if (section === "basic") {
+      setLocationFieldError(null);
+    }
     if (dashboardRedirectRef.current) {
       clearTimeout(dashboardRedirectRef.current);
       dashboardRedirectRef.current = null;
@@ -350,6 +360,9 @@ export function ProfileEditForm() {
     setProfileRow(saved);
     if (section === "basic") {
       bioUserEditedRef.current = false;
+      const savedLocation = profileLocationFromRow(saved);
+      originalLocationKeyRef.current = profileLocationDisplayKey(savedLocation);
+      originalLocationSnapshotRef.current = savedLocation;
     }
     applyBasicFromProfile(saved, {
       setDisplayName,
@@ -392,7 +405,9 @@ export function ProfileEditForm() {
       setErrors((prev) => ({ ...prev, basic: pe.basic.errorDisplayName }));
       return;
     }
-    const locationValidation = validateProfileLocationForSave(profileLocation);
+    const locationValidation = validateProfileLocationForSave(profileLocation, {
+      originalDisplayKey: originalLocationKeyRef.current,
+    });
     if (!locationValidation.ok) {
       const message =
         locationValidation.error === "placeRequired"
@@ -431,6 +446,11 @@ export function ProfileEditForm() {
     const bioPayload = normalizeBioForSave(bio);
     logBio("save payload", { bio: bioPayload, wordCount: bioWordCount });
 
+    const locationForSave = resolveProfileLocationForSave(
+      profileLocation,
+      originalLocationSnapshotRef.current,
+    );
+
     setSaving((prev) => ({ ...prev, basic: true }));
     setErrors((prev) => ({ ...prev, basic: null }));
     setSuccess((prev) => ({ ...prev, basic: null }));
@@ -440,7 +460,7 @@ export function ProfileEditForm() {
         user.id,
         {
           displayName: trimmedName,
-          location: profileLocationToSaveInput(profileLocation),
+          location: profileLocationToSaveInput(locationForSave),
           languages: [...languages],
           languagesOther,
           bio: bioPayload,
