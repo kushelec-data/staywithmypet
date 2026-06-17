@@ -529,6 +529,15 @@ export const en = {
       dobInvalidFormat: "Enter date as DD.MM.YYYY.",
       dobInvalidDate: "That date is not valid.",
       dobFuture: "Date of birth cannot be in the future.",
+      deletePet: "Delete pet",
+      deletePetTitle: "Delete pet profile?",
+      deletePetBody:
+        "This will permanently remove this pet profile, photos, availability, and related listing information. This action cannot be undone.",
+      deletePetCancel: "Cancel",
+      deletePetConfirm: "Delete pet",
+      deletingPet: "Deleting…",
+      deletePetSuccess: "Pet profile deleted.",
+      deletePetError: "Could not delete pet profile.",
     },
   },
   dashboardHome: {

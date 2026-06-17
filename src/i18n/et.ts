@@ -532,6 +532,15 @@ export const et = {
       dobInvalidFormat: "Sisesta kuupäev kujul PP.KK.AAAA.",
       dobInvalidDate: "See kuupäev ei ole kehtiv.",
       dobFuture: "Sünnikuupäev ei tohi olla tulevikus.",
+      deletePet: "Kustuta lemmik",
+      deletePetTitle: "Kustuta lemmiku profiil?",
+      deletePetBody:
+        "See eemaldab jäädavalt lemmiku profiili, fotod, saadavuse ja seotud kuulutuse info. Seda toimingut ei saa tagasi võtta.",
+      deletePetCancel: "Tühista",
+      deletePetConfirm: "Kustuta lemmik",
+      deletingPet: "Kustutan…",
+      deletePetSuccess: "Lemmiku profiil kustutatud.",
+      deletePetError: "Lemmiku profiili kustutamine ebaõnnestus.",
     },
   },
   dashboardHome: {

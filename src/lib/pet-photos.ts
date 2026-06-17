@@ -482,3 +482,50 @@ export async function deletePetPhotoForOwner(
     await removePetPhotoStorageObjects(supabase, [photo.storage_path.trim()]);
   }
 }
+
+/** Removes all pet photos from storage before hard-deleting a pet profile. */
+export async function deleteAllPetPhotosForOwner(
+  supabase: SupabaseClient,
+  ownerId: string,
+  petId: string,
+): Promise<void> {
+  const { assertOwner, requireAuthUserId } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertOwner(ownerId, sessionUserId);
+
+  const { data: pet, error: petError } = await supabase
+    .from("pets")
+    .select("id")
+    .eq("id", petId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (petError) {
+    throw new Error(petError.message || "Could not load pet photos.");
+  }
+  if (!pet) {
+    throw new Error("Pet not found.");
+  }
+
+  const { data: photos, error: photosError } = await supabase
+    .from("pet_photos")
+    .select("storage_path")
+    .eq("pet_id", petId);
+
+  if (photosError) {
+    throw new Error(photosError.message || "Could not load pet photos.");
+  }
+
+  const storagePaths = (photos ?? [])
+    .map((row) => row.storage_path)
+    .filter((path): path is string => typeof path === "string" && path.trim().length > 0);
+
+  if (storagePaths.length) {
+    await removePetPhotoStorageObjects(supabase, storagePaths);
+  }
+
+  const { error: deleteError } = await supabase.from("pet_photos").delete().eq("pet_id", petId);
+  if (deleteError) {
+    throw new Error(deleteError.message || "Could not remove pet photos.");
+  }
+}
