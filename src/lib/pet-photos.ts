@@ -121,6 +121,21 @@ async function getPetPhotoCount(supabase: SupabaseClient, petId: string): Promis
   return count ?? 0;
 }
 
+async function petHasPrimaryPhoto(supabase: SupabaseClient, petId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("pet_photos")
+    .select("id")
+    .eq("pet_id", petId)
+    .eq("is_primary", true)
+    .limit(1);
+
+  if (error) {
+    throw new Error(error.message || "Could not load existing pet photos.");
+  }
+
+  return (data?.length ?? 0) > 0;
+}
+
 async function getNextSortOrder(supabase: SupabaseClient, petId: string): Promise<number> {
   const { data, error } = await supabase
     .from("pet_photos")
@@ -162,11 +177,11 @@ export async function uploadAndAttachPetPhotos(
   if (append) {
     const existingCount = await getPetPhotoCount(supabase, petId);
     validatePetPhotoFilesForAppend(files, existingCount);
-    await clearPetPhotoPrimaries(supabase, petId);
   } else {
     validatePetPhotoFiles(files);
   }
 
+  const hasExistingPrimary = append ? await petHasPrimaryPhoto(supabase, petId) : false;
   const startSortOrder = append ? await getNextSortOrder(supabase, petId) : 0;
   const uploadedPaths: string[] = [];
 
@@ -200,7 +215,7 @@ export async function uploadAndAttachPetPhotos(
         public_url: urlData.publicUrl,
         alt_text: `${petName} media ${startSortOrder + i + 1}`,
         sort_order: startSortOrder + i,
-        is_primary: i === 0,
+        is_primary: append ? !hasExistingPrimary && i === 0 : i === 0,
         media_type: mediaTypeForFile(file),
       });
     }
@@ -464,6 +479,15 @@ export async function deletePetPhotoForOwner(
     throw new Error("Pet photo not found.");
   }
 
+  if (photo.is_primary) {
+    throw new Error("Set another photo as the main photo before deleting this one.");
+  }
+
+  const photoCount = await getPetPhotoCount(supabase, petId);
+  if (photoCount <= 1) {
+    throw new Error("Keep at least one photo on your pet profile.");
+  }
+
   const { error: deleteError } = await supabase
     .from("pet_photos")
     .delete()
@@ -474,12 +498,61 @@ export async function deletePetPhotoForOwner(
     throw new Error(deleteError.message || "Could not remove pet photo.");
   }
 
-  if (photo.is_primary) {
-    await promoteNextPrimaryPhoto(supabase, petId);
-  }
-
   if (photo.storage_path?.trim()) {
     await removePetPhotoStorageObjects(supabase, [photo.storage_path.trim()]);
+  }
+}
+
+/** Sets one saved pet photo as the main listing image (`is_primary`). */
+export async function setPrimaryPetPhotoForOwner(
+  supabase: SupabaseClient,
+  ownerId: string,
+  petId: string,
+  photoId: string,
+): Promise<void> {
+  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertOwner(ownerId, sessionUserId);
+  assertRateLimit("file_upload", sessionUserId);
+
+  const { data: pet, error: petError } = await supabase
+    .from("pets")
+    .select("id")
+    .eq("id", petId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (petError) {
+    throw new Error(petError.message || "Could not load pet photo.");
+  }
+  if (!pet) {
+    throw new Error("Pet not found.");
+  }
+
+  const { data: photo, error: photoError } = await supabase
+    .from("pet_photos")
+    .select("id")
+    .eq("id", photoId)
+    .eq("pet_id", petId)
+    .maybeSingle();
+
+  if (photoError) {
+    throw new Error(photoError.message || "Could not load pet photo.");
+  }
+  if (!photo) {
+    throw new Error("Pet photo not found.");
+  }
+
+  await clearPetPhotoPrimaries(supabase, petId);
+
+  const { error: updateError } = await supabase
+    .from("pet_photos")
+    .update({ is_primary: true })
+    .eq("id", photoId)
+    .eq("pet_id", petId);
+
+  if (updateError) {
+    throw new Error(updateError.message || "Could not update main pet photo.");
   }
 }
 

@@ -504,13 +504,17 @@ export const et = {
       galleryHintOptional:
         "Lisa uusi faile galerii asendamiseks või täiendamiseks (valikuline).",
       galleryHintCreate:
-        "Lisa 1–6 fotot või videot. Esimene fail on peamine kuulutuse pilt.",
-      mainPhoto: "Peamine",
+        "Lisa 1–6 fotot või videot. Peamise kuulutuse foto valimiseks vajuta tähele.",
+      mainPhoto: "Peamine foto",
+      setMainPhoto: "Määra peamiseks fotoks",
+      deletePhoto: "Kustuta foto",
       removePhoto: "Eemalda foto",
       uploadPhotosVideos: "Laadi üles fotosid või videoid",
       uploadHint: "Pildid või MP4/WebM · kuni 25 MB faili kohta",
       removeFile: "Eemalda fail",
       deletePhotoError: "Lemmiku foto eemaldamine ebaõnnestus.",
+      setMainPhotoError: "Peamise foto määramine ebaõnnestus.",
+      cannotDeleteLastPhoto: "Lemmiku profiilil peab olema vähemalt üks foto.",
       maxFilesError: "Saad lisada kuni {max} faili.",
       invalidMediaTypeError:
         "Failid peavad olema pildid (JPEG, PNG, WebP) või videod (MP4, WebM).",

@@ -22,6 +22,7 @@ type PetPhotoUploadProps = {
   existingPhotos?: ExistingPetPhotoItem[];
   onReplaceExistingPhoto?: (photoId: string, file: File) => Promise<void>;
   onRemoveExistingPhoto?: (photoId: string) => Promise<void>;
+  onSetPrimaryExistingPhoto?: (photoId: string) => Promise<void>;
   existingPhotoBusy?: boolean;
 };
 
@@ -32,6 +33,23 @@ type CropSession = {
   replaceExistingId?: string;
 } | null;
 
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`h-4 w-4 ${filled ? "fill-brand-teal text-brand-teal" : "fill-none text-foreground/80"}`}
+      aria-hidden
+    >
+      <path
+        d="M12 2.5l2.86 5.8 6.4.93-4.63 4.52 1.09 6.37L12 17.77l-5.72 3.01 1.09-6.37-4.63-4.52 6.4-.93L12 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function PetPhotoUpload({
   files,
   onChange,
@@ -40,6 +58,7 @@ export function PetPhotoUpload({
   existingPhotos = [],
   onReplaceExistingPhoto,
   onRemoveExistingPhoto,
+  onSetPrimaryExistingPhoto,
   existingPhotoBusy = false,
 }: PetPhotoUploadProps) {
   const { t } = useLanguage();
@@ -51,6 +70,7 @@ export function PetPhotoUpload({
   const [cropSession, setCropSession] = useState<CropSession>(null);
   const [cropSaving, setCropSaving] = useState(false);
   const [removingExistingId, setRemovingExistingId] = useState<string | null>(null);
+  const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
 
   useEffect(() => {
     const urls = files.map((file) => URL.createObjectURL(file));
@@ -59,6 +79,17 @@ export function PetPhotoUpload({
       urls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [files]);
+
+  const totalCount = files.length + existingPhotos.length;
+  const slotsLeft = MAX_PET_PHOTOS - totalCount;
+  const busy =
+    disabled ||
+    cropSaving ||
+    existingPhotoBusy ||
+    Boolean(removingExistingId) ||
+    Boolean(settingPrimaryId);
+  const canDeleteExisting = totalCount > 1;
+  const pendingCanSetMain = existingPhotos.length === 0;
 
   function openNextPendingImage() {
     const next = pendingImagesRef.current.shift();
@@ -84,18 +115,18 @@ export function PetPhotoUpload({
       setPickError(copy.invalidMediaTypeError);
     }
 
-    const slotsLeft = MAX_PET_PHOTOS - files.length - existingPhotos.length;
-    if (slotsLeft <= 0) {
+    const slotsLeftNow = MAX_PET_PHOTOS - files.length - existingPhotos.length;
+    if (slotsLeftNow <= 0) {
       setPickError(copy.maxFilesError.replace("{max}", String(MAX_PET_PHOTOS)));
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
-    const nextVideos = videos.slice(0, slotsLeft);
+    const nextVideos = videos.slice(0, slotsLeftNow);
     const validImages: File[] = [];
 
     for (const file of images) {
-      if (nextVideos.length + validImages.length >= slotsLeft) break;
+      if (nextVideos.length + validImages.length >= slotsLeftNow) break;
       try {
         validateCropSourceFile(file);
         validImages.push(file);
@@ -123,7 +154,22 @@ export function PetPhotoUpload({
   }
 
   function removeAt(index: number) {
+    if (totalCount <= 1) {
+      setPickError(copy.cannotDeleteLastPhoto);
+      return;
+    }
+    setPickError(null);
     onChange(files.filter((_, i) => i !== index));
+  }
+
+  function setPendingPrimary(index: number) {
+    if (!pendingCanSetMain || index <= 0 || index >= files.length) return;
+    setPickError(null);
+    const next = [...files];
+    const [picked] = next.splice(index, 1);
+    if (!picked) return;
+    next.unshift(picked);
+    onChange(next);
   }
 
   async function removeExisting(photoId: string) {
@@ -136,6 +182,21 @@ export function PetPhotoUpload({
       setPickError(err instanceof Error ? err.message : copy.deletePhotoError);
     } finally {
       setRemovingExistingId(null);
+    }
+  }
+
+  async function setExistingPrimary(photoId: string) {
+    if (!onSetPrimaryExistingPhoto || disabled || existingPhotoBusy || settingPrimaryId) return;
+    const photo = existingPhotos.find((item) => item.id === photoId);
+    if (!photo || photo.isPrimary) return;
+    setPickError(null);
+    setSettingPrimaryId(photoId);
+    try {
+      await onSetPrimaryExistingPhoto(photoId);
+    } catch (err) {
+      setPickError(err instanceof Error ? err.message : copy.setMainPhotoError);
+    } finally {
+      setSettingPrimaryId(null);
     }
   }
 
@@ -185,10 +246,6 @@ export function PetPhotoUpload({
     }
   }
 
-  const totalCount = files.length + existingPhotos.length;
-  const slotsLeft = MAX_PET_PHOTOS - totalCount;
-  const busy = disabled || cropSaving || existingPhotoBusy || Boolean(removingExistingId);
-
   return (
     <>
       <div className="sm:col-span-2">
@@ -213,7 +270,9 @@ export function PetPhotoUpload({
             {existingPhotos.map((photo) => (
               <li
                 key={photo.id}
-                className="relative aspect-square overflow-hidden rounded-2xl border border-black/5"
+                className={`relative aspect-square overflow-hidden rounded-2xl border ${
+                  photo.isPrimary ? "border-brand-teal ring-2 ring-brand-teal/20" : "border-black/5"
+                }`}
               >
                 {photo.mediaType === "video" ? (
                   <video src={photo.url} className="h-full w-full object-cover" muted playsInline />
@@ -225,16 +284,28 @@ export function PetPhotoUpload({
                     {copy.mainPhoto}
                   </span>
                 ) : null}
-                {onRemoveExistingPhoto ? (
+                {onSetPrimaryExistingPhoto ? (
+                  <button
+                    type="button"
+                    disabled={busy || photo.isPrimary}
+                    onClick={() => void setExistingPrimary(photo.id)}
+                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-surface/95 shadow-sm ring-1 ring-black/5"
+                    aria-label={copy.setMainPhoto}
+                    title={copy.setMainPhoto}
+                  >
+                    <StarIcon filled={photo.isPrimary} />
+                  </button>
+                ) : null}
+                {!photo.isPrimary && onRemoveExistingPhoto && canDeleteExisting ? (
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => void removeExisting(photo.id)}
-                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-surface/95 text-sm text-foreground shadow-sm ring-1 ring-black/5"
-                    aria-label={copy.removePhoto}
-                    title={copy.removePhoto}
+                    className="absolute right-2 top-11 flex h-7 min-w-[4.5rem] items-center justify-center rounded-full bg-surface/95 px-2 text-[0.65rem] font-semibold text-brand-pink shadow-sm ring-1 ring-black/5"
+                    aria-label={copy.deletePhoto}
+                    title={copy.deletePhoto}
                   >
-                    ×
+                    {copy.deletePhoto}
                   </button>
                 ) : null}
                 {photo.mediaType === "image" && onReplaceExistingPhoto ? (
@@ -249,40 +320,64 @@ export function PetPhotoUpload({
                 ) : null}
               </li>
             ))}
-            {previews.map((src, index) => (
-              <li key={src} className="relative aspect-square overflow-hidden rounded-2xl border border-black/5">
-                {files[index]?.type.startsWith("video/") ? (
-                  <video src={src} className="h-full w-full object-cover" muted playsInline />
-                ) : (
-                  <img src={src} alt="" className="h-full w-full object-cover" />
-                )}
-                {existingPhotos.length === 0 && index === 0 ? (
-                  <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold text-white">
-                    {copy.mainPhoto}
-                  </span>
-                ) : null}
-                {files[index] && isCropSupportedImageFile(files[index]!) ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => openEditNewFile(index)}
-                    className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
-                  >
-                    {t.media.editPhoto}
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => removeAt(index)}
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-surface/95 text-sm text-foreground shadow-sm ring-1 ring-black/5"
-                  aria-label={copy.removeFile}
-                  title={copy.removeFile}
+            {previews.map((src, index) => {
+              const isPendingMain = pendingCanSetMain && index === 0;
+              return (
+                <li
+                  key={src}
+                  className={`relative aspect-square overflow-hidden rounded-2xl border ${
+                    isPendingMain ? "border-brand-teal ring-2 ring-brand-teal/20" : "border-black/5"
+                  }`}
                 >
-                  ×
-                </button>
-              </li>
-            ))}
+                  {files[index]?.type.startsWith("video/") ? (
+                    <video src={src} className="h-full w-full object-cover" muted playsInline />
+                  ) : (
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                  )}
+                  {isPendingMain ? (
+                    <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold text-white">
+                      {copy.mainPhoto}
+                    </span>
+                  ) : null}
+                  {pendingCanSetMain ? (
+                    <button
+                      type="button"
+                      disabled={busy || isPendingMain}
+                      onClick={() => setPendingPrimary(index)}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-surface/95 shadow-sm ring-1 ring-black/5"
+                      aria-label={copy.setMainPhoto}
+                      title={copy.setMainPhoto}
+                    >
+                      <StarIcon filled={isPendingMain} />
+                    </button>
+                  ) : null}
+                  {totalCount > 1 ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => removeAt(index)}
+                      className={`absolute flex h-7 min-w-[4.5rem] items-center justify-center rounded-full bg-surface/95 px-2 text-[0.65rem] font-semibold text-brand-pink shadow-sm ring-1 ring-black/5 ${
+                        pendingCanSetMain ? "right-2 top-11" : "right-2 top-2"
+                      }`}
+                      aria-label={copy.deletePhoto}
+                      title={copy.deletePhoto}
+                    >
+                      {copy.deletePhoto}
+                    </button>
+                  ) : null}
+                  {files[index] && isCropSupportedImageFile(files[index]!) ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => openEditNewFile(index)}
+                      className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
+                    >
+                      {t.media.editPhoto}
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         ) : null}
 

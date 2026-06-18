@@ -44,6 +44,7 @@ import {
   fetchPetPhotosForOwner,
   deletePetPhotoForOwner,
   replacePetPhotoImage,
+  setPrimaryPetPhotoForOwner,
   uploadAndAttachPetPhotos,
   validatePetPhotoFiles,
 } from "@/lib/pet-photos";
@@ -242,6 +243,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     loadedPhotos: Awaited<ReturnType<typeof fetchPetPhotosForOwner>>,
   ): ExistingPetPhotoItem[] {
     return loadedPhotos
+      .slice()
+      .sort((a, b) => {
+        if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+        return a.sort_order - b.sort_order;
+      })
       .map((photo) => ({
         id: photo.id,
         url: photo.public_url?.trim() || "",
@@ -269,6 +275,21 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       await refreshExistingPhotos();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.account.petsPage.updatePhotoError);
+      throw err;
+    } finally {
+      setExistingPhotoBusy(false);
+    }
+  }
+
+  async function handleSetPrimaryExistingPhoto(photoId: string) {
+    if (!user?.id || !petId) return;
+    setExistingPhotoBusy(true);
+    setError(null);
+    try {
+      await setPrimaryPetPhotoForOwner(supabase, user.id, petId, photoId);
+      await refreshExistingPhotos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.account.petsPage.setMainPhotoError);
       throw err;
     } finally {
       setExistingPhotoBusy(false);
@@ -452,6 +473,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           existingPhotoBusy={existingPhotoBusy}
           onReplaceExistingPhoto={isEdit && petId ? handleReplaceExistingPhoto : undefined}
           onRemoveExistingPhoto={isEdit && petId ? handleRemoveExistingPhoto : undefined}
+          onSetPrimaryExistingPhoto={isEdit && petId ? handleSetPrimaryExistingPhoto : undefined}
         />
       </PetFormSection>
 

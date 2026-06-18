@@ -501,13 +501,17 @@ export const en = {
       galleryHintOptional:
         "Add new files to replace or extend the gallery (optional).",
       galleryHintCreate:
-        "Add 1–6 photos or videos. The first file is the main listing image.",
-      mainPhoto: "Main",
+        "Add 1–6 photos or videos. Tap the star to choose the main listing photo.",
+      mainPhoto: "Main Photo",
+      setMainPhoto: "Set as main photo",
+      deletePhoto: "Delete photo",
       removePhoto: "Remove photo",
       uploadPhotosVideos: "Upload photos or videos",
       uploadHint: "Images or MP4/WebM · max 25 MB each",
       removeFile: "Remove file",
       deletePhotoError: "Could not remove pet photo.",
+      setMainPhotoError: "Could not update main photo.",
+      cannotDeleteLastPhoto: "Keep at least one photo on your pet profile.",
       maxFilesError: "You can add up to {max} files.",
       invalidMediaTypeError:
         "Files must be images (JPEG, PNG, WebP) or videos (MP4, WebM).",
