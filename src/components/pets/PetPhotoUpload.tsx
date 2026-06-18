@@ -4,7 +4,7 @@ import { PhotoCropModal } from "@/components/media/PhotoCropModal";
 import { isCropSupportedImageFile, validateCropSourceFile } from "@/lib/image-crop";
 import { MAX_PET_PHOTOS } from "@/lib/pet-photos";
 import { useLanguage } from "@/context/LanguageContext";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type ExistingPetPhotoItem = {
   id: string;
@@ -28,6 +28,9 @@ type PetPhotoUploadProps = {
   disabled?: boolean;
   uploadDisabledMessage?: string;
   existingPhotos?: ExistingPetPhotoItem[];
+  /** Local files for new pets before a profile exists. */
+  pendingFiles?: File[];
+  onPendingFilesChange?: (files: File[]) => void;
   onUploadPhoto?: (file: File) => Promise<void>;
   onReplaceExistingPhoto?: (photoId: string, file: File) => Promise<void>;
   onRemoveExistingPhoto?: (photoId: string) => Promise<void>;
@@ -38,6 +41,7 @@ type PetPhotoUploadProps = {
 type CropSession = {
   file?: File;
   url?: string;
+  replaceIndex?: number;
   replaceExistingId?: string;
 } | null;
 
@@ -93,6 +97,8 @@ export function PetPhotoUpload({
   disabled,
   uploadDisabledMessage,
   existingPhotos = [],
+  pendingFiles = [],
+  onPendingFilesChange,
   onUploadPhoto,
   onReplaceExistingPhoto,
   onRemoveExistingPhoto,
@@ -103,6 +109,7 @@ export function PetPhotoUpload({
   const copy = t.account.petsPage;
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<File[]>([]);
+  const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [pickError, setPickError] = useState<string | null>(null);
   const [cropSession, setCropSession] = useState<CropSession>(null);
   const [cropSaving, setCropSaving] = useState(false);
@@ -111,9 +118,10 @@ export function PetPhotoUpload({
   const [pendingUploads, setPendingUploads] = useState<PendingUploadItem[]>([]);
   const [activeUploadCount, setActiveUploadCount] = useState(0);
 
-  const uploadEnabled = Boolean(petId && onUploadPhoto);
-  const pendingCount = pendingUploads.filter((item) => item.status !== "saved").length;
-  const totalCount = existingPhotos.length + pendingCount;
+  const immediateSaveEnabled = Boolean(petId && onUploadPhoto);
+  const localModeEnabled = !immediateSaveEnabled && Boolean(onPendingFilesChange);
+  const pendingUploadCount = pendingUploads.filter((item) => item.status !== "saved").length;
+  const totalCount = existingPhotos.length + pendingFiles.length + pendingUploadCount;
   const slotsLeft = MAX_PET_PHOTOS - totalCount;
   const busy =
     disabled ||
@@ -123,6 +131,19 @@ export function PetPhotoUpload({
     Boolean(removingExistingId) ||
     Boolean(settingPrimaryId);
   const canDeleteExisting = totalCount > 1;
+  const canDeleteLocal = totalCount > 1;
+
+  useEffect(() => {
+    if (!localModeEnabled) {
+      setLocalPreviews([]);
+      return;
+    }
+    const urls = pendingFiles.map((file) => URL.createObjectURL(file));
+    setLocalPreviews(urls);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [pendingFiles, localModeEnabled]);
 
   function openNextPendingImage() {
     const next = pendingImagesRef.current.shift();
@@ -148,7 +169,7 @@ export function PetPhotoUpload({
   }
 
   async function uploadFileImmediately(file: File) {
-    if (!onUploadPhoto || !uploadEnabled) {
+    if (!onUploadPhoto || !immediateSaveEnabled) {
       throw new Error(uploadDisabledMessage ?? copy.mediaRequiresPet);
     }
 
@@ -181,8 +202,31 @@ export function PetPhotoUpload({
     await uploadFileImmediately(item.file);
   }
 
+  function addLocalFile(file: File) {
+    if (!onPendingFilesChange) return;
+    onPendingFilesChange([...pendingFiles, file].slice(0, MAX_PET_PHOTOS - existingPhotos.length));
+  }
+
+  function removeLocalAt(index: number) {
+    if (!onPendingFilesChange || !canDeleteLocal) {
+      if (!canDeleteLocal) setPickError(copy.cannotDeleteLastPhoto);
+      return;
+    }
+    setPickError(null);
+    onPendingFilesChange(pendingFiles.filter((_, i) => i !== index));
+  }
+
+  function setLocalPrimary(index: number) {
+    if (!onPendingFilesChange || index <= 0 || index >= pendingFiles.length) return;
+    const next = [...pendingFiles];
+    const [picked] = next.splice(index, 1);
+    if (!picked) return;
+    next.unshift(picked);
+    onPendingFilesChange(next);
+  }
+
   function handleFilesSelected(selected: FileList | null) {
-    if (!selected?.length || !uploadEnabled) return;
+    if (!selected?.length || disabled) return;
     setPickError(null);
 
     const incoming = Array.from(selected);
@@ -196,7 +240,7 @@ export function PetPhotoUpload({
       setPickError(copy.invalidMediaTypeError);
     }
 
-    const slotsLeftNow = MAX_PET_PHOTOS - existingPhotos.length - pendingCount;
+    const slotsLeftNow = MAX_PET_PHOTOS - totalCount;
     if (slotsLeftNow <= 0) {
       setPickError(copy.maxFilesError.replace("{max}", String(MAX_PET_PHOTOS)));
       if (inputRef.current) inputRef.current.value = "";
@@ -216,14 +260,21 @@ export function PetPhotoUpload({
       }
     }
 
-    for (const video of nextVideos) {
-      void uploadFileImmediately(video);
-    }
-
-    if (validImages.length > 0) {
-      pendingImagesRef.current = [...pendingImagesRef.current, ...validImages];
-      if (!cropSession) {
-        openNextPendingImage();
+    if (immediateSaveEnabled) {
+      for (const video of nextVideos) {
+        void uploadFileImmediately(video);
+      }
+      if (validImages.length > 0) {
+        pendingImagesRef.current = [...pendingImagesRef.current, ...validImages];
+        if (!cropSession) openNextPendingImage();
+      }
+    } else if (localModeEnabled) {
+      for (const video of nextVideos) {
+        addLocalFile(video);
+      }
+      if (validImages.length > 0) {
+        pendingImagesRef.current = [...pendingImagesRef.current, ...validImages];
+        if (!cropSession) openNextPendingImage();
       }
     }
 
@@ -258,6 +309,13 @@ export function PetPhotoUpload({
     }
   }
 
+  function openEditNewFile(index: number) {
+    const file = pendingFiles[index];
+    if (!file || !isCropSupportedImageFile(file) || disabled || cropSaving) return;
+    setPickError(null);
+    setCropSession({ file, replaceIndex: index });
+  }
+
   function openEditExistingPhoto(photo: ExistingPetPhotoItem) {
     if (photo.mediaType !== "image" || disabled || cropSaving || !onReplaceExistingPhoto) return;
     setPickError(null);
@@ -274,7 +332,20 @@ export function PetPhotoUpload({
         return;
       }
 
-      await uploadFileImmediately(cropped);
+      if (typeof cropSession?.replaceIndex === "number" && onPendingFilesChange) {
+        const next = [...pendingFiles];
+        next[cropSession.replaceIndex] = cropped;
+        onPendingFilesChange(next);
+        setCropSession(null);
+        if (pendingImagesRef.current.length > 0) openNextPendingImage();
+        return;
+      }
+
+      if (immediateSaveEnabled) {
+        await uploadFileImmediately(cropped);
+      } else if (localModeEnabled) {
+        addLocalFile(cropped);
+      }
 
       if (pendingImagesRef.current.length > 0) {
         openNextPendingImage();
@@ -288,20 +359,22 @@ export function PetPhotoUpload({
     }
   }
 
+  const hint = immediateSaveEnabled
+    ? copy.galleryHintAutosave
+    : copy.galleryHintSaveFirst;
+
   return (
     <>
       <div className="sm:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="form-field-label">{copy.photosVideos}</span>
           <span className="text-xs text-muted">
-            {existingPhotos.length + pendingCount}/{MAX_PET_PHOTOS}
+            {totalCount}/{MAX_PET_PHOTOS}
           </span>
         </div>
-        <p className="mt-1 text-xs text-muted">
-          {uploadEnabled ? copy.galleryHintAutosave : copy.galleryHintSaveFirst}
-        </p>
+        <p className="mt-1 text-xs text-muted">{hint}</p>
 
-        {!uploadEnabled && uploadDisabledMessage ? (
+        {!immediateSaveEnabled && uploadDisabledMessage ? (
           <p className="mt-2 rounded-xl border border-black/8 bg-cream/40 px-3 py-2 text-xs text-muted">
             {uploadDisabledMessage}
           </p>
@@ -313,7 +386,7 @@ export function PetPhotoUpload({
           </p>
         ) : null}
 
-        {existingPhotos.length > 0 || pendingUploads.length > 0 ? (
+        {existingPhotos.length > 0 || pendingUploads.length > 0 || localPreviews.length > 0 ? (
           <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {existingPhotos.map((photo) => (
               <li
@@ -332,9 +405,6 @@ export function PetPhotoUpload({
                     {copy.mainPhoto}
                   </span>
                 ) : null}
-                <span className="absolute left-2 bottom-2 rounded-lg bg-black/55 px-2 py-0.5 text-[0.6rem] font-semibold text-white">
-                  {copy.photoSaved}
-                </span>
                 {onSetPrimaryExistingPhoto ? (
                   <button
                     type="button"
@@ -364,7 +434,7 @@ export function PetPhotoUpload({
                     type="button"
                     disabled={busy}
                     onClick={() => openEditExistingPhoto(photo)}
-                    className="absolute bottom-10 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
+                    className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
                   >
                     {t.media.editPhoto}
                   </button>
@@ -394,11 +464,69 @@ export function PetPhotoUpload({
                 ) : null}
               </li>
             ))}
+            {localPreviews.map((src, index) => {
+              const isMain = existingPhotos.length === 0 && index === 0;
+              return (
+                <li
+                  key={src}
+                  className={`relative aspect-square overflow-hidden rounded-2xl border ${
+                    isMain ? "border-brand-teal ring-2 ring-brand-teal/20" : "border-black/5"
+                  }`}
+                >
+                  {pendingFiles[index]?.type.startsWith("video/") ? (
+                    <video src={src} className="h-full w-full object-cover" muted playsInline />
+                  ) : (
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                  )}
+                  {isMain ? (
+                    <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold text-white">
+                      {copy.mainPhoto}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={busy || isMain}
+                    onClick={() => setLocalPrimary(index)}
+                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-surface/95 shadow-sm ring-1 ring-black/5"
+                    aria-label={copy.setMainPhoto}
+                    title={copy.setMainPhoto}
+                  >
+                    <StarIcon filled={isMain} />
+                  </button>
+                  {canDeleteLocal ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => removeLocalAt(index)}
+                      className="absolute right-2 top-11 flex h-7 min-w-[4.5rem] items-center justify-center rounded-full bg-surface/95 px-2 text-[0.65rem] font-semibold text-brand-pink shadow-sm ring-1 ring-black/5"
+                      aria-label={copy.deletePhoto}
+                      title={copy.deletePhoto}
+                    >
+                      {copy.deletePhoto}
+                    </button>
+                  ) : null}
+                  {pendingFiles[index] && isCropSupportedImageFile(pendingFiles[index]!) ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => openEditNewFile(index)}
+                      className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
+                    >
+                      {t.media.editPhoto}
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         ) : null}
 
-        {uploadEnabled && slotsLeft > 0 ? (
-          <label className="mt-3 flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 bg-mint/20 px-4 py-6 text-center transition-colors hover:bg-mint/35">
+        {slotsLeft > 0 ? (
+          <label
+            className={`mt-3 flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 bg-mint/20 px-4 py-6 text-center transition-colors ${
+              busy ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-mint/35"
+            }`}
+          >
             <span className="text-sm font-medium text-brand-teal">{copy.uploadPhotosVideos}</span>
             <span className="mt-1 text-xs text-muted">{copy.uploadHint}</span>
             <input
@@ -422,7 +550,7 @@ export function PetPhotoUpload({
         saving={cropSaving || existingPhotoBusy}
         onClose={() => {
           if (cropSaving || existingPhotoBusy) return;
-          if (cropSession?.replaceExistingId) {
+          if (cropSession?.replaceExistingId || typeof cropSession?.replaceIndex === "number") {
             setCropSession(null);
             return;
           }

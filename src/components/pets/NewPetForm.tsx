@@ -114,6 +114,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const isEdit = Boolean(petId);
 
   const [form, setForm] = useState<PetProfileFormInput>(emptyForm);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<ExistingPetPhotoItem[]>([]);
   const [existingPhotoBusy, setExistingPhotoBusy] = useState(false);
   const [loadingPet, setLoadingPet] = useState(isEdit);
@@ -426,6 +427,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       return;
     }
 
+    if (!isEdit && pendingPhotos.length < 1) {
+      setError(petsCopy.needAtLeastOnePhoto);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -440,6 +446,15 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       }
 
       const newPetId = await saveNewPet(supabase, user.id, savePayload);
+      if (pendingPhotos.length > 0) {
+        await uploadAndAttachPetPhotos(
+          supabase,
+          user.id,
+          newPetId,
+          pendingPhotos,
+          savePayload.name,
+        );
+      }
       await refreshProfile();
       notifyDashboardRefresh();
       clearDraft();
@@ -464,6 +479,27 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           {error}
         </p>
       ) : null}
+
+      <PetFormSection
+        title={pl("Pet media")}
+        description={pl(
+          "Add up to 6 photos or videos that best show your pet's personality and charm!",
+        )}
+      >
+        <PetPhotoUpload
+          petId={petId}
+          disabled={saving}
+          uploadDisabledMessage={!petId ? petsCopy.mediaRequiresPet : undefined}
+          existingPhotos={existingPhotos}
+          pendingFiles={petId ? undefined : pendingPhotos}
+          onPendingFilesChange={petId ? undefined : setPendingPhotos}
+          existingPhotoBusy={existingPhotoBusy}
+          onUploadPhoto={petId ? handleUploadPhoto : undefined}
+          onReplaceExistingPhoto={petId ? handleReplaceExistingPhoto : undefined}
+          onRemoveExistingPhoto={petId ? handleRemoveExistingPhoto : undefined}
+          onSetPrimaryExistingPhoto={petId ? handleSetPrimaryExistingPhoto : undefined}
+        />
+      </PetFormSection>
 
       <PetFormSection title={pl("Basic pet details")}>
         <div className="sm:col-span-2">
@@ -866,25 +902,6 @@ export function NewPetForm({ petId }: NewPetFormProps) {
               : "Choose a suggested city or type your area."}
           </p>
         </div>
-      </PetFormSection>
-
-      <PetFormSection
-        title={pl("Pet media")}
-        description={pl(
-          "Add up to 6 photos or videos that best show your pet's personality and charm!",
-        )}
-      >
-        <PetPhotoUpload
-          petId={petId}
-          disabled={saving}
-          uploadDisabledMessage={!petId ? petsCopy.mediaRequiresPet : undefined}
-          existingPhotos={existingPhotos}
-          existingPhotoBusy={existingPhotoBusy}
-          onUploadPhoto={petId ? handleUploadPhoto : undefined}
-          onReplaceExistingPhoto={petId ? handleReplaceExistingPhoto : undefined}
-          onRemoveExistingPhoto={petId ? handleRemoveExistingPhoto : undefined}
-          onSetPrimaryExistingPhoto={petId ? handleSetPrimaryExistingPhoto : undefined}
-        />
       </PetFormSection>
 
       <Button type="submit" variant="primary" disabled={saving}>
