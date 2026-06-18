@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
-import { ProfileTranslationHelper } from "@/components/public/ProfileTranslationHelper";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { SendRequestButton } from "@/components/requests/SendRequestButton";
@@ -141,10 +140,7 @@ export function MemberPublicTopCard({
           />
           <PublicProfileChips chips={chips} />
           {profile.bio ? (
-            <>
-              <ProfileTranslationHelper profileLanguage={profile.profile_language} className="max-w-prose" />
-              <ExpandableBioText bio={profile.bio} className="max-w-prose" />
-            </>
+            <ExpandableBioText bio={profile.bio} className="max-w-prose" />
           ) : null}
         </div>
 

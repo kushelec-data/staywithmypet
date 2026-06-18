@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ProfileContentLanguage } from "@/lib/profile-content-language";
 import type { Pet } from "@/lib/pets";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { IMAGES, placeholderPetImage } from "@/lib/images";
@@ -41,7 +40,6 @@ export type PetProfileFormInput = {
   latitude: number | null;
   longitude: number | null;
   googlePlaceId?: string | null;
-  profileLanguage: ProfileContentLanguage | "";
 };
 
 /** @deprecated use PetProfileFormInput */
@@ -112,7 +110,6 @@ function buildPetDetails(input: PetProfileFormInput): Record<string, unknown> {
     latitude: input.latitude,
     longitude: input.longitude,
     google_place_id: input.googlePlaceId?.trim() || null,
-    profile_language: input.profileLanguage || null,
   };
 }
 
@@ -187,7 +184,6 @@ function buildPetRow(ownerId: string, input: PetProfileFormInput) {
     longitude: input.longitude,
     description: careNeeds || null,
     details: buildPetDetails(input),
-    profile_language: input.profileLanguage || null,
     tags,
     is_active: true,
     is_public: true,

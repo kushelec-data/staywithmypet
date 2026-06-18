@@ -20,8 +20,6 @@ import {
   mergeDetailsTrustFlags,
 } from "@/lib/profile-details";
 import { mergeLanguagesOtherIntoDetails } from "@/lib/profile-languages";
-import { mergeProfileContentLanguageIntoDetails } from "@/lib/profile-content-language";
-import type { ProfileContentLanguage } from "@/lib/profile-content-language";
 import {
   buildProfileLocationDbFields,
   type ProfileLocationSaveInput,
@@ -55,7 +53,6 @@ export type ProfileSetupInput = {
   location: ProfileLocationSaveInput;
   languages: string[];
   languagesOther: string;
-  profileLanguage: ProfileContentLanguage | "";
   bio: string;
   phoneDialCode: string;
   phoneNational: string;
@@ -355,11 +352,6 @@ export async function saveUserProfile(
     input.languagesOther,
   );
 
-  detailsMerged = mergeProfileContentLanguageIntoDetails(
-    detailsMerged,
-    input.profileLanguage,
-  );
-
   const [completedBookings, reviewsCount] = await Promise.all([
     countCompletedBookingsForUser(supabase, userId),
     countReviewsAsReviewee(supabase, userId),
@@ -397,7 +389,6 @@ export async function saveUserProfile(
     display_name: displayName,
     role,
     languages: input.languages,
-    profile_language: input.profileLanguage || null,
     bio: input.bio.trim() || null,
     phone: phoneE164 || null,
     phone_country_code: phoneE164 ? normalizeDialCode(input.phoneDialCode) : null,
@@ -428,7 +419,6 @@ export type BasicProfileSectionInput = {
   location: ProfileLocationSaveInput;
   languages: string[];
   languagesOther: string;
-  profileLanguage: ProfileContentLanguage | "";
   bio: string;
 };
 
@@ -668,11 +658,6 @@ export async function saveBasicProfileSection(
     input.languagesOther,
   );
 
-  detailsMerged = mergeProfileContentLanguageIntoDetails(
-    detailsMerged,
-    input.profileLanguage,
-  );
-
   const canWriteGeo = await profilesGeoColumnsWritable(supabase);
   const canWriteLocation = await profilesLocationColumnsWritable(supabase);
 
@@ -681,7 +666,6 @@ export async function saveBasicProfileSection(
     display_name: displayName,
     role,
     languages: input.languages,
-    profile_language: input.profileLanguage || null,
     bio: input.bio.trim() || null,
     details: detailsMerged,
     updated_at: now,

@@ -1064,14 +1064,6 @@ export const en = {
     meetPetsNearby: "Meet pets nearby",
     animationAlt: "A happy dog packing a bag before meeting a Pet Friend",
   },
-  profileContentLanguage: {
-    fieldLabel: "Profile language",
-    fieldHint: "The language you use for your bio and profile text.",
-  },
-  profileTranslationHelper: {
-    message:
-      "This profile is written in {language}. Use your browser's Translate feature if needed.",
-  },
   readyCta: {
     guest: {
       title: "Ready to start?",

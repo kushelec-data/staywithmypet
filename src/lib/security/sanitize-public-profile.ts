@@ -69,4 +69,4 @@ export function sanitizePublicProfile<T extends Record<string, unknown>>(
 
 /** Narrow select list for public profile queries (keeps RLS + column exposure minimal). */
 export const PUBLIC_PROFILE_COLUMNS =
-  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, profile_language, is_public, rating_avg, rating_count, created_at, details, latitude, longitude" as const;
+  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude" as const;

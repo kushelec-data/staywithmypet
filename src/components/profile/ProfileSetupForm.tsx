@@ -33,7 +33,6 @@ import {
   type PetFriendProfileFormInput,
 } from "@/lib/profile-friend-form";
 import { saveUserProfile, type ProfileRole, type ProfileSetupInput } from "@/lib/profile-setup";
-import type { ProfileContentLanguage } from "@/lib/profile-content-language";
 import { createClient } from "@/lib/supabase";
 import { availabilityUxForProfile } from "@/lib/availability-ux";
 import { resolveActiveMode } from "@/lib/profile-mode";
@@ -46,7 +45,6 @@ import {
   truncateBioToMaxWords,
 } from "@/lib/bio-words";
 import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesSelector";
-import { ProfileContentLanguageSelector } from "@/components/profile/ProfileContentLanguageSelector";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
 import {
   EMPTY_PROFILE_LOCATION_FORM,
@@ -89,7 +87,6 @@ function applyProfileToForm(
     setAvailabilitySelectedDates: (v: string[]) => void;
     setLanguages: (v: string[]) => void;
     setLanguagesOther: (v: string) => void;
-    setProfileLanguage: (v: ProfileContentLanguage | "") => void;
     setBio: (v: string) => void;
     setTrustSafety: (v: TrustSafetyFormValues) => void;
     setAvatarUrl: (v: string | null) => void;
@@ -103,7 +100,6 @@ function applyProfileToForm(
   setters.setAvailabilitySelectedDates(normalizeAvailabilityDates(sched?.selected_dates ?? []));
   setters.setLanguages([...(profile.languages ?? [])]);
   setters.setLanguagesOther(languagesOtherFromDetails(profile.details));
-  setters.setProfileLanguage(profile.profile_language ?? "");
   setters.setBio(profile.bio?.trim() ?? "");
   const emergency = parseEmergencyContactFromProfile(profile);
   const mainE164 = profile.phone_e164?.trim() || profile.phone?.trim() || "";
@@ -163,7 +159,6 @@ export function ProfileSetupForm({
   const [availabilitySelectedDates, setAvailabilitySelectedDates] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [languagesOther, setLanguagesOther] = useState("");
-  const [profileLanguage, setProfileLanguage] = useState<ProfileContentLanguage | "">("");
   const [bio, setBio] = useState("");
   const [trustSafety, setTrustSafety] = useState<TrustSafetyFormValues>(emptyTrustSafetyFormValues);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -188,7 +183,6 @@ export function ProfileSetupForm({
       availabilitySelectedDates,
       languages,
       languagesOther,
-      profileLanguage,
       bio,
       trustSafety,
       petFriendForm,
@@ -200,7 +194,6 @@ export function ProfileSetupForm({
       availabilitySelectedDates,
       languages,
       languagesOther,
-      profileLanguage,
       bio,
       trustSafety,
       petFriendForm,
@@ -214,7 +207,6 @@ export function ProfileSetupForm({
     setAvailabilitySelectedDates([...draft.availabilitySelectedDates]);
     setLanguages([...draft.languages]);
     setLanguagesOther(draft.languagesOther);
-    setProfileLanguage(draft.profileLanguage);
     setBio(draft.bio);
     setTrustSafety(draft.trustSafety);
     setPetFriendForm(draft.petFriendForm);
@@ -238,7 +230,6 @@ export function ProfileSetupForm({
       setAvailabilitySelectedDates,
       setLanguages,
       setLanguagesOther,
-      setProfileLanguage,
       setBio,
       setTrustSafety,
       setAvatarUrl,
@@ -314,7 +305,6 @@ export function ProfileSetupForm({
       setAvailabilitySelectedDates([]);
       setLanguages([]);
       setLanguagesOther("");
-      setProfileLanguage("");
       setBio("");
       setTrustSafety(emptyTrustSafetyFormValues);
       setAvatarUrl(null);
@@ -379,7 +369,6 @@ export function ProfileSetupForm({
       location: profileLocationToSaveInput(profileLocation),
       languages: [...languages],
       languagesOther,
-      profileLanguage,
       bio: normalizeBioForSave(bio),
       phoneDialCode: trustSafety.phoneDialCode || DEFAULT_PHONE_DIAL_CODE,
       phoneNational: trustSafety.phoneNational,
@@ -582,12 +571,6 @@ export function ProfileSetupForm({
           languagesOther={languagesOther}
           onLanguagesChange={setLanguages}
           onLanguagesOtherChange={setLanguagesOther}
-        />
-
-        <ProfileContentLanguageSelector
-          value={profileLanguage}
-          onChange={setProfileLanguage}
-          disabled={saving}
         />
 
         <div className="sm:col-span-2">

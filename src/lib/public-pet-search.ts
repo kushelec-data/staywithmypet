@@ -4,7 +4,6 @@ import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { getPetCardTagline } from "@/lib/pet-card-tagline";
 import { mapRowToPetIntro, type PetIntroDisplay, type PetIntroRow } from "@/lib/pet-intro";
-import { resolveProfileContentLanguage, type ProfileContentLanguage } from "@/lib/profile-content-language";
 import { pickCareTypesFromRow } from "@/lib/pet-care-type";
 import { blurCoordinates } from "@/lib/map-privacy";
 import { parseCoord } from "@/lib/parse-coord";
@@ -57,8 +56,6 @@ export type PublicSearchPet = PetIntroDisplay &
     friendRequirements: string[];
     /** Owner-written description (additional_notes). */
     additionalNotes: string | null;
-    /** Language of user-written pet profile text. */
-    profileLanguage: ProfileContentLanguage | null;
   };
 
 export type PetSearchFilterState = {
@@ -94,7 +91,7 @@ export const emptyPetSearchFilters = (): PetSearchFilterState => ({
 });
 
 const PUBLIC_PET_SELECT =
-  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, profile_language, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, pet_photos ( public_url, is_primary, sort_order ), profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )";
+  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, pet_photos ( public_url, is_primary, sort_order ), profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )";
 
 type OwnerJoin = {
   id: string;
@@ -297,7 +294,6 @@ function mapRowToPublicSearchPet(
     friendRequirements: pickStringList(row.friend_requirements, details, "friend_requirements"),
     additionalNotes:
       strFrom(row.additional_notes) ?? strFrom(details.additional_notes),
-    profileLanguage: resolveProfileContentLanguage(row),
   };
 }
 

@@ -1,6 +1,5 @@
 import type { PetProfileFormInput } from "@/lib/pet-data";
 import { toDbSpecies } from "@/lib/pet-data";
-import { resolveProfileContentLanguage, type ProfileContentLanguage } from "@/lib/profile-content-language";
 import { breedFormStateFromStored } from "@/lib/pet-breeds";
 import { normalizePetWeightStorageValue } from "@/lib/pet-weight";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
@@ -86,6 +85,5 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
     latitude: numOpt(record, "latitude"),
     longitude: numOpt(record, "longitude"),
     googlePlaceId: strOptDetails(record, "google_place_id"),
-    profileLanguage: resolveProfileContentLanguage(record) ?? "",
   };
 }

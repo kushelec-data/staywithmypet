@@ -17,14 +17,11 @@ import { parseDialCodeFromE164 } from "@/lib/phone-eu";
 import type { TrustSafetyFormValues } from "@/components/profile/TrustSafetyFormSection";
 import { emptyTrustSafetyFormValues } from "@/components/profile/TrustSafetyFormSection";
 
-import type { ProfileContentLanguage } from "@/lib/profile-content-language";
-
 export type ProfileEditDraftData = {
   displayName: string;
   profileLocation: ProfileLocationFormState;
   languages: string[];
   languagesOther: string;
-  profileLanguage: ProfileContentLanguage | "";
   bio: string;
   trustSafety: TrustSafetyFormValues;
   petFriendForm: PetFriendProfileFormInput;
@@ -57,7 +54,6 @@ export function buildProfileEditDraftFromProfile(
     profileLocation: profileLocationFromRow(profile),
     languages: [...(profile.languages ?? [])],
     languagesOther: languagesOtherFromDetails(profile.details),
-    profileLanguage: profile.profile_language ?? "",
     bio: profile.bio?.trim() ?? "",
     trustSafety: trustSafetyFromProfile(profile),
     petFriendForm: petFriendFormFromDetailsRaw(
@@ -75,7 +71,6 @@ export function emptyProfileEditDraft(activeStepIndex = 0): ProfileEditDraftData
     profileLocation: { ...EMPTY_PROFILE_LOCATION_FORM },
     languages: [],
     languagesOther: "",
-    profileLanguage: "",
     bio: "",
     trustSafety: emptyTrustSafetyFormValues,
     petFriendForm: emptyPetFriendProfileForm(),

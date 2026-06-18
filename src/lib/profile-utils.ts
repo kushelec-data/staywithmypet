@@ -1,5 +1,4 @@
 import type { ProfileDetails } from "@/lib/profile-details";
-import type { ProfileContentLanguage } from "@/lib/profile-content-language";
 import {
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
@@ -29,7 +28,6 @@ export type ProfileRow = {
   active_mode: ProfileActiveMode;
   role_chosen_at: string | null;
   languages: string[];
-  profile_language: ProfileContentLanguage | null;
   phone: string | null;
   phone_country_code: string | null;
   phone_number: string | null;

@@ -12,7 +12,6 @@ import { parseDialCodeFromE164 } from "@/lib/phone-eu";
 import type { TrustSafetyFormValues } from "@/components/profile/TrustSafetyFormSection";
 import { emptyTrustSafetyFormValues } from "@/components/profile/TrustSafetyFormSection";
 import type { ProfileRole } from "@/lib/profile-setup";
-import type { ProfileContentLanguage } from "@/lib/profile-content-language";
 
 export type ProfileSetupDraftData = {
   displayName: string;
@@ -21,7 +20,6 @@ export type ProfileSetupDraftData = {
   availabilitySelectedDates: string[];
   languages: string[];
   languagesOther: string;
-  profileLanguage: ProfileContentLanguage | "";
   bio: string;
   trustSafety: TrustSafetyFormValues;
   petFriendForm: PetFriendProfileFormInput;
@@ -52,7 +50,6 @@ export function buildProfileSetupDraftFromProfile(profile: ProfileRow): ProfileS
     availabilitySelectedDates: normalizeAvailabilityDates(sched?.selected_dates ?? []),
     languages: [...(profile.languages ?? [])],
     languagesOther: languagesOtherFromDetails(profile.details),
-    profileLanguage: profile.profile_language ?? "",
     bio: profile.bio?.trim() ?? "",
     trustSafety: trustSafetyFromProfile(profile),
     petFriendForm: petFriendFormFromDetailsRaw(
@@ -70,7 +67,6 @@ export function emptyProfileSetupDraft(): ProfileSetupDraftData {
     availabilitySelectedDates: [],
     languages: [],
     languagesOther: "",
-    profileLanguage: "",
     bio: "",
     trustSafety: emptyTrustSafetyFormValues,
     petFriendForm: emptyPetFriendProfileForm(),
