@@ -516,6 +516,7 @@ export const et = {
       photoUploadFailed: "Ebaõnnestus",
       photoRetry: "Proovi uuesti",
       needAtLeastOnePhoto: "Lisa vähemalt üks foto või video.",
+      savePetProfile: "Salvesta lemmiku profiil",
       savePetAndAddPhotos: "Salvesta profiil ja lisa fotod",
       saveChanges: "Salvesta muudatused",
       savingPet: "Salvestan…",

@@ -905,7 +905,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       </PetFormSection>
 
       <Button type="submit" variant="primary" disabled={saving}>
-        {saving ? petsCopy.savingPet : isEdit ? petsCopy.saveChanges : petsCopy.savePetAndAddPhotos}
+        {saving ? petsCopy.savingPet : petsCopy.savePetProfile}
       </Button>
     </form>
   );

@@ -513,6 +513,7 @@ export const en = {
       photoUploadFailed: "Failed",
       photoRetry: "Retry",
       needAtLeastOnePhoto: "Please add at least one photo or video.",
+      savePetProfile: "Save pet profile",
       savePetAndAddPhotos: "Save pet profile and add photos",
       saveChanges: "Save changes",
       savingPet: "Saving…",
