@@ -1055,6 +1055,9 @@ export const en = {
       },
     ],
   },
+  browserTranslationNotice: {
+    message: "🌐 Need translation? Use your browser’s Translate option.",
+  },
   dogStory: {
     title: "Meet pets who are waiting for you",
     subtitle:

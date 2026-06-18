@@ -7,6 +7,7 @@ import { PetPublicReviewsBlock } from "@/components/pets/PetPublicReviewsBlock";
 import { PetPublicTopCard } from "@/components/pets/PetPublicTopCard";
 import { PublicCareColumnsCard } from "@/components/public/PublicCareColumnsCard";
 import { PublicPetCareDetailsCard } from "@/components/public/PublicPetCareDetailsCard";
+import { BrowserTranslationNotice } from "@/components/public/BrowserTranslationNotice";
 import { PublicCompactAvailabilityCard } from "@/components/public/PublicCompactAvailabilityCard";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { PublicQuickInfoCard } from "@/components/public/PublicQuickInfoCard";
@@ -127,6 +128,9 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
     },
   );
 
+  const hasUserWrittenContent =
+    Boolean(shortBio?.trim()) || Boolean(about?.trim()) || careDetails.length > 0;
+
   return (
     <PublicPageShell
       backLabel={detail.backToSearchPets}
@@ -152,6 +156,8 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           quickFacts={buildPublicPetQuickFacts(pet, locale)}
           isOwnPet={isOwnPet}
         />
+
+        {hasUserWrittenContent ? <BrowserTranslationNotice /> : null}
 
         <PublicCareColumnsCard columns={careColumns} />
 

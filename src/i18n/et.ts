@@ -1064,6 +1064,9 @@ export const et = {
       },
     ],
   },
+  browserTranslationNotice: {
+    message: "🌐 Vajad tõlget? Kasuta brauseri tõlkefunktsiooni.",
+  },
   dogStory: {
     title: "Tutvu lemmikloomadega, kes juba ootavad",
     subtitle:
