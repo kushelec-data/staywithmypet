@@ -1092,6 +1092,7 @@ export const en = {
     getStarted: "Get started",
     choosePlan: "Choose plan",
     activePlan: "Active plan",
+    currentPlan: "Current plan",
     comingSoon: "Coming soon",
     mostPopular: "Most Practical for Recurring Needs",
     redirecting: "Redirecting…",

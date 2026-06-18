@@ -1101,6 +1101,7 @@ export const et = {
     getStarted: "Alusta",
     choosePlan: "Vali pakett",
     activePlan: "Aktiivne plaan",
+    currentPlan: "Praegune pakett",
     comingSoon: "Varsti saadaval",
     mostPopular: "Kõige praktilisem korduvaks vajaduseks",
     redirecting: "Suunan…",

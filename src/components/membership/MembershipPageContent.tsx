@@ -486,6 +486,8 @@ export function MembershipPageContent({
         variant="account"
         activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
         currentPlanLabel={isActive ? status : null}
+        activePlanEndDate={isActive ? activeMembership?.end_date ?? null : null}
+        activePlanEndDateLabel={mpage.endsLabel}
         modeFilter={modeTab}
         plans={stripePlans}
         checkoutUserId={user.id}

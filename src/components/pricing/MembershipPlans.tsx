@@ -5,6 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
 import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
+import { formatMembershipDate } from "@/lib/membership";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 
@@ -39,6 +40,9 @@ type MembershipPlansProps = {
   checkoutReturnTo?: string | null;
   /** When true, plan selection redirects to /test-access-code instead of Stripe. */
   useTestAccessFlow?: boolean;
+  /** Active membership end date (shown on the current plan card). */
+  activePlanEndDate?: string | null;
+  activePlanEndDateLabel?: string;
   cancelPlanLabel?: string;
   cancelPlanLoading?: boolean;
   onCancelPlan?: () => void;
@@ -78,6 +82,7 @@ function PlanCard({
   getStartedLabel,
   choosePlanLabel,
   activePlanLabel,
+  currentPlanButtonLabel,
   redirectingLabel,
   checkoutUnavailableLabel,
   popularBadge,
@@ -89,6 +94,8 @@ function PlanCard({
   checkoutError,
   planConfigError,
   onChoosePlan,
+  activePlanEndDate,
+  activePlanEndDateLabel,
   cancelPlanLabel,
   cancelPlanLoading,
   onCancelPlan,
@@ -100,6 +107,7 @@ function PlanCard({
   getStartedLabel: string;
   choosePlanLabel: string;
   activePlanLabel: string;
+  currentPlanButtonLabel: string;
   redirectingLabel: string;
   checkoutUnavailableLabel: string;
   popularBadge: string;
@@ -111,6 +119,8 @@ function PlanCard({
   checkoutError?: string | null;
   planConfigError?: string | null;
   onChoosePlan?: (plan: PricingPlan) => void;
+  activePlanEndDate?: string | null;
+  activePlanEndDateLabel?: string;
   cancelPlanLabel?: string;
   cancelPlanLoading?: boolean;
   onCancelPlan?: () => void;
@@ -171,6 +181,12 @@ function PlanCard({
       >
         {plan.price}
       </p>
+      {isCurrent && activePlanEndDate && activePlanEndDateLabel ? (
+        <p className={`mt-2 text-sm text-muted ${isAccount ? "" : "sm:mt-3"}`}>
+          <span className="font-medium text-foreground">{activePlanEndDateLabel}: </span>
+          {formatMembershipDate(activePlanEndDate) ?? activePlanEndDate}
+        </p>
+      ) : null}
       <ul
         className={`mt-4 flex-1 space-y-2.5 leading-relaxed text-muted sm:mt-5 sm:space-y-3 ${
           isAccount ? "text-sm" : "text-sm"
@@ -230,9 +246,11 @@ function PlanCard({
                 ? cancelPlanLoading
                   ? "…"
                   : cancelPlanLabel!
-                : canCheckout
-                  ? choosePlanLabel
-                  : planConfigError ?? checkoutUnavailableLabel}
+                : isCurrent
+                  ? currentPlanButtonLabel
+                  : canCheckout
+                    ? choosePlanLabel
+                    : planConfigError ?? checkoutUnavailableLabel}
           </Button>
         </>
       )}
@@ -268,6 +286,8 @@ export function MembershipPlans({
   planCheckoutErrors,
   checkoutReturnTo,
   useTestAccessFlow = false,
+  activePlanEndDate,
+  activePlanEndDateLabel,
   cancelPlanLabel,
   cancelPlanLoading = false,
   onCancelPlan,
@@ -397,6 +417,7 @@ export function MembershipPlans({
             getStartedLabel={t.pricing.getStarted}
             choosePlanLabel={t.pricing.choosePlan}
             activePlanLabel={t.pricing.activePlan}
+            currentPlanButtonLabel={t.pricing.currentPlan}
             redirectingLabel={t.pricing.redirecting}
             checkoutUnavailableLabel={t.pricing.comingSoon}
             popularBadge={t.pricing.mostPopular}
@@ -408,6 +429,8 @@ export function MembershipPlans({
             checkoutError={checkoutError}
             planConfigError={planCheckoutErrors?.[plan.id] ?? null}
             onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
+            activePlanEndDate={activePlanEndDate}
+            activePlanEndDateLabel={activePlanEndDateLabel}
             cancelPlanLabel={cancelPlanLabel}
             cancelPlanLoading={cancelPlanLoading}
             onCancelPlan={onCancelPlan}
