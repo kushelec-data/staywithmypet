@@ -335,6 +335,10 @@ export const legalDocuments = {
         et: "Küpsiseid saab hallata või keelata brauseri seadete kaudu. Nõusolekupõhised küpsised aktiveeritakse ainult teie loal.",
       },
       {
+        en: "We use Vercel Web Analytics to collect anonymous, aggregated usage data (such as page views and referrers) to understand how our website is used and improve the Service. This tool is privacy-focused, does not use advertising cookies, and does not track you across other websites. We do not use Google Analytics.",
+        et: "Kasutame Vercel Web Analyticsi, et koguda anonüümset, koondatud kasutusstatistikat (nt lehevaated ja viitajad), et mõista veebilehe kasutamist ja teenust parendada. See tööriist on privaatsussõbralik, ei kasuta reklaamiküpsiseid ega jälgi teid teistel veebilehtedel. Me ei kasuta Google Analyticsit.",
+      },
+      {
         en: "8. Data Security",
         et: "8. Andmete turvalisus",
       },
