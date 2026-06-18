@@ -4,7 +4,7 @@ import { PhotoCropModal } from "@/components/media/PhotoCropModal";
 import { isCropSupportedImageFile, validateCropSourceFile } from "@/lib/image-crop";
 import { MAX_PET_PHOTOS } from "@/lib/pet-photos";
 import { useLanguage } from "@/context/LanguageContext";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 export type ExistingPetPhotoItem = {
   id: string;
@@ -13,13 +13,22 @@ export type ExistingPetPhotoItem = {
   mediaType: "image" | "video";
 };
 
+type UploadStatus = "uploading" | "saved" | "failed";
+
+type PendingUploadItem = {
+  localId: string;
+  previewUrl: string;
+  file: File;
+  status: UploadStatus;
+  error?: string;
+};
+
 type PetPhotoUploadProps = {
-  files: File[];
-  onChange: (files: File[]) => void;
+  petId?: string | null;
   disabled?: boolean;
-  /** When true, media is optional (edit mode). */
-  optional?: boolean;
+  uploadDisabledMessage?: string;
   existingPhotos?: ExistingPetPhotoItem[];
+  onUploadPhoto?: (file: File) => Promise<void>;
   onReplaceExistingPhoto?: (photoId: string, file: File) => Promise<void>;
   onRemoveExistingPhoto?: (photoId: string) => Promise<void>;
   onSetPrimaryExistingPhoto?: (photoId: string) => Promise<void>;
@@ -29,7 +38,6 @@ type PetPhotoUploadProps = {
 type CropSession = {
   file?: File;
   url?: string;
-  replaceIndex?: number;
   replaceExistingId?: string;
 } | null;
 
@@ -50,12 +58,42 @@ function StarIcon({ filled }: { filled: boolean }) {
   );
 }
 
+function UploadStatusBadge({ status, errorLabel }: { status: UploadStatus; errorLabel?: string }) {
+  const { t } = useLanguage();
+  const copy = t.account.petsPage;
+
+  if (status === "uploading") {
+    return (
+      <span className="absolute inset-x-2 bottom-2 rounded-lg bg-black/65 px-2 py-1 text-center text-[0.65rem] font-semibold text-white">
+        {copy.photoUploading}
+      </span>
+    );
+  }
+
+  if (status === "failed") {
+    return (
+      <span
+        className="absolute inset-x-2 bottom-2 rounded-lg bg-brand-pink/90 px-2 py-1 text-center text-[0.65rem] font-semibold text-white"
+        title={errorLabel}
+      >
+        {copy.photoUploadFailed}
+      </span>
+    );
+  }
+
+  return (
+    <span className="absolute inset-x-2 bottom-2 rounded-lg bg-brand-teal/90 px-2 py-1 text-center text-[0.65rem] font-semibold text-white">
+      {copy.photoSaved}
+    </span>
+  );
+}
+
 export function PetPhotoUpload({
-  files,
-  onChange,
+  petId,
   disabled,
-  optional,
+  uploadDisabledMessage,
   existingPhotos = [],
+  onUploadPhoto,
   onReplaceExistingPhoto,
   onRemoveExistingPhoto,
   onSetPrimaryExistingPhoto,
@@ -65,31 +103,26 @@ export function PetPhotoUpload({
   const copy = t.account.petsPage;
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
   const [pickError, setPickError] = useState<string | null>(null);
   const [cropSession, setCropSession] = useState<CropSession>(null);
   const [cropSaving, setCropSaving] = useState(false);
   const [removingExistingId, setRemovingExistingId] = useState<string | null>(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
+  const [pendingUploads, setPendingUploads] = useState<PendingUploadItem[]>([]);
+  const [activeUploadCount, setActiveUploadCount] = useState(0);
 
-  useEffect(() => {
-    const urls = files.map((file) => URL.createObjectURL(file));
-    setPreviews(urls);
-    return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [files]);
-
-  const totalCount = files.length + existingPhotos.length;
+  const uploadEnabled = Boolean(petId && onUploadPhoto);
+  const pendingCount = pendingUploads.filter((item) => item.status !== "saved").length;
+  const totalCount = existingPhotos.length + pendingCount;
   const slotsLeft = MAX_PET_PHOTOS - totalCount;
   const busy =
     disabled ||
     cropSaving ||
     existingPhotoBusy ||
+    activeUploadCount > 0 ||
     Boolean(removingExistingId) ||
     Boolean(settingPrimaryId);
   const canDeleteExisting = totalCount > 1;
-  const pendingCanSetMain = existingPhotos.length === 0;
 
   function openNextPendingImage() {
     const next = pendingImagesRef.current.shift();
@@ -100,8 +133,56 @@ export function PetPhotoUpload({
     }
   }
 
+  function updatePendingUpload(localId: string, patch: Partial<PendingUploadItem>) {
+    setPendingUploads((current) =>
+      current.map((item) => (item.localId === localId ? { ...item, ...patch } : item)),
+    );
+  }
+
+  function removePendingUpload(localId: string) {
+    setPendingUploads((current) => {
+      const target = current.find((item) => item.localId === localId);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((item) => item.localId !== localId);
+    });
+  }
+
+  async function uploadFileImmediately(file: File) {
+    if (!onUploadPhoto || !uploadEnabled) {
+      throw new Error(uploadDisabledMessage ?? copy.mediaRequiresPet);
+    }
+
+    const localId = crypto.randomUUID();
+    const previewUrl = URL.createObjectURL(file);
+    setPendingUploads((current) => [
+      ...current,
+      { localId, previewUrl, file, status: "uploading" },
+    ]);
+    setActiveUploadCount((count) => count + 1);
+    setPickError(null);
+
+    try {
+      await onUploadPhoto(file);
+      updatePendingUpload(localId, { status: "saved" });
+      window.setTimeout(() => removePendingUpload(localId), 800);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : copy.photoUploadFailed;
+      updatePendingUpload(localId, { status: "failed", error: message });
+      setPickError(message);
+    } finally {
+      setActiveUploadCount((count) => Math.max(0, count - 1));
+    }
+  }
+
+  async function retryUpload(localId: string) {
+    const item = pendingUploads.find((entry) => entry.localId === localId);
+    if (!item || item.status !== "failed") return;
+    removePendingUpload(localId);
+    await uploadFileImmediately(item.file);
+  }
+
   function handleFilesSelected(selected: FileList | null) {
-    if (!selected?.length) return;
+    if (!selected?.length || !uploadEnabled) return;
     setPickError(null);
 
     const incoming = Array.from(selected);
@@ -115,7 +196,7 @@ export function PetPhotoUpload({
       setPickError(copy.invalidMediaTypeError);
     }
 
-    const slotsLeftNow = MAX_PET_PHOTOS - files.length - existingPhotos.length;
+    const slotsLeftNow = MAX_PET_PHOTOS - existingPhotos.length - pendingCount;
     if (slotsLeftNow <= 0) {
       setPickError(copy.maxFilesError.replace("{max}", String(MAX_PET_PHOTOS)));
       if (inputRef.current) inputRef.current.value = "";
@@ -135,12 +216,8 @@ export function PetPhotoUpload({
       }
     }
 
-    if (nextVideos.length > 0) {
-      const combined = [...files, ...nextVideos].slice(0, MAX_PET_PHOTOS - existingPhotos.length);
-      if (files.length + selected.length > MAX_PET_PHOTOS - existingPhotos.length) {
-        setPickError(copy.maxFilesError.replace("{max}", String(MAX_PET_PHOTOS)));
-      }
-      onChange(combined);
+    for (const video of nextVideos) {
+      void uploadFileImmediately(video);
     }
 
     if (validImages.length > 0) {
@@ -151,25 +228,6 @@ export function PetPhotoUpload({
     }
 
     if (inputRef.current) inputRef.current.value = "";
-  }
-
-  function removeAt(index: number) {
-    if (totalCount <= 1) {
-      setPickError(copy.cannotDeleteLastPhoto);
-      return;
-    }
-    setPickError(null);
-    onChange(files.filter((_, i) => i !== index));
-  }
-
-  function setPendingPrimary(index: number) {
-    if (!pendingCanSetMain || index <= 0 || index >= files.length) return;
-    setPickError(null);
-    const next = [...files];
-    const [picked] = next.splice(index, 1);
-    if (!picked) return;
-    next.unshift(picked);
-    onChange(next);
   }
 
   async function removeExisting(photoId: string) {
@@ -200,13 +258,6 @@ export function PetPhotoUpload({
     }
   }
 
-  function openEditNewFile(index: number) {
-    const file = files[index];
-    if (!file || !isCropSupportedImageFile(file) || disabled || cropSaving) return;
-    setPickError(null);
-    setCropSession({ file, replaceIndex: index });
-  }
-
   function openEditExistingPhoto(photo: ExistingPetPhotoItem) {
     if (photo.mediaType !== "image" || disabled || cropSaving || !onReplaceExistingPhoto) return;
     setPickError(null);
@@ -223,16 +274,7 @@ export function PetPhotoUpload({
         return;
       }
 
-      if (typeof cropSession?.replaceIndex === "number") {
-        const next = [...files];
-        next[cropSession.replaceIndex] = cropped;
-        onChange(next);
-        setCropSession(null);
-        return;
-      }
-
-      const next = [...files, cropped].slice(0, MAX_PET_PHOTOS - existingPhotos.length);
-      onChange(next);
+      await uploadFileImmediately(cropped);
 
       if (pendingImagesRef.current.length > 0) {
         openNextPendingImage();
@@ -252,12 +294,18 @@ export function PetPhotoUpload({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="form-field-label">{copy.photosVideos}</span>
           <span className="text-xs text-muted">
-            {totalCount}/{MAX_PET_PHOTOS}
+            {existingPhotos.length + pendingCount}/{MAX_PET_PHOTOS}
           </span>
         </div>
         <p className="mt-1 text-xs text-muted">
-          {optional ? copy.galleryHintOptional : copy.galleryHintCreate}
+          {uploadEnabled ? copy.galleryHintAutosave : copy.galleryHintSaveFirst}
         </p>
+
+        {!uploadEnabled && uploadDisabledMessage ? (
+          <p className="mt-2 rounded-xl border border-black/8 bg-cream/40 px-3 py-2 text-xs text-muted">
+            {uploadDisabledMessage}
+          </p>
+        ) : null}
 
         {pickError ? (
           <p className="mt-2 text-xs text-brand-pink" role="alert">
@@ -265,7 +313,7 @@ export function PetPhotoUpload({
           </p>
         ) : null}
 
-        {existingPhotos.length > 0 || previews.length > 0 ? (
+        {existingPhotos.length > 0 || pendingUploads.length > 0 ? (
           <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {existingPhotos.map((photo) => (
               <li
@@ -284,6 +332,9 @@ export function PetPhotoUpload({
                     {copy.mainPhoto}
                   </span>
                 ) : null}
+                <span className="absolute left-2 bottom-2 rounded-lg bg-black/55 px-2 py-0.5 text-[0.6rem] font-semibold text-white">
+                  {copy.photoSaved}
+                </span>
                 {onSetPrimaryExistingPhoto ? (
                   <button
                     type="button"
@@ -313,75 +364,40 @@ export function PetPhotoUpload({
                     type="button"
                     disabled={busy}
                     onClick={() => openEditExistingPhoto(photo)}
-                    className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
+                    className="absolute bottom-10 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
                   >
                     {t.media.editPhoto}
                   </button>
                 ) : null}
               </li>
             ))}
-            {previews.map((src, index) => {
-              const isPendingMain = pendingCanSetMain && index === 0;
-              return (
-                <li
-                  key={src}
-                  className={`relative aspect-square overflow-hidden rounded-2xl border ${
-                    isPendingMain ? "border-brand-teal ring-2 ring-brand-teal/20" : "border-black/5"
-                  }`}
-                >
-                  {files[index]?.type.startsWith("video/") ? (
-                    <video src={src} className="h-full w-full object-cover" muted playsInline />
-                  ) : (
-                    <img src={src} alt="" className="h-full w-full object-cover" />
-                  )}
-                  {isPendingMain ? (
-                    <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold text-white">
-                      {copy.mainPhoto}
-                    </span>
-                  ) : null}
-                  {pendingCanSetMain ? (
-                    <button
-                      type="button"
-                      disabled={busy || isPendingMain}
-                      onClick={() => setPendingPrimary(index)}
-                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-surface/95 shadow-sm ring-1 ring-black/5"
-                      aria-label={copy.setMainPhoto}
-                      title={copy.setMainPhoto}
-                    >
-                      <StarIcon filled={isPendingMain} />
-                    </button>
-                  ) : null}
-                  {totalCount > 1 ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => removeAt(index)}
-                      className={`absolute flex h-7 min-w-[4.5rem] items-center justify-center rounded-full bg-surface/95 px-2 text-[0.65rem] font-semibold text-brand-pink shadow-sm ring-1 ring-black/5 ${
-                        pendingCanSetMain ? "right-2 top-11" : "right-2 top-2"
-                      }`}
-                      aria-label={copy.deletePhoto}
-                      title={copy.deletePhoto}
-                    >
-                      {copy.deletePhoto}
-                    </button>
-                  ) : null}
-                  {files[index] && isCropSupportedImageFile(files[index]!) ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => openEditNewFile(index)}
-                      className="absolute bottom-2 left-2 rounded-lg bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-foreground shadow-sm ring-1 ring-black/5"
-                    >
-                      {t.media.editPhoto}
-                    </button>
-                  ) : null}
-                </li>
-              );
-            })}
+            {pendingUploads.map((item) => (
+              <li
+                key={item.localId}
+                className="relative aspect-square overflow-hidden rounded-2xl border border-black/5"
+              >
+                {item.file.type.startsWith("video/") ? (
+                  <video src={item.previewUrl} className="h-full w-full object-cover" muted playsInline />
+                ) : (
+                  <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
+                )}
+                <UploadStatusBadge status={item.status} errorLabel={item.error} />
+                {item.status === "failed" ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void retryUpload(item.localId)}
+                    className="absolute right-2 top-2 rounded-full bg-surface/95 px-2 py-1 text-[0.65rem] font-semibold text-brand-teal shadow-sm ring-1 ring-black/5"
+                  >
+                    {copy.photoRetry}
+                  </button>
+                ) : null}
+              </li>
+            ))}
           </ul>
         ) : null}
 
-        {slotsLeft > 0 ? (
+        {uploadEnabled && slotsLeft > 0 ? (
           <label className="mt-3 flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 bg-mint/20 px-4 py-6 text-center transition-colors hover:bg-mint/35">
             <span className="text-sm font-medium text-brand-teal">{copy.uploadPhotosVideos}</span>
             <span className="mt-1 text-xs text-muted">{copy.uploadHint}</span>
@@ -406,7 +422,7 @@ export function PetPhotoUpload({
         saving={cropSaving || existingPhotoBusy}
         onClose={() => {
           if (cropSaving || existingPhotoBusy) return;
-          if (cropSession?.replaceExistingId || typeof cropSession?.replaceIndex === "number") {
+          if (cropSession?.replaceExistingId) {
             setCropSession(null);
             return;
           }

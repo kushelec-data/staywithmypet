@@ -9,8 +9,8 @@ import { PetPhotoUpload, type ExistingPetPhotoItem } from "@/components/pets/Pet
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import {
-  createPetWithPhotos,
   fetchPetForOwner,
+  saveNewPet,
   toDbSpecies,
   updatePetProfile,
   type PetProfileFormInput,
@@ -46,7 +46,6 @@ import {
   replacePetPhotoImage,
   setPrimaryPetPhotoForOwner,
   uploadAndAttachPetPhotos,
-  validatePetPhotoFiles,
 } from "@/lib/pet-photos";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { OTHER_FIELD_COPY, validateOtherOptionFields } from "@/lib/other-option";
@@ -115,7 +114,6 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const isEdit = Boolean(petId);
 
   const [form, setForm] = useState<PetProfileFormInput>(emptyForm);
-  const [photos, setPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<ExistingPetPhotoItem[]>([]);
   const [existingPhotoBusy, setExistingPhotoBusy] = useState(false);
   const [loadingPet, setLoadingPet] = useState(isEdit);
@@ -266,6 +264,16 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     setExistingPhotos(mapLoadedPhotos(loadedPhotos));
   }
 
+  async function handleUploadPhoto(file: File) {
+    if (!user?.id || !petId) {
+      throw new Error(petsCopy.mediaRequiresPet);
+    }
+    await uploadAndAttachPetPhotos(supabase, user.id, petId, [file], form.name.trim() || "Pet", {
+      append: true,
+    });
+    await refreshExistingPhotos();
+  }
+
   async function handleReplaceExistingPhoto(photoId: string, file: File) {
     if (!user?.id || !petId) return;
     setExistingPhotoBusy(true);
@@ -333,39 +341,36 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     };
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return;
-
+  function buildSavePayload(): PetProfileFormInput | null {
     const payload = buildPayload();
     if (!payload.name) {
       setError("Please enter your pet's name.");
-      return;
+      return null;
     }
     const locationText = finalizeLocationText(
       locationInputDisplayValue(payload.address, payload.location),
     );
     if (!locationText) {
       setError("Please enter an address or location.");
-      return;
+      return null;
     }
 
     if (payload.speciesForm === "other") {
       if (!payload.breedOther.trim()) {
         setBreedFieldError(OTHER_FIELD_COPY.petSpecies.placeholder);
         setError("Please specify what species your pet is.");
-        return;
+        return null;
       }
     } else if (breedsForSpeciesForm(payload.speciesForm).length > 0) {
       if (!payload.breedSelection.trim()) {
         setBreedFieldError(petsCopy.errorSelectBreed);
         setError(petsCopy.errorSelectBreed);
-        return;
+        return null;
       }
       if (isBreedOtherValue(payload.breedSelection) && !payload.breedOther.trim()) {
         setBreedFieldError(petsCopy.errorEnterBreed);
         setError(petsCopy.errorEnterBreed);
-        return;
+        return null;
       }
     }
     setBreedFieldError(null);
@@ -381,7 +386,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             : copy.dobInvalidFormat;
       setDobError(message);
       setError(message);
-      return;
+      return null;
     }
     setDobError(null);
 
@@ -393,23 +398,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     ]);
     if (otherError) {
       setError(otherError);
-      return;
-    }
-
-    if (!isEdit) {
-      try {
-        validatePetPhotoFiles(photos);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Please add at least one photo or video.");
-        return;
-      }
-    } else if (existingPhotos.length + photos.length < 1) {
-      setError("Please add at least one photo or video.");
-      return;
+      return null;
     }
 
     const hasGoogleCoords = payload.latitude != null && payload.longitude != null;
-    const savePayload: PetProfileFormInput = {
+    return {
       ...payload,
       dateOfBirth: dobValidation.iso,
       location: hasGoogleCoords
@@ -419,24 +412,38 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         ? finalizeLocationText(payload.address) || locationText
         : locationText,
     };
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+
+    const savePayload = buildSavePayload();
+    if (!savePayload) return;
+
+    if (isEdit && existingPhotos.length < 1) {
+      setError(petsCopy.needAtLeastOnePhoto);
+      return;
+    }
 
     setSaving(true);
     setError(null);
     try {
       if (isEdit && petId) {
         await updatePetProfile(supabase, user.id, petId, savePayload);
-        if (photos.length > 0) {
-          await uploadAndAttachPetPhotos(supabase, user.id, petId, photos, savePayload.name, {
-            append: true,
-          });
-        }
-      } else {
-        await createPetWithPhotos(supabase, user.id, savePayload, photos);
+        await refreshProfile();
+        notifyDashboardRefresh();
+        clearDraft();
+        router.push("/pets");
+        router.refresh();
+        return;
       }
+
+      const newPetId = await saveNewPet(supabase, user.id, savePayload);
       await refreshProfile();
       notifyDashboardRefresh();
       clearDraft();
-      router.push("/pets");
+      router.replace(`/pets/${newPetId}/edit`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.account.petsPage.savePetError);
@@ -457,25 +464,6 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           {error}
         </p>
       ) : null}
-
-      <PetFormSection
-        title={pl("Pet media")}
-        description={pl(
-          "Add up to 6 photos or videos that best show your pet's personality and charm!",
-        )}
-      >
-        <PetPhotoUpload
-          files={photos}
-          onChange={setPhotos}
-          disabled={saving}
-          optional={isEdit}
-          existingPhotos={existingPhotos}
-          existingPhotoBusy={existingPhotoBusy}
-          onReplaceExistingPhoto={isEdit && petId ? handleReplaceExistingPhoto : undefined}
-          onRemoveExistingPhoto={isEdit && petId ? handleRemoveExistingPhoto : undefined}
-          onSetPrimaryExistingPhoto={isEdit && petId ? handleSetPrimaryExistingPhoto : undefined}
-        />
-      </PetFormSection>
 
       <PetFormSection title={pl("Basic pet details")}>
         <div className="sm:col-span-2">
@@ -880,8 +868,27 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
       </PetFormSection>
 
+      <PetFormSection
+        title={pl("Pet media")}
+        description={pl(
+          "Add up to 6 photos or videos that best show your pet's personality and charm!",
+        )}
+      >
+        <PetPhotoUpload
+          petId={petId}
+          disabled={saving}
+          uploadDisabledMessage={!petId ? petsCopy.mediaRequiresPet : undefined}
+          existingPhotos={existingPhotos}
+          existingPhotoBusy={existingPhotoBusy}
+          onUploadPhoto={petId ? handleUploadPhoto : undefined}
+          onReplaceExistingPhoto={petId ? handleReplaceExistingPhoto : undefined}
+          onRemoveExistingPhoto={petId ? handleRemoveExistingPhoto : undefined}
+          onSetPrimaryExistingPhoto={petId ? handleSetPrimaryExistingPhoto : undefined}
+        />
+      </PetFormSection>
+
       <Button type="submit" variant="primary" disabled={saving}>
-        {saving ? pl("Saving…") : isEdit ? pl("Save changes") : pl("Save pet profile")}
+        {saving ? petsCopy.savingPet : isEdit ? petsCopy.saveChanges : petsCopy.savePetAndAddPhotos}
       </Button>
     </form>
   );

@@ -505,6 +505,20 @@ export const et = {
         "Lisa uusi faile galerii asendamiseks või täiendamiseks (valikuline).",
       galleryHintCreate:
         "Lisa 1–6 fotot või videot. Peamise kuulutuse foto valimiseks vajuta tähele.",
+      galleryHintAutosave:
+        "Fotod ja videod salvestuvad automaatselt. Peamise foto valimiseks vajuta tähele.",
+      galleryHintSaveFirst:
+        "Salvesta esmalt lemmiku põhiandmed. Seejärel laaditakse fotod ja videod automaatselt üles.",
+      mediaRequiresPet:
+        "Salvesta esmalt lemmiku põhiandmed. Fotosid saad lisada järgmisel sammul.",
+      photoUploading: "Laadin üles…",
+      photoSaved: "Salvestatud",
+      photoUploadFailed: "Ebaõnnestus",
+      photoRetry: "Proovi uuesti",
+      needAtLeastOnePhoto: "Lisa vähemalt üks foto või video.",
+      savePetAndAddPhotos: "Salvesta profiil ja lisa fotod",
+      saveChanges: "Salvesta muudatused",
+      savingPet: "Salvestan…",
       mainPhoto: "Peamine foto",
       setMainPhoto: "Määra peamiseks fotoks",
       deletePhoto: "Kustuta foto",

@@ -502,6 +502,20 @@ export const en = {
         "Add new files to replace or extend the gallery (optional).",
       galleryHintCreate:
         "Add 1–6 photos or videos. Tap the star to choose the main listing photo.",
+      galleryHintAutosave:
+        "Photos and videos save automatically when you add them. Tap the star to choose the main listing photo.",
+      galleryHintSaveFirst:
+        "Save your pet's basic details first. After that, photos and videos upload and save automatically.",
+      mediaRequiresPet:
+        "Save your pet's basic details first. You'll be able to add photos on the next step.",
+      photoUploading: "Uploading…",
+      photoSaved: "Saved",
+      photoUploadFailed: "Failed",
+      photoRetry: "Retry",
+      needAtLeastOnePhoto: "Please add at least one photo or video.",
+      savePetAndAddPhotos: "Save pet profile and add photos",
+      saveChanges: "Save changes",
+      savingPet: "Saving…",
       mainPhoto: "Main Photo",
       setMainPhoto: "Set as main photo",
       deletePhoto: "Delete photo",
