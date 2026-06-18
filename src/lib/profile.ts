@@ -1,3 +1,4 @@
+import { normalizeFullName } from "@/lib/name-format";
 import { mergeDetailsTrustFlags } from "@/lib/profile-details";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
@@ -8,7 +9,7 @@ export type EnsureProfileOptions = {
 
 export function resolveDisplayName(user: User, override?: string): string {
   const trimmedOverride = override?.trim();
-  if (trimmedOverride) return trimmedOverride;
+  if (trimmedOverride) return normalizeFullName(trimmedOverride);
   return resolveProfileDisplayName(user, null);
 }
 

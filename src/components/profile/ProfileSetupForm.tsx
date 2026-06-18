@@ -26,6 +26,7 @@ import {
 } from "@/lib/phone-eu";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
+import { normalizeFullName } from "@/lib/name-format";
 import {
   emptyPetFriendProfileForm,
   petFriendFormFromDetailsRaw,
@@ -315,7 +316,8 @@ export function ProfileSetupForm({
     e.preventDefault();
     if (!user) return;
 
-    const trimmedName = displayName.trim();
+    const trimmedName = normalizeFullName(displayName);
+    setDisplayName(trimmedName);
     if (!trimmedName) {
       setError(pe.errorDisplayName);
       return;
@@ -474,6 +476,7 @@ export function ProfileSetupForm({
             name="display_name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            onBlur={() => setDisplayName((current) => normalizeFullName(current))}
             required
             autoComplete="name"
             className="input-field mt-1"

@@ -36,6 +36,7 @@ import {
   profileLanguagesOtherMissing,
 } from "@/lib/profile-languages";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
+import { normalizeFullName } from "@/lib/name-format";
 import { useRouter } from "next/navigation";
 import { translateProfileLabel } from "@/lib/profile-translations";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
@@ -475,7 +476,8 @@ export function ProfileEditForm() {
 
   async function handleSaveBasic() {
     if (!user) return;
-    const trimmedName = displayName.trim();
+    const trimmedName = normalizeFullName(displayName);
+    setDisplayName(trimmedName);
     if (!trimmedName) {
       setErrors((prev) => ({ ...prev, basic: pe.basic.errorDisplayName }));
       return;
@@ -755,6 +757,7 @@ export function ProfileEditForm() {
               name="display_name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
+              onBlur={() => setDisplayName((current) => normalizeFullName(current))}
               required
               autoComplete="name"
               disabled={!basicEnabled || saving.basic || anySaving}

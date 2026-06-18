@@ -9,6 +9,7 @@ import { PasswordPolicyChecklist } from "@/components/auth/PasswordPolicyCheckli
 import { useLanguage } from "@/context/LanguageContext";
 import { completeAuthSession } from "@/lib/auth-flow";
 import { formatAuthError } from "@/lib/auth-messages";
+import { normalizeFullName } from "@/lib/name-format";
 import { DASHBOARD_PATH, resolveLoginReturnPath, resolvePostLoginPath } from "@/lib/auth-routing";
 import { getAuthCallbackUrl } from "@/lib/auth";
 import {
@@ -59,6 +60,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   );
 
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [signupDebug, setSignupDebug] = useState<SignupDebugSnapshot | null>(null);
   const showSignupDebug = isSignupDebugEnabled();
 
@@ -149,7 +151,10 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") ?? "").trim();
-    const name = String(form.get("name") ?? "").trim();
+    const name = normalizeFullName(isSignup ? fullName : String(form.get("name") ?? ""));
+    if (isSignup && name !== fullName) {
+      setFullName(name);
+    }
     const passwordField = isSignup ? password : String(form.get("password") ?? "");
 
     try {
@@ -318,6 +323,9 @@ export function AuthForm({ mode }: AuthFormProps) {
                   name="name"
                   type="text"
                   required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  onBlur={() => setFullName((current) => normalizeFullName(current))}
                   placeholder={t.auth.namePlaceholder}
                   className="input-field mt-1"
                   disabled={loading}

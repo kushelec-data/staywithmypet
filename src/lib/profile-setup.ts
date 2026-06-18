@@ -1,3 +1,4 @@
+import { normalizeFullName } from "@/lib/name-format";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
   assertProfileMatchesUser,
@@ -196,7 +197,7 @@ export async function saveUserProfile(
   input: ProfileSetupInput,
   context: ProfileSaveContext & { preserveRole?: ProfileRole },
 ): Promise<ProfileRow> {
-  const trimmedInputName = input.displayName.trim();
+  const trimmedInputName = normalizeFullName(input.displayName);
   const displayName =
     trimmedInputName || resolveProfileDisplayName(context.user, context.existingDisplayName);
   const now = new Date().toISOString();
@@ -637,7 +638,7 @@ export async function saveBasicProfileSection(
   context: ProfileSaveContext & { preserveRole?: ProfileRole },
 ): Promise<ProfileRow> {
   const rowForTrust = await loadProfileTrustRow(supabase, userId);
-  const trimmedInputName = input.displayName.trim();
+  const trimmedInputName = normalizeFullName(input.displayName);
   const displayName =
     trimmedInputName || resolveProfileDisplayName(context.user, context.existingDisplayName);
   const now = new Date().toISOString();
