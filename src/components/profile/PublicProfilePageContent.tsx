@@ -24,6 +24,7 @@ import {
   type PublicPetSummary as PublicPet,
   type PublicProfileView,
 } from "@/lib/public-profile";
+import { ProfileTranslationHelper } from "@/components/public/ProfileTranslationHelper";
 import { usersShareActiveRequest } from "@/lib/request-profile-access";
 import { resolvedAvailability } from "@/lib/profile-details";
 import { createClient } from "@/lib/supabase";
@@ -148,6 +149,9 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
           <div className="min-w-0 space-y-4">
+            {!profile.bio?.trim() ? (
+              <ProfileTranslationHelper profileLanguage={profile.profile_language} />
+            ) : null}
             {showPublicPetsSection(profile) ? <PublicPetSummary pets={pets} /> : null}
             {showFriendSections ? <PublicMemberCareCard profile={profile} /> : null}
             {showFriendSections ? <PublicMemberLivingCard profile={profile} /> : null}

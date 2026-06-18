@@ -4,6 +4,7 @@ import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { Button } from "@/components/ui/Button";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { PetFormChipGroup, PetFormSection } from "@/components/pets/PetFormSection";
+import { ProfileContentLanguageSelector } from "@/components/profile/ProfileContentLanguageSelector";
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
 import { PetPhotoUpload, type ExistingPetPhotoItem } from "@/components/pets/PetPhotoUpload";
 import { useAuth } from "@/context/AuthContext";
@@ -100,6 +101,7 @@ const emptyForm = (): PetProfileFormInput => ({
   latitude: null as number | null,
   longitude: null as number | null,
   googlePlaceId: null as string | null,
+  profileLanguage: "" as const,
 });
 
 type NewPetFormProps = {
@@ -515,6 +517,13 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             placeholder="e.g. Luna"
           />
         </div>
+
+        <ProfileContentLanguageSelector
+          value={form.profileLanguage}
+          onChange={(value) => patch("profileLanguage", value)}
+          disabled={saving}
+        />
+
         <div>
           <label htmlFor="species" className="form-field-label">
             {pl("Animal type")}

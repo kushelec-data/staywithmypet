@@ -229,7 +229,7 @@ export function buildPublicPetCareDetails(
   push("additionalInfo", labels.additionalInfo, pet.additionalNotes);
 
   const friendValues = translateProfileLabels(
-    pet.friendRequirements.filter((value) => !isPlaceholderCareDetailValue(value)),
+    pet.friendRequirements.filter((value: string) => !isPlaceholderCareDetailValue(value)),
     locale,
   ).filter((value) => !isPlaceholderCareDetailValue(value));
 

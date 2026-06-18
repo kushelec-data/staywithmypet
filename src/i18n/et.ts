@@ -1073,6 +1073,14 @@ export const et = {
     meetPetsNearby: "Leia lemmikuid enda lähedal",
     animationAlt: "Rõõmus koer pakib kotti enne kohtumist loomasõbraga",
   },
+  profileContentLanguage: {
+    fieldLabel: "Profiili keel",
+    fieldHint: "Keel, milles kirjutad oma bio ja profiilitekste.",
+  },
+  profileTranslationHelper: {
+    message:
+      "See profiil on kirjutatud {language} keeles. Vajadusel kasuta brauseri tõlkefunktsiooni.",
+  },
   readyCta: {
     guest: {
       title: "Valmis alustama?",

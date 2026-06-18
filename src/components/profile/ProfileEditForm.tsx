@@ -30,11 +30,13 @@ import {
   normalizeBioForSave,
 } from "@/lib/bio-words";
 import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesSelector";
+import { ProfileContentLanguageSelector } from "@/components/profile/ProfileContentLanguageSelector";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
 import {
   languagesOtherFromDetails,
   profileLanguagesOtherMissing,
 } from "@/lib/profile-languages";
+import type { ProfileContentLanguage } from "@/lib/profile-content-language";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { normalizeFullName } from "@/lib/name-format";
 import { useRouter } from "next/navigation";
@@ -115,6 +117,7 @@ function applyBasicFromProfile(
     setProfileLocation: (v: ProfileLocationFormState) => void;
     setLanguages: (v: string[]) => void;
     setLanguagesOther: (v: string) => void;
+    setProfileLanguage: (v: ProfileContentLanguage | "") => void;
     setBio: (v: string) => void;
     setAvatarUrl: (v: string | null) => void;
   },
@@ -124,6 +127,7 @@ function applyBasicFromProfile(
   setters.setProfileLocation(profileLocationFromRow(profile));
   setters.setLanguages([...(profile.languages ?? [])]);
   setters.setLanguagesOther(languagesOtherFromDetails(profile.details));
+  setters.setProfileLanguage(profile.profile_language ?? "");
   setters.setBio(profile.bio?.trim() ?? "");
 }
 
@@ -167,6 +171,7 @@ export function ProfileEditForm() {
   const [locationFieldError, setLocationFieldError] = useState<string | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
   const [languagesOther, setLanguagesOther] = useState("");
+  const [profileLanguage, setProfileLanguage] = useState<ProfileContentLanguage | "">("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [trustSafety, setTrustSafety] = useState<TrustSafetyFormValues>(emptyTrustSafetyFormValues);
@@ -217,6 +222,7 @@ export function ProfileEditForm() {
       profileLocation,
       languages,
       languagesOther,
+      profileLanguage,
       bio,
       trustSafety,
       petFriendForm,
@@ -228,6 +234,7 @@ export function ProfileEditForm() {
       profileLocation,
       languages,
       languagesOther,
+      profileLanguage,
       bio,
       trustSafety,
       petFriendForm,
@@ -244,6 +251,7 @@ export function ProfileEditForm() {
     setProfileLocation(draft.profileLocation);
     setLanguages([...draft.languages]);
     setLanguagesOther(draft.languagesOther);
+    setProfileLanguage(draft.profileLanguage);
     setBio(draft.bio);
     setTrustSafety(draft.trustSafety);
     setPetFriendForm(draft.petFriendForm);
@@ -317,6 +325,7 @@ export function ProfileEditForm() {
           setProfileLocation,
           setLanguages,
           setLanguagesOther,
+          setProfileLanguage,
           setBio: (value) => {
             if (!bioUserEditedRef.current) {
               setBio(value);
@@ -444,6 +453,7 @@ export function ProfileEditForm() {
       setProfileLocation,
       setLanguages,
       setLanguagesOther,
+      setProfileLanguage,
       setBio,
       setAvatarUrl,
     });
@@ -540,6 +550,7 @@ export function ProfileEditForm() {
           location: profileLocationToSaveInput(locationForSave),
           languages: [...languages],
           languagesOther,
+          profileLanguage,
           bio: bioPayload,
         },
         {
@@ -790,6 +801,12 @@ export function ProfileEditForm() {
             label={pe.basic.languages}
             otherPlaceholder={pe.basic.languageOtherPlaceholder}
             otherInputId="profile_edit_languages_other"
+          />
+
+          <ProfileContentLanguageSelector
+            value={profileLanguage}
+            onChange={setProfileLanguage}
+            disabled={!basicEnabled || saving.basic || anySaving}
           />
 
           <div>

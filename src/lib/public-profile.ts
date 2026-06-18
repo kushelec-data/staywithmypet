@@ -6,6 +6,7 @@ import { fetchOwnerPetIntros, type PetIntroDisplay } from "@/lib/pet-intro";
 
 export { formatNearbyLocation } from "@/lib/location-public";
 export type { PetIntroDisplay as PublicPetSummary } from "@/lib/pet-intro";
+import { resolveProfileContentLanguage, type ProfileContentLanguage } from "@/lib/profile-content-language";
 import { formatSupabaseError, mapProfileRow, type ProfileDbRow } from "@/lib/profile-load";
 import { PUBLIC_PROFILE_COLUMNS } from "@/lib/security/sanitize-public-profile";
 import type { ProfileDetails } from "@/lib/profile-details";
@@ -73,6 +74,7 @@ export type PublicProfileView = {
   role: ProfileRole;
   active_mode: ProfileActiveMode;
   languages: string[];
+  profile_language: ProfileContentLanguage | null;
   is_public: boolean;
   rating_avg: number;
   rating_count: number;
@@ -231,6 +233,7 @@ export function toPublicProfileView(
     role,
     active_mode: activeMode,
     languages: Array.isArray(row.languages) ? row.languages : [],
+    profile_language: resolveProfileContentLanguage(row),
     is_public: row.is_public ?? true,
     rating_avg: Number(row.rating_avg ?? 0),
     rating_count: row.rating_count ?? 0,

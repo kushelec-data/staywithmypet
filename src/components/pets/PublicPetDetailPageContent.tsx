@@ -7,6 +7,7 @@ import { PetPublicReviewsBlock } from "@/components/pets/PetPublicReviewsBlock";
 import { PetPublicTopCard } from "@/components/pets/PetPublicTopCard";
 import { PublicCareColumnsCard } from "@/components/public/PublicCareColumnsCard";
 import { PublicPetCareDetailsCard } from "@/components/public/PublicPetCareDetailsCard";
+import { ProfileTranslationHelper } from "@/components/public/ProfileTranslationHelper";
 import { PublicCompactAvailabilityCard } from "@/components/public/PublicCompactAvailabilityCard";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { PublicQuickInfoCard } from "@/components/public/PublicQuickInfoCard";
@@ -152,6 +153,8 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           quickFacts={buildPublicPetQuickFacts(pet, locale)}
           isOwnPet={isOwnPet}
         />
+
+        <ProfileTranslationHelper profileLanguage={pet.profileLanguage} />
 
         <PublicCareColumnsCard columns={careColumns} />
 

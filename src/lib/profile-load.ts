@@ -3,6 +3,7 @@ import { DEMO_MEMBERSHIP_LABEL, emptyMembershipsByRole } from "@/lib/membership"
 import { resolveUserMemberships, type MembershipLegacySource } from "@/lib/membership-load";
 import { isAvatarUrlOwnedByUser } from "@/lib/profile-avatar-display";
 import { parseProfileDetails } from "@/lib/profile-details";
+import { resolveProfileContentLanguage } from "@/lib/profile-content-language";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils";
@@ -11,7 +12,7 @@ import { isMissingColumnError, supabaseErrorDetail } from "@/lib/supabase-errors
 
 /** Columns present in committed Supabase migrations (safe default read list). */
 export const PROFILE_SELECT =
-  "id, display_name, avatar_url, bio, location, address, formatted_address, city, country, postal_code, google_place_id, public_location, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, is_public, rating_avg, rating_count, membership_status, details, created_at";
+  "id, display_name, avatar_url, bio, location, address, formatted_address, city, country, postal_code, google_place_id, public_location, latitude, longitude, role, active_mode, role_chosen_at, languages, profile_language, phone, is_public, rating_avg, rating_count, membership_status, details, created_at";
 
 /** Optional trust/phone columns (RUN_THIS_trust_phase1.sql only — not in all databases). */
 const PROFILE_SELECT_TRUST =
@@ -171,6 +172,7 @@ export function mapProfileRow(data: ProfileDbRow): ProfileRow {
     active_mode: resolveActiveMode(role, data.active_mode),
     role_chosen_at: data.role_chosen_at ?? null,
     languages: Array.isArray(data.languages) ? data.languages : [],
+    profile_language: resolveProfileContentLanguage(data),
     phone: data.phone_e164?.trim() || data.phone?.trim() || null,
     phone_country_code: data.phone_country_code?.trim() || null,
     phone_number: data.phone_number?.trim() || null,
