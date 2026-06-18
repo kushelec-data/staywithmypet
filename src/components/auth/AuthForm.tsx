@@ -19,6 +19,7 @@ import {
   type SignupDebugSnapshot,
 } from "@/lib/auth-signup-dev";
 import { SignupDebugPanel } from "@/components/auth/SignupDebugPanel";
+import { DogStoryCTA } from "@/components/marketing/DogStoryCTA";
 import { PROFILE_SESSION_MISMATCH_PARAM } from "@/lib/profile-session-guard";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { passwordMeetsPolicy } from "@/lib/password-policy";
@@ -273,17 +274,20 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   if (info) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4 py-10 sm:py-16">
-        <div className="card-elevated w-full max-w-md rounded-3xl p-6 text-center sm:p-10">
-          <Logo variant="form" />
-          <h1 className="font-heading mt-6 text-2xl font-semibold text-foreground">{copy.successTitle}</h1>
-          <p className="mt-2 text-sm text-brand-teal" role="status">
-            {info}
-          </p>
-          <Button href="/login" className="mt-6" size="lg">
-            {t.auth.login.submit}
-          </Button>
-          {showSignupDebug && signupDebug ? <SignupDebugPanel snapshot={signupDebug} /> : null}
+      <div className="px-4 py-10 sm:py-16">
+        <div className="mx-auto w-full max-w-3xl space-y-8">
+          <div className="card-elevated rounded-3xl p-6 text-center sm:p-10">
+            <Logo variant="form" />
+            <h1 className="font-heading mt-6 text-2xl font-semibold text-foreground">{copy.successTitle}</h1>
+            <p className="mt-2 text-sm text-brand-teal" role="status">
+              {info}
+            </p>
+            <Button href="/login" className="mt-6" size="lg">
+              {t.auth.login.submit}
+            </Button>
+            {showSignupDebug && signupDebug ? <SignupDebugPanel snapshot={signupDebug} /> : null}
+          </div>
+          <DogStoryCTA withPageShell={false} compact />
         </div>
       </div>
     );

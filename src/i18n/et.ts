@@ -1064,6 +1064,15 @@ export const et = {
       },
     ],
   },
+  dogStory: {
+    title: "Tutvu lemmikloomadega, kes juba ootavad",
+    subtitle:
+      "Hakka loomasõbraks ja leia armsaid lemmikuid, kes otsivad jalutuskäike, mänguaega ja hoolt.",
+    hookMessage: "Valmis sinuga kohtuma?",
+    startMembership: "Alusta liikmesust",
+    meetPetsNearby: "Leia lemmikuid enda lähedal",
+    animationAlt: "Rõõmus koer pakib kotti enne kohtumist loomasõbraga",
+  },
   readyCta: {
     guest: {
       title: "Valmis alustama?",

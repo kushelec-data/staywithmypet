@@ -1055,6 +1055,15 @@ export const en = {
       },
     ],
   },
+  dogStory: {
+    title: "Meet pets who are waiting for you",
+    subtitle:
+      "Become a Pet Friend and connect with lovely pets looking for walks, playtime, and care.",
+    hookMessage: "Ready to meet you?",
+    startMembership: "Start membership",
+    meetPetsNearby: "Meet pets nearby",
+    animationAlt: "A happy dog packing a bag before meeting a Pet Friend",
+  },
   readyCta: {
     guest: {
       title: "Ready to start?",

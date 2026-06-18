@@ -20,6 +20,7 @@ import {
   activeModeToPricingTab,
   MembershipPlans,
 } from "@/components/pricing/MembershipPlans";
+import { DogStoryCTA } from "@/components/marketing/DogStoryCTA";
 import { PricingSection } from "@/sections/PricingSection";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -480,6 +481,14 @@ export function MembershipPageContent({
         >
           {stripeConfigMessage}
         </p>
+      ) : null}
+
+      {!loading && !isActive ? (
+        <DogStoryCTA
+          withPageShell={false}
+          className="mb-6"
+          membershipHref={buildMembershipPagePath({ role: modeRole, returnTo })}
+        />
       ) : null}
 
       <MembershipPlans
