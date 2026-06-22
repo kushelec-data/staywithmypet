@@ -52,14 +52,13 @@ function isListableProfile(row: {
   return Boolean(row.display_name?.trim() && row.bio?.trim() && hasLocation);
 }
 
-/** Pet Friends discoverable on /find-care (not pure Pet Parents). */
+/** Pet Friends discoverable on /find-care (not pure Pet Parents). active_mode is dashboard-only. */
 export function isDiscoverablePetFriend(row: {
   role: ProfileRole;
   active_mode: string | null | undefined;
 }): boolean {
   if (row.role === "pet_parent") return false;
-  if (row.role === "pet_friend") return true;
-  return resolveActiveMode("both", row.active_mode) === "pet_friend";
+  return row.role === "pet_friend" || row.role === "both";
 }
 
 /** @deprecated inverted — use fetchPetFriendSearchProfiles for /find-care */
