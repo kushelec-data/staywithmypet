@@ -1,6 +1,6 @@
 import { isOtherOptionValue } from "@/lib/other-option";
 
-/** Canonical care type labels — use exactly these strings in UI and new records. */
+/** Stored care type values — keep unchanged in DB and new records. */
 export const CANONICAL_CARE_TYPE_OPTIONS = [
   "Walks only",
   "Daycare",
@@ -24,9 +24,18 @@ export type CareTypeFilterOption = {
   aliases?: readonly string[];
 };
 
-/** Search filters (Find Pets + Find Care). Value and label are identical. */
+/** User-facing English labels for stored care type values. */
+const CARE_TYPE_DISPLAY_LABEL_EN: Record<string, string> = {
+  "Walks only": "Walks",
+};
+
+function careTypeDisplayLabelEn(canonicalOrStored: string): string {
+  return CARE_TYPE_DISPLAY_LABEL_EN[canonicalOrStored] ?? canonicalOrStored;
+}
+
+/** Search filters (Find Pets + Find Care). Value is stored; label is user-facing. */
 export const CARE_TYPE_FILTER_OPTIONS: CareTypeFilterOption[] = [
-  { value: "Walks only", label: "Walks only", aliases: ["Walks"] },
+  { value: "Walks only", label: "Walks", aliases: ["Walks", "walks_only"] },
   { value: "Daycare", label: "Daycare" },
   {
     value: "Home visits",
@@ -56,6 +65,7 @@ const DEPRECATED_CARE_TYPE_LABELS: Record<string, string> = {
 
 const LEGACY_TO_CANONICAL: Record<string, CanonicalCareType> = {
   walks: "Walks only",
+  walks_only: "Walks only",
   "walks only": "Walks only",
   visits: "Home visits",
   "visits / check-ins": "Home visits",
@@ -120,17 +130,19 @@ export function formatCareTypeLabel(
   const trimmed = raw.trim();
   const key = normKey(trimmed);
 
-  if (CANONICAL_SET.has(trimmed)) return trimmed;
+  if (CANONICAL_SET.has(trimmed)) return careTypeDisplayLabelEn(trimmed);
 
   const canonical = LEGACY_TO_CANONICAL[key];
-  if (canonical) return canonical;
+  if (canonical) return careTypeDisplayLabelEn(canonical);
 
   const deprecated = DEPRECATED_CARE_TYPE_LABELS[key];
   if (deprecated) return deprecated;
 
   for (const opt of CARE_TYPE_FILTER_OPTIONS) {
-    if (normKey(opt.value) === key) return opt.value;
-    if (opt.aliases?.some((alias) => normKey(alias) === key)) return opt.value;
+    if (normKey(opt.value) === key) return careTypeDisplayLabelEn(opt.value);
+    if (opt.aliases?.some((alias) => normKey(alias) === key)) {
+      return careTypeDisplayLabelEn(opt.value);
+    }
   }
 
   return trimmed;

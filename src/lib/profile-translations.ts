@@ -11,6 +11,7 @@
  */
 
 import type { Locale } from "@/i18n/translations";
+import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { getPetDisplayLabelEt, translatePetDisplayLabel } from "@/lib/pet-display-translations";
 
 type Pair = readonly [en: string, et: string];
@@ -534,8 +535,10 @@ export function getProfileHelperEt(text: string | null | undefined): string | un
 export function translateProfileLabel(text: string | null | undefined, locale: Locale): string {
   if (!text?.trim()) return "";
   const trimmed = text.trim();
-  if (locale !== "et") return trimmed;
-  return lookupEt(trimmed) ?? translatePetDisplayLabel(trimmed, locale) ?? trimmed;
+  if (locale !== "et") {
+    return formatCareTypeLabel(trimmed) ?? trimmed;
+  }
+  return lookupEt(trimmed) ?? translatePetDisplayLabel(trimmed, locale) ?? formatCareTypeLabel(trimmed) ?? trimmed;
 }
 
 export function translateProfileLabels(values: string[], locale: Locale): string[] {

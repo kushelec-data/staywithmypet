@@ -5,6 +5,7 @@ import { RequestBookingCalendar } from "@/components/calendar/RequestBookingCale
 import { Button } from "@/components/ui/Button";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { careTypeRequestOptions } from "@/lib/care-type-options";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   countMessageCharacters,
@@ -51,7 +52,7 @@ export function RequestModal({
   onClose,
   onSubmit,
 }: RequestModalProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [message, setMessage] = useState("");
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -177,7 +178,7 @@ export function RequestModal({
             >
               {careTypeRequestOptions.map((option) => (
                 <option key={option} value={option}>
-                  {option}
+                  {translateProfileLabel(option, locale)}
                 </option>
               ))}
             </select>

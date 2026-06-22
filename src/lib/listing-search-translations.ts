@@ -71,7 +71,7 @@ const PET_LISTING_PAIRS: Pair[] = [
   ["At pet owner’s home", "Loomaomaniku juures"],
   ["Either / flexible", "Paindlik / mõlemad sobivad"],
   ["Care Type", "Hoiutüüp"],
-  ["Walks only", "Ainult jalutuskäigud"],
+  ["Walks only", "Jalutuskäigud"],
   ["Daycare", "Päevahoid"],
   ["Home visits", "Kodukülastused"],
   ["Feeding only", "Ainult toitmine"],
@@ -103,7 +103,7 @@ const PET_LISTING_PAIRS: Pair[] = [
   ["Dog-friendly", "Sõbralik teiste koertega"],
   ["Cat-friendly", "Sobib kassidega"],
   ["Active", "Mänguhimuline"],
-  ["Walks", "Ainult jalutuskäigud"],
+  ["Walks", "Jalutuskäigud"],
   ["Verified profiles only", "Näita ainult kontrollitud profiile"],
 ];
 
@@ -198,7 +198,7 @@ const PET_FRIEND_LISTING_PAIRS: Pair[] = [
   ["rodent", "Näriline"],
   ["fish", "Kala"],
   ["reptile", "Roomaja"],
-  ["Walks", "Ainult jalutuskäigud"],
+  ["Walks", "Jalutuskäigud"],
 ];
 
 function toLookupMap(pairs: Pair[]): Map<string, string> {
