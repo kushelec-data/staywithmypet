@@ -2,6 +2,7 @@ import "server-only";
 
 import nodemailer from "nodemailer";
 import { escapeHtml } from "@/lib/emails/layout";
+import { readSmtpConfig } from "@/lib/smtp-config";
 
 export const CONTACT_FORM_RECIPIENT = "info@staywithmypet.ee";
 const CONTACT_FORM_FROM = "info@staywithmypet.ee";
@@ -17,27 +18,6 @@ export type ContactFormPayload = {
 export type SendContactFormResult =
   | { ok: true }
   | { ok: false; reason: "no_api_key" | "send_failed" };
-
-function readSmtpConfig():
-  | {
-      host: string;
-      port: number;
-      user: string;
-      password: string;
-    }
-  | null {
-  const host = process.env.SMTP_HOST?.trim() || "mail.spacemail.com";
-  const portRaw = process.env.SMTP_PORT?.trim() || "465";
-  const port = Number.parseInt(portRaw, 10);
-  const user = process.env.SMTP_USER?.trim();
-  const password = process.env.SMTP_PASSWORD?.trim();
-
-  if (!user || !password || !Number.isFinite(port)) {
-    return null;
-  }
-
-  return { host, port, user, password };
-}
 
 export async function sendContactFormEmail(
   payload: ContactFormPayload,

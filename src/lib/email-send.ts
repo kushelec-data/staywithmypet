@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import {
   buildEmailTemplate,
   defaultUniqueKey,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/emails";
 import { resolveEmailLocale } from "@/lib/email-templates/locale";
 import { hydrateScheduledEmailContext } from "@/lib/email-scheduled-context";
+import { readSmtpConfig, transactionalEmailFrom } from "@/lib/smtp-config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingColumnError, isMissingRelationError } from "@/lib/supabase-errors";
 
@@ -32,8 +33,63 @@ export type SendTransactionalEmailResult = {
   reason?: "duplicate" | "no_email" | "no_api_key" | "no_admin" | "send_failed" | "scheduled";
 };
 
-function emailFromAddress(): string {
-  return process.env.EMAIL_FROM?.trim() || "StayWithMyPet <hello@staywithmypet.ee>";
+type SmtpMessage = {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  eventType: EmailEventType;
+  uniqueKey: string;
+};
+
+async function sendViaSmtp(message: SmtpMessage): Promise<boolean> {
+  const smtp = readSmtpConfig();
+  if (!smtp) {
+    console.info("[email] SMTP credentials not set — would send:", {
+      eventType: message.eventType,
+      uniqueKey: message.uniqueKey,
+      to: message.to,
+      subject: message.subject,
+    });
+    return false;
+  }
+
+  const { host, port, user, password } = smtp;
+  const secure = port === 465;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass: password },
+    });
+
+    await transporter.sendMail({
+      from: transactionalEmailFrom(),
+      to: message.to,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+    });
+
+    console.info("[email] SMTP send success", {
+      eventType: message.eventType,
+      uniqueKey: message.uniqueKey,
+      to: message.to,
+      subject: message.subject,
+    });
+    return true;
+  } catch (err) {
+    console.error("[email] SMTP send failed", {
+      eventType: message.eventType,
+      uniqueKey: message.uniqueKey,
+      to: message.to,
+      subject: message.subject,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
 }
 
 export async function resolveRecipientEmail(userId: string): Promise<string | null> {
@@ -193,19 +249,8 @@ export async function sendTransactionalEmail(
 
   const locale = await resolveEmailLocale(input.userId, input.context?.locale);
   const template = buildEmailTemplate(input.eventType, input.context ?? {}, locale);
-  const apiKey = process.env.RESEND_API_KEY?.trim();
 
-  if (!apiKey) {
-    console.info("[email] RESEND_API_KEY not set — would send:", {
-      eventType: input.eventType,
-      userId: input.userId,
-      uniqueKey,
-      to,
-      subject: template.subject,
-      text: template.text,
-      requestId: input.requestId,
-      bookingId: input.bookingId,
-    });
+  if (!readSmtpConfig()) {
     return { sent: false, skipped: true, reason: "no_api_key" };
   }
 
@@ -215,44 +260,38 @@ export async function sendTransactionalEmail(
     return { sent: false, skipped: true, reason: "no_admin" };
   }
 
-  try {
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from: emailFromAddress(),
-      to,
-      subject: template.subject,
-      html: template.html,
-      text: template.text,
-    });
+  const sent = await sendViaSmtp({
+    to,
+    subject: template.subject,
+    html: template.html,
+    text: template.text,
+    eventType: input.eventType,
+    uniqueKey,
+  });
 
-    if (error) {
-      console.error("[email] Resend error", error);
-      return { sent: false, skipped: false, reason: "send_failed" };
-    }
-
-    const existing = await admin
-      .from("email_events")
-      .select("id")
-      .eq("unique_key", uniqueKey)
-      .maybeSingle();
-
-    if (existing.data?.id) {
-      await markEmailEventSent(uniqueKey);
-    } else {
-      await recordEmailEvent({
-        userId: input.userId,
-        eventType: input.eventType,
-        uniqueKey,
-        requestId: input.requestId,
-        bookingId: input.bookingId,
-      });
-    }
-
-    return { sent: true, skipped: false };
-  } catch (err) {
-    console.error("[email] send failed", err);
+  if (!sent) {
     return { sent: false, skipped: false, reason: "send_failed" };
   }
+
+  const existing = await admin
+    .from("email_events")
+    .select("id")
+    .eq("unique_key", uniqueKey)
+    .maybeSingle();
+
+  if (existing.data?.id) {
+    await markEmailEventSent(uniqueKey);
+  } else {
+    await recordEmailEvent({
+      userId: input.userId,
+      eventType: input.eventType,
+      uniqueKey,
+      requestId: input.requestId,
+      bookingId: input.bookingId,
+    });
+  }
+
+  return { sent: true, skipped: false };
 }
 
 async function sendScheduledRow(
@@ -264,31 +303,27 @@ async function sendScheduledRow(
 
   const locale = await resolveEmailLocale(input.userId, input.context?.locale);
   const template = buildEmailTemplate(input.eventType, input.context ?? {}, locale);
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
-    console.info("[email] scheduled send skipped (no API key)", uniqueKey);
+
+  if (!readSmtpConfig()) {
+    console.info("[email] scheduled send skipped (SMTP not configured)", uniqueKey);
     return { sent: false, skipped: true, reason: "no_api_key" };
   }
 
-  try {
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from: emailFromAddress(),
-      to,
-      subject: template.subject,
-      html: template.html,
-      text: template.text,
-    });
-    if (error) {
-      console.error("[email] Resend error (scheduled)", error);
-      return { sent: false, skipped: false, reason: "send_failed" };
-    }
-    await markEmailEventSent(uniqueKey);
-    return { sent: true, skipped: false };
-  } catch (err) {
-    console.error("[email] scheduled send failed", err);
+  const sent = await sendViaSmtp({
+    to,
+    subject: template.subject,
+    html: template.html,
+    text: template.text,
+    eventType: input.eventType,
+    uniqueKey,
+  });
+
+  if (!sent) {
     return { sent: false, skipped: false, reason: "send_failed" };
   }
+
+  await markEmailEventSent(uniqueKey);
+  return { sent: true, skipped: false };
 }
 
 export type DueScheduledEmailRow = {

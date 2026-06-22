@@ -3,8 +3,10 @@
  * Kept for imports that expected booking completion email helpers.
  */
 
+import { isTransactionalEmailConfigured } from "@/lib/smtp-config";
+
 export { triggerBookingCompletedEmails as sendBookingCompletionEmails } from "@/lib/email-triggers";
 
 export function isBookingEmailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY?.trim() && process.env.EMAIL_FROM?.trim());
+  return isTransactionalEmailConfigured();
 }
