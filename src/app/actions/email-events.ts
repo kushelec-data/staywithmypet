@@ -4,6 +4,7 @@ import {
   triggerBookingCompletedEmails,
   triggerNewMessageEmail,
   triggerProfileCompletedEmail,
+  triggerRequestCancelledEmails,
   triggerRequestStatusEmails,
   triggerWelcomeEmailsForRole,
   triggerWelcomeForModeSwitch,
@@ -132,6 +133,30 @@ export async function sendRequestStatusEmailsAction(
   if (!data || data.receiver_id !== userId) return;
 
   await triggerRequestStatusEmails(requestId, decision);
+}
+
+export async function sendRequestCancelledEmailsAction(requestId: string): Promise<void> {
+  const userId = await requireUserId();
+  if (!userId || !requestId?.trim()) return;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("requests")
+    .select("sender_id")
+    .eq("id", requestId)
+    .maybeSingle();
+
+  if (!data || data.sender_id !== userId) return;
+
+  try {
+    await triggerRequestCancelledEmails(requestId);
+  } catch (err) {
+    console.error("[request-email] error", {
+      requestId,
+      stage: "cancellation",
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 export async function sendBookingCompletedEmailsAction(bookingId: string): Promise<void> {

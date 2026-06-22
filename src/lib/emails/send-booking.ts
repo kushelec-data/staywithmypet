@@ -15,6 +15,8 @@ export type BookingEmailType =
   | "request_received"
   | "request_declined_by_you"
   | "request_declined"
+  | "request_cancelled_by_you"
+  | "request_cancelled"
   | "booking_confirmed"
   | "booking_completed"
   | "review_reminder_parent"

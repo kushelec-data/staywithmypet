@@ -9,6 +9,8 @@ export type EmailEventType =
   | "request_received"
   | "request_declined_by_you"
   | "request_declined"
+  | "request_cancelled_by_you"
+  | "request_cancelled"
   | "booking_confirmed"
   | "booking_completed"
   | "review_reminder_parent"
@@ -32,6 +34,8 @@ export type EmailTemplateContext = {
   dateTo?: string | null;
   requestedDates?: string[] | null;
   otherPartyName?: string;
+  /** Display name of the request receiver (for cancellation emails). */
+  receiverName?: string;
   bookingId?: string;
   packageName?: string;
   renewalDate?: string | null;

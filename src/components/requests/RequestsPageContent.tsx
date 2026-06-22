@@ -139,6 +139,8 @@ export function RequestsPageContent() {
     setRequests(patchRequestStatus(requests, requestId, "cancelled"));
     try {
       await cancelRequest(supabase, user.id, requestId);
+      const { sendRequestCancelledEmailsAction } = await import("@/app/actions/email-events");
+      void sendRequestCancelledEmailsAction(requestId);
       setActionSuccess(t.requests.cancelledSuccess);
     } catch (err) {
       setRequests(previous);

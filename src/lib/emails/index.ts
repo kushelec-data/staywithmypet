@@ -2,6 +2,10 @@ import { buildAutomatedEmailTemplate } from "@/lib/email-templates";
 import type { EmailLocale } from "@/lib/email-templates/locale";
 import { welcomePetParentTemplate } from "@/lib/emails/templates/welcome/pet-parent";
 import { welcomePetFriendTemplate } from "@/lib/emails/templates/welcome/pet-friend";
+import {
+  requestCancelledByYouTemplate,
+  requestCancelledNotifyTemplate,
+} from "@/lib/emails/templates/booking/request-cancelled";
 import { emailVerifiedTemplate } from "@/lib/emails/templates/verification/email-verified";
 import { phoneVerifiedTemplate } from "@/lib/emails/templates/verification/phone-verified";
 import type { EmailEventType, EmailTemplate, EmailTemplateContext } from "@/lib/emails/types";
@@ -40,6 +44,12 @@ export function buildEmailTemplate(
   if (eventType === "welcome_pet_friend") return welcomePetFriendTemplate(ctx);
   if (eventType === "email_verified") return emailVerifiedTemplate(ctx);
   if (eventType === "phone_verified") return phoneVerifiedTemplate(ctx);
+  if (eventType === "request_cancelled_by_you") {
+    return requestCancelledByYouTemplate(ctx, locale);
+  }
+  if (eventType === "request_cancelled") {
+    return requestCancelledNotifyTemplate(ctx, locale);
+  }
 
   throw new Error(`[emails] unsupported event type: ${eventType}`);
 }
@@ -70,6 +80,10 @@ export function defaultUniqueKey(
       return `request_declined_by_you_${options?.requestId ?? "unknown"}_${userId}`;
     case "request_declined":
       return `request_declined_${options?.requestId ?? "unknown"}_${userId}`;
+    case "request_cancelled_by_you":
+      return `request_cancelled_by_you_${options?.requestId ?? "unknown"}_${userId}`;
+    case "request_cancelled":
+      return `request_cancelled_${options?.requestId ?? "unknown"}_${userId}`;
     case "booking_confirmed":
       return `booking_confirmed_${options?.bookingId ?? "unknown"}_${userId}`;
     case "booking_completed":

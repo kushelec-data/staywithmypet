@@ -127,6 +127,7 @@ function requestContext(
   pet: { name: string; typeLabel: string },
   otherPartyName: string,
   senderName?: string,
+  receiverName?: string,
 ): EmailTemplateContext {
   return {
     petName: pet.name,
@@ -137,6 +138,7 @@ function requestContext(
     requestedDates: row.requested_dates,
     otherPartyName,
     senderName: senderName ?? otherPartyName,
+    receiverName,
     message: row.message,
   };
 }
@@ -356,6 +358,100 @@ export async function triggerRequestStatusEmails(
     },
     requestId: row.id,
   });
+}
+
+export async function triggerRequestCancelledEmails(requestId: string): Promise<void> {
+  const row = await loadRequest(requestId);
+  if (!row) {
+    console.warn("[request-email] error", {
+      requestId,
+      stage: "cancellation",
+      reason: "missing_row",
+    });
+    return;
+  }
+
+  const senderId = row.sender_id;
+  const receiverId = row.receiver_id;
+  const [pet, senderName, receiverName] = await Promise.all([
+    loadPet(row.pet_id),
+    loadDisplayName(senderId),
+    loadDisplayName(receiverId),
+  ]);
+
+  const senderRole = roleForUserOnRequest(row, senderId);
+  const senderTemplateKey =
+    senderRole === "pet_parent" ? "cancelled_by_you_parent" : "cancelled_by_you_friend";
+  console.info("[request-email] cancellation template selected", {
+    requestId,
+    eventType: "request_cancelled_by_you",
+    templateKey: senderTemplateKey,
+    recipientUserId: senderId,
+    role: senderRole,
+  });
+
+  const senderResult = await sendBookingEmailAsync({
+    type: "request_cancelled_by_you",
+    role: senderRole,
+    userId: senderId,
+    data: {
+      recipientName: senderName,
+      senderName,
+      receiverName,
+      ...requestContext(row, pet, receiverName, senderName, receiverName),
+    },
+    requestId: row.id,
+  });
+
+  console.info("[request-email] cancellation send result", {
+    requestId,
+    eventType: "request_cancelled_by_you",
+    ...senderResult,
+  });
+  if (!senderResult.sent) {
+    console.error("[request-email] error", {
+      requestId,
+      eventType: "request_cancelled_by_you",
+      reason: senderResult.reason ?? "unknown",
+    });
+  }
+
+  const receiverRole = roleForUserOnRequest(row, receiverId);
+  const receiverTemplateKey =
+    receiverRole === "pet_parent" ? "cancelled_notify_parent" : "cancelled_notify_friend";
+  console.info("[request-email] cancellation template selected", {
+    requestId,
+    eventType: "request_cancelled",
+    templateKey: receiverTemplateKey,
+    recipientUserId: receiverId,
+    role: receiverRole,
+  });
+
+  const receiverResult = await sendBookingEmailAsync({
+    type: "request_cancelled",
+    role: receiverRole,
+    userId: receiverId,
+    data: {
+      recipientName: receiverName,
+      senderName,
+      receiverName,
+      ...requestContext(row, pet, senderName, senderName, receiverName),
+    },
+    requestId: row.id,
+  });
+
+  console.info("[request-email] cancellation send result", {
+    requestId,
+    eventType: "request_cancelled",
+    ...receiverResult,
+  });
+  if (!receiverResult.sent) {
+    console.error("[request-email] error", {
+      requestId,
+      eventType: "request_cancelled",
+      reason: receiverResult.reason ?? "unknown",
+    });
+  }
 }
 
 function bookingStartsTomorrowAt(startDate: string): Date | null {
