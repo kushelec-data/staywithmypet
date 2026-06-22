@@ -2,7 +2,7 @@ import {
   formatExperienceLevelLabel,
   formatPetTypesWillingComfort,
 } from "@/lib/pet-care-labels";
-import { formatCareTypeLabel } from "@/lib/care-type-options";
+import { formatCareTypeLabel, formatCareTypeLabels } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 import { formatPetTypeLabel, normalizePetTypeValue } from "@/lib/pet-type-options";
 import { resolvedPetCarePreferences, type ProfileDetails } from "@/lib/profile-details";
@@ -61,7 +61,12 @@ export function buildPetFriendPreferenceChips(details: ProfileDetails | null | u
   }
 
   if (!chips.length && (care.available_care_types ?? []).length) {
-    chips.push(...(care.available_care_types ?? []).slice(0, 3));
+    chips.push(
+      ...formatCareTypeLabels(
+        care.available_care_types ?? [],
+        care.available_care_types_other,
+      ).slice(0, 3),
+    );
   }
 
   return chips.slice(0, 5);

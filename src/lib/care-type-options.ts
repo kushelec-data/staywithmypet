@@ -1,4 +1,4 @@
-import { isOtherOptionValue } from "@/lib/other-option";
+import { isOtherOptionValue, OTHER_OPTION_VALUE } from "@/lib/other-option";
 
 /** Stored care type values — keep unchanged in DB and new records. */
 export const CANONICAL_CARE_TYPE_OPTIONS = [
@@ -117,6 +117,63 @@ export function normalizeCareTypeFilterValue(raw: string): string | null {
   return null;
 }
 
+/** Resolve any stored/legacy care type string to its canonical stored value. */
+export function resolveCanonicalCareTypeStored(raw: string): string {
+  const trimmed = raw.trim();
+  if (CANONICAL_SET.has(trimmed)) return trimmed;
+
+  const key = normKey(trimmed);
+  const legacy = LEGACY_TO_CANONICAL[key];
+  if (legacy) return legacy;
+
+  for (const opt of CARE_TYPE_FILTER_OPTIONS) {
+    if (normKey(opt.value) === key) return opt.value;
+    if (opt.aliases?.some((alias) => normKey(alias) === key)) return opt.value;
+  }
+
+  return trimmed;
+}
+
+/** Drop duplicate care types (e.g. walks_only + Walks only + Walks → one entry). */
+export function dedupeCareTypeValues(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const raw of values) {
+    const trimmed = raw?.trim();
+    if (!trimmed) continue;
+
+    if (isOtherOptionValue(trimmed)) {
+      if (seen.has(OTHER_OPTION_VALUE)) continue;
+      seen.add(OTHER_OPTION_VALUE);
+      out.push(trimmed);
+      continue;
+    }
+
+    const canonical = resolveCanonicalCareTypeStored(trimmed);
+    const key = normKey(canonical);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+
+  return out;
+}
+
+export function dedupeCareTypeDisplayLabels(labels: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const label of labels) {
+    const key = normKey(label);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(label);
+  }
+
+  return out;
+}
+
 /** Human-readable label for any stored care type (canonical, legacy, or deprecated). */
 export function formatCareTypeLabel(
   raw: string | null | undefined,
@@ -148,12 +205,14 @@ export function formatCareTypeLabel(
   return trimmed;
 }
 
-/** Format a list of stored care types for display. */
+/** Format a list of stored care types for display (deduped). */
 export function formatCareTypeLabels(
   values: string[],
   otherCustom?: string | null,
 ): string[] {
-  return values
+  const labels = dedupeCareTypeValues(values)
     .map((v) => formatCareTypeLabel(v, otherCustom))
     .filter((label): label is string => Boolean(label?.trim()));
+
+  return dedupeCareTypeDisplayLabels(labels);
 }

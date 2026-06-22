@@ -3,7 +3,11 @@ import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 import { translatePetDisplayLabel, translatePetLocationArea, translatePetSpecies } from "@/lib/pet-display-translations";
 import { genderDisplayLabel } from "@/lib/pet-data";
-import { formatCareTypeLabel } from "@/lib/care-type-options";
+import {
+  dedupeCareTypeDisplayLabels,
+  dedupeCareTypeValues,
+  formatCareTypeLabel,
+} from "@/lib/care-type-options";
 import { translateProfileLabel, translateProfileLabels } from "@/lib/profile-translations";
 import type { Locale } from "@/i18n/translations";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
@@ -251,14 +255,16 @@ export function buildPublicPetCareColumns(
   pet: PublicSearchPet,
   locale: Locale = "en",
 ): PublicCareColumns {
-  const services = translateProfileLabels(
-    formatListWithOtherDisplay(
-      pet.careTypes,
-      pet.careTypesOther,
-      (value) => formatCareTypeLabel(value, pet.careTypesOther) ?? value,
-    ).filter(Boolean),
-    locale,
+  const formattedServices = formatListWithOtherDisplay(
+    dedupeCareTypeValues(pet.careTypes),
+    pet.careTypesOther,
+    (value) => formatCareTypeLabel(value, pet.careTypesOther) ?? value,
+  ).filter(Boolean);
+
+  const services = dedupeCareTypeDisplayLabels(
+    translateProfileLabels(formattedServices, locale),
   );
+
   const walks = pet.walkNeeds?.trim()
     ? [translateProfileLabel(pet.walkNeeds.trim(), locale)]
     : [translateProfileLabel("None", locale)];

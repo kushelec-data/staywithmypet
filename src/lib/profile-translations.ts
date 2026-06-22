@@ -124,6 +124,7 @@ const PROFILE_LABEL_PAIRS: Pair[] = [
   ["At pet friend's home", "Loomasõbra juures"],
   ["At pet owner's home", "Loomaomaniku juures"],
   ["Walks only", "Jalutuskäigud"],
+  ["walks_only", "Jalutuskäigud"],
   ["Overnight care / 24h stay", "Ööpäevaringne hoid / 24h hoid"],
   ["First-time Pet Friend", "Esmakordne loomasõber"],
   ["Some pet care experience", "Mõningane kogemus"],
@@ -439,6 +440,7 @@ const PROFILE_OPTION_PAIRS: Pair[] = [
   ["At pet friend's home", "Loomasõbra juures"],
   ["At pet owner's home", "Loomaomaniku juures"],
   ["Walks only", "Jalutuskäigud"],
+  ["walks_only", "Jalutuskäigud"],
   ["First-time Pet Friend", "Esmakordne loomasõber"],
   ["Some pet care experience", "Mõningane kogemus"],
   ["Experienced with pets", "Väga kogenud"],
@@ -535,10 +537,16 @@ export function getProfileHelperEt(text: string | null | undefined): string | un
 export function translateProfileLabel(text: string | null | undefined, locale: Locale): string {
   if (!text?.trim()) return "";
   const trimmed = text.trim();
+  const formatted = formatCareTypeLabel(trimmed) ?? trimmed;
   if (locale !== "et") {
-    return formatCareTypeLabel(trimmed) ?? trimmed;
+    return formatted;
   }
-  return lookupEt(trimmed) ?? translatePetDisplayLabel(trimmed, locale) ?? formatCareTypeLabel(trimmed) ?? trimmed;
+  return (
+    lookupEt(trimmed) ??
+    lookupEt(formatted) ??
+    translatePetDisplayLabel(trimmed, locale) ??
+    formatted
+  );
 }
 
 export function translateProfileLabels(values: string[], locale: Locale): string[] {

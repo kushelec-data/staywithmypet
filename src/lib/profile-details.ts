@@ -1,4 +1,4 @@
-import { careTypeOptions, formatCareTypeLabel as formatCanonicalCareTypeLabel } from "@/lib/care-type-options";
+import { careTypeOptions, dedupeCareTypeValues, formatCareTypeLabel as formatCanonicalCareTypeLabel } from "@/lib/care-type-options";
 import { sizeOptions } from "@/lib/legacy/search-filters";
 import {
   formatPetTypeLabel,
@@ -536,7 +536,7 @@ export function carePreferenceDisplayGroups(details: ProfileDetails): {
       care.pet_types_willing_other,
     ),
     careTypes: formatListWithOtherDisplay(
-      care.available_care_types ?? [],
+      dedupeCareTypeValues(care.available_care_types ?? []),
       care.available_care_types_other,
       (value) => formatCareTypeLabel(value, care.available_care_types_other),
     ),

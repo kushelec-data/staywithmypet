@@ -72,6 +72,7 @@ const PET_LISTING_PAIRS: Pair[] = [
   ["Either / flexible", "Paindlik / mõlemad sobivad"],
   ["Care Type", "Hoiutüüp"],
   ["Walks only", "Jalutuskäigud"],
+  ["walks_only", "Jalutuskäigud"],
   ["Daycare", "Päevahoid"],
   ["Home visits", "Kodukülastused"],
   ["Feeding only", "Ainult toitmine"],
