@@ -1,7 +1,6 @@
 import "server-only";
 
-import { sendBookingEmail, sendBookingEmailAsync } from "@/lib/emails/send-booking";
-import { resolveRecipientEmail } from "@/lib/email-send";
+import { sendBookingEmailAsync, REVIEW_REMINDER_DELAY_MS } from "@/lib/emails/send-booking";
 import { queueEmailEvent } from "@/lib/email-send";
 import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
 import { speciesDisplayLabel, type PetSpecies } from "@/lib/pet-data";
@@ -177,7 +176,11 @@ export function triggerWelcomeForModeSwitch(userId: string, targetMode: ProfileA
 }
 
 export function triggerProfileCompletedEmail(userId: string, recipientName?: string): void {
-  triggerProfileVerifiedEmail(userId, recipientName);
+  queueEmailEvent({
+    eventType: "profile_completed",
+    userId,
+    context: { recipientName },
+  });
 }
 
 /** Excel row 1 — profile verified / welcome (once per user). */
@@ -207,36 +210,16 @@ export function triggerPhoneVerified(userId: string, recipientName?: string): vo
 
 export async function triggerRequestSentEmail(requestId: string): Promise<void> {
   const row = await loadRequest(requestId);
-  if (!row?.sender_id) {
-    console.warn("[request-email] error", { requestId, stage: "request_sent", reason: "missing_row" });
-    return;
-  }
+  if (!row?.sender_id) return;
 
   const role = roleForUserOnRequest(row, row.sender_id);
-  const templateKey = role === "pet_parent" ? "request_sent_parent" : "request_sent_friend";
-  console.info("[request-email] template selected", {
-    requestId,
-    eventType: "request_sent",
-    templateKey,
-    recipientUserId: row.sender_id,
-    role,
-  });
-
-  const [pet, senderName, otherName, recipientEmail] = await Promise.all([
+  const [pet, senderName, otherName] = await Promise.all([
     loadPet(row.pet_id),
     loadDisplayName(row.sender_id),
     loadDisplayName(row.receiver_id),
-    resolveRecipientEmail(row.sender_id),
   ]);
 
-  console.info("[request-email] recipient email", {
-    requestId,
-    eventType: "request_sent",
-    userId: row.sender_id,
-    email: recipientEmail ?? "(none)",
-  });
-
-  const result = await sendBookingEmailAsync({
+  await sendBookingEmailAsync({
     type: "request_sent",
     role,
     userId: row.sender_id,
@@ -247,54 +230,20 @@ export async function triggerRequestSentEmail(requestId: string): Promise<void> 
     },
     requestId: row.id,
   });
-
-  console.info("[request-email] send result", { requestId, eventType: "request_sent", ...result });
-  if (!result.sent) {
-    console.error("[request-email] error", {
-      requestId,
-      eventType: "request_sent",
-      reason: result.reason ?? "unknown",
-    });
-  }
 }
 
 export async function triggerRequestReceivedEmail(requestId: string): Promise<void> {
   const row = await loadRequest(requestId);
-  if (!row?.receiver_id) {
-    console.warn("[request-email] error", {
-      requestId,
-      stage: "request_received",
-      reason: "missing_row_or_receiver",
-    });
-    return;
-  }
+  if (!row?.receiver_id) return;
 
   const role = roleForUserOnRequest(row, row.receiver_id);
-  const templateKey =
-    role === "pet_parent" ? "request_received_parent" : "request_received_friend";
-  console.info("[request-email] template selected", {
-    requestId,
-    eventType: "request_received",
-    templateKey,
-    recipientUserId: row.receiver_id,
-    role,
-  });
-
-  const [pet, senderName, recipientName, recipientEmail] = await Promise.all([
+  const [pet, senderName, recipientName] = await Promise.all([
     loadPet(row.pet_id),
     loadDisplayName(row.sender_id),
     loadDisplayName(row.receiver_id),
-    resolveRecipientEmail(row.receiver_id),
   ]);
 
-  console.info("[request-email] recipient email", {
-    requestId,
-    eventType: "request_received",
-    userId: row.receiver_id,
-    email: recipientEmail ?? "(none)",
-  });
-
-  const result = await sendBookingEmailAsync({
+  await sendBookingEmailAsync({
     type: "request_received",
     role,
     userId: row.receiver_id,
@@ -305,15 +254,6 @@ export async function triggerRequestReceivedEmail(requestId: string): Promise<vo
     },
     requestId: row.id,
   });
-
-  console.info("[request-email] send result", { requestId, eventType: "request_received", ...result });
-  if (!result.sent) {
-    console.error("[request-email] error", {
-      requestId,
-      eventType: "request_received",
-      reason: result.reason ?? "unknown",
-    });
-  }
 }
 
 export async function triggerRequestStatusEmails(
@@ -340,36 +280,30 @@ export async function triggerRequestStatusEmails(
 
   const ctx = requestContext(row, pet, declinerPartyName);
 
-  sendBookingEmail({
-    type: "request_declined_by_you",
-    role: roleForUserOnRequest(row, declinerId),
-    userId: declinerId,
-    data: { recipientName: declinerName, ...ctx },
-    requestId: row.id,
-  });
-
-  sendBookingEmail({
-    type: "request_declined",
-    role: roleForUserOnRequest(row, senderId),
-    userId: senderId,
-    data: {
-      recipientName: senderName,
-      ...requestContext(row, pet, senderPartyName),
-    },
-    requestId: row.id,
-  });
+  await Promise.all([
+    sendBookingEmailAsync({
+      type: "request_declined_by_you",
+      role: roleForUserOnRequest(row, declinerId),
+      userId: declinerId,
+      data: { recipientName: declinerName, ...ctx },
+      requestId: row.id,
+    }),
+    sendBookingEmailAsync({
+      type: "request_declined",
+      role: roleForUserOnRequest(row, senderId),
+      userId: senderId,
+      data: {
+        recipientName: senderName,
+        ...requestContext(row, pet, senderPartyName),
+      },
+      requestId: row.id,
+    }),
+  ]);
 }
 
 export async function triggerRequestCancelledEmails(requestId: string): Promise<void> {
   const row = await loadRequest(requestId);
-  if (!row) {
-    console.warn("[request-email] error", {
-      requestId,
-      stage: "cancellation",
-      reason: "missing_row",
-    });
-    return;
-  }
+  if (!row) return;
 
   const senderId = row.sender_id;
   const receiverId = row.receiver_id;
@@ -380,78 +314,34 @@ export async function triggerRequestCancelledEmails(requestId: string): Promise<
   ]);
 
   const senderRole = roleForUserOnRequest(row, senderId);
-  const senderTemplateKey =
-    senderRole === "pet_parent" ? "cancelled_by_you_parent" : "cancelled_by_you_friend";
-  console.info("[request-email] cancellation template selected", {
-    requestId,
-    eventType: "request_cancelled_by_you",
-    templateKey: senderTemplateKey,
-    recipientUserId: senderId,
-    role: senderRole,
-  });
-
-  const senderResult = await sendBookingEmailAsync({
-    type: "request_cancelled_by_you",
-    role: senderRole,
-    userId: senderId,
-    data: {
-      recipientName: senderName,
-      senderName,
-      receiverName,
-      ...requestContext(row, pet, receiverName, senderName, receiverName),
-    },
-    requestId: row.id,
-  });
-
-  console.info("[request-email] cancellation send result", {
-    requestId,
-    eventType: "request_cancelled_by_you",
-    ...senderResult,
-  });
-  if (!senderResult.sent) {
-    console.error("[request-email] error", {
-      requestId,
-      eventType: "request_cancelled_by_you",
-      reason: senderResult.reason ?? "unknown",
-    });
-  }
-
   const receiverRole = roleForUserOnRequest(row, receiverId);
-  const receiverTemplateKey =
-    receiverRole === "pet_parent" ? "cancelled_notify_parent" : "cancelled_notify_friend";
-  console.info("[request-email] cancellation template selected", {
-    requestId,
-    eventType: "request_cancelled",
-    templateKey: receiverTemplateKey,
-    recipientUserId: receiverId,
-    role: receiverRole,
-  });
 
-  const receiverResult = await sendBookingEmailAsync({
-    type: "request_cancelled",
-    role: receiverRole,
-    userId: receiverId,
-    data: {
-      recipientName: receiverName,
-      senderName,
-      receiverName,
-      ...requestContext(row, pet, senderName, senderName, receiverName),
-    },
-    requestId: row.id,
-  });
-
-  console.info("[request-email] cancellation send result", {
-    requestId,
-    eventType: "request_cancelled",
-    ...receiverResult,
-  });
-  if (!receiverResult.sent) {
-    console.error("[request-email] error", {
-      requestId,
-      eventType: "request_cancelled",
-      reason: receiverResult.reason ?? "unknown",
-    });
-  }
+  await Promise.all([
+    sendBookingEmailAsync({
+      type: "request_cancelled_by_you",
+      role: senderRole,
+      userId: senderId,
+      data: {
+        recipientName: senderName,
+        senderName,
+        receiverName,
+        ...requestContext(row, pet, receiverName, senderName, receiverName),
+      },
+      requestId: row.id,
+    }),
+    sendBookingEmailAsync({
+      type: "request_cancelled",
+      role: receiverRole,
+      userId: receiverId,
+      data: {
+        recipientName: receiverName,
+        senderName,
+        receiverName,
+        ...requestContext(row, pet, senderName, senderName, receiverName),
+      },
+      requestId: row.id,
+    }),
+  ]);
 }
 
 function bookingStartsTomorrowAt(startDate: string): Date | null {
@@ -466,17 +356,17 @@ function bookingStartsTomorrowAt(startDate: string): Date | null {
   return reminder;
 }
 
-function scheduleBookingStartsTomorrowEmail(
+async function scheduleBookingStartsTomorrowEmail(
   booking: BookingEmailRow,
   requestId: string,
   userId: string,
   role: EmailRecipientRole,
   ctx: EmailTemplateContext,
-): void {
+): Promise<void> {
   const scheduleAt = bookingStartsTomorrowAt(booking.start_date);
   if (!scheduleAt) return;
 
-  sendBookingEmail({
+  await sendBookingEmailAsync({
     type:
       role === "pet_parent" ? "booking_starts_tomorrow_parent" : "booking_starts_tomorrow_friend",
     role,
@@ -516,26 +406,28 @@ export async function triggerBookingConfirmedForRequest(requestId: string): Prom
   const pet = await loadPet(booking.pet_id);
   const ctx = bookingContext(booking, pet, careType, row);
 
-  for (const userId of [booking.pet_parent_id, booking.pet_friend_id]) {
-    const recipientName = await loadDisplayName(userId);
-    const otherId =
-      userId === booking.pet_parent_id ? booking.pet_friend_id : booking.pet_parent_id;
-    const otherName = await loadDisplayName(otherId);
-    const role: EmailRecipientRole =
-      userId === booking.pet_parent_id ? "pet_parent" : "pet_friend";
-    const data = { ...ctx, recipientName, otherPartyName: otherName, recipientRole: role };
+  await Promise.all(
+    [booking.pet_parent_id, booking.pet_friend_id].map(async (userId) => {
+      const recipientName = await loadDisplayName(userId);
+      const otherId =
+        userId === booking.pet_parent_id ? booking.pet_friend_id : booking.pet_parent_id;
+      const otherName = await loadDisplayName(otherId);
+      const role: EmailRecipientRole =
+        userId === booking.pet_parent_id ? "pet_parent" : "pet_friend";
+      const data = { ...ctx, recipientName, otherPartyName: otherName, recipientRole: role };
 
-    sendBookingEmail({
-      type: "booking_confirmed",
-      role,
-      userId,
-      data,
-      requestId,
-      bookingId: booking.id,
-    });
+      await sendBookingEmailAsync({
+        type: "booking_confirmed",
+        role,
+        userId,
+        data,
+        requestId,
+        bookingId: booking.id,
+      });
 
-    scheduleBookingStartsTomorrowEmail(booking, requestId, userId, role, data);
-  }
+      await scheduleBookingStartsTomorrowEmail(booking, requestId, userId, role, data);
+    }),
+  );
 }
 
 export async function triggerBookingCompletedEmails(bookingId: string): Promise<void> {
@@ -546,23 +438,37 @@ export async function triggerBookingCompletedEmails(bookingId: string): Promise<
   const careType = row?.care_type ?? null;
   const pet = await loadPet(booking.pet_id);
   const ctx = bookingContext(booking, pet, careType, row);
+  const reviewScheduleAt = new Date(Date.now() + REVIEW_REMINDER_DELAY_MS);
 
-  for (const userId of [booking.pet_parent_id, booking.pet_friend_id]) {
-    const recipientName = await loadDisplayName(userId);
-    const otherId =
-      userId === booking.pet_parent_id ? booking.pet_friend_id : booking.pet_parent_id;
-    const otherName = await loadDisplayName(otherId);
-    const role: EmailRecipientRole =
-      userId === booking.pet_parent_id ? "pet_parent" : "pet_friend";
+  await Promise.all(
+    [booking.pet_parent_id, booking.pet_friend_id].map(async (userId) => {
+      const recipientName = await loadDisplayName(userId);
+      const otherId =
+        userId === booking.pet_parent_id ? booking.pet_friend_id : booking.pet_parent_id;
+      const otherName = await loadDisplayName(otherId);
+      const role: EmailRecipientRole =
+        userId === booking.pet_parent_id ? "pet_parent" : "pet_friend";
+      const data = { ...ctx, recipientName, otherPartyName: otherName, recipientRole: role };
 
-    sendBookingEmail({
-      type: role === "pet_parent" ? "review_reminder_parent" : "review_reminder_friend",
-      role,
-      userId,
-      data: { ...ctx, recipientName, otherPartyName: otherName },
-      requestId: booking.request_id,
-      bookingId: booking.id,
-    });
-  }
+      await sendBookingEmailAsync({
+        type: "booking_completed",
+        role,
+        userId,
+        data,
+        requestId: booking.request_id,
+        bookingId: booking.id,
+      });
+
+      await sendBookingEmailAsync({
+        type: role === "pet_parent" ? "review_reminder_parent" : "review_reminder_friend",
+        role,
+        userId,
+        data: { ...ctx, recipientName, otherPartyName: otherName },
+        requestId: booking.request_id,
+        bookingId: booking.id,
+        scheduleAt: reviewScheduleAt,
+      });
+    }),
+  );
 }
 

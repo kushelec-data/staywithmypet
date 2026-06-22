@@ -1,5 +1,6 @@
 import { PASSWORD_RESET_PATH } from "@/lib/auth-recovery";
 import { logRecoveryExchangeDev, recoveryTypeFromQuery } from "@/lib/auth-recovery-dev";
+import { syncProfileEmailVerified } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
@@ -54,6 +55,19 @@ export async function GET(request: Request) {
       );
     }
 
+    if (type === "signup" || type === "email_change" || type === "email") {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const newlyVerified = await syncProfileEmailVerified(supabase, user);
+        if (newlyVerified) {
+          const { sendEmailVerifiedEmailAction } = await import("@/app/actions/email-events");
+          await sendEmailVerifiedEmailAction();
+        }
+      }
+    }
+
     return redirectTo(url.origin, next);
   }
 
@@ -70,6 +84,17 @@ export async function GET(request: Request) {
         url.origin,
         `${PASSWORD_RESET_PATH}?recovery_error=${encodeURIComponent(error.message)}`,
       );
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user?.email_confirmed_at) {
+      const newlyVerified = await syncProfileEmailVerified(supabase, user);
+      if (newlyVerified) {
+        const { sendEmailVerifiedEmailAction } = await import("@/app/actions/email-events");
+        await sendEmailVerifiedEmailAction();
+      }
     }
 
     return redirectTo(url.origin, next);

@@ -33,6 +33,53 @@ export type SendTransactionalEmailResult = {
   reason?: "duplicate" | "no_email" | "no_api_key" | "no_admin" | "send_failed" | "scheduled";
 };
 
+type EmailEventLogMeta = {
+  userId: string;
+  requestId?: string | null;
+  bookingId?: string | null;
+  uniqueKey?: string;
+};
+
+export function logEmailEventTrigger(
+  eventType: EmailEventType,
+  meta: EmailEventLogMeta,
+): void {
+  console.info("[email-event] trigger", {
+    eventType,
+    userId: meta.userId,
+    requestId: meta.requestId ?? null,
+    bookingId: meta.bookingId ?? null,
+    uniqueKey: meta.uniqueKey ?? null,
+  });
+}
+
+export function logEmailEventRecipient(
+  eventType: EmailEventType,
+  meta: EmailEventLogMeta & { email: string | null },
+): void {
+  console.info("[email-event] recipient", {
+    eventType,
+    userId: meta.userId,
+    email: meta.email ?? "(none)",
+    requestId: meta.requestId ?? null,
+    bookingId: meta.bookingId ?? null,
+  });
+}
+
+export function logEmailEventSendResult(
+  eventType: EmailEventType,
+  meta: EmailEventLogMeta,
+  result: SendTransactionalEmailResult,
+): void {
+  console.info("[email-event] send result", {
+    eventType,
+    userId: meta.userId,
+    requestId: meta.requestId ?? null,
+    bookingId: meta.bookingId ?? null,
+    ...result,
+  });
+}
+
 type SmtpMessage = {
   to: string;
   subject: string;
@@ -187,18 +234,31 @@ export async function scheduleTransactionalEmail(
       bookingId: input.bookingId ?? undefined,
     });
 
+  const logMeta: EmailEventLogMeta = {
+    userId: input.userId,
+    requestId: input.requestId,
+    bookingId: input.bookingId,
+    uniqueKey,
+  };
+
+  logEmailEventTrigger(input.eventType, logMeta);
+
   if (await hasEmailEvent(uniqueKey)) {
-    return { sent: false, skipped: true, reason: "duplicate" };
+    const result = { sent: false, skipped: true, reason: "duplicate" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   const scheduledFor = input.scheduledFor ?? null;
   if (!scheduledFor) {
-    return sendTransactionalEmail(input);
+    return sendTransactionalEmail({ ...input, uniqueKey });
   }
 
   const admin = createAdminClient();
   if (!admin) {
-    return { sent: false, skipped: true, reason: "no_admin" };
+    const result = { sent: false, skipped: true, reason: "no_admin" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   await recordEmailEvent({
@@ -211,7 +271,9 @@ export async function scheduleTransactionalEmail(
     sent: false,
   });
 
-  return { sent: false, skipped: false, scheduled: true, reason: "scheduled" };
+  const result = { sent: false, skipped: false, scheduled: true, reason: "scheduled" as const };
+  logEmailEventSendResult(input.eventType, logMeta, result);
+  return result;
 }
 
 export async function sendTransactionalEmail(
@@ -224,6 +286,15 @@ export async function sendTransactionalEmail(
       bookingId: input.bookingId ?? undefined,
     });
 
+  const logMeta: EmailEventLogMeta = {
+    userId: input.userId,
+    requestId: input.requestId,
+    bookingId: input.bookingId,
+    uniqueKey,
+  };
+
+  logEmailEventTrigger(input.eventType, logMeta);
+
   if (await hasEmailEvent(uniqueKey)) {
     const admin = createAdminClient();
     if (admin) {
@@ -235,29 +306,38 @@ export async function sendTransactionalEmail(
       if (data?.scheduled_for && !data?.sent_at) {
         const due = new Date(data.scheduled_for).getTime() <= Date.now();
         if (due) {
-          return sendScheduledRow(input, uniqueKey);
+          return sendScheduledRow(input, uniqueKey, logMeta);
         }
       }
     }
-    return { sent: false, skipped: true, reason: "duplicate" };
+    const duplicateResult = { sent: false, skipped: true, reason: "duplicate" as const };
+    logEmailEventSendResult(input.eventType, logMeta, duplicateResult);
+    return duplicateResult;
   }
 
   const to = await resolveRecipientEmail(input.userId);
+  logEmailEventRecipient(input.eventType, { ...logMeta, email: to });
   if (!to) {
-    return { sent: false, skipped: true, reason: "no_email" };
+    const result = { sent: false, skipped: true, reason: "no_email" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   const locale = await resolveEmailLocale(input.userId, input.context?.locale);
   const template = buildEmailTemplate(input.eventType, input.context ?? {}, locale);
 
   if (!readSmtpConfig()) {
-    return { sent: false, skipped: true, reason: "no_api_key" };
+    const result = { sent: false, skipped: true, reason: "no_api_key" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   const admin = createAdminClient();
   if (!admin) {
     console.warn("[email] SUPABASE_SERVICE_ROLE_KEY not set — cannot record sent events");
-    return { sent: false, skipped: true, reason: "no_admin" };
+    const result = { sent: false, skipped: true, reason: "no_admin" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   const sent = await sendViaSmtp({
@@ -270,7 +350,9 @@ export async function sendTransactionalEmail(
   });
 
   if (!sent) {
-    return { sent: false, skipped: false, reason: "send_failed" };
+    const result = { sent: false, skipped: false, reason: "send_failed" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   const existing = await admin
@@ -291,22 +373,32 @@ export async function sendTransactionalEmail(
     });
   }
 
-  return { sent: true, skipped: false };
+  const successResult = { sent: true, skipped: false };
+  logEmailEventSendResult(input.eventType, logMeta, successResult);
+  return successResult;
 }
 
 async function sendScheduledRow(
   input: SendTransactionalEmailInput,
   uniqueKey: string,
+  logMeta: EmailEventLogMeta,
 ): Promise<SendTransactionalEmailResult> {
   const to = await resolveRecipientEmail(input.userId);
-  if (!to) return { sent: false, skipped: true, reason: "no_email" };
+  logEmailEventRecipient(input.eventType, { ...logMeta, email: to });
+  if (!to) {
+    const result = { sent: false, skipped: true, reason: "no_email" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
+  }
 
   const locale = await resolveEmailLocale(input.userId, input.context?.locale);
   const template = buildEmailTemplate(input.eventType, input.context ?? {}, locale);
 
   if (!readSmtpConfig()) {
     console.info("[email] scheduled send skipped (SMTP not configured)", uniqueKey);
-    return { sent: false, skipped: true, reason: "no_api_key" };
+    const result = { sent: false, skipped: true, reason: "no_api_key" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   const sent = await sendViaSmtp({
@@ -319,11 +411,15 @@ async function sendScheduledRow(
   });
 
   if (!sent) {
-    return { sent: false, skipped: false, reason: "send_failed" };
+    const result = { sent: false, skipped: false, reason: "send_failed" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
   }
 
   await markEmailEventSent(uniqueKey);
-  return { sent: true, skipped: false };
+  const successResult = { sent: true, skipped: false };
+  logEmailEventSendResult(input.eventType, logMeta, successResult);
+  return successResult;
 }
 
 export type DueScheduledEmailRow = {

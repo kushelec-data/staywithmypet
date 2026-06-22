@@ -8,6 +8,8 @@ import {
   triggerRequestStatusEmails,
   triggerWelcomeEmailsForRole,
   triggerWelcomeForModeSwitch,
+  triggerEmailVerified,
+  triggerPhoneVerified,
 } from "@/lib/email-triggers";
 import { computeProfileCompleteness } from "@/lib/profile-completeness";
 import { resolveActiveMode } from "@/lib/profile-mode";
@@ -60,6 +62,31 @@ export async function sendProfileCompletedEmailAction(): Promise<void> {
   if (completeness.percent < 100) return;
 
   triggerProfileCompletedEmail(userId, profile.display_name?.trim() || undefined);
+}
+
+export async function sendEmailVerifiedEmailAction(): Promise<void> {
+  const userId = await requireUserId();
+  if (!userId) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email_confirmed_at) return;
+
+  const profile = await fetchUserProfile(supabase, userId);
+  triggerEmailVerified(userId, profile?.display_name?.trim() || undefined);
+}
+
+export async function sendPhoneVerifiedEmailAction(): Promise<void> {
+  const userId = await requireUserId();
+  if (!userId) return;
+
+  const supabase = await createClient();
+  const profile = await fetchUserProfile(supabase, userId);
+  if (!profile?.phone_verified) return;
+
+  triggerPhoneVerified(userId, profile.display_name?.trim() || undefined);
 }
 
 export async function sendRequestReceivedEmailAction(requestId: string): Promise<void> {
@@ -132,7 +159,15 @@ export async function sendRequestStatusEmailsAction(
 
   if (!data || data.receiver_id !== userId) return;
 
-  await triggerRequestStatusEmails(requestId, decision);
+  try {
+    await triggerRequestStatusEmails(requestId, decision);
+  } catch (err) {
+    console.error("[email-event] request status emails failed", {
+      requestId,
+      decision,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 export async function sendRequestCancelledEmailsAction(requestId: string): Promise<void> {

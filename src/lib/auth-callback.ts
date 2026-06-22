@@ -92,8 +92,14 @@ export async function ensureOAuthProfile(
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       await ensureUserProfile(supabase, user);
-      await syncProfileEmailVerified(supabase, user);
+      const newlyEmailVerified = await syncProfileEmailVerified(supabase, user);
       ensureError = null;
+
+      if (newlyEmailVerified) {
+        const { triggerEmailVerified } = await import("@/lib/email-triggers");
+        const profile = await fetchUserProfile(supabase, user.id);
+        triggerEmailVerified(user.id, profile?.display_name?.trim() || undefined);
+      }
     } catch (err) {
       ensureError = err instanceof Error ? err.message : String(err);
       logAuthCallbackWarn("profile ensure failed", {

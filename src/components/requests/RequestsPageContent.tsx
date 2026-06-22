@@ -107,8 +107,12 @@ export function RequestsPageContent() {
     setRequests(patchRequestStatus(requests, requestId, decision));
     try {
       const { conversationId } = await respondToRequest(supabase, user.id, requestId, decision);
-      const { sendRequestStatusEmailsAction } = await import("@/app/actions/email-events");
-      void sendRequestStatusEmailsAction(requestId, decision);
+      try {
+        const { sendRequestStatusEmailsAction } = await import("@/app/actions/email-events");
+        await sendRequestStatusEmailsAction(requestId, decision);
+      } catch (emailErr) {
+        console.error("[email-event] accept/decline action failed", emailErr);
+      }
       if (decision === "accepted" && conversationId) {
         router.push(`/messages?conversation=${conversationId}`);
         return;
@@ -139,8 +143,12 @@ export function RequestsPageContent() {
     setRequests(patchRequestStatus(requests, requestId, "cancelled"));
     try {
       await cancelRequest(supabase, user.id, requestId);
-      const { sendRequestCancelledEmailsAction } = await import("@/app/actions/email-events");
-      void sendRequestCancelledEmailsAction(requestId);
+      try {
+        const { sendRequestCancelledEmailsAction } = await import("@/app/actions/email-events");
+        await sendRequestCancelledEmailsAction(requestId);
+      } catch (emailErr) {
+        console.error("[email-event] cancel action failed", emailErr);
+      }
       setActionSuccess(t.requests.cancelledSuccess);
     } catch (err) {
       setRequests(previous);

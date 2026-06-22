@@ -11,7 +11,10 @@ function isAuthorized(request: Request): boolean {
 
 /**
  * POST /api/cron/process-scheduled-emails
- * Sends due review reminders and other scheduled transactional emails.
+ * Sends due review reminders, booking-starts-tomorrow, and other scheduled transactional emails.
+ *
+ * Vercel Cron (see vercel.json): hourly — POST /api/cron/process-scheduled-emails
+ * Auth: Authorization: Bearer CRON_SECRET (Vercel) or x-cron-secret / x-email-internal-secret
  */
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {

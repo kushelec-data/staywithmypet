@@ -5,16 +5,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
 function isAuthorized(request: Request): boolean {
-  const secret = process.env.EMAIL_INTERNAL_SECRET?.trim();
+  const secret = process.env.CRON_SECRET?.trim() || process.env.EMAIL_INTERNAL_SECRET?.trim();
   if (!secret) return false;
+  const header = request.headers.get("authorization");
+  if (header === `Bearer ${secret}`) return true;
+  if (request.headers.get("x-cron-secret") === secret) return true;
   return request.headers.get("x-email-internal-secret") === secret;
 }
 
 /**
- * Scheduled job stub: send 7-day expiry and 2-day auto-renewal reminders.
+ * Scheduled job: send 7-day expiry and 2-day auto-renewal reminders.
  *
- * Configure a host cron (e.g. daily) POST /api/cron/membership-reminders
- * with header x-email-internal-secret: EMAIL_INTERNAL_SECRET
+ * Vercel Cron (see vercel.json): daily at 09:00 UTC — POST /api/cron/membership-reminders
+ * Auth: Authorization: Bearer CRON_SECRET (Vercel) or x-email-internal-secret / x-cron-secret
  */
 export async function POST(request: Request) {
   if (!isAuthorized(request)) {

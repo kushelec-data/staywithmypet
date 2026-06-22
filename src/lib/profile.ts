@@ -62,7 +62,7 @@ export async function ensureUserProfile(
 export async function syncProfileEmailVerified(
   supabase: SupabaseClient,
   user: User,
-): Promise<void> {
+): Promise<boolean> {
   const emailVerified = Boolean(user.email_confirmed_at);
 
   const { data: row, error: loadError } = await supabase
@@ -71,7 +71,7 @@ export async function syncProfileEmailVerified(
     .eq("id", user.id)
     .maybeSingle();
 
-  if (loadError || !row) return;
+  if (loadError || !row) return false;
 
   const merged = mergeDetailsTrustFlags(row.details, emailVerified);
   const current =
@@ -79,7 +79,8 @@ export async function syncProfileEmailVerified(
       ? (row.details as Record<string, unknown>)
       : {};
 
-  if (current.email_verified === emailVerified) return;
+  if (current.email_verified === emailVerified) return false;
 
   await supabase.from("profiles").update({ details: merged }).eq("id", user.id);
+  return emailVerified;
 }

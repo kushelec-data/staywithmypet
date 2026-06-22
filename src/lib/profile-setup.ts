@@ -684,7 +684,7 @@ export async function saveTrustSafetyProfileSection(
   userId: string,
   input: TrustSafetySectionInput,
   context: ProfileSaveContext,
-): Promise<ProfileRow> {
+): Promise<{ profile: ProfileRow; phoneNewlyVerified: boolean }> {
   const rowForTrust = await loadProfileTrustRow(supabase, userId);
   const now = new Date().toISOString();
   const displayName = resolveProfileDisplayName(
@@ -693,6 +693,7 @@ export async function saveTrustSafetyProfileSection(
   );
 
   const phone = resolvePhoneAndEmergency(input, rowForTrust);
+  const prevPhoneVerified = rowForTrust?.phone_verified === true;
 
   const existingDetailsRaw = rowForTrust?.details;
   let detailsMerged: Record<string, unknown> =
@@ -734,7 +735,8 @@ export async function saveTrustSafetyProfileSection(
     updated_at: now,
   };
 
-  return persistProfilePartial(supabase, userId, row, "trust section save");
+  const saved = await persistProfilePartial(supabase, userId, row, "trust section save");
+  return { profile: saved, phoneNewlyVerified: phone.nextPhoneVerified && !prevPhoneVerified };
 }
 
 export async function savePetFriendProfileSection(

@@ -1,5 +1,6 @@
 import { buildEmailFromExcelColumnE } from "@/lib/email-templates/render-excel-e";
 import type { EmailLocale } from "@/lib/email-templates/locale";
+import { bookingCompletedTemplate } from "@/lib/emails/templates/booking/completed";
 import type { EmailTemplate, EmailTemplateContext } from "@/lib/emails/types";
 
 /** Excel Column E rows 12–13 — Request sent (Pet Parent) */
@@ -194,12 +195,10 @@ export function buildReviewReminderFriendEmail(
   return reviewReminderFriend(ctx, locale);
 }
 
-/** Excel section 5 — completion uses review templates */
+/** Immediate completion notice (review reminder is scheduled separately). */
 export function buildBookingCompletedEmail(
   ctx: EmailTemplateContext,
-  locale: EmailLocale,
+  _locale: EmailLocale,
 ): EmailTemplate {
-  return ctx.recipientRole === "pet_friend"
-    ? reviewReminderFriend(ctx, locale)
-    : reviewReminderParent(ctx, locale);
+  return bookingCompletedTemplate(ctx);
 }

@@ -582,7 +582,7 @@ export function ProfileEditForm() {
     setErrors((prev) => ({ ...prev, trust: null }));
     setSuccess((prev) => ({ ...prev, trust: null }));
     try {
-      const saved = await saveTrustSafetyProfileSection(
+      const { profile: saved, phoneNewlyVerified } = await saveTrustSafetyProfileSection(
         supabase,
         user.id,
         {
@@ -600,6 +600,14 @@ export function ProfileEditForm() {
         { user, existingDisplayName: profile?.display_name },
       );
       await afterSectionSave("trust", saved);
+      if (phoneNewlyVerified) {
+        try {
+          const { sendPhoneVerifiedEmailAction } = await import("@/app/actions/email-events");
+          await sendPhoneVerifiedEmailAction();
+        } catch (emailErr) {
+          console.error("[email-event] phone verified action failed", emailErr);
+        }
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : t.profileEdit.saveTrustSafetyError;
       setErrors((prev) => ({ ...prev, trust: message }));
