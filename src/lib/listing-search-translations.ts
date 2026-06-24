@@ -54,8 +54,6 @@ const PET_LISTING_PAIRS: Pair[] = [
   ["Playful", "Mänguhimuline"],
   ["Calm", "Rahulik"],
   ["Protective", "Kaitsev"],
-  ["Medical Needs", "Tervise vajadused"],
-  ["Does not need meds", "Ei vaja ravimeid"],
   ["Needs medication", "Vajab ravimeid"],
   ["Activity Needs", "Liikumisvajadus"],
   ["Short walks", "Lühikesed jalutuskäigud"],

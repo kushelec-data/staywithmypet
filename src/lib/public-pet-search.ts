@@ -17,7 +17,6 @@ import {
   petMatchesCareTypes,
   petMatchesEnergy,
   petMatchesLanguages,
-  petMatchesMedical,
   petMatchesSizes,
   petMatchesSpeciesKeys,
   petMatchesTemperament,
@@ -65,7 +64,6 @@ export type PetSearchFilterState = {
   sizes: string[];
   energyLevels: string[];
   temperaments: string[];
-  medicalNeeds: ("needs_medication" | "no_medication")[];
   activityNeeds: string[];
   careLocation: string;
   careTypes: string[];
@@ -81,7 +79,6 @@ export const emptyPetSearchFilters = (): PetSearchFilterState => ({
   sizes: [],
   energyLevels: [],
   temperaments: [],
-  medicalNeeds: [],
   activityNeeds: [],
   careLocation: "",
   careTypes: [],
@@ -412,7 +409,6 @@ export function filterPublicSearchPets(
     if (!petMatchesSizes(pet, filters.sizes)) return false;
     if (!petMatchesEnergy(pet, filters.energyLevels)) return false;
     if (!petMatchesTemperament(pet, filters.temperaments)) return false;
-    if (!petMatchesMedical(pet, filters.medicalNeeds)) return false;
     if (!petMatchesActivity(pet, filters.activityNeeds)) return false;
 
     if (filters.careLocation) {

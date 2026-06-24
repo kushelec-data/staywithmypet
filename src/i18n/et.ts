@@ -1802,7 +1802,6 @@ export const et = {
     size: "Suurus ja kaal",
     energyLevel: "Aktiivsuse tase",
     temperament: "Iseloom",
-    medicalNeeds: "Tervise vajadused",
     activityNeeds: "Liikumisvajadus",
     careLocation: "Kus hooldus toimub?",
     careLocationAny: "Kõik asukohad",

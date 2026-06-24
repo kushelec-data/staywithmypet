@@ -20,7 +20,6 @@ import {
   petSearchCareTypeOptions,
   petSearchEnergyOptions,
   petSearchLanguageOptions,
-  petSearchMedicalOptions,
   petSearchSizeOptions,
   petSearchTemperamentOptions,
   petSearchTypeOptions,
@@ -95,10 +94,6 @@ export function PetSearchFilters({
   );
   const temperamentChips = useMemo(
     () => toFilterChipOptions(petSearchTemperamentOptions, locale),
-    [locale],
-  );
-  const medicalChips = useMemo(
-    () => toFilterChipOptions(petSearchMedicalOptions, locale),
     [locale],
   );
   const activityChips = useMemo(
@@ -235,20 +230,6 @@ export function PetSearchFilters({
           selected={filters.temperaments}
           maxVisible={5}
           onChange={(temperaments) => onChange({ ...filters, temperaments })}
-        />
-      </FilterSection>
-
-      <FilterSection title={f.medicalNeeds} id="filter-medical">
-        <FilterChipGroup
-          ariaLabelledBy="filter-medical"
-          options={medicalChips}
-          selected={filters.medicalNeeds}
-          onChange={(medicalNeeds) =>
-            onChange({
-              ...filters,
-              medicalNeeds: medicalNeeds as PetSearchFilterState["medicalNeeds"],
-            })
-          }
         />
       </FilterSection>
 

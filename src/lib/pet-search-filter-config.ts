@@ -35,12 +35,6 @@ export const petSearchTemperamentOptions: LocalizedFilterOption[] = [
   buildLocalizedFilterOption("Independent", "Independent"),
   buildLocalizedFilterOption("Playful", "Playful", ["Active"]),
   buildLocalizedFilterOption("Calm", "Calm"),
-  buildLocalizedFilterOption("Protective", "Protective"),
-];
-
-export const petSearchMedicalOptions: LocalizedFilterOption[] = [
-  buildLocalizedFilterOption("needs_medication", "Needs medication"),
-  buildLocalizedFilterOption("no_medication", "Does not need meds", ["No medication needed"]),
 ];
 
 export const petSearchActivityOptions: LocalizedFilterOption[] = [

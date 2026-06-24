@@ -84,19 +84,6 @@ export function petMatchesTemperament(pet: PetSearchFilterable, wanted: string[]
   });
 }
 
-export function petMatchesMedical(
-  pet: PetSearchFilterable,
-  selected: ("needs_medication" | "no_medication")[],
-): boolean {
-  if (!selected.length) return true;
-  if (pet.requiresMedication === null) return false;
-  const needs = selected.includes("needs_medication");
-  const noNeed = selected.includes("no_medication");
-  if (needs && noNeed) return true;
-  if (needs) return pet.requiresMedication === true;
-  if (noNeed) return pet.requiresMedication === false;
-  return true;
-}
 
 export function petMatchesActivity(pet: PetSearchFilterable, activities: string[]): boolean {
   if (!activities.length) return true;

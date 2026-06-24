@@ -1798,7 +1798,6 @@ export const en = {
     size: "Weight category",
     energyLevel: "Energy Level",
     temperament: "Temperament",
-    medicalNeeds: "Medical Needs",
     activityNeeds: "Activity Needs",
     careLocation: "Where should the care happen?",
     careLocationAny: "Any location",

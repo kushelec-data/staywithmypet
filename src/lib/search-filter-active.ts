@@ -5,7 +5,6 @@ import {
   petSearchCareTypeOptions,
   petSearchEnergyOptions,
   petSearchLanguageOptions,
-  petSearchMedicalOptions,
   petSearchSizeOptions,
   petSearchTemperamentOptions,
   petSearchTypeOptions,
@@ -112,14 +111,6 @@ export function buildPetSearchActiveChips(
       petSearchTemperamentOptions,
       locale,
       (value) => onChange({ ...filters, temperaments: filters.temperaments.filter((v) => v !== value) }),
-    ),
-  );
-  chips.push(
-    ...multiChipsLocalized("medical", filters.medicalNeeds, petSearchMedicalOptions, locale, (value) =>
-      onChange({
-        ...filters,
-        medicalNeeds: filters.medicalNeeds.filter((v) => v !== value),
-      }),
     ),
   );
   chips.push(
