@@ -6,7 +6,15 @@ import {
 
 export { experienceLevelOptions, preferredCareLocationOptions };
 
-export const livingTypeOptions = ["Apartment", "House", "Townhouse", "Other"] as const;
+export const livingTypeOptions = ["Apartment", "House", "Other"] as const;
+
+/** Legacy DB values — Townhouse merged into House in the picker. */
+export function normalizeLivingTypeValue(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return livingTypeOptions[0];
+  if (trimmed === "Townhouse") return "House";
+  return trimmed;
+}
 
 export const preferredDaysTimesOptions = [
   "Weekdays",

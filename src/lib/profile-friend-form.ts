@@ -20,6 +20,7 @@ import {
   durationOfCareOptions,
   experienceLevelOptions,
   livingTypeOptions,
+  normalizeLivingTypeValue,
   preferredCareLocationOptions,
   preferredDaysTimesOptions,
 } from "@/lib/profile-friend-options";
@@ -126,7 +127,7 @@ export function petFriendFormFromDetails(
       avail?.duration_of_care_preferred ?? durationOfCareOptions[durationOfCareOptions.length - 1],
     availabilityNotes: avail?.notes ?? "",
     availabilitySelectedDates: dates,
-    livingType: living?.living_type ?? livingTypeOptions[0],
+    livingType: normalizeLivingTypeValue(living?.living_type),
     livingTypeOther: living?.living_type_other ?? "",
     hasPetsAtHome: living?.has_pets_at_home ?? null,
     petsAtHomeNotes: living?.pets_at_home_notes ?? "",

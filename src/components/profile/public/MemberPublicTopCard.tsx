@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
-import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { BrowserTranslationNotice } from "@/components/public/BrowserTranslationNotice";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
@@ -152,12 +151,6 @@ export function MemberPublicTopCard({
 
         <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2 rounded-2xl border border-brand-teal/10 bg-surface/80 p-4 lg:w-[220px]">
           {mainCta}
-          <CopyPublicProfileLinkButton
-            profileId={profile.id}
-            size="sm"
-            variant="outline"
-            className="w-full justify-center"
-          />
           <p className="text-center text-[0.65rem] leading-snug text-muted">
             Exact address, phone, and email stay private.
           </p>

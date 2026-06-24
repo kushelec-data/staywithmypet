@@ -454,7 +454,7 @@ export const et = {
         petParent:
           "Olen loomaarmastaja tiheda ajakavaga ja otsin usaldusväärseid inimesi, kes saaksid minu lemmikuga aega veeta, kui ma pole saadaval. Minu eesmärk on tagada, et mu lemmik saaks hooldust, tähelepanu ja seltsi, mida ta väärib.",
         petFriend:
-          "Nautin aega loomadega veeta ja aitan hea meelega loomaomanikke, pakkudes seltsi, jalutisi, mänguaega või hooldust vajadusel. Olen vastutustundlik, usaldusväärne ja tunnen end loomade juures hästi.",
+          "Räägi veidi endast, oma igapäevaelust ja sellest, miks sulle meeldib loomadega aega veeta. Näiteks milline on sinu kogemus loomadega ning millist seltskonda võiksid lemmikule pakkuda.",
         both:
           "Olen nii loomaomanik kui ka loomaarmastaja. Nautin kontakti loomade ja teiste kogukonnaliikmetega, aidates tagada, et lemmikud saaksid tähelepanu, hooldust ja seltsi, mida nad väärivad.",
       },
@@ -836,7 +836,7 @@ export const et = {
         petParent:
           "Olen loomaarmastaja tiheda ajakavaga ja otsin usaldusväärseid inimesi, kes saaksid minu lemmikuga aega veeta, kui ma pole saadaval. Minu eesmärk on tagada, et mu lemmik saaks hooldust, tähelepanu ja seltsi, mida ta väärib.",
         petFriend:
-          "Nautin aega loomadega veeta ja aitan hea meelega loomaomanikke, pakkudes seltsi, jalutisi, mänguaega või hooldust vajadusel. Olen vastutustundlik, usaldusväärne ja tunnen end loomade juures hästi.",
+          "Räägi veidi endast, oma igapäevaelust ja sellest, miks sulle meeldib loomadega aega veeta. Näiteks milline on sinu kogemus loomadega ning millist seltskonda võiksid lemmikule pakkuda.",
         both:
           "Olen nii loomaomanik kui ka loomaarmastaja. Nautin kontakti loomade ja teiste kogukonnaliikmetega, aidates tagada, et lemmikud saaksid tähelepanu, hooldust ja seltsi, mida nad väärivad.",
       },
