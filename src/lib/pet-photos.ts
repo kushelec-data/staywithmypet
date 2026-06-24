@@ -1,4 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  normalizePhotoPosition,
+  photoPositionFromPetRow,
+  type PhotoObjectPosition,
+} from "@/lib/photo-position";
 
 export const PET_PHOTOS_BUCKET = "pet-photos";
 export const MIN_PET_PHOTOS = 1;
@@ -73,24 +78,36 @@ type PetPhotoInsertRow = {
   sort_order: number;
   is_primary: boolean;
   media_type?: string;
+  object_position_x?: number;
+  object_position_y?: number;
+  photo_scale?: number;
 };
 
 async function insertPetPhotoRows(
   supabase: SupabaseClient,
   rows: PetPhotoInsertRow[],
 ): Promise<void> {
-  const withMediaType = await supabase.from("pet_photos").insert(rows);
-  if (withMediaType.error && /column/i.test(withMediaType.error.message)) {
-    const fallbackRows = rows.map(({ media_type: _m, ...rest }) => rest);
-    const { error: insertError } = await supabase.from("pet_photos").insert(fallbackRows);
-    if (insertError) {
-      throw new Error(insertError.message || "Could not save pet photo records.");
-    }
-    return;
+  const withPosition = await supabase.from("pet_photos").insert(rows);
+  if (!withPosition.error) return;
+
+  if (!/column/i.test(withPosition.error.message)) {
+    throw new Error(withPosition.error.message || "Could not save pet photo records.");
   }
 
-  if (withMediaType.error) {
+  const withoutPosition = rows.map(
+    ({ object_position_x: _x, object_position_y: _y, photo_scale: _s, ...rest }) => rest,
+  );
+  const withMediaType = await supabase.from("pet_photos").insert(withoutPosition);
+  if (!withMediaType.error) return;
+
+  if (!/column/i.test(withMediaType.error.message)) {
     throw new Error(withMediaType.error.message || "Could not save pet photo records.");
+  }
+
+  const fallbackRows = withoutPosition.map(({ media_type: _m, ...rest }) => rest);
+  const { error: insertError } = await supabase.from("pet_photos").insert(fallbackRows);
+  if (insertError) {
+    throw new Error(insertError.message || "Could not save pet photo records.");
   }
 }
 
@@ -155,7 +172,22 @@ async function getNextSortOrder(supabase: SupabaseClient, petId: string): Promis
 export type UploadPetPhotosOptions = {
   /** Append new files on edit; does not re-insert existing photos. */
   append?: boolean;
+  /** Optional focal points aligned with `files`. */
+  positions?: PhotoObjectPosition[];
 };
+
+function positionRowPayload(position?: PhotoObjectPosition): {
+  object_position_x: number;
+  object_position_y: number;
+  photo_scale: number;
+} {
+  const normalized = normalizePhotoPosition(position);
+  return {
+    object_position_x: normalized.objectPositionX,
+    object_position_y: normalized.objectPositionY,
+    photo_scale: normalized.photoScale ?? 1,
+  };
+}
 
 export async function uploadAndAttachPetPhotos(
   supabase: SupabaseClient,
@@ -217,6 +249,7 @@ export async function uploadAndAttachPetPhotos(
         sort_order: startSortOrder + i,
         is_primary: append ? !hasExistingPrimary && i === 0 : i === 0,
         media_type: mediaTypeForFile(file),
+        ...positionRowPayload(options?.positions?.[i]),
       });
     }
 
@@ -233,6 +266,9 @@ type PhotoRow = {
   public_url: string | null;
   is_primary: boolean;
   sort_order: number;
+  object_position_x?: number | null;
+  object_position_y?: number | null;
+  photo_scale?: number | null;
 };
 
 function sortPetPhotos(photos: PhotoRow[]): PhotoRow[] {
@@ -254,6 +290,23 @@ export function pickPrimaryPhotoUrl(photos: PhotoRow[] | null | undefined): stri
   return urls[0] ?? null;
 }
 
+export function pickPrimaryPhotoPosition(photos: PhotoRow[] | null | undefined): PhotoObjectPosition {
+  if (!photos?.length) return normalizePhotoPosition(null);
+  const primary = sortPetPhotos(photos)[0];
+  return photoPositionFromPetRow(primary ?? {});
+}
+
+export function photoPositionsByUrl(photos: PhotoRow[] | null | undefined): Record<string, PhotoObjectPosition> {
+  if (!photos?.length) return {};
+  const out: Record<string, PhotoObjectPosition> = {};
+  for (const photo of photos) {
+    const url = photo.public_url?.trim();
+    if (!url) continue;
+    out[url] = photoPositionFromPetRow(photo);
+  }
+  return out;
+}
+
 export type PetPhotoRecord = {
   id: string;
   public_url: string | null;
@@ -261,6 +314,9 @@ export type PetPhotoRecord = {
   sort_order: number;
   is_primary: boolean;
   media_type: string | null;
+  object_position_x?: number | null;
+  object_position_y?: number | null;
+  photo_scale?: number | null;
 };
 
 export async function fetchPetPhotosForOwner(
@@ -284,16 +340,35 @@ export async function fetchPetPhotosForOwner(
 
   const withMedia = await supabase
     .from("pet_photos")
-    .select("id, public_url, storage_path, sort_order, is_primary, media_type")
+    .select(
+      "id, public_url, storage_path, sort_order, is_primary, media_type, object_position_x, object_position_y, photo_scale",
+    )
     .eq("pet_id", petId)
     .order("sort_order", { ascending: true });
 
   if (withMedia.error && /column/i.test(withMedia.error.message)) {
     const fallback = await supabase
       .from("pet_photos")
-      .select("id, public_url, storage_path, sort_order, is_primary")
+      .select("id, public_url, storage_path, sort_order, is_primary, media_type")
       .eq("pet_id", petId)
       .order("sort_order", { ascending: true });
+
+    if (fallback.error && /column/i.test(fallback.error.message)) {
+      const legacy = await supabase
+        .from("pet_photos")
+        .select("id, public_url, storage_path, sort_order, is_primary")
+        .eq("pet_id", petId)
+        .order("sort_order", { ascending: true });
+
+      if (legacy.error) {
+        throw new Error(legacy.error.message || "Could not load pet photos.");
+      }
+
+      return (legacy.data ?? []).map((row) => ({
+        ...row,
+        media_type: null,
+      }));
+    }
 
     if (fallback.error) {
       throw new Error(fallback.error.message || "Could not load pet photos.");
@@ -301,7 +376,6 @@ export async function fetchPetPhotosForOwner(
 
     return (fallback.data ?? []).map((row) => ({
       ...row,
-      media_type: null,
     }));
   }
 
@@ -318,6 +392,7 @@ export async function replacePetPhotoImage(
   petId: string,
   photoId: string,
   file: File,
+  position?: PhotoObjectPosition,
 ): Promise<void> {
   if (!IMAGE_TYPES.has(file.type)) {
     throw new Error("Only image photos can be repositioned.");
@@ -377,18 +452,34 @@ export async function replacePetPhotoImage(
   const { data: urlData } = supabase.storage.from(PET_PHOTOS_BUCKET).getPublicUrl(storagePath);
   const publicUrl = urlData.publicUrl;
 
+  const updatePayload = {
+    storage_path: storagePath,
+    public_url: publicUrl,
+    media_type: "image",
+    ...positionRowPayload(position),
+  };
+
   const { error: updateError } = await supabase
     .from("pet_photos")
-    .update({
-      storage_path: storagePath,
-      public_url: publicUrl,
-      media_type: "image",
-    })
+    .update(updatePayload)
     .eq("id", photoId)
     .eq("pet_id", petId);
 
-  if (updateError) {
-    throw new Error(updateError.message || "Could not save pet photo.");
+  if (updateError && /column/i.test(updateError.message)) {
+    const { error: fallbackError } = await supabase
+      .from("pet_photos")
+      .update({
+        storage_path: storagePath,
+        public_url: publicUrl,
+        media_type: "image",
+      })
+      .eq("id", photoId)
+      .eq("pet_id", petId);
+    if (fallbackError) {
+      throw new Error(fallbackError.message || "Could not update pet photo.");
+    }
+  } else if (updateError) {
+    throw new Error(updateError.message || "Could not update pet photo.");
   }
 
   if (photo.storage_path !== storagePath) {

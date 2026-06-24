@@ -143,7 +143,11 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
         />
 
         {profile.profilePhotos.length > 0 ? (
-          <PublicProfileGallery photos={profile.profilePhotos} displayName={profile.display_name} />
+          <PublicProfileGallery
+            photos={profile.profilePhotos}
+            photoPositions={profile.details.profile_photo_positions}
+            displayName={profile.display_name}
+          />
         ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">

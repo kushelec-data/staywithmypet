@@ -1,11 +1,12 @@
 "use client";
 
-import { AppImage } from "@/components/ui/AppImage";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import {
   hasRenderableProfileInitials,
   resolveProfileAvatarInitials,
   resolveSanitizedAvatarUrl,
 } from "@/lib/profile-avatar-display";
+import type { PhotoObjectPosition } from "@/lib/photo-position";
 
 function GenericProfileIcon({ className = "" }: { className?: string }) {
   return (
@@ -25,6 +26,7 @@ type ProfileCardHeroImageProps = {
   userId: string;
   displayName: string;
   avatarUrl?: string | null;
+  avatarPosition?: PhotoObjectPosition | null;
   compact?: boolean;
 };
 
@@ -33,6 +35,7 @@ export function ProfileCardHeroImage({
   userId,
   displayName,
   avatarUrl,
+  avatarPosition,
   compact = false,
 }: ProfileCardHeroImageProps) {
   const safeUrl = resolveSanitizedAvatarUrl(userId, avatarUrl);
@@ -45,17 +48,18 @@ export function ProfileCardHeroImage({
       }`}
     >
       {safeUrl ? (
-        <AppImage
+        <PositionedPhoto
           src={safeUrl}
           alt={displayName}
           seed={userId}
+          position={avatarPosition}
           fallbackCaption={displayName}
           sizes={
             compact
               ? "(max-width: 640px) 100vw, 320px"
               : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
           }
-          className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+          className="h-full w-full transition-transform duration-500 group-hover:scale-[1.03]"
         />
       ) : hasRenderableProfileInitials(initials) ? (
         <div

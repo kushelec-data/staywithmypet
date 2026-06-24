@@ -1,25 +1,27 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   blobToCropFile,
-  clampCropTransform,
+  compressImageForUpload,
   cropImageDimensions,
   cropOutputMimeType,
-  cropOutputSize,
-  initialCropTransform,
   loadImageElement,
   PHOTO_LOAD_ERROR,
-  renderCropPreviewCanvas,
-  renderCroppedImageBlob,
   type CropShape,
-  type CropTransform,
 } from "@/lib/image-crop";
 import {
-  useCallback,
+  applyPhotoDragDelta,
+  clampPhotoScale,
+  initialPhotoObjectPosition,
+  normalizePhotoPosition,
+  type PhotoCropSaveResult,
+  type PhotoObjectPosition,
+} from "@/lib/photo-position";
+import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -31,10 +33,11 @@ type PhotoCropModalProps = {
   open: boolean;
   sourceFile?: File;
   sourceUrl?: string;
+  initialPosition?: Partial<PhotoObjectPosition> | null;
   shape?: CropShape;
   saving?: boolean;
   onClose: () => void;
-  onSave: (file: File) => void | Promise<void>;
+  onSave: (result: PhotoCropSaveResult) => void | Promise<void>;
 };
 
 const VIEWPORT_SIZE = 280;
@@ -43,6 +46,7 @@ export function PhotoCropModal({
   open,
   sourceFile,
   sourceUrl,
+  initialPosition,
   shape = "rounded-square",
   saving = false,
   onClose,
@@ -51,10 +55,11 @@ export function PhotoCropModal({
   const { t } = useLanguage();
   const media = t.media;
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-  const dragStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(
-    null,
-  );
+  const dragStartRef = useRef<{
+    x: number;
+    y: number;
+    position: PhotoObjectPosition;
+  } | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const bodyScrollLockedRef = useRef(false);
   const prevBodyOverflowRef = useRef("");
@@ -63,7 +68,10 @@ export function PhotoCropModal({
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [imageReady, setImageReady] = useState(false);
-  const [transform, setTransform] = useState<CropTransform>({ scale: 1, offsetX: 0, offsetY: 0 });
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [position, setPosition] = useState<PhotoObjectPosition>(
+    normalizePhotoPosition(initialPosition),
+  );
   const [localSaving, setLocalSaving] = useState(false);
 
   const sourceKey = sourceFile
@@ -71,22 +79,6 @@ export function PhotoCropModal({
     : (sourceUrl ?? "");
 
   const previewMaskClass = shape === "circle" ? "rounded-full" : "rounded-3xl";
-
-  const outputSize = useMemo(() => cropOutputSize(shape), [shape]);
-
-  const paintPreview = useCallback(() => {
-    const canvas = previewCanvasRef.current;
-    const img = imageRef.current;
-    if (!canvas || !img || !open) return;
-    renderCropPreviewCanvas(canvas, {
-      image: img,
-      transform,
-      viewportSize: VIEWPORT_SIZE,
-      outputSize,
-      shape,
-      mimeType: cropOutputMimeType(sourceFile?.type ?? "image/jpeg"),
-    });
-  }, [open, outputSize, shape, sourceFile?.type, transform]);
 
   useEffect(() => {
     setMounted(true);
@@ -121,13 +113,15 @@ export function PhotoCropModal({
       setImageReady(false);
       setLoadError(null);
       setLoading(false);
-      setTransform({ scale: 1, offsetX: 0, offsetY: 0 });
+      setPreviewSrc(null);
+      setPosition(normalizePhotoPosition(initialPosition));
       return;
     }
 
     if (!sourceFile && !sourceUrl) return;
 
     let cancelled = false;
+    let objectUrl: string | null = null;
     setLoading(true);
     setImageReady(false);
     setLoadError(null);
@@ -137,13 +131,16 @@ export function PhotoCropModal({
         const loaded = await loadImageElement(sourceFile ?? sourceUrl!);
         if (cancelled) return;
         imageRef.current = loaded;
+        objectUrl = loaded.src;
+        setPreviewSrc(loaded.src);
         const { width, height } = cropImageDimensions(loaded);
-        setTransform(initialCropTransform(width, height, VIEWPORT_SIZE));
+        setPosition(initialPhotoObjectPosition(width, height, VIEWPORT_SIZE, initialPosition));
         setImageReady(true);
       } catch (err) {
         if (!cancelled) {
           setLoadError(err instanceof Error ? err.message : PHOTO_LOAD_ERROR);
           imageRef.current = null;
+          setPreviewSrc(null);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -152,13 +149,11 @@ export function PhotoCropModal({
 
     return () => {
       cancelled = true;
+      if (objectUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(objectUrl);
+      }
     };
-  }, [open, sourceKey, sourceFile, sourceUrl]);
-
-  useEffect(() => {
-    if (!imageReady) return;
-    paintPreview();
-  }, [imageReady, paintPreview]);
+  }, [open, sourceKey, sourceFile, sourceUrl, initialPosition]);
 
   function handleDialogCancel(event: SyntheticEvent<HTMLDialogElement>) {
     event.preventDefault();
@@ -174,8 +169,7 @@ export function PhotoCropModal({
     dragStartRef.current = {
       x: event.clientX,
       y: event.clientY,
-      offsetX: transform.offsetX,
-      offsetY: transform.offsetY,
+      position,
     };
   }
 
@@ -185,12 +179,16 @@ export function PhotoCropModal({
     if (!start || !img) return;
     event.preventDefault();
     const { width, height } = cropImageDimensions(img);
-    setTransform((current) =>
-      clampCropTransform(width, height, VIEWPORT_SIZE, {
-        scale: current.scale,
-        offsetX: start.offsetX + (event.clientX - start.x),
-        offsetY: start.offsetY + (event.clientY - start.y),
-      }),
+    setPosition(
+      applyPhotoDragDelta(
+        start.position,
+        event.clientX - start.x,
+        event.clientY - start.y,
+        width,
+        height,
+        VIEWPORT_SIZE,
+        VIEWPORT_SIZE,
+      ),
     );
   }
 
@@ -206,10 +204,10 @@ export function PhotoCropModal({
     const img = imageRef.current;
     if (!img) return;
     const { width, height } = cropImageDimensions(img);
-    setTransform((current) =>
-      clampCropTransform(width, height, VIEWPORT_SIZE, {
+    setPosition((current) =>
+      initialPhotoObjectPosition(width, height, VIEWPORT_SIZE, {
         ...current,
-        scale: nextScale,
+        photoScale: clampPhotoScale(nextScale),
       }),
     );
   }
@@ -220,17 +218,10 @@ export function PhotoCropModal({
     setLocalSaving(true);
     try {
       const mimeType = cropOutputMimeType(sourceFile?.type ?? "image/jpeg");
-      const blob = await renderCroppedImageBlob({
-        image: img,
-        transform,
-        viewportSize: VIEWPORT_SIZE,
-        outputSize,
-        shape,
-        mimeType,
-      });
+      const blob = await compressImageForUpload(img, mimeType);
       const baseName = sourceFile?.name ?? "photo.jpg";
       const file = blobToCropFile(blob, baseName, mimeType);
-      await onSave(file);
+      await onSave({ file, position: normalizePhotoPosition(position) });
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : t.media.saveCroppedError);
     } finally {
@@ -241,8 +232,9 @@ export function PhotoCropModal({
   if (!mounted || !open) return null;
 
   const busy = saving || localSaving || loading;
-  const showCropArea = imageReady && !loadError;
+  const showCropArea = imageReady && !loadError && previewSrc;
   const previewBgClass = loadError ? "bg-brand-pink/10" : loading ? "bg-mint/20" : "bg-white";
+  const photoScale = position.photoScale ?? 1;
 
   const modal = (
     <dialog
@@ -297,12 +289,12 @@ export function PhotoCropModal({
               onPointerCancel={handlePointerUp}
             >
               {showCropArea ? (
-                <canvas
-                  ref={previewCanvasRef}
-                  width={VIEWPORT_SIZE}
-                  height={VIEWPORT_SIZE}
-                  className="block h-full w-full"
-                  aria-hidden
+                <PositionedPhoto
+                  src={previewSrc}
+                  alt=""
+                  position={position}
+                  useAppImage={false}
+                  className="pointer-events-none block h-full w-full select-none"
                 />
               ) : null}
               {shape === "circle" && showCropArea ? (
@@ -339,7 +331,7 @@ export function PhotoCropModal({
                 min={1}
                 max={3}
                 step={0.01}
-                value={transform.scale}
+                value={photoScale}
                 disabled={!showCropArea || busy}
                 onInput={(event) => handleZoomChange(Number(event.currentTarget.value))}
                 className="mt-2 h-2 w-full cursor-pointer accent-brand-teal"

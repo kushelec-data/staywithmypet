@@ -5,7 +5,12 @@ import { IMAGES, placeholderPetImage } from "@/lib/images";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { resolveBreedForSave } from "@/lib/pet-breeds";
 import { normalizePetDobToIso } from "@/lib/pet-date-of-birth";
-import { pickPrimaryPhotoUrl, uploadAndAttachPetPhotos } from "@/lib/pet-photos";
+import {
+  pickPrimaryPhotoUrl,
+  pickPrimaryPhotoPosition,
+  photoPositionsByUrl,
+  uploadAndAttachPetPhotos,
+} from "@/lib/pet-photos";
 
 export type PetSpecies = "dog" | "cat" | "rabbit" | "bird" | "other";
 
@@ -409,6 +414,7 @@ export function mapDbPetToCard(pet: PetDbRow, index: number): Pet {
       : "dog";
 
   const primaryPhoto = pickPrimaryPhotoUrl(pet.pet_photos);
+  const photoPositions = photoPositionsByUrl(pet.pet_photos);
   const availabilitySummary = formatPetAvailabilitySummary(
     pet.availability_dates,
     pet.availability ?? null,
@@ -425,6 +431,8 @@ export function mapDbPetToCard(pet: PetDbRow, index: number): Pet {
     petParentName: resolveParentName(pet.profiles),
     petParentId,
     image: primaryPhoto ?? placeholderPetImage(pet.id),
+    imagePosition: pickPrimaryPhotoPosition(pet.pet_photos),
+    photoPositions,
     ownerImage: pet.owner_id ? "" : IMAGES.profiles[fallbackOwnerKey],
     pricePerNight: (pet.price_per_night_cents ?? 0) / 100,
     rating: Number(pet.rating_avg) || 0,

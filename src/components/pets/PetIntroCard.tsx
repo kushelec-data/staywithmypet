@@ -1,5 +1,6 @@
 "use client";
 
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { AppImage } from "@/components/ui/AppImage";
 import { useLanguage } from "@/context/LanguageContext";
 import { AvailabilityDateChips } from "@/components/ui/AvailabilityDateChips";
@@ -145,14 +146,15 @@ function PetCompactPhotos({ pet, dashboard }: { pet: PetIntroDisplay; dashboard?
           ...(dashboard ? { backgroundColor: DASHBOARD_COLORS.light } : {}),
         }}
       >
-        <AppImage
+        <PositionedPhoto
           src={mainUrl}
           alt={pet.name}
           seed={pet.id}
+          position={pet.primaryPhotoPosition}
           fallbackEmoji={speciesEmoji(pet.species)}
           fallbackCaption={pet.name}
           sizes={`${mainPx}px`}
-          className="h-full w-full object-cover"
+          className="h-full w-full"
         />
       </div>
       {extraUrls.length > 0 && !dashboard ? (
@@ -163,13 +165,14 @@ function PetCompactPhotos({ pet, dashboard }: { pet: PetIntroDisplay; dashboard?
               className="relative overflow-hidden rounded-md bg-mint/20 ring-1 ring-black/5"
               style={{ width: THUMB_PX, height: THUMB_PX }}
             >
-              <AppImage
+              <PositionedPhoto
                 src={url}
                 alt=""
                 seed={`${pet.id}-extra-${i}`}
+                position={pet.photoPositions[url]}
                 fallbackEmoji={speciesEmoji(pet.species)}
                 sizes={`${THUMB_PX}px`}
-                className="h-full w-full object-cover"
+                className="h-full w-full"
               />
             </li>
           ))}

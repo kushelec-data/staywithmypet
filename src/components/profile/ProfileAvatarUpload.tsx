@@ -4,6 +4,11 @@ import { PhotoCropModal } from "@/components/media/PhotoCropModal";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
 import { validateCropSourceFile } from "@/lib/image-crop";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
+import {
+  avatarPositionFromDetails,
+  type PhotoCropSaveResult,
+} from "@/lib/photo-position";
 import { resolveSanitizedAvatarUrl } from "@/lib/profile-avatar-display";
 import { uploadProfileAvatar } from "@/lib/profile-avatar";
 import { useLanguage } from "@/context/LanguageContext";
@@ -15,6 +20,7 @@ type ProfileAvatarUploadProps = {
   displayName: string;
   email?: string | null;
   avatarUrl: string | null;
+  profileDetails?: unknown;
   onAvatarUpdated: (avatarUrl: string) => void;
   /** When false, only the photo is shown (view mode). */
   editable?: boolean;
@@ -31,6 +37,7 @@ export function ProfileAvatarUpload({
   displayName,
   email,
   avatarUrl,
+  profileDetails,
   onAvatarUpdated,
   editable = true,
   disabled = false,
@@ -51,6 +58,7 @@ export function ProfileAvatarUpload({
 
   const safeAvatarUrl = resolveSanitizedAvatarUrl(userId, avatarUrl);
   const shownUrl = previewUrl ?? safeAvatarUrl;
+  const avatarPosition = avatarPositionFromDetails(profileDetails);
 
   function openCrop(file?: File, url?: string) {
     if (!editable || disabled || uploading) return;
@@ -69,11 +77,11 @@ export function ProfileAvatarUpload({
     openCrop(file);
   }
 
-  async function saveCroppedPhoto(file: File) {
+  async function saveCroppedPhoto({ file, position }: PhotoCropSaveResult) {
     setError(null);
     setUploading(true);
     try {
-      const updated = await uploadProfileAvatar(supabase, userId, file);
+      const updated = await uploadProfileAvatar(supabase, userId, file, position);
       const canonicalUrl = updated.avatar_url?.trim() || null;
       const nextUrl = resolveSanitizedAvatarUrl(userId, canonicalUrl) ?? canonicalUrl;
       if (nextUrl) {
@@ -102,13 +110,15 @@ export function ProfileAvatarUpload({
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
         {shownUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- local preview blob or owned avatar URL
-          <img
-            key={`${userId}:${shownUrl}`}
-            src={shownUrl}
-            alt=""
-            className="h-24 w-24 shrink-0 rounded-2xl object-cover ring-2 ring-mint/50 shadow-md sm:h-28 sm:w-28"
-          />
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl ring-2 ring-mint/50 shadow-md sm:h-28 sm:w-28">
+            <PositionedPhoto
+              src={shownUrl}
+              alt=""
+              position={avatarPosition}
+              useAppImage={false}
+              className="block h-full w-full"
+            />
+          </div>
         ) : (
           <ProfileAvatar
             userId={userId}
@@ -170,6 +180,7 @@ export function ProfileAvatarUpload({
         open={editable && Boolean(cropSession)}
         sourceFile={cropSession?.file}
         sourceUrl={cropSession?.url}
+        initialPosition={cropSession?.url ? avatarPosition : undefined}
         shape="circle"
         saving={uploading}
         onClose={() => {

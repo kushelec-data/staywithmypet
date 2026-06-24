@@ -1,8 +1,15 @@
 "use client";
 
 import { PhotoCropModal } from "@/components/media/PhotoCropModal";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { isCropSupportedImageFile, validateCropSourceFile } from "@/lib/image-crop";
 import { MAX_PET_PHOTOS } from "@/lib/pet-photos";
+import {
+  DEFAULT_PHOTO_POSITION,
+  normalizePhotoPosition,
+  type PhotoCropSaveResult,
+  type PhotoObjectPosition,
+} from "@/lib/photo-position";
 import { useLanguage } from "@/context/LanguageContext";
 import { useEffect, useRef, useState } from "react";
 
@@ -11,6 +18,7 @@ export type ExistingPetPhotoItem = {
   url: string;
   isPrimary: boolean;
   mediaType: "image" | "video";
+  position?: PhotoObjectPosition;
 };
 
 type UploadStatus = "uploading" | "saved" | "failed";
@@ -30,9 +38,14 @@ type PetPhotoUploadProps = {
   existingPhotos?: ExistingPetPhotoItem[];
   /** Local files for new pets before a profile exists. */
   pendingFiles?: File[];
-  onPendingFilesChange?: (files: File[]) => void;
-  onUploadPhoto?: (file: File) => Promise<void>;
-  onReplaceExistingPhoto?: (photoId: string, file: File) => Promise<void>;
+  pendingPhotoPositions?: PhotoObjectPosition[];
+  onPendingFilesChange?: (files: File[], positions: PhotoObjectPosition[]) => void;
+  onUploadPhoto?: (file: File, position?: PhotoObjectPosition) => Promise<void>;
+  onReplaceExistingPhoto?: (
+    photoId: string,
+    file: File,
+    position?: PhotoObjectPosition,
+  ) => Promise<void>;
   onRemoveExistingPhoto?: (photoId: string) => Promise<void>;
   onSetPrimaryExistingPhoto?: (photoId: string) => Promise<void>;
   existingPhotoBusy?: boolean;
@@ -98,6 +111,7 @@ export function PetPhotoUpload({
   uploadDisabledMessage,
   existingPhotos = [],
   pendingFiles = [],
+  pendingPhotoPositions = [],
   onPendingFilesChange,
   onUploadPhoto,
   onReplaceExistingPhoto,
@@ -168,7 +182,7 @@ export function PetPhotoUpload({
     });
   }
 
-  async function uploadFileImmediately(file: File) {
+  async function uploadFileImmediately(file: File, position?: PhotoObjectPosition) {
     if (!onUploadPhoto || !immediateSaveEnabled) {
       throw new Error(uploadDisabledMessage ?? copy.mediaRequiresPet);
     }
@@ -183,7 +197,7 @@ export function PetPhotoUpload({
     setPickError(null);
 
     try {
-      await onUploadPhoto(file);
+      await onUploadPhoto(file, position);
       updatePendingUpload(localId, { status: "saved" });
       window.setTimeout(() => removePendingUpload(localId), 800);
     } catch (err) {
@@ -202,9 +216,11 @@ export function PetPhotoUpload({
     await uploadFileImmediately(item.file);
   }
 
-  function addLocalFile(file: File) {
+  function addLocalFile(file: File, position: PhotoObjectPosition = DEFAULT_PHOTO_POSITION) {
     if (!onPendingFilesChange) return;
-    onPendingFilesChange([...pendingFiles, file].slice(0, MAX_PET_PHOTOS - existingPhotos.length));
+    const nextFiles = [...pendingFiles, file].slice(0, MAX_PET_PHOTOS - existingPhotos.length);
+    const nextPositions = [...pendingPhotoPositions, position].slice(0, nextFiles.length);
+    onPendingFilesChange(nextFiles, nextPositions);
   }
 
   function removeLocalAt(index: number) {
@@ -213,16 +229,21 @@ export function PetPhotoUpload({
       return;
     }
     setPickError(null);
-    onPendingFilesChange(pendingFiles.filter((_, i) => i !== index));
+    const nextFiles = pendingFiles.filter((_, i) => i !== index);
+    const nextPositions = pendingPhotoPositions.filter((_, i) => i !== index);
+    onPendingFilesChange(nextFiles, nextPositions);
   }
 
   function setLocalPrimary(index: number) {
     if (!onPendingFilesChange || index <= 0 || index >= pendingFiles.length) return;
-    const next = [...pendingFiles];
-    const [picked] = next.splice(index, 1);
+    const nextFiles = [...pendingFiles];
+    const nextPositions = [...pendingPhotoPositions];
+    const [picked] = nextFiles.splice(index, 1);
+    const [pickedPosition] = nextPositions.splice(index, 1);
     if (!picked) return;
-    next.unshift(picked);
-    onPendingFilesChange(next);
+    nextFiles.unshift(picked);
+    nextPositions.unshift(pickedPosition ?? DEFAULT_PHOTO_POSITION);
+    onPendingFilesChange(nextFiles, nextPositions);
   }
 
   function handleFilesSelected(selected: FileList | null) {
@@ -322,29 +343,32 @@ export function PetPhotoUpload({
     setCropSession({ url: photo.url, replaceExistingId: photo.id });
   }
 
-  async function saveCroppedPhoto(cropped: File) {
+  async function saveCroppedPhoto({ file, position }: PhotoCropSaveResult) {
+    const normalizedPosition = normalizePhotoPosition(position);
     setCropSaving(true);
     setPickError(null);
     try {
       if (cropSession?.replaceExistingId && onReplaceExistingPhoto) {
-        await onReplaceExistingPhoto(cropSession.replaceExistingId, cropped);
+        await onReplaceExistingPhoto(cropSession.replaceExistingId, file, normalizedPosition);
         setCropSession(null);
         return;
       }
 
       if (typeof cropSession?.replaceIndex === "number" && onPendingFilesChange) {
-        const next = [...pendingFiles];
-        next[cropSession.replaceIndex] = cropped;
-        onPendingFilesChange(next);
+        const nextFiles = [...pendingFiles];
+        const nextPositions = [...pendingPhotoPositions];
+        nextFiles[cropSession.replaceIndex] = file;
+        nextPositions[cropSession.replaceIndex] = normalizedPosition;
+        onPendingFilesChange(nextFiles, nextPositions);
         setCropSession(null);
         if (pendingImagesRef.current.length > 0) openNextPendingImage();
         return;
       }
 
       if (immediateSaveEnabled) {
-        await uploadFileImmediately(cropped);
+        await uploadFileImmediately(file, normalizedPosition);
       } else if (localModeEnabled) {
-        addLocalFile(cropped);
+        addLocalFile(file, normalizedPosition);
       }
 
       if (pendingImagesRef.current.length > 0) {
@@ -398,7 +422,13 @@ export function PetPhotoUpload({
                 {photo.mediaType === "video" ? (
                   <video src={photo.url} className="h-full w-full object-cover" muted playsInline />
                 ) : (
-                  <img src={photo.url} alt="" className="h-full w-full object-cover" />
+                  <PositionedPhoto
+                    src={photo.url}
+                    alt=""
+                    position={photo.position}
+                    useAppImage={false}
+                    className="block h-full w-full"
+                  />
                 )}
                 {photo.isPrimary ? (
                   <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold text-white">
@@ -546,6 +576,13 @@ export function PetPhotoUpload({
         open={Boolean(cropSession)}
         sourceFile={cropSession?.file}
         sourceUrl={cropSession?.url}
+        initialPosition={
+          cropSession?.replaceExistingId
+            ? existingPhotos.find((photo) => photo.id === cropSession.replaceExistingId)?.position
+            : typeof cropSession?.replaceIndex === "number"
+              ? pendingPhotoPositions[cropSession.replaceIndex]
+              : undefined
+        }
         shape="rounded-square"
         saving={cropSaving || existingPhotoBusy}
         onClose={() => {

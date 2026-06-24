@@ -11,6 +11,7 @@ import {
   validateProfileAvatarFile,
   avatarFileExtension,
 } from "@/lib/profile-avatar";
+import { normalizePhotoPosition, type PhotoObjectPosition } from "@/lib/photo-position";
 
 export const MAX_PROFILE_GALLERY_PHOTOS = 6;
 
@@ -23,6 +24,7 @@ export function profilePhotosFromDetails(detailsRaw: unknown): string[] {
 export function mergeDetailsProfilePhotos(
   existingDetails: unknown,
   photos: string[],
+  photoPositions?: Record<string, PhotoObjectPosition>,
 ): Record<string, unknown> {
   const base =
     existingDetails && typeof existingDetails === "object" && !Array.isArray(existingDetails)
@@ -31,6 +33,25 @@ export function mergeDetailsProfilePhotos(
   base.profile_photos = photos
     .filter((u) => u.trim().length > 0)
     .slice(0, MAX_PROFILE_GALLERY_PHOTOS);
+
+  if (photoPositions && Object.keys(photoPositions).length > 0) {
+    const current =
+      base.profile_photo_positions &&
+      typeof base.profile_photo_positions === "object" &&
+      !Array.isArray(base.profile_photo_positions)
+        ? { ...(base.profile_photo_positions as Record<string, PhotoObjectPosition>) }
+        : {};
+    for (const url of photos) {
+      if (photoPositions[url]) {
+        current[url] = normalizePhotoPosition(photoPositions[url]);
+      }
+    }
+    for (const key of Object.keys(current)) {
+      if (!photos.includes(key)) delete current[key];
+    }
+    base.profile_photo_positions = current;
+  }
+
   return base;
 }
 
@@ -52,8 +73,13 @@ async function persistGallery(
   userId: string,
   photos: string[],
   avatarUrl?: string | null,
+  photoPositions?: Record<string, PhotoObjectPosition>,
 ): Promise<ProfileRow> {
-  const details = mergeDetailsProfilePhotos(await loadDetails(supabase, userId), photos);
+  const details = mergeDetailsProfilePhotos(
+    await loadDetails(supabase, userId),
+    photos,
+    photoPositions,
+  );
   const row: Record<string, unknown> = {
     details,
     updated_at: new Date().toISOString(),
@@ -84,7 +110,11 @@ export async function uploadProfileGalleryPhoto(
   supabase: SupabaseClient,
   userId: string,
   file: File,
-  options: { currentPhotos: string[]; currentAvatarUrl: string | null },
+  options: {
+    currentPhotos: string[];
+    currentAvatarUrl: string | null;
+    position?: PhotoObjectPosition;
+  },
 ): Promise<ProfileRow> {
   validateProfileAvatarFile(file);
 
@@ -108,8 +138,11 @@ export async function uploadProfileGalleryPhoto(
   const nextPhotos = [...options.currentPhotos, publicUrl];
   const nextAvatar =
     options.currentAvatarUrl?.trim() ? options.currentAvatarUrl : publicUrl;
+  const photoPositions = options.position
+    ? { [publicUrl]: normalizePhotoPosition(options.position) }
+    : undefined;
 
-  return persistGallery(supabase, userId, nextPhotos, nextAvatar);
+  return persistGallery(supabase, userId, nextPhotos, nextAvatar, photoPositions);
 }
 
 export async function removeProfileGalleryPhoto(
@@ -149,7 +182,11 @@ export async function replaceProfileGalleryPhoto(
   userId: string,
   oldUrl: string,
   file: File,
-  options: { currentPhotos: string[]; currentAvatarUrl: string | null },
+  options: {
+    currentPhotos: string[];
+    currentAvatarUrl: string | null;
+    position?: PhotoObjectPosition;
+  },
 ): Promise<ProfileRow> {
   validateProfileAvatarFile(file);
 
@@ -176,8 +213,29 @@ export async function replaceProfileGalleryPhoto(
   const nextPhotos = options.currentPhotos.map((photo) => (photo === oldUrl ? publicUrl : photo));
   const nextAvatar =
     options.currentAvatarUrl === oldUrl ? publicUrl : options.currentAvatarUrl;
+  const existingDetails = await loadDetails(supabase, userId);
+  const existingPositions =
+    existingDetails.profile_photo_positions &&
+    typeof existingDetails.profile_photo_positions === "object" &&
+    !Array.isArray(existingDetails.profile_photo_positions)
+      ? { ...(existingDetails.profile_photo_positions as Record<string, PhotoObjectPosition>) }
+      : {};
+  if (existingPositions[oldUrl]) {
+    existingPositions[publicUrl] = options.position
+      ? normalizePhotoPosition(options.position)
+      : existingPositions[oldUrl];
+    delete existingPositions[oldUrl];
+  } else if (options.position) {
+    existingPositions[publicUrl] = normalizePhotoPosition(options.position);
+  }
 
-  const updated = await persistGallery(supabase, userId, nextPhotos, nextAvatar);
+  const updated = await persistGallery(
+    supabase,
+    userId,
+    nextPhotos,
+    nextAvatar,
+    existingPositions,
+  );
 
   if (oldStoragePath && oldStoragePath !== storagePath) {
     await supabase.storage.from(AVATARS_BUCKET).remove([oldStoragePath]);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { AppImage } from "@/components/ui/AppImage";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
@@ -119,10 +120,11 @@ export function PetCard({
               compact ? "h-[240px] max-h-[240px]" : "aspect-[4/3]"
             }`}
           >
-            <AppImage
+            <PositionedPhoto
               src={imageSrc}
               alt={pet.name}
               seed={pet.id}
+              position={pet.imagePosition}
               fallbackEmoji={pet.emoji}
               fallbackCaption={`${pet.name} · ${pet.breed}`}
               sizes={
@@ -130,7 +132,7 @@ export function PetCard({
                   ? "(max-width: 640px) 100vw, 320px"
                   : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
               }
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              className="h-full w-full transition-transform duration-500 group-hover:scale-[1.03]"
             />
             <FavoriteButton
               target={{ type: "pet", id: pet.id }}

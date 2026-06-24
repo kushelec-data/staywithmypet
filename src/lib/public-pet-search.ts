@@ -91,7 +91,7 @@ export const emptyPetSearchFilters = (): PetSearchFilterState => ({
 });
 
 const PUBLIC_PET_SELECT =
-  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, pet_photos ( public_url, is_primary, sort_order ), profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )";
+  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, pet_photos ( public_url, is_primary, sort_order, object_position_x, object_position_y, photo_scale ), profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )";
 
 type OwnerJoin = {
   id: string;
@@ -427,6 +427,8 @@ export function publicSearchPetToCardPet(pet: PublicSearchPet): Pet {
     petParentName: pet.ownerName,
     petParentId: pet.ownerId,
     image: pet.primaryPhotoUrl ?? "",
+    imagePosition: pet.primaryPhotoPosition,
+    photoPositions: pet.photoPositions,
     ownerImage: pet.ownerAvatarUrl ?? "",
     pricePerNight: pet.pricePerNight,
     rating: pet.ratingAvg,

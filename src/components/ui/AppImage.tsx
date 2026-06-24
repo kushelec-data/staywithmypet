@@ -25,6 +25,7 @@ export function AppImage({
   captionOnlyFallback = false,
   className = "object-cover",
   fill = true,
+  style,
   ...props
 }: AppImageProps) {
   const [failed, setFailed] = useState(false);
@@ -60,6 +61,7 @@ export function AppImage({
       <img
         src={src}
         alt={alt}
+        style={style}
         className={`${positionClass} ${className}`}
         onError={() => setFailed(true)}
       />
@@ -72,6 +74,7 @@ export function AppImage({
       alt={alt}
       fill={fill}
       className={className}
+      style={style}
       sizes={props.sizes ?? "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
       onError={() => setFailed(true)}
       {...props}

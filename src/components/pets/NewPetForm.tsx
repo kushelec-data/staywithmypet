@@ -47,6 +47,7 @@ import {
   setPrimaryPetPhotoForOwner,
   uploadAndAttachPetPhotos,
 } from "@/lib/pet-photos";
+import { photoPositionFromPetRow, type PhotoObjectPosition } from "@/lib/photo-position";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { OTHER_FIELD_COPY, validateOtherOptionFields } from "@/lib/other-option";
 import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
@@ -115,6 +116,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
 
   const [form, setForm] = useState<PetProfileFormInput>(emptyForm);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const [pendingPhotoPositions, setPendingPhotoPositions] = useState<PhotoObjectPosition[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<ExistingPetPhotoItem[]>([]);
   const [existingPhotoBusy, setExistingPhotoBusy] = useState(false);
   const [loadingPet, setLoadingPet] = useState(isEdit);
@@ -255,6 +257,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           photo.media_type === "video" || /\.(mp4|webm|mov)(\?|$)/i.test(photo.public_url ?? "")
             ? ("video" as const)
             : ("image" as const),
+        position: photoPositionFromPetRow(photo),
       }))
       .filter((photo) => photo.url.length > 0);
   }
@@ -265,22 +268,27 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     setExistingPhotos(mapLoadedPhotos(loadedPhotos));
   }
 
-  async function handleUploadPhoto(file: File) {
+  async function handleUploadPhoto(file: File, position?: PhotoObjectPosition) {
     if (!user?.id || !petId) {
       throw new Error(petsCopy.mediaRequiresPet);
     }
     await uploadAndAttachPetPhotos(supabase, user.id, petId, [file], form.name.trim() || "Pet", {
       append: true,
+      positions: position ? [position] : undefined,
     });
     await refreshExistingPhotos();
   }
 
-  async function handleReplaceExistingPhoto(photoId: string, file: File) {
+  async function handleReplaceExistingPhoto(
+    photoId: string,
+    file: File,
+    position?: PhotoObjectPosition,
+  ) {
     if (!user?.id || !petId) return;
     setExistingPhotoBusy(true);
     setError(null);
     try {
-      await replacePetPhotoImage(supabase, user.id, petId, photoId, file);
+      await replacePetPhotoImage(supabase, user.id, petId, photoId, file, position);
       await refreshExistingPhotos();
     } catch (err) {
       setError(err instanceof Error ? err.message : t.account.petsPage.updatePhotoError);
@@ -453,6 +461,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           newPetId,
           pendingPhotos,
           savePayload.name,
+          { positions: pendingPhotoPositions },
         );
       }
       await refreshProfile();
@@ -492,7 +501,15 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           uploadDisabledMessage={!petId ? petsCopy.mediaRequiresPet : undefined}
           existingPhotos={existingPhotos}
           pendingFiles={petId ? undefined : pendingPhotos}
-          onPendingFilesChange={petId ? undefined : setPendingPhotos}
+          pendingPhotoPositions={petId ? undefined : pendingPhotoPositions}
+          onPendingFilesChange={
+            petId
+              ? undefined
+              : (files, positions) => {
+                  setPendingPhotos(files);
+                  setPendingPhotoPositions(positions);
+                }
+          }
           existingPhotoBusy={existingPhotoBusy}
           onUploadPhoto={petId ? handleUploadPhoto : undefined}
           onReplaceExistingPhoto={petId ? handleReplaceExistingPhoto : undefined}

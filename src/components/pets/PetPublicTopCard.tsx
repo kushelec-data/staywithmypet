@@ -1,7 +1,7 @@
 "use client";
 
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { PhotoLightbox } from "@/components/media/PhotoLightbox";
-import { AppImage } from "@/components/ui/AppImage";
 import { PetPublicProfileActions } from "@/components/pets/PetPublicProfileActions";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
@@ -73,14 +73,15 @@ export function PetPublicTopCard({
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 lg:min-w-0 lg:flex-1">
         <div className="relative mx-auto w-full max-w-[220px] shrink-0 sm:mx-0">
           <div className="relative aspect-square max-h-[200px] w-full overflow-hidden rounded-2xl bg-mint/20 lg:max-h-[220px] lg:w-[220px]">
-            <AppImage
+            <PositionedPhoto
               src={photoUrl}
               alt={pet.name}
               seed={pet.id}
+              position={pet.primaryPhotoPosition}
               fallbackEmoji={speciesEmoji(pet.species)}
               fallbackCaption={pet.name}
               sizes="(max-width: 1024px) 100vw, 240px"
-              className="h-full w-full object-cover"
+              className="h-full w-full"
             />
             <button
               type="button"
@@ -107,13 +108,14 @@ export function PetPublicTopCard({
                     aria-label={`View ${pet.name} photo ${index + 1}`}
                     onClick={() => openAt(index)}
                   >
-                    <AppImage
+                    <PositionedPhoto
                       src={url}
                       alt=""
                       seed={`${pet.id}-thumb-${index}`}
+                      position={pet.photoPositions[url]}
                       fallbackEmoji={speciesEmoji(pet.species)}
                       sizes="48px"
-                      className="object-cover"
+                      className="h-full w-full"
                     />
                   </button>
                 </li>

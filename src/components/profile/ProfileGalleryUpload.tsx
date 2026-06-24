@@ -3,6 +3,9 @@
 import { PhotoCropModal } from "@/components/media/PhotoCropModal";
 import { Button } from "@/components/ui/Button";
 import { validateCropSourceFile } from "@/lib/image-crop";
+import { galleryPositionFromDetails, type PhotoCropSaveResult } from "@/lib/photo-position";
+import { parseProfileDetails } from "@/lib/profile-details";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import {
   MAX_PROFILE_GALLERY_PHOTOS,
   profilePhotosFromDetails,
@@ -49,6 +52,7 @@ export function ProfileGalleryUpload({
   const [cropSession, setCropSession] = useState<CropSession>(null);
 
   const photos = profilePhotosFromDetails(profile?.details ?? {});
+  const profileDetails = parseProfileDetails(profile?.details);
   const slotsLeft = MAX_PROFILE_GALLERY_PHOTOS - photos.length;
   const mainUrl = avatarUrl?.trim() || null;
   const uploadContextRef = useRef({ photos, mainUrl });
@@ -112,12 +116,13 @@ export function ProfileGalleryUpload({
     setCropSession({ url, replaceUrl: url });
   }
 
-  async function saveCroppedPhoto(file: File) {
+  async function saveCroppedPhoto({ file, position }: PhotoCropSaveResult) {
     if (cropSession?.replaceUrl) {
       const updated = await run(() =>
         replaceProfileGalleryPhoto(supabase, userId, cropSession.replaceUrl!, file, {
           currentPhotos: photos,
           currentAvatarUrl: mainUrl,
+          position,
         }),
       );
       if (updated) {
@@ -132,6 +137,7 @@ export function ProfileGalleryUpload({
       uploadProfileGalleryPhoto(supabase, userId, file, {
         currentPhotos: ctx.photos,
         currentAvatarUrl: ctx.mainUrl,
+        position,
       }),
     );
 
@@ -171,7 +177,16 @@ export function ProfileGalleryUpload({
                     isMain ? "border-brand-teal ring-2 ring-brand-teal/20" : "border-black/5"
                   }`}
                 >
-                  <img src={url} alt="" className="aspect-square w-full object-cover" />
+                  <PositionedPhoto
+                    src={url}
+                    alt=""
+                    position={
+                      profileDetails.profile_photo_positions?.[url] ??
+                      galleryPositionFromDetails(profile?.details, url)
+                    }
+                    useAppImage={false}
+                    className="aspect-square w-full"
+                  />
                   {isMain ? (
                     <span className="absolute left-2 top-2 rounded-full bg-brand-teal px-2 py-0.5 text-[0.65rem] font-semibold text-white">
                       {t.profileEdit.gallery.mainBadge}
@@ -275,6 +290,11 @@ export function ProfileGalleryUpload({
         open={editable && Boolean(cropSession)}
         sourceFile={cropSession?.file}
         sourceUrl={cropSession?.url}
+        initialPosition={
+          cropSession?.replaceUrl
+            ? galleryPositionFromDetails(profile?.details, cropSession.replaceUrl)
+            : undefined
+        }
         shape="rounded-square"
         saving={busy}
         onClose={() => {

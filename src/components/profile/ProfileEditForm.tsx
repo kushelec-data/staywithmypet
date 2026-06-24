@@ -739,6 +739,7 @@ export function ProfileEditForm() {
                 displayName={displayName || profile?.display_name || "User"}
                 email={user.email}
                 avatarUrl={avatarUrl}
+                profileDetails={profile?.details}
                 onAvatarUpdated={handleAvatarUpdated}
                 editable={basicEnabled}
                 disabled={saving.basic}

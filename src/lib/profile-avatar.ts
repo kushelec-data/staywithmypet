@@ -1,5 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { fetchUserProfile } from "@/lib/profile-load";
+import { normalizePhotoPosition, type PhotoObjectPosition } from "@/lib/photo-position";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { AuthRequiredError, ForbiddenError } from "@/lib/security/assert-owner";
 import { isMissingColumnError, supabaseErrorDetail } from "@/lib/supabase-errors";
@@ -135,8 +136,28 @@ function mapProfileUpdateError(error: PostgrestError): AvatarUploadError {
 }
 
 /** profiles.avatar_url is the canonical column (see initial_schema.sql). */
-function buildAvatarProfileUpdatePayload(publicUrl: string): { avatar_url: string } {
-  return { avatar_url: publicUrl };
+async function buildAvatarProfileUpdatePayload(
+  supabase: SupabaseClient,
+  userId: string,
+  publicUrl: string,
+  position?: PhotoObjectPosition,
+): Promise<Record<string, unknown>> {
+  const row: Record<string, unknown> = { avatar_url: publicUrl };
+
+  if (position) {
+    const { data, error } = await supabase.from("profiles").select("details").eq("id", userId).maybeSingle();
+    if (!error) {
+      const raw = data?.details;
+      const base =
+        raw && typeof raw === "object" && !Array.isArray(raw)
+          ? { ...(raw as Record<string, unknown>) }
+          : {};
+      base.avatar_position = normalizePhotoPosition(position);
+      row.details = base;
+    }
+  }
+
+  return row;
 }
 
 /** @deprecated Use AvatarUploadError messages from uploadProfileAvatar instead. */
@@ -148,6 +169,7 @@ export async function uploadProfileAvatar(
   supabase: SupabaseClient,
   userId: string,
   file: File,
+  position?: PhotoObjectPosition,
 ): Promise<ProfileRow> {
   avatarUploadLog("selected file", {
     name: file.name,
@@ -223,7 +245,7 @@ export async function uploadProfileAvatar(
   const publicUrl = urlData.publicUrl;
   avatarUploadLog("public url", { publicUrl });
 
-  const updatePayload = buildAvatarProfileUpdatePayload(publicUrl);
+  const updatePayload = await buildAvatarProfileUpdatePayload(supabase, userId, publicUrl, position);
   avatarUploadLog("profile update payload", {
     table: "profiles",
     id: userId,

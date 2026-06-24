@@ -7,6 +7,7 @@ import { parseCoord } from "@/lib/parse-coord";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
 import type { PetFriendSearchFilterable } from "@/lib/pet-friend-search-match";
 import { buildPetFriendPreferenceChips } from "@/lib/pet-friend-card-chips";
+import { avatarPositionFromDetails, type PhotoObjectPosition } from "@/lib/photo-position";
 import {
   parseProfileDetails,
   resolvedAvailability,
@@ -22,6 +23,7 @@ export type SearchProfile = PetFriendSearchFilterable & {
   location: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  avatarPosition: PhotoObjectPosition;
   role: ProfileRole;
   activeMode: ProfileActiveMode;
   ratingAvg: number;
@@ -159,6 +161,7 @@ export function mapPetFriendSearchRow(row: PetFriendSearchRow): SearchProfile {
     mapPosition: resolveFriendMapPosition(row, locationArea),
     bio: bio || null,
     avatarUrl: row.avatar_url,
+    avatarPosition: avatarPositionFromDetails(row.details),
     role,
     activeMode,
     ratingAvg: Number(row.rating_avg) || 0,

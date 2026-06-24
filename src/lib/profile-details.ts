@@ -13,6 +13,10 @@ import {
   type EmergencyContact,
 } from "@/lib/trust-safety";
 import {
+  parsePhotoPosition,
+  type PhotoObjectPosition,
+} from "@/lib/photo-position";
+import {
   formatExperienceLevelLabel,
   formatPetTypesWillingComfort,
   formatPreferredCareLocationLabel,
@@ -95,6 +99,10 @@ export type ProfileDetails = {
   emergency_contact_relationship?: string;
   /** Public gallery URLs (`profiles.details.profile_photos`), max 6 */
   profile_photos?: string[];
+  /** Avatar focal point (`profiles.details.avatar_position`). */
+  avatar_position?: import("@/lib/photo-position").PhotoObjectPosition;
+  /** Gallery focal points keyed by public URL. */
+  profile_photo_positions?: Record<string, import("@/lib/photo-position").PhotoObjectPosition>;
   pet_care_preferences?: PetCarePreferences;
   availability?: ProfileAvailabilityDetails;
   living_situation?: LivingSituationDetails;
@@ -129,6 +137,18 @@ function strFrom(value: unknown): string | null {
 function strArrFrom(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
+}
+
+function parseProfilePhotoPositionsMap(
+  raw: unknown,
+): Record<string, PhotoObjectPosition> | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const out: Record<string, PhotoObjectPosition> = {};
+  for (const [url, value] of Object.entries(raw as Record<string, unknown>)) {
+    const parsed = parsePhotoPosition(value);
+    if (parsed && url.trim()) out[url] = parsed;
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 function boolFrom(value: unknown): boolean | null {
@@ -256,6 +276,8 @@ export function parseProfileDetails(raw: unknown): ProfileDetails {
   const availability = parseAvailabilityFromRaw(o);
 
   const profile_photos = strArrFrom(o.profile_photos).slice(0, 6);
+  const avatar_position = parsePhotoPosition(o.avatar_position) ?? undefined;
+  const profile_photo_positions = parseProfilePhotoPositionsMap(o.profile_photo_positions);
   const emergency_contact = parseEmergencyContact(o) ?? undefined;
   const emergency_contact_relationship =
     emergency_contact?.relationship ?? emergencyContactRelationshipFromDetails(o) ?? undefined;
@@ -264,6 +286,8 @@ export function parseProfileDetails(raw: unknown): ProfileDetails {
     emergency_contact,
     emergency_contact_relationship,
     profile_photos: profile_photos.length ? profile_photos : undefined,
+    avatar_position,
+    profile_photo_positions,
     pet_care_preferences,
     availability,
     availability_schedule: availability,

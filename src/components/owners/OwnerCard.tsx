@@ -81,6 +81,7 @@ export function OwnerCard({
             userId={profile.id}
             displayName={profile.displayName}
             avatarUrl={profile.avatarUrl}
+            avatarPosition={profile.avatarPosition}
             compact={compact}
           />
           <FavoriteButton

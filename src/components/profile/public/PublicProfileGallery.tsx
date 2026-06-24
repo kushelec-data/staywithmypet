@@ -1,16 +1,22 @@
 "use client";
 
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { PhotoLightbox } from "@/components/media/PhotoLightbox";
-import { AppImage } from "@/components/ui/AppImage";
 import { useLanguage } from "@/context/LanguageContext";
+import { DEFAULT_PHOTO_POSITION, type PhotoObjectPosition } from "@/lib/photo-position";
 import { useState } from "react";
 
 type PublicProfileGalleryProps = {
   photos: string[];
+  photoPositions?: Record<string, PhotoObjectPosition>;
   displayName: string;
 };
 
-export function PublicProfileGallery({ photos, displayName }: PublicProfileGalleryProps) {
+export function PublicProfileGallery({
+  photos,
+  photoPositions,
+  displayName,
+}: PublicProfileGalleryProps) {
   const { t } = useLanguage();
   const ui = t.publicProfileUi;
   const urls = photos.filter((u) => u.trim()).slice(0, 6);
@@ -42,13 +48,14 @@ export function PublicProfileGallery({ photos, displayName }: PublicProfileGalle
                   .replace("{n}", String(index + 1))}
                 onClick={() => openAt(index)}
               >
-                <AppImage
+                <PositionedPhoto
                   src={url}
                   alt=""
                   seed={url}
+                  position={photoPositions?.[url] ?? DEFAULT_PHOTO_POSITION}
                   fallbackCaption={displayName}
                   sizes="64px"
-                  className="object-cover"
+                  className="h-full w-full"
                 />
               </button>
             </li>

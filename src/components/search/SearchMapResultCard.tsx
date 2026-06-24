@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { AppImage } from "@/components/ui/AppImage";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
@@ -112,14 +113,15 @@ export function SearchMapPetCard({
           className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-lg bg-mint/20"
           onClick={(e) => e.stopPropagation()}
         >
-          <AppImage
+          <PositionedPhoto
             src={imageSrc}
             alt={pet.name}
             seed={pet.id}
+            position={pet.imagePosition}
             fallbackEmoji={pet.emoji}
             fallbackCaption={pet.name}
             sizes="72px"
-            className="h-full w-full object-cover"
+            className="h-full w-full"
           />
           <FavoriteButton
             target={{ type: "pet", id: pet.id }}
@@ -232,6 +234,7 @@ export function SearchMapFriendCard({
             userId={profile.id}
             displayName={profile.displayName}
             avatarUrl={avatarSrc}
+            avatarPosition={profile.avatarPosition}
             size="sm"
             shape="circle"
             sizes="56px"

@@ -10,6 +10,8 @@ export type Pet = {
   petParentName: string;
   petParentId: string;
   image: string;
+  imagePosition?: import("@/lib/photo-position").PhotoObjectPosition;
+  photoPositions?: Record<string, import("@/lib/photo-position").PhotoObjectPosition>;
   ownerImage: string;
   pricePerNight: number;
   rating: number;

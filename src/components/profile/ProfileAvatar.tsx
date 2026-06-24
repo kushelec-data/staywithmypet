@@ -1,11 +1,12 @@
 "use client";
 
-import { AppImage } from "@/components/ui/AppImage";
 import {
   hasRenderableProfileInitials,
   resolveProfileAvatarInitials,
   resolveSanitizedAvatarUrl,
 } from "@/lib/profile-avatar-display";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
+import type { PhotoObjectPosition } from "@/lib/photo-position";
 
 type ProfileAvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -14,6 +15,7 @@ type ProfileAvatarProps = {
   displayName: string;
   email?: string | null;
   avatarUrl?: string | null;
+  avatarPosition?: PhotoObjectPosition | null;
   size?: ProfileAvatarSize;
   shape?: "circle" | "rounded" | "rounded-xl";
   className?: string;
@@ -65,6 +67,7 @@ export function ProfileAvatar({
   displayName,
   email,
   avatarUrl,
+  avatarPosition,
   size = "md",
   shape = "rounded",
   className = "",
@@ -91,10 +94,11 @@ export function ProfileAvatar({
     if (sizes) {
       return (
         <div className={`relative shrink-0 overflow-hidden ${shell}`}>
-          <AppImage
+          <PositionedPhoto
             src={safeUrl}
             alt=""
             seed={userId}
+            position={avatarPosition}
             sizes={sizes}
             className={imageClassName}
           />
@@ -103,13 +107,15 @@ export function ProfileAvatar({
     }
 
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- controlled avatar URL with ownership check
-      <img
-        key={`${userId}:${safeUrl}`}
-        src={safeUrl}
-        alt=""
-        className={`shrink-0 ${shell} ${imageClassName}`}
-      />
+      <div className={`relative shrink-0 overflow-hidden ${shell}`}>
+        <PositionedPhoto
+          src={safeUrl}
+          alt=""
+          position={avatarPosition}
+          useAppImage={false}
+          className={imageClassName}
+        />
+      </div>
     );
   }
 

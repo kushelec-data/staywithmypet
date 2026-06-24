@@ -248,3 +248,52 @@ export function cropImageDimensions(image: HTMLImageElement): { width: number; h
     height: image.naturalHeight || image.height,
   };
 }
+
+const UPLOAD_MAX_DIMENSION = 2048;
+
+/** Compress and optionally downscale the full image — no crop/reposition baked in. */
+export async function compressImageForUpload(
+  image: HTMLImageElement,
+  mimeType: "image/jpeg" | "image/webp" | "image/png" = "image/jpeg",
+  maxBytes: number = CROP_MAX_OUTPUT_BYTES,
+): Promise<Blob> {
+  const { width, height } = cropImageDimensions(image);
+  const scale = Math.min(1, UPLOAD_MAX_DIMENSION / Math.max(width, height));
+  const targetW = Math.max(1, Math.round(width * scale));
+  const targetH = Math.max(1, Math.round(height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not prepare photo for upload.");
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, targetW, targetH);
+  ctx.drawImage(image, 0, 0, targetW, targetH);
+
+  let quality = CROP_OUTPUT_JPEG_QUALITY;
+  let blob = await canvasToBlob(canvas, mimeType, quality);
+
+  if (blob.size <= maxBytes) return blob;
+
+  for (let attempt = 0; attempt < 6 && blob.size > maxBytes; attempt += 1) {
+    quality = Math.max(0.5, quality - 0.08);
+    blob = await canvasToBlob(canvas, "image/jpeg", quality);
+  }
+
+  if (blob.size > maxBytes) {
+    const smaller = Math.max(256, Math.floor(Math.max(targetW, targetH) * 0.85));
+    const retryScale = smaller / Math.max(targetW, targetH);
+    canvas.width = Math.max(1, Math.round(targetW * retryScale));
+    canvas.height = Math.max(1, Math.round(targetH * retryScale));
+    const retryCtx = canvas.getContext("2d");
+    if (!retryCtx) throw new Error("Could not prepare photo for upload.");
+    retryCtx.fillStyle = "#ffffff";
+    retryCtx.fillRect(0, 0, canvas.width, canvas.height);
+    retryCtx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvasToBlob(canvas, "image/jpeg", CROP_OUTPUT_JPEG_QUALITY);
+  }
+
+  return blob;
+}

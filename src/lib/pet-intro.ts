@@ -7,13 +7,15 @@ import { formatSupabaseError } from "@/lib/profile-load";
 import { speciesDisplayLabel, speciesEmoji, type PetSpecies } from "@/lib/pet-data";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
-import { pickPrimaryPhotoUrl, sortPetPhotoUrls } from "@/lib/pet-photos";
+import { pickPrimaryPhotoUrl, pickPrimaryPhotoPosition, photoPositionsByUrl, sortPetPhotoUrls } from "@/lib/pet-photos";
+import type { PhotoObjectPosition } from "@/lib/photo-position";
 import {
   normalizePetWeightStorageValue,
   petWeightCategoryShortLabel,
 } from "@/lib/pet-weight";
 
-const PET_PHOTO_SELECT = "pet_photos ( public_url, is_primary, sort_order )";
+const PET_PHOTO_SELECT =
+  "pet_photos ( public_url, is_primary, sort_order, object_position_x, object_position_y, photo_scale )";
 
 /** Full select for pet intro cards (uses pets.care_type). */
 export const PET_INTRO_SELECT =
@@ -46,6 +48,8 @@ export type PetIntroDisplay = {
   compactLines: string[];
   careSummary: string;
   primaryPhotoUrl: string | null;
+  primaryPhotoPosition: PhotoObjectPosition;
+  photoPositions: Record<string, PhotoObjectPosition>;
   photoUrls: string[];
   isActive: boolean;
 };
@@ -54,6 +58,9 @@ type PetPhotoJoin = {
   public_url: string | null;
   is_primary: boolean;
   sort_order: number;
+  object_position_x?: number | null;
+  object_position_y?: number | null;
+  photo_scale?: number | null;
 };
 
 export type PetIntroRow = Record<string, unknown>;
@@ -315,6 +322,8 @@ export function mapRowToPetIntro(
     careSummary: buildPetCareSummary(row),
     photoUrls: sortPetPhotoUrls(photos),
     primaryPhotoUrl: pickPrimaryPhotoUrl(photos),
+    primaryPhotoPosition: pickPrimaryPhotoPosition(photos),
+    photoPositions: photoPositionsByUrl(photos),
     isActive: row.is_active !== false,
   };
 }
