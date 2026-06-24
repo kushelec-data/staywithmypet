@@ -1213,6 +1213,7 @@ export const et = {
     approximateMapNear: "Ligikaudne kaart asukoha {location} lähedal",
     petsHeading: "Lemmikud",
     listedGeneralArea: "{count} kuulutust · ainult üldine piirkond",
+    noPublicPetsListed: "Avalikke lemmikuid pole veel lisatud.",
     photos: "Fotod",
     viewPhoto: "Vaata {name} fotot {n}",
     profileNotFound: "Profiili ei leitud.",
@@ -1234,7 +1235,7 @@ export const et = {
   },
   media: {
     adjustPhoto: "Kohanda fotot",
-    adjustPhotoHint: "Lohista paigutamiseks. Suumi liuguriga.",
+    adjustPhotoHint: "Lohista fotot ringi sees paigutamiseks. Suuruse muutmiseks kasuta suumimist.",
     zoom: "Suum",
     closePhotoViewer: "Sulge fotovaatur",
     previousPhoto: "Eelmine foto",

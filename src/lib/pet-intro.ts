@@ -331,7 +331,7 @@ export function mapRowToPetIntro(
 async function queryPetIntroRows(
   supabase: SupabaseClient,
   ownerId: string,
-  activeOnly: boolean,
+  options: { activeOnly?: boolean; publicOnly?: boolean },
 ): Promise<PetIntroRow[]> {
   let lastError: PostgrestError | null = null;
 
@@ -342,8 +342,12 @@ async function queryPetIntroRows(
       .eq("owner_id", ownerId)
       .order("created_at", { ascending: false });
 
-    if (activeOnly) {
+    if (options.activeOnly) {
       query = query.eq("is_active", true);
+    }
+
+    if (options.publicOnly) {
+      query = query.eq("is_public", true);
     }
 
     const result = await query;
@@ -368,9 +372,12 @@ async function queryPetIntroRows(
 export async function fetchOwnerPetIntros(
   supabase: SupabaseClient,
   ownerId: string,
-  options: { activeOnly?: boolean; publicLocation?: boolean } = {},
+  options: { activeOnly?: boolean; publicOnly?: boolean; publicLocation?: boolean } = {},
 ): Promise<PetIntroDisplay[]> {
-  const rows = await queryPetIntroRows(supabase, ownerId, Boolean(options.activeOnly));
+  const rows = await queryPetIntroRows(supabase, ownerId, {
+    activeOnly: Boolean(options.activeOnly),
+    publicOnly: Boolean(options.publicOnly),
+  });
 
   return rows.map((row) =>
     mapRowToPetIntro(row, { publicLocation: options.publicLocation }),

@@ -1204,6 +1204,7 @@ export const en = {
     approximateMapNear: "Approximate map near {location}",
     petsHeading: "Pets",
     listedGeneralArea: "{count} listed · general area only",
+    noPublicPetsListed: "No public pets listed yet.",
     photos: "Photos",
     viewPhoto: "View {name} photo {n}",
     profileNotFound: "Profile not found.",
@@ -1225,7 +1226,7 @@ export const en = {
   },
   media: {
     adjustPhoto: "Adjust photo",
-    adjustPhotoHint: "Drag to reposition. Use the slider to zoom.",
+    adjustPhotoHint: "Drag photo to position it inside the circle. Use zoom to adjust size.",
     zoom: "Zoom",
     closePhotoViewer: "Close photo viewer",
     previousPhoto: "Previous photo",

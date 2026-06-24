@@ -273,7 +273,11 @@ export async function fetchPublicPetsForOwner(
   supabase: SupabaseClient,
   ownerId: string,
 ): Promise<PetIntroDisplay[]> {
-  return fetchOwnerPetIntros(supabase, ownerId, { activeOnly: true, publicLocation: true });
+  return fetchOwnerPetIntros(supabase, ownerId, {
+    activeOnly: true,
+    publicOnly: true,
+    publicLocation: true,
+  });
 }
 
 export function formatMemberSince(createdAt: string | null): string | null {

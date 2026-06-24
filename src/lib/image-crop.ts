@@ -129,6 +129,24 @@ export function initialCropTransform(
   });
 }
 
+/** Ensures enough zoom that both axes can be repositioned in the square editor. */
+export function initialCropTransformForEditor(
+  imageWidth: number,
+  imageHeight: number,
+  viewportSize: number,
+  existing?: Partial<CropTransform>,
+): CropTransform {
+  const cover = baseCoverScale(imageWidth, imageHeight, viewportSize);
+  const minScaled = Math.min(imageWidth * cover, imageHeight * cover);
+  const minScale =
+    minScaled > 0 ? Math.max(1, viewportSize / minScaled + 0.001) : 1;
+  return clampCropTransform(imageWidth, imageHeight, viewportSize, {
+    scale: Math.max(minScale, existing?.scale ?? 1),
+    offsetX: existing?.offsetX ?? 0,
+    offsetY: existing?.offsetY ?? 0,
+  });
+}
+
 function drawCroppedImage(
   ctx: CanvasRenderingContext2D,
   options: CropRenderOptions,
