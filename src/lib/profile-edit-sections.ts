@@ -20,8 +20,8 @@ export function visibleProfileEditSteps(
 ): ProfileEditSectionKey[] {
   const mode = activeMode ?? (role === "pet_parent" ? "pet_parent" : "pet_friend");
   if (mode === "pet_friend") return ["basic", "trust", "petFriend", "availability"];
-  // Pet parent edit: no profile-level availability editor here (pet availability lives on pet edit pages).
-  return ["basic", "trust", "petParent"];
+  // Pet parent edit: pets and care needs are managed on My Pets — wizard is basic + trust only.
+  return ["basic", "trust"];
 }
 
 const HASH_TO_STEP: Record<string, ProfileEditSectionKey> = {

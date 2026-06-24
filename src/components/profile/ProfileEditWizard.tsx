@@ -106,7 +106,18 @@ export function ProfileEditWizard({
   if (!activeStep) return null;
 
   const tabGridClass =
-    totalSteps >= 4 ? "md:grid-cols-4" : totalSteps === 3 ? "md:grid-cols-3" : "md:grid-cols-2";
+    totalSteps >= 4
+      ? "md:grid-cols-4"
+      : totalSteps === 3
+        ? "md:grid-cols-3"
+        : "grid grid-cols-2 md:grid-cols-2";
+
+  const tabMinWidthClass = totalSteps === 2 ? "min-w-0" : "min-w-[9.5rem] shrink-0 md:min-w-0";
+
+  const tabListClass =
+    totalSteps === 2
+      ? "grid grid-cols-2 gap-2 sm:gap-3"
+      : `flex gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] md:grid md:overflow-visible ${tabGridClass}`;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5">
@@ -114,7 +125,7 @@ export function ProfileEditWizard({
         ref={tabsRef}
         role="tablist"
         aria-label={labels.tabsLabel}
-        className={`flex gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] md:grid md:overflow-visible ${tabGridClass}`}
+        className={tabListClass}
       >
         {steps.map((step, index) => {
           const selected = index === activeIndex;
@@ -131,7 +142,7 @@ export function ProfileEditWizard({
               aria-controls={`profile-edit-panel-${step.id}`}
               id={`profile-edit-tab-${step.id}`}
               onClick={() => goToIndex(index)}
-              className={`flex min-w-[9.5rem] shrink-0 cursor-pointer flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-left transition-colors md:min-w-0 ${
+              className={`flex ${tabMinWidthClass} cursor-pointer flex-col gap-1.5 rounded-xl border px-3 py-3 text-left transition-colors sm:gap-2 sm:px-4 sm:py-3.5 ${
                 selected
                   ? "border-[#2E6B3F]/40 bg-[#DDEEDF] shadow-sm ring-1 ring-[#E5E2D8]"
                   : "border-[#E5E2D8] bg-[#F8F6F1] hover:border-[#2E6B3F]/30 hover:bg-[#DDEEDF]/60"
