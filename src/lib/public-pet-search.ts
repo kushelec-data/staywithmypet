@@ -1,5 +1,5 @@
 import { formatCareTypeLabels } from "@/lib/care-type-options";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { getPetCardTagline } from "@/lib/pet-card-tagline";
@@ -90,8 +90,38 @@ export const emptyPetSearchFilters = (): PetSearchFilterState => ({
   languages: [],
 });
 
+const PUBLIC_PET_PHOTO_SELECT =
+  "pet_photos ( public_url, is_primary, sort_order, object_position_x, object_position_y, photo_scale )";
+
+/** Fallback when crop columns are not migrated yet (defaults to 50%/50%, scale 1 in mappers). */
+const PUBLIC_PET_PHOTO_SELECT_LEGACY = "pet_photos ( public_url, is_primary, sort_order )";
+
 const PUBLIC_PET_SELECT =
-  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, pet_photos ( public_url, is_primary, sort_order, object_position_x, object_position_y, photo_scale ), profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )";
+  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, " +
+  `${PUBLIC_PET_PHOTO_SELECT}, profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )`;
+
+const PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC = PUBLIC_PET_SELECT.replace("is_public, ", "");
+
+const PUBLIC_PET_SELECT_LEGACY = PUBLIC_PET_SELECT.replace(
+  PUBLIC_PET_PHOTO_SELECT,
+  PUBLIC_PET_PHOTO_SELECT_LEGACY,
+);
+
+const PUBLIC_PET_SELECT_LEGACY_WITHOUT_IS_PUBLIC = PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC.replace(
+  PUBLIC_PET_PHOTO_SELECT,
+  PUBLIC_PET_PHOTO_SELECT_LEGACY,
+);
+
+const PUBLIC_PET_SELECT_TIERS = [
+  PUBLIC_PET_SELECT,
+  PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC,
+  PUBLIC_PET_SELECT_LEGACY,
+  PUBLIC_PET_SELECT_LEGACY_WITHOUT_IS_PUBLIC,
+] as const;
+
+function selectIncludesIsPublic(select: string): boolean {
+  return /\bis_public\b/.test(select);
+}
 
 type OwnerJoin = {
   id: string;
@@ -298,24 +328,31 @@ function mapRowToPublicSearchPet(
 }
 
 async function queryPublicPets(supabase: SupabaseClient) {
-  const primary = await supabase
-    .from("pets")
-    .select(PUBLIC_PET_SELECT)
-    .eq("is_public", true)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
+  let lastError: PostgrestError | null = null;
 
-  if (!primary.error) return primary;
-
-  if (/is_public|column/i.test(primary.error.message)) {
-    return supabase
+  for (const select of PUBLIC_PET_SELECT_TIERS) {
+    let query = supabase
       .from("pets")
-      .select(PUBLIC_PET_SELECT.replace("is_public, ", ""))
+      .select(select)
       .eq("is_active", true)
       .order("created_at", { ascending: false });
+
+    if (selectIncludesIsPublic(select)) {
+      query = query.eq("is_public", true);
+    }
+
+    const result = await query;
+
+    if (!result.error) return result;
+
+    if (!/column/i.test(result.error.message)) {
+      return result;
+    }
+
+    lastError = result.error;
   }
 
-  return primary;
+  return { data: null, error: lastError };
 }
 
 export async function fetchPublicSearchPets(
@@ -334,28 +371,28 @@ export async function fetchPublicSearchPetById(
   petId: string,
   options: MapPublicPetOptions = {},
 ): Promise<PublicSearchPet | null> {
-  const { data, error } = await supabase
-    .from("pets")
-    .select(PUBLIC_PET_SELECT)
-    .eq("id", petId)
-    .maybeSingle();
+  let lastError: PostgrestError | null = null;
 
-  if (error) {
-    if (/is_public/i.test(error.message)) {
-      const fallback = await supabase
-        .from("pets")
-        .select(PUBLIC_PET_SELECT.replace("is_public, ", ""))
-        .eq("id", petId)
-        .maybeSingle();
-      if (fallback.error) throw new Error(formatSupabaseError(fallback.error));
-      if (!fallback.data) return null;
-      return mapRowToPublicSearchPet(fallback.data as unknown as PetIntroRow, options);
+  for (const select of PUBLIC_PET_SELECT_TIERS) {
+    const result = await supabase.from("pets").select(select).eq("id", petId).maybeSingle();
+
+    if (!result.error) {
+      if (!result.data) return null;
+      return mapRowToPublicSearchPet(result.data as unknown as PetIntroRow, options);
     }
-    throw new Error(formatSupabaseError(error));
+
+    if (!/column/i.test(result.error.message)) {
+      throw new Error(formatSupabaseError(result.error));
+    }
+
+    lastError = result.error;
   }
 
-  if (!data) return null;
-  return mapRowToPublicSearchPet(data as unknown as PetIntroRow, options);
+  if (lastError) {
+    throw new Error(formatSupabaseError(lastError));
+  }
+
+  return null;
 }
 
 export function filterPublicSearchPets(
