@@ -17,6 +17,9 @@ import {
 const PET_PHOTO_SELECT =
   "pet_photos ( public_url, is_primary, sort_order, object_position_x, object_position_y, photo_scale )";
 
+/** Fallback when crop columns are not migrated yet (defaults to 50%/50%, scale 1 in mappers). */
+const PET_PHOTO_SELECT_LEGACY = "pet_photos ( public_url, is_primary, sort_order )";
+
 /** Full select for pet intro cards (uses pets.care_type). */
 export const PET_INTRO_SELECT =
   `id, name, species, breed, age_label, date_of_birth, size_label, location, temperament, energy_level, requires_medication, feeding_schedule, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT}`;
@@ -27,7 +30,23 @@ const PET_INTRO_SELECT_CORE =
 const PET_INTRO_SELECT_MINIMAL =
   `id, name, species, breed, location, is_active, details, ${PET_PHOTO_SELECT}`;
 
-const PET_INTRO_SELECT_TIERS = [PET_INTRO_SELECT, PET_INTRO_SELECT_CORE, PET_INTRO_SELECT_MINIMAL] as const;
+const PET_INTRO_SELECT_LEGACY =
+  `id, name, species, breed, age_label, date_of_birth, size_label, location, temperament, energy_level, requires_medication, feeding_schedule, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT_LEGACY}`;
+
+const PET_INTRO_SELECT_CORE_LEGACY =
+  `id, name, species, breed, age_label, size_label, location, temperament, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT_LEGACY}`;
+
+const PET_INTRO_SELECT_MINIMAL_LEGACY =
+  `id, name, species, breed, location, is_active, details, ${PET_PHOTO_SELECT_LEGACY}`;
+
+const PET_INTRO_SELECT_TIERS = [
+  PET_INTRO_SELECT,
+  PET_INTRO_SELECT_CORE,
+  PET_INTRO_SELECT_MINIMAL,
+  PET_INTRO_SELECT_LEGACY,
+  PET_INTRO_SELECT_CORE_LEGACY,
+  PET_INTRO_SELECT_MINIMAL_LEGACY,
+] as const;
 
 export type PetIntroDisplay = {
   id: string;
