@@ -5,11 +5,10 @@ import { emailCtx } from "@/lib/emails/context";
 export function profileCompletedTemplate(ctx: EmailTemplateContext): EmailTemplate {
   const { name } = emailCtx(ctx);
   return buildTemplate(
-    "Your profile is 100% complete",
+    "Congratulations! Your Profile is Complete 🎉",
     [
       `Hi ${name},`,
-      "Great work — your profile and trust details are fully complete. You're ready to send and receive care requests with confidence.",
-      "Thank you for being a thoughtful part of our community.",
+      "Congratulations! Your StayWithMyPet profile is now complete. Your profile is ready and visible, making it easier for other members to connect with you.",
     ],
     { cta: { label: "View your profile", href: absoluteUrl("/profile/edit") } },
   );

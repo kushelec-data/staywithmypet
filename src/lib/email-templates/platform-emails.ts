@@ -2,18 +2,10 @@ import { buildEmailFromExcelColumnE } from "@/lib/email-templates/render-excel-e
 import type { EmailLocale } from "@/lib/email-templates/locale";
 import type { EmailTemplate, EmailTemplateContext } from "@/lib/emails/types";
 
-/** Excel Column E rows 5–6 — Profile verified */
-export function buildProfileVerifiedEmail(
-  ctx: EmailTemplateContext,
-  locale: EmailLocale,
-): EmailTemplate {
-  return buildEmailFromExcelColumnE(
-    "profile_verified_subject",
-    "profile_verified_body",
-    ctx,
-    locale,
-  );
-}
+export {
+  buildProfileCompletedEmail,
+  buildProfileVerifiedEmail,
+} from "@/lib/email-templates/profile-emails";
 
 /** Excel Column E rows 8–9 — Membership activated */
 export function buildMembershipActivatedEmail(

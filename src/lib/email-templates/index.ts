@@ -17,6 +17,7 @@ import {
   buildMembershipExpiryReminderEmail,
   buildMembershipRenewalReminderEmail,
   buildNewMessageEmail,
+  buildProfileCompletedEmail,
   buildProfileVerifiedEmail,
 } from "@/lib/email-templates/platform-emails";
 
@@ -27,6 +28,7 @@ export function buildAutomatedEmailTemplate(
 ): EmailTemplate {
   switch (eventType) {
     case "profile_completed":
+      return buildProfileCompletedEmail(ctx, locale);
     case "profile_verified":
       return buildProfileVerifiedEmail(ctx, locale);
     case "membership_activated":
@@ -63,6 +65,7 @@ export function buildAutomatedEmailTemplate(
 }
 
 export {
+  buildProfileCompletedEmail,
   buildProfileVerifiedEmail,
   buildMembershipActivatedEmail,
   buildMembershipRenewalReminderEmail,
