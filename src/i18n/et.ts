@@ -773,6 +773,7 @@ export const et = {
     emptyTitle: "Arvustusi pole veel",
     emptyDescription:
       "Arvustused ilmuvad pärast lõpetatud hooldusbroneeringut. Lõpeta hooldusi, et luua usaldust kogukonnas.",
+    viewAllReviews: "Vaata kõiki arvustusi",
     emptyCtaBookings: "Vaata hoiupäringuid",
     sectionTitlePlain: "Arvustused",
     emptyProfile: "Arvustusi pole veel.",
@@ -1766,6 +1767,7 @@ export const et = {
     availabilityTitle: "{name} saadavus",
     availabilitySubtitle: "Kuupäevad, mil see lemmikloomasõber on hoolduseks saadaval.",
     noUpcomingDates: "Tulevasi kuupäevi pole veel kirjas.",
+    noUpcomingDatesEmpty: "Tulevasi kuupäevi pole",
     logInToSendRequest: "Logi sisse, et päring saata",
     checkCalendar: "Vaata kalendrit",
   },

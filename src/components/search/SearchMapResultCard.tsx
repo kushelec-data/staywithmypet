@@ -147,7 +147,7 @@ export function SearchMapPetCard({
             labels={availability.previewLabels}
             isos={availability.previewIsos}
             moreCount={availability.moreCount}
-            emptyLabel="No upcoming dates"
+            emptyLabel={t.findCare.noUpcomingDatesEmpty}
           />
 
           <div className="mt-auto flex flex-wrap gap-1">
@@ -292,7 +292,7 @@ export function SearchMapFriendCard({
             labels={availability.previewLabels}
             isos={availability.previewIsos}
             moreCount={availability.moreCount}
-            emptyLabel="No upcoming dates"
+            emptyLabel={t.findCare.noUpcomingDatesEmpty}
           />
 
           <div className="mt-auto flex flex-wrap gap-1">

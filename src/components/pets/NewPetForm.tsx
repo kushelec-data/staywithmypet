@@ -62,7 +62,7 @@ import {
   formatPetDobForDisplay,
   validatePetDateOfBirthDisplay,
 } from "@/lib/pet-date-of-birth";
-import { translateProfileLabel } from "@/lib/profile-translations";
+import { translateProfileHelper, translateProfileLabel } from "@/lib/profile-translations";
 import { FormDraftStatus } from "@/components/forms/FormDraftStatus";
 import { useFormDraftStorage } from "@/hooks/useFormDraftStorage";
 import { buildPetFormDraft, type PetFormDraftData } from "@/lib/form-drafts/pet-form-draft";
@@ -818,9 +818,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
 
       <PetFormSection title={pl("Availability and care location")}>
         <div className="sm:col-span-2">
-          <p className="form-field-label">Available dates</p>
+          <p className="form-field-label">{pl("Available dates")}</p>
           <p className="mt-1 text-xs text-muted">
-            Select days or ranges when your pet can be cared for. Add free-text notes below if needed.
+            {pl(
+              "Select days or ranges when your pet can be cared for. Add free-text notes below if needed.",
+            )}
           </p>
           <div className="mt-3 rounded-2xl border-2 border-brand-teal/25 bg-surface/90 p-3 shadow-sm ring-1 ring-black/5 sm:p-4">
             <AvailabilityCalendar
@@ -834,7 +836,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="availability" className="form-field-label">
-            Availability notes
+            {pl("Availability notes")}
           </label>
           <AutoResizeTextarea
             id="availability"
@@ -842,7 +844,10 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             value={form.availability}
             onChange={(e) => patch("availability", e.target.value)}
             className="input-field mt-1"
-            placeholder="Extra context (e.g. flexible evenings, school holidays)"
+            placeholder={translateProfileHelper(
+              "Extra context (e.g. flexible evenings, school holidays)",
+              locale,
+            )}
           />
         </div>
         <div className="sm:col-span-2">

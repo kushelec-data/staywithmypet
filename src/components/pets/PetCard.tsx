@@ -189,11 +189,11 @@ export function PetCard({
           <div className={`mt-auto border-t border-black/5 ${compact ? "space-y-1.5 pt-2" : "space-y-2 pt-3"}`}>
             <DateChips
               compact={compact}
-              title={compact || !availability.hasDates ? undefined : "Available"}
+              title={compact || !availability.hasDates ? undefined : t.publicProfileUi.available}
               labels={availability.previewLabels}
               isos={availability.previewIsos}
               moreCount={availability.moreCount}
-              emptyLabel="No upcoming dates"
+              emptyLabel={t.findCare.noUpcomingDatesEmpty}
             />
 
             <button

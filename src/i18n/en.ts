@@ -764,6 +764,7 @@ export const en = {
     emptyTitle: "No reviews yet",
     emptyDescription:
       "Reviews appear after a care booking is completed. Complete stays to build trust in the community.",
+    viewAllReviews: "View all reviews",
     emptyCtaBookings: "View bookings",
     sectionTitlePlain: "Reviews",
     emptyProfile: "No reviews yet.",
@@ -1762,6 +1763,7 @@ export const en = {
     availabilityTitle: "{name}'s availability",
     availabilitySubtitle: "Dates when this Pet Friend is available for care.",
     noUpcomingDates: "No upcoming dates listed yet.",
+    noUpcomingDatesEmpty: "No upcoming dates",
     logInToSendRequest: "Log in to send request",
     checkCalendar: "Check calendar",
   },

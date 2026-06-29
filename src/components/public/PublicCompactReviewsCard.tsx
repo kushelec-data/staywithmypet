@@ -28,6 +28,7 @@ export function PublicCompactReviewsCard({
 }: PublicCompactReviewsCardProps) {
   const { t } = useLanguage();
   const r = t.reviews;
+  const ui = t.publicProfileUi;
   const resolvedEmptyMessage = emptyMessage ?? r.emptyProfile;
   const [showAll, setShowAll] = useState(false);
   const latest = reviews[0];
@@ -87,7 +88,7 @@ export function PublicCompactReviewsCard({
               className="mt-3 text-brand-teal"
               onClick={() => setShowAll((v) => !v)}
             >
-              {showAll ? "Show less" : "View all reviews"}
+              {showAll ? ui.showLess : r.viewAllReviews}
             </Button>
           ) : null}
         </>

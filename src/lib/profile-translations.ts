@@ -217,6 +217,17 @@ const PROFILE_LABEL_PAIRS: Pair[] = [
   ["Health needs", "Tervise eripärad"],
   ["Temperament needs", "Iseloomu eripärad"],
   ["Senior pets", "Eakad lemmikud"],
+  ["Available dates", "Saadaval kuupäevad"],
+  [
+    "Select days or ranges when your pet can be cared for. Add free-text notes below if needed.",
+    "Vali päevad või vahemikud, mil sinu lemmiku eest saab hoolitseda. Lisa vajadusel täiendavad märkmed allpool.",
+  ],
+  ["Availability notes", "Saadavuse märkmed"],
+  [
+    "Extra context (e.g. flexible evenings, school holidays)",
+    "Lisainfo (nt paindlikud õhtud, koolivaheajad)",
+  ],
+  ["Add up to 6 photos or videos that best show your pet's personality and charm!", "Lisa kuni 6 fotot või videot, mis näitavad kõige paremini sinu lemmiku iseloomu ja sarmi."],
 ];
 
 const PROFILE_OPTION_PAIRS: Pair[] = [
@@ -521,6 +532,7 @@ const PROFILE_OPTION_PAIRS: Pair[] = [
   ["Several days", "Mitu päeva"],
   ["One week", "Üks nädal"],
   ["Longer stays", "Pikemad perioodid"],
+  ["No specific requirements", "Spetsiaalseid nõudeid pole"],
 ];
 
 const PROFILE_HELPER_PAIRS: Pair[] = [
@@ -532,10 +544,17 @@ const PROFILE_HELPER_PAIRS: Pair[] = [
   ["The exact address will be only shown after booking. To all the platform browsers, approximate location (~1km radius) is shown!", "Täpne aadress kuvatakse alles pärast broneeringut. Enne seda kuvatakse ligikaudne asukoht (~1 km raadiuses)."],
 ];
 
+function normalizeLookupKey(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[\u2018\u2019\u201A\u2032\u2035`´]/g, "'");
+}
+
 function toLookupMap(pairs: Pair[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const [en, et] of pairs) {
-    map.set(en.trim().toLowerCase(), et);
+    map.set(normalizeLookupKey(en), et);
   }
   return map;
 }
@@ -545,7 +564,7 @@ const OPTION_LOOKUP = toLookupMap(PROFILE_OPTION_PAIRS);
 const HELPER_LOOKUP = toLookupMap(PROFILE_HELPER_PAIRS);
 
 function lookupEt(text: string): string | undefined {
-  const key = text.trim().toLowerCase();
+  const key = normalizeLookupKey(text);
   return (
     LABEL_LOOKUP.get(key) ??
     OPTION_LOOKUP.get(key) ??
@@ -562,7 +581,7 @@ export function getProfileLabelEt(text: string | null | undefined): string | und
 /** Returns Estonian helper copy from column E/K when present. */
 export function getProfileHelperEt(text: string | null | undefined): string | undefined {
   if (!text?.trim()) return undefined;
-  const key = text.trim().toLowerCase();
+  const key = normalizeLookupKey(text);
   return HELPER_LOOKUP.get(key) ?? LABEL_LOOKUP.get(key);
 }
 

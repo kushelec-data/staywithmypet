@@ -154,7 +154,7 @@ export function OwnerCard({
               labels={availability.previewLabels}
               isos={availability.previewIsos}
               moreCount={availability.moreCount}
-              emptyLabel="No upcoming dates"
+              emptyLabel={t.findCare.noUpcomingDatesEmpty}
             />
 
             <Link

@@ -190,6 +190,7 @@ const PET_FRIEND_LISTING_PAIRS: Pair[] = [
   ["No other pets", "Muid lemmikloomi ei ole"],
   ["Has other pets", "Teised lemmikud"],
   ["Children at home", "Lapsed"],
+  ["Smoke-free home", "Suitsetamata kodu"],
   ["dog", "Koer"],
   ["cat", "Kass"],
   ["rabbit", "Jänes"],
