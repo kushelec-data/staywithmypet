@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/context/LanguageContext";
 import {
+  formatConversationDateLabel,
   formatInboxTime,
   resolveConversationStatusDisplay,
   type ConversationSummary,
@@ -50,11 +51,12 @@ function ConversationListItem({
   active: boolean;
   onSelect: () => void;
 }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
   const hasUnread = conversation.unreadCount > 0;
   const statusDisplay = resolveConversationStatusDisplay(conversation);
+  const conversationDateLabel = formatConversationDateLabel(conversation, locale);
 
   return (
     <li>
@@ -85,10 +87,10 @@ function ConversationListItem({
 
           <span className={`mt-px block min-w-0 text-[0.6875rem] leading-snug ${MESSAGES_META_TEXT_CLASS}`}>
             <span className="font-medium">{conversation.otherPartyName}</span>
-            {conversation.dateLabel ? (
+            {conversationDateLabel ? (
               <span className={`break-words ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
                 {" "}
-                · {conversation.dateLabel}
+                · {conversationDateLabel}
               </span>
             ) : null}
           </span>

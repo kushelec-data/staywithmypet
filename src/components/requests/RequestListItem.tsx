@@ -5,6 +5,7 @@ import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBoo
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
+import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { CareRequest } from "@/lib/requests";
 import {
   normalizeRequestMessage,
@@ -93,7 +94,15 @@ export function RequestListItem({
   onDecline,
   onCancel,
 }: RequestListItemProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const dateLabel = formatBookingDatesForRow(
+    {
+      requested_dates: request.requestedDates,
+      date_from: request.dateFrom,
+      date_to: request.dateTo,
+    },
+    { locale },
+  );
   const petTitle =
     request.petName && request.petSpeciesLabel
       ? `${request.petName} · ${request.petSpeciesLabel}`
@@ -131,7 +140,7 @@ export function RequestListItem({
           <div className="grid gap-3 border-t border-[#E5E2D8] pt-4 sm:grid-cols-2 sm:gap-x-6">
             <MetaRow icon={<UserIcon />} label={t.requests.from} value={request.senderName} />
             <MetaRow icon={<UserIcon />} label={t.requests.to} value={request.receiverName} />
-            <MetaRow icon={<CalendarIcon />} label={t.requests.datesLabel} value={request.dateLabel} />
+            <MetaRow icon={<CalendarIcon />} label={t.requests.datesLabel} value={dateLabel} />
             {request.careType ? (
               <MetaRow icon={<PetIcon />} label={t.requests.careTypeLabel} value={request.careType} />
             ) : null}

@@ -1,6 +1,35 @@
 import type { MembershipRole } from "@/lib/membership";
+import { isMembershipRequiredError } from "@/lib/membership-access";
 import { buildMembershipUpsellHref as buildMembershipHrefWithReturn } from "@/lib/membership-return";
+import type { ConversationSummary } from "@/lib/messaging";
 import type { Dictionary } from "@/i18n/translations";
+
+/** Booking-linked chats already passed membership gates — never upsell there. */
+export function conversationExemptFromMembershipUpsell(
+  conversation: ConversationSummary,
+): boolean {
+  if (conversation.bookingId) return true;
+  if (
+    conversation.requestStatus === "accepted" ||
+    conversation.requestStatus === "completed"
+  ) {
+    return true;
+  }
+  if (conversation.bookingStatus && conversation.bookingStatus !== "cancelled") {
+    return true;
+  }
+  return false;
+}
+
+/** Show upsell only after a send attempt the server rejected for missing membership. */
+export function shouldShowMembershipUpsellAfterMessageSend(
+  conversation: ConversationSummary,
+  error: unknown,
+): boolean {
+  if (!isMembershipRequiredError(error)) return false;
+  if (conversationExemptFromMembershipUpsell(conversation)) return false;
+  return true;
+}
 
 export type MembershipUpsellVariant = "searchPet" | "findCare" | "fallback";
 

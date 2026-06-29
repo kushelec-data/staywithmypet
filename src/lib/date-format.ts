@@ -29,6 +29,34 @@ export function resolveDateLocale(locale?: DateFormatLocale): string {
   return "en-US";
 }
 
+/** Monday 1 Jan 2024 — anchor for Mon–Sun calendar column headers. */
+const CALENDAR_WEEKDAY_ANCHOR = new Date(2024, 0, 1);
+
+/** Calendar nav title, e.g. "June 2026" / "juuni 2026". */
+export function formatMonthYear(date: Date, locale?: DateFormatLocale): string {
+  return new Intl.DateTimeFormat(resolveDateLocale(locale), {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+/** Weekday column labels (Monday first). Compact → "E T K …" / "M T W …". */
+export function formatCalendarWeekdayLabels(
+  locale?: DateFormatLocale,
+  compact = false,
+): string[] {
+  const formatter = new Intl.DateTimeFormat(resolveDateLocale(locale), {
+    weekday: compact ? "narrow" : "short",
+  });
+  const labels: string[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    const day = new Date(CALENDAR_WEEKDAY_ANCHOR);
+    day.setDate(CALENDAR_WEEKDAY_ANCHOR.getDate() + i);
+    labels.push(formatter.format(day));
+  }
+  return labels;
+}
+
 export type FormatDateOptions = {
   /** Full month + day + year, e.g. "May 21, 2026" (emails). */
   includeYear?: boolean;

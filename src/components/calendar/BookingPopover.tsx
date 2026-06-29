@@ -29,7 +29,7 @@ export function BookingPopover({
   variant,
   anchorRef,
 }: BookingPopoverProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const panelRef = useRef<HTMLDivElement>(null);
   const displayStatus = resolveBookingDisplayStatus({
     status: booking.status,
@@ -64,7 +64,7 @@ export function BookingPopover({
   const dateLabel = formatBookingDateRange(
     booking.startDate,
     booking.endDate,
-    undefined,
+    locale,
     booking.requestedDates,
   );
   const statusLabel =

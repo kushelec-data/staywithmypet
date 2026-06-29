@@ -25,6 +25,7 @@ import {
   messagesHrefForBooking,
   type BookingDetail,
 } from "@/lib/bookings";
+import { formatBookingDatesForRow } from "@/lib/date-format";
 import { markBookingNotificationsRead } from "@/lib/notifications";
 import { fetchReviewsForBooking, type ReviewDisplay } from "@/lib/reviews";
 import { createClient } from "@/lib/supabase";
@@ -37,7 +38,7 @@ type BookingDetailContentProps = {
 
 export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { profile } = useProfile();
   const supabase = useMemo(() => createClient(), []);
@@ -50,6 +51,20 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const dateLabel = useMemo(
+    () =>
+      booking
+        ? formatBookingDatesForRow(
+            {
+              requested_dates: booking.requestedDates,
+              date_from: booking.startDate,
+              date_to: booking.endDate,
+            },
+            { locale },
+          )
+        : "",
+    [booking, locale],
+  );
 
   const loadReviews = useCallback(async () => {
     if (!booking || booking.displayStatus !== "completed") {
@@ -213,7 +228,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
             </div>
             <div className="sm:col-span-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.datesLabel}</dt>
-              <dd className="mt-1 break-words text-sm font-medium text-foreground">{booking.dateLabel}</dd>
+              <dd className="mt-1 break-words text-sm font-medium text-foreground">{dateLabel}</dd>
             </div>
             {booking.displayStatus === "completed" && booking.completedAtLabel ? (
               <div>

@@ -22,6 +22,7 @@ import {
   canSendInConversation,
   fetchMessages,
   formatCancelledBookingChatGraceEnd,
+  formatConversationDateLabel,
   formatMessagingError,
   getConversationBookingDisplayStatus,
   isCancelledBookingChatGraceActive,
@@ -40,12 +41,11 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { useProfile } from "@/context/ProfileContext";
+import { activeModeToMembershipRole } from "@/lib/membership";
 import {
-  activeModeToMembershipRole,
-  canUseMembershipFeaturesForMode,
-  emptyMembershipsByRole,
-} from "@/lib/membership";
-import { isMembershipRequiredError } from "@/lib/membership-access";
+  conversationExemptFromMembershipUpsell,
+  shouldShowMembershipUpsellAfterMessageSend,
+} from "@/lib/membership-upsell";
 import { resolveActiveMode } from "@/lib/profile-mode";
 
 type ChatPanelProps = {
@@ -73,11 +73,12 @@ export function ChatPanel({
     const q = searchParams.toString();
     return q ? `${pathname}?${q}` : pathname;
   }, [pathname, searchParams]);
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { profile } = useProfile();
   const m = t.messages;
   const ts = t.trustSafety;
   const conversationId = conversation.id;
+  const conversationDateLabel = formatConversationDateLabel(conversation, locale);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +117,7 @@ export function ChatPanel({
 
   useEffect(() => {
     prefersSmoothScrollRef.current = false;
+    setUpgradeOpen(false);
   }, [conversationId]);
 
   useEffect(() => {
@@ -198,15 +200,6 @@ export function ChatPanel({
     const text = draft.trim();
     if (!text || sending || !canSend) return;
 
-    const activeMode = profile
-      ? resolveActiveMode(profile.role, profile.active_mode)
-      : "pet_parent";
-    const memberships = profile?.memberships ?? emptyMembershipsByRole();
-    if (!canUseMembershipFeaturesForMode(memberships, activeMode)) {
-      setUpgradeOpen(true);
-      return;
-    }
-
     setSending(true);
     setError(null);
     try {
@@ -232,7 +225,7 @@ export function ChatPanel({
         }),
       );
     } catch (err) {
-      if (isMembershipRequiredError(err)) {
+      if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
         setUpgradeOpen(true);
         setError(null);
       } else {
@@ -302,10 +295,10 @@ export function ChatPanel({
             </div>
             <p className={`min-w-0 text-[0.6875rem] leading-snug ${MESSAGES_META_TEXT_CLASS}`}>
               <span className="font-medium">{conversation.otherPartyName}</span>
-              {conversation.dateLabel ? (
+              {conversationDateLabel ? (
                 <span className={`break-words ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
                   {" "}
-                  · {conversation.dateLabel}
+                  · {conversationDateLabel}
                 </span>
               ) : null}
               {conversation.careType ? (
@@ -451,7 +444,7 @@ export function ChatPanel({
       />
 
       <MembershipUpsellToast
-        open={upgradeOpen}
+        open={upgradeOpen && !conversationExemptFromMembershipUpsell(conversation)}
         variant="fallback"
         role={
           profile

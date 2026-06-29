@@ -4,6 +4,7 @@ import { BookingReviewAction } from "@/components/reviews/BookingReviewAction";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
+import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { Booking } from "@/lib/bookings";
 import { DASHBOARD_CALLOUT_CLASS } from "@/lib/dashboard-theme";
 import { useProfile } from "@/context/ProfileContext";
@@ -17,10 +18,18 @@ export function DashboardReviewPromptBanner({
   booking,
   onReviewDone,
 }: DashboardReviewPromptBannerProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { refreshProfile } = useProfile();
   const copy = t.dashboardHome;
+  const dateLabel = formatBookingDatesForRow(
+    {
+      requested_dates: booking.requestedDates,
+      date_from: booking.startDate,
+      date_to: booking.endDate,
+    },
+    { locale },
+  );
 
   if (!user) return null;
 
@@ -40,7 +49,7 @@ export function DashboardReviewPromptBanner({
         <p className="text-sm font-semibold text-foreground">{copy.reviewPromptTitle}</p>
         <p className="mt-1 text-sm text-muted">{copy.reviewPromptBody}</p>
         <p className="mt-1 truncate text-xs text-muted">
-          {booking.petName} · {booking.dateLabel}
+          {booking.petName} · {dateLabel}
         </p>
       </div>
       <div className="w-full shrink-0 sm:w-auto">

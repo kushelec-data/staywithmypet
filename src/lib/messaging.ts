@@ -14,6 +14,7 @@ import {
   resolveBookingDisplayStatus,
   type BookingTab,
 } from "@/lib/bookings";
+import { formatBookingDatesForRow, type DateFormatLocale } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus } from "@/lib/requests";
 import type { BookingStatus } from "@/types/database";
@@ -51,6 +52,9 @@ export type ConversationSummary = {
   bookingStartDate: string | null;
   bookingEndDate: string | null;
   bookingRequestedDates: string[];
+  /** Request span when `requested_dates` is empty (legacy rows). */
+  requestDateFrom: string | null;
+  requestDateTo: string | null;
   /** Set when the linked booking was cancelled (ISO). */
   bookingCancelledAt: string | null;
   dateLabel: string;
@@ -76,6 +80,27 @@ export const CONVERSATION_READ_EVENT = "swmp:conversation-read";
 function conversationIdsFor(summary: Pick<ConversationSummary, "id" | "conversationIds">): string[] {
   const ids = summary.conversationIds?.length ? summary.conversationIds : [summary.id];
   return [...new Set(ids)];
+}
+
+export function formatConversationDateLabel(
+  conversation: Pick<
+    ConversationSummary,
+    | "bookingRequestedDates"
+    | "bookingStartDate"
+    | "bookingEndDate"
+    | "requestDateFrom"
+    | "requestDateTo"
+  >,
+  locale?: DateFormatLocale,
+): string {
+  return formatBookingDatesForRow(
+    {
+      requested_dates: conversation.bookingRequestedDates,
+      date_from: conversation.requestDateFrom ?? conversation.bookingStartDate,
+      date_to: conversation.requestDateTo ?? conversation.bookingEndDate,
+    },
+    { locale },
+  );
 }
 
 /** Date-aware booking tab for inbox badges and sorting (DB status unchanged). */
@@ -754,6 +779,8 @@ export async function fetchConversations(
       bookingEndDate: booking?.endDate ?? null,
       bookingRequestedDates,
       bookingCancelledAt: booking?.cancelledAt ?? null,
+      requestDateFrom: req.date_from,
+      requestDateTo: req.date_to,
       dateLabel: formatRequestDateLabel(req),
       dateRangeKey: dateRangeKeyFromRequest(req),
       careType: formatCareTypeLabel(req.care_type ?? req.service_type),
@@ -879,6 +906,8 @@ export async function sendMessage(
     bookingEndDate: null,
     bookingRequestedDates: [],
     bookingCancelledAt: (bookingRow?.cancelled_at as string | null) ?? null,
+    requestDateFrom: null,
+    requestDateTo: null,
     dateLabel: "",
     dateRangeKey: "",
     careType: null,

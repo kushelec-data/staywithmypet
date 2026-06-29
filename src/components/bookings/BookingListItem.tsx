@@ -14,6 +14,7 @@ import {
   type Booking,
   type BookingTab,
 } from "@/lib/bookings";
+import { formatBookingDatesForRow } from "@/lib/date-format";
 import { ACCOUNT_CARD_CLASS, ACCOUNT_LIST_ITEM_TITLE } from "@/lib/account-ui";
 import type { ReviewDisplay } from "@/lib/reviews";
 
@@ -107,8 +108,16 @@ export function BookingListItem({
   onCompleted,
   onCancel,
 }: BookingListItemProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const b = t.bookings;
+  const dateLabel = formatBookingDatesForRow(
+    {
+      requested_dates: booking.requestedDates,
+      date_from: booking.startDate,
+      date_to: booking.endDate,
+    },
+    { locale },
+  );
   const showCancel = tab === "upcoming" || tab === "active";
 
   return (
@@ -132,7 +141,7 @@ export function BookingListItem({
           <div className="grid gap-3 border-t border-[#E5E2D8] pt-4 sm:grid-cols-2 sm:gap-x-6">
             <MetaRow icon={<PetIcon />} label={b.petLabel} value={booking.petName} />
             <MetaRow icon={<UserIcon />} label={b.withLabel} value={booking.otherPartyName} />
-            <MetaRow icon={<CalendarIcon />} label={b.datesLabel} value={booking.dateLabel} />
+            <MetaRow icon={<CalendarIcon />} label={b.datesLabel} value={dateLabel} />
             {booking.careType ? (
               <MetaRow icon={<CareIcon />} label={b.careTypeLabel} value={booking.careType} />
             ) : null}

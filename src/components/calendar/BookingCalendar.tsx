@@ -21,6 +21,7 @@ import {
   CALENDAR_WEEKDAY,
 } from "@/lib/calendar-design-tokens";
 import { filterPastDates, resolveCalendarDay, todayISODate } from "@/lib/calendar-date-state";
+import { formatCalendarWeekdayLabels, formatMonthYear } from "@/lib/date-format";
 import {
   eachISODateInRangeInclusive,
   localISODate,
@@ -63,9 +64,6 @@ export type BookingCalendarProps = {
   highContrast?: boolean;
 };
 
-const WEEKDAYS_FULL = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const WEEKDAYS_COMPACT = ["M", "T", "W", "T", "F", "S", "S"];
-
 export function BookingCalendar({
   mode,
   visibility = "full",
@@ -87,7 +85,7 @@ export function BookingCalendar({
   variant: _variant = "default",
   highContrast: _highContrast = false,
 }: BookingCalendarProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const available = useMemo(() => normalizeAvailabilityDates(availableDates), [availableDates]);
   const availableSet = useMemo(() => new Set(available), [available]);
   const sortedSelected = useMemo(() => normalizeAvailabilityDates(selectedDates), [selectedDates]);
@@ -119,10 +117,14 @@ export function BookingCalendar({
 
   const year = monthCursor.year;
   const month = monthCursor.month;
-  const title = monthCursorToDate(monthCursor).toLocaleString(undefined, {
-    month: "long",
-    year: "numeric",
-  });
+  const title = useMemo(
+    () => formatMonthYear(monthCursorToDate(monthCursor), locale),
+    [monthCursor, locale],
+  );
+  const weekdayLabels = useMemo(
+    () => formatCalendarWeekdayLabels(locale, compact),
+    [locale, compact],
+  );
   const navigationDisabled =
     mode === "availability-readonly" ? false : Boolean(disabled);
   const today = todayISODate();
@@ -201,7 +203,6 @@ export function BookingCalendar({
 
   const navBtnClass = compact ? CALENDAR_NAV.buttonCompact : CALENDAR_NAV.button;
   const gridShellClass = compact ? CALENDAR_SHELL.outerCompact : CALENDAR_SHELL.outer;
-  const weekdayLabels = compact ? WEEKDAYS_COMPACT : WEEKDAYS_FULL;
 
   return (
     <div className={`${compact ? "space-y-2.5" : "space-y-4"} ${className}`}>
