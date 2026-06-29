@@ -289,6 +289,13 @@ export const et = {
     viewPetProfile: "Vaata lemmiku profiili",
     viewProfile: "Vaata profiili",
     viewOwnerProfile: "Vaata omaniku profiili",
+    statusPending: "Ootel",
+    statusAccepted: "Kinnitatud",
+    statusDeclined: "Tagasi lükatud",
+    statusCancelled: "Tühistatud",
+    statusCompleted: "Lõpetatud",
+    statusExpired: "Aegunud",
+    systemMessageAddAvailability: "Lisa saadavus",
   },
   bookings: {
     pageTitle: "Broneeringud",

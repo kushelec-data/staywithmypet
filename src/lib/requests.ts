@@ -38,6 +38,7 @@ import {
   resolveEffectiveSenderReceiver,
   type RequestParticipantColumn,
 } from "@/lib/request-list-filters";
+import type { Dictionary } from "@/i18n/translations";
 import {
   REQUEST_SELECT,
   REQUEST_SELECT_WITH_RELATIONS,
@@ -111,18 +112,44 @@ function formatCreatedAt(createdAt: string): string {
   }
 }
 
-export function requestStatusLabel(status: RequestRow["status"]): string {
+export type RequestStatusCopy = Pick<
+  Dictionary["requests"],
+  | "statusPending"
+  | "statusAccepted"
+  | "statusDeclined"
+  | "statusCancelled"
+  | "statusCompleted"
+  | "statusExpired"
+  | "systemMessageAddAvailability"
+>;
+
+const DEFAULT_REQUEST_STATUS_COPY: RequestStatusCopy = {
+  statusPending: "Pending",
+  statusAccepted: "Accepted",
+  statusDeclined: "Rejected",
+  statusCancelled: "Cancelled",
+  statusCompleted: "Completed",
+  statusExpired: "Expired",
+  systemMessageAddAvailability: "Add availability",
+};
+
+export function requestStatusLabel(
+  status: RequestRow["status"] | "expired" | null | undefined,
+  copy: RequestStatusCopy = DEFAULT_REQUEST_STATUS_COPY,
+): string {
   switch (status) {
     case "accepted":
-      return "Accepted";
+      return copy.statusAccepted;
     case "declined":
-      return "Declined";
+      return copy.statusDeclined;
     case "cancelled":
-      return "Cancelled";
+      return copy.statusCancelled;
     case "completed":
-      return "Completed";
+      return copy.statusCompleted;
+    case "expired":
+      return copy.statusExpired;
     default:
-      return "Pending";
+      return copy.statusPending;
   }
 }
 
@@ -155,6 +182,30 @@ export function normalizeRequestMessage(raw: string | null | undefined): string 
   }
 
   return text.replace(/\s+/g, " ").trim();
+}
+
+function canonicalSystemRequestMessage(raw: string): string {
+  return raw.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isSystemAddAvailabilityMessage(raw: string): boolean {
+  return canonicalSystemRequestMessage(raw) === "add availability";
+}
+
+/** Localize known system/default request messages; leave user-written text unchanged. */
+export function localizeRequestMessage(
+  raw: string | null | undefined,
+  copy: Pick<RequestStatusCopy, "systemMessageAddAvailability"> = DEFAULT_REQUEST_STATUS_COPY,
+): string {
+  const normalized = normalizeRequestMessage(raw);
+  if (!normalized) return "";
+  if (
+    (raw && isSystemAddAvailabilityMessage(raw)) ||
+    isSystemAddAvailabilityMessage(normalized)
+  ) {
+    return copy.systemMessageAddAvailability;
+  }
+  return normalized;
 }
 
 type ProfileJoin = { id: string; display_name: string };

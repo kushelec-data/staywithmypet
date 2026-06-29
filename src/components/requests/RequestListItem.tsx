@@ -8,7 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { CareRequest } from "@/lib/requests";
 import {
-  normalizeRequestMessage,
+  localizeRequestMessage,
   requestStatusBadgeClasses,
   requestStatusLabel,
 } from "@/lib/requests";
@@ -111,7 +111,7 @@ export function RequestListItem({
     ? t.requests.careForPet.replace("{name}", petTitle)
     : t.requests.requestWith.replace("{name}", request.otherPartyName);
 
-  const messageText = normalizeRequestMessage(request.message);
+  const messageText = localizeRequestMessage(request.message, t.requests);
   const showRespondToMessage = request.canOpenMessages;
   const showParentProfileLink =
     Boolean(request.petParentProfileHref) &&
@@ -133,7 +133,7 @@ export function RequestListItem({
               </p>
             </div>
             <span className={requestStatusBadgeClasses(request.status)}>
-              {requestStatusLabel(request.status)}
+              {requestStatusLabel(request.status, t.requests)}
             </span>
           </header>
 

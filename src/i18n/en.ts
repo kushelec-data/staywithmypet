@@ -288,6 +288,13 @@ export const en = {
     viewPetProfile: "View pet profile",
     viewProfile: "View profile",
     viewOwnerProfile: "View owner profile",
+    statusPending: "Pending",
+    statusAccepted: "Accepted",
+    statusDeclined: "Rejected",
+    statusCancelled: "Cancelled",
+    statusCompleted: "Completed",
+    statusExpired: "Expired",
+    systemMessageAddAvailability: "Add availability",
   },
   bookings: {
     pageTitle: "Bookings",

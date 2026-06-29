@@ -16,7 +16,7 @@ import {
 } from "@/lib/bookings";
 import { formatBookingDatesForRow, type DateFormatLocale } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
-import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus } from "@/lib/requests";
+import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus, type RequestStatusCopy } from "@/lib/requests";
 import type { BookingStatus } from "@/types/database";
 import { isMissingColumnError, isPostgrestError } from "@/lib/supabase-errors";
 import { logSupabaseError } from "@/lib/supabase-errors";
@@ -131,6 +131,7 @@ export function getConversationBookingDisplayStatus(
 /** Single status source for inbox list, chat header, and badges (booking wins when linked). */
 export function resolveConversationStatusDisplay(
   conversation: ConversationSummary,
+  requestStatusCopy?: RequestStatusCopy,
 ): ConversationStatusDisplay {
   const bookingDisplay = getConversationBookingDisplayStatus(conversation);
   if (bookingDisplay) {
@@ -140,7 +141,7 @@ export function resolveConversationStatusDisplay(
     };
   }
   return {
-    label: requestStatusLabel(conversation.requestStatus),
+    label: requestStatusLabel(conversation.requestStatus, requestStatusCopy),
     badgeClasses: requestStatusBadgeClasses(conversation.requestStatus),
   };
 }
