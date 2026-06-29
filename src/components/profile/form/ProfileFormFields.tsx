@@ -2,12 +2,14 @@
 
 import type { ReactNode } from "react";
 import { SelectableChip } from "@/components/ui/SelectableChip";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   FORM_FIELD_LABEL_CLASS,
   FORM_FIELD_LEGEND_CLASS,
   FORM_FIELD_OPTION_LABEL_CLASS,
 } from "@/lib/form-field-styles";
 import { isOtherOptionValue } from "@/lib/other-option";
+import { translateProfileLabel } from "@/lib/profile-translations";
 
 type OtherFieldConfig = {
   text: string;
@@ -174,6 +176,10 @@ export function ProfileYesNoToggle({
   onChange: (v: boolean) => void;
   disabled?: boolean;
 }) {
+  const { locale } = useLanguage();
+  const yesLabel = translateProfileLabel("Yes", locale);
+  const noLabel = translateProfileLabel("No", locale);
+
   return (
     <fieldset className="sm:col-span-1">
       <legend className={FORM_FIELD_LEGEND_CLASS}>{label}</legend>
@@ -187,7 +193,7 @@ export function ProfileYesNoToggle({
             onChange={() => onChange(true)}
             className="text-brand-teal"
           />
-          Yes
+          {yesLabel}
         </label>
         <label className={FORM_FIELD_OPTION_LABEL_CLASS}>
           <input
@@ -198,7 +204,7 @@ export function ProfileYesNoToggle({
             onChange={() => onChange(false)}
             className="text-brand-teal"
           />
-          No
+          {noLabel}
         </label>
       </div>
     </fieldset>

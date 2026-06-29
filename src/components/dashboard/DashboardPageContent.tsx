@@ -142,8 +142,8 @@ export function DashboardPageContent() {
   const activeMode = resolveActiveMode(profile.role, profile.active_mode);
   const availabilityUx = availabilityUxForProfile(profile.role, activeMode);
   const profileCalDates = profileCalendarSelectedDates(details);
-  const careSummary = buildPetCarePreferencesSummary(details);
-  const livingSummary = buildLivingSituationSummary(details);
+  const careSummary = buildPetCarePreferencesSummary(details, { locale });
+  const livingSummary = buildLivingSituationSummary(details, { locale });
   const availabilitySummary = buildAvailabilitySummary(details, { locale });
 
   const reviewsCount = snapshot.reviewsCount || profile.rating_count;

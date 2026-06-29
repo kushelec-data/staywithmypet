@@ -28,7 +28,7 @@ import {
   toProfileLabeledChipOptions,
   toProfileStringChipOptions,
 } from "@/lib/profile-option-labels";
-import { translateProfileLabel } from "@/lib/profile-translations";
+import { translateProfileHelper, translateProfileLabel } from "@/lib/profile-translations";
 import { ArrowLeftRight, Dog, Heart, Home, MapPin, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
@@ -284,7 +284,7 @@ export function PetFriendProfileFormSections({
           ) : null}
           <div className="sm:col-span-2">
             <label htmlFor="availability_notes" className="form-field-label">
-              Additional availability notes
+              {pl("Additional availability notes")}
             </label>
             <AutoResizeTextarea
               id="availability_notes"
@@ -292,7 +292,7 @@ export function PetFriendProfileFormSections({
               disabled={disabled}
               value={form.availabilityNotes}
               onChange={(e) => patch(form, onChange, { availabilityNotes: e.target.value })}
-              placeholder="e.g. Flexible evenings, school holidays"
+              placeholder={translateProfileHelper("e.g. Flexible evenings, school holidays", locale)}
               className="input-field mt-1"
             />
           </div>
@@ -348,7 +348,7 @@ export function PetFriendProfileFormSections({
         {form.hasPetsAtHome ? (
           <div className="sm:col-span-2">
             <label htmlFor="pets_at_home_notes" className="form-field-label">
-              Pets at home (optional detail)
+              {pl("Pets at home (optional detail)")}
             </label>
             <input
               id="pets_at_home_notes"
@@ -356,7 +356,7 @@ export function PetFriendProfileFormSections({
               disabled={disabled}
               value={form.petsAtHomeNotes}
               onChange={(e) => patch(form, onChange, { petsAtHomeNotes: e.target.value })}
-              placeholder="e.g. 1 friendly cat"
+              placeholder={translateProfileHelper("e.g. 1 friendly cat", locale)}
               className="input-field mt-1"
             />
           </div>

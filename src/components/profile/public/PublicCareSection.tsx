@@ -15,12 +15,12 @@ type PublicCareSectionProps = {
 };
 
 export function PublicCareSection({ profile }: PublicCareSectionProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const ui = t.publicProfileUi;
   const details = profile.details;
-  const care = buildPetCarePreferencesSummary(details);
-  const living = buildLivingSituationSummary(details, { publicSafe: true });
-  const availability = buildAvailabilitySummary(details);
+  const care = buildPetCarePreferencesSummary(details, { locale });
+  const living = buildLivingSituationSummary(details, { publicSafe: true, locale });
+  const availability = buildAvailabilitySummary(details, { locale });
 
   const groups: PublicDetailGroup[] = [];
   if (care.lines.length) groups.push({ label: ui.petCarePreferences, items: care.lines });

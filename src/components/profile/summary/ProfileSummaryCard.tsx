@@ -17,8 +17,9 @@ export function ProfileSummaryCard({
   editHref = "/profile/edit",
   editLabel,
 }: ProfileSummaryCardProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const resolvedEditLabel = editLabel ?? t.common.edit;
+  const chipLocale = summary.locale ?? locale;
   const hasContent =
     summary.lines.length > 0 || Boolean(summary.calendarDates?.length);
 
@@ -42,7 +43,7 @@ export function ProfileSummaryCard({
             <AvailabilityDateChips
               dates={summary.calendarDates}
               label=""
-              locale={summary.locale}
+              locale={chipLocale}
               tone="dashboard"
             />
           ) : null}

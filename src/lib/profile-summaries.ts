@@ -88,10 +88,15 @@ export function buildLivingSituationSummary(
       "Help pet owners understand what kind of space and environment you can offer for their pet.",
       options.locale ?? "en",
     ),
+    locale: options.locale,
   };
 }
 
-export function buildPetCarePreferencesSummary(details: ProfileDetails): ProfileSummaryLines {
+export function buildPetCarePreferencesSummary(
+  details: ProfileDetails,
+  options?: { locale?: Locale },
+): ProfileSummaryLines {
+  const locale = options?.locale ?? "en";
   const care = resolvedPetCarePreferences(details);
   const lines: string[] = [];
 
@@ -105,8 +110,10 @@ export function buildPetCarePreferencesSummary(details: ProfileDetails): Profile
 
   const sizes = care.preferred_pet_sizes ?? [];
   if (sizes.length) {
-    const labels = formatPreferredPetWeightSizes(sizes);
-    lines.push(`${labels.join(", ")} weight range${sizes.length > 1 ? "s" : ""}`);
+    const labels = formatPreferredPetWeightSizes(sizes).map((label) =>
+      translateProfileLabel(label, locale),
+    );
+    lines.push(labels.join(", "));
   }
 
   const careTypes = formatListWithOtherDisplay(
@@ -146,16 +153,18 @@ export function buildPetCarePreferencesSummary(details: ProfileDetails): Profile
   if (willing.length) lines.push(...willing.slice(0, 2));
 
   return {
-    title: "Pet care preferences",
-    lines: lines.filter(Boolean),
-    emptyMessage: "Add what care you're comfortable offering.",
+    title: translateProfileLabel("Pet care preferences", locale),
+    lines: localizeLines(lines.filter(Boolean), locale),
+    emptyMessage: translateProfileLabel("Add what care you're comfortable offering.", locale),
+    locale,
   };
 }
 
 export function buildAvailabilitySummary(
   details: ProfileDetails,
-  options?: { locale?: string },
+  options?: { locale?: Locale },
 ): ProfileSummaryLines {
+  const locale = options?.locale ?? "en";
   const avail = resolvedAvailability(details);
   const lines: string[] = [];
 
@@ -166,18 +175,19 @@ export function buildAvailabilitySummary(
       : [];
 
   if (days.length) {
-    lines.push(joinNatural(days, 5) ?? "");
+    const labels = days.map((day) => translateProfileLabel(day, locale));
+    lines.push(joinNatural(labels, 5) ?? "");
   }
 
   if (avail.duration_of_care_preferred?.trim()) {
-    lines.push(avail.duration_of_care_preferred.trim());
+    lines.push(translateProfileLabel(avail.duration_of_care_preferred.trim(), locale));
   }
 
   if (avail.weekdays?.trim() && !days.some((d) => d.toLowerCase().includes("weekday"))) {
-    lines.push(`Weekdays: ${avail.weekdays.trim()}`);
+    lines.push(`${translateProfileLabel("Weekdays", locale)}: ${avail.weekdays.trim()}`);
   }
   if (avail.weekends?.trim() && !days.some((d) => d.toLowerCase().includes("weekend"))) {
-    lines.push(`Weekends: ${avail.weekends.trim()}`);
+    lines.push(`${translateProfileLabel("Weekends", locale)}: ${avail.weekends.trim()}`);
   }
 
   const calendarDates = profileCalendarSelectedDates(details);
@@ -187,11 +197,11 @@ export function buildAvailabilitySummary(
   }
 
   return {
-    title: "Availability",
+    title: translateProfileLabel("Availability", locale),
     lines: lines.filter(Boolean),
     calendarDates: calendarDates.length ? calendarDates : undefined,
-    locale: options?.locale,
-    emptyMessage: "Add when you're available to help.",
+    locale,
+    emptyMessage: translateProfileLabel("Add when you're available to help.", locale),
   };
 }
 
@@ -205,7 +215,7 @@ export function hasLivingSituationSummary(details: ProfileDetails): boolean {
 
 export function hasAvailabilitySummary(
   details: ProfileDetails,
-  options?: { locale?: string },
+  options?: { locale?: Locale },
 ): boolean {
   const summary = buildAvailabilitySummary(details, options);
   return summary.lines.length > 0 || Boolean(summary.calendarDates?.length);
@@ -213,7 +223,7 @@ export function hasAvailabilitySummary(
 
 export function publicAvailabilitySummary(
   details: ProfileDetails,
-  options?: { locale?: string },
+  options?: { locale?: Locale },
 ): string | null {
   const summary = buildAvailabilitySummary(details, options);
   if (summary.lines.length) return summary.lines.join(" · ");
