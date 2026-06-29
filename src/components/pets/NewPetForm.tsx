@@ -129,6 +129,8 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const { locale, t } = useLanguage();
   const petsCopy = t.account.petsPage;
   const pl = useCallback((en: string) => translateProfileLabel(en, locale), [locale]);
+  const yesLabel = translateProfileLabel("Yes", locale);
+  const noLabel = translateProfileLabel("No", locale);
 
   const localizedAnimalTypes = useMemo(
     () => toProfileLabeledChipOptions(petAnimalTypes, locale),
@@ -703,7 +705,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
                 checked={form.requiresMedication}
                 onChange={() => patch("requiresMedication", true)}
               />
-              Yes
+              {yesLabel}
             </label>
             <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
               <input
@@ -712,7 +714,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
                 checked={!form.requiresMedication}
                 onChange={() => patch("requiresMedication", false)}
               />
-              No
+              {noLabel}
             </label>
           </div>
         </div>
@@ -910,7 +912,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             required
             disabled={saving}
             className="input-field mt-1"
-            placeholder="Type an address or city"
+            placeholder={petsCopy.locationPlaceholder}
             datalistId={PET_LOCATION_DATALIST_ID}
           />
           <datalist id={PET_LOCATION_DATALIST_ID}>
@@ -919,9 +921,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             ))}
           </datalist>
           <p className="mt-1 text-xs text-muted">
-            {getGoogleMapsApiKey()
-              ? "Start typing for Google address suggestions, or pick a city from the list."
-              : "Choose a suggested city or type your area."}
+            {getGoogleMapsApiKey() ? petsCopy.locationHintGoogle : petsCopy.locationHintList}
           </p>
         </div>
       </PetFormSection>

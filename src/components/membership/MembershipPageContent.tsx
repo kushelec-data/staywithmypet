@@ -72,6 +72,10 @@ function localizedMembershipPlanName(
   return membershipPlanLabel(membership);
 }
 
+function membershipRoleGenitive(role: MembershipRole, t: Dictionary): string {
+  return role === "pet_parent" ? t.roles.petParent.labelGenitive : t.roles.petFriend.labelGenitive;
+}
+
 function RoleMembershipSummary({
   role,
   membership,
@@ -85,6 +89,7 @@ function RoleMembershipSummary({
 }) {
   const mpage = t.account.membershipPage;
   const roleLabel = role === "pet_parent" ? t.roles.petParent.label : t.roles.petFriend.label;
+  const roleGenitive = membershipRoleGenitive(role, t);
   const planName = membership ? localizedMembershipPlanName(membership, t) : null;
 
   return (
@@ -92,8 +97,8 @@ function RoleMembershipSummary({
       <p className={ACCOUNT_FIELD_LABEL_CLASS}>{roleLabel}</p>
       <p className={`mt-1 ${ACCOUNT_SECTION_TITLE}`}>
         {isActive && planName
-          ? mpage.activeHeadline.replace("{role}", roleLabel)
-          : mpage.inactiveHeadline.replace("{role}", roleLabel)}
+          ? mpage.activeHeadline.replace("{role}", roleGenitive)
+          : mpage.inactiveHeadline.replace("{role}", roleGenitive)}
       </p>
       {isActive && membership ? (
         <dl className="mt-3 space-y-2">
@@ -354,10 +359,11 @@ export function MembershipPageContent({
     planMode === "pet_parent" ? mpage.petParentSubtitle : mpage.petFriendSubtitle;
   const roleLabel =
     planMode === "pet_parent" ? t.roles.petParent.label : t.roles.petFriend.label;
+  const roleGenitive = membershipRoleGenitive(modeRole, t);
   const statusHeadline =
     isActive && activePlanName
-      ? mpage.activeHeadline.replace("{role}", roleLabel)
-      : mpage.inactiveHeadline.replace("{role}", roleLabel);
+      ? mpage.activeHeadline.replace("{role}", roleGenitive)
+      : mpage.inactiveHeadline.replace("{role}", roleGenitive);
 
   return (
     <AccountLayout
@@ -426,10 +432,10 @@ export function MembershipPageContent({
         ) : null}
         <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
           {isActive
-            ? mpage.activeUnlocks.replace("{role}", roleLabel)
+            ? mpage.activeUnlocks.replace("{role}", roleGenitive)
             : useTestAccessFlow
-              ? t.testAccess.membershipIntro.replace("{role}", roleLabel)
-              : mpage.choosePlanStripe.replace("{role}", roleLabel)}
+              ? t.testAccess.membershipIntro.replace("{role}", roleGenitive)
+              : mpage.choosePlanStripe.replace("{role}", roleGenitive)}
         </p>
       </AccountCard>
 

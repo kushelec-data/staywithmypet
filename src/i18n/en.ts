@@ -99,6 +99,7 @@ export const en = {
   roles: {
     petParent: {
       label: "Pet Parent",
+      labelGenitive: "Pet Parent",
       tagline: "Get help with your pet",
       description:
         "Find trusted Pet Friends near you for walks, home visits, daytime companionship, or stays — flexible, responsible pet sharing without kennels.",
@@ -106,6 +107,7 @@ export const en = {
     },
     petFriend: {
       label: "Pet Friend",
+      labelGenitive: "Pet Friend",
       tagline: "Spend time with pets",
       description:
         "Browse pets near you whose Pet Parents welcome responsible companionship — walks, visits, play, and shared time in a warm, home-based community.",
@@ -443,7 +445,7 @@ export const en = {
       displayNamePlaceholder: "How others will see you",
       yourRole: "Your role",
       location: "Location",
-      locationPlaceholder: "City, region, or address",
+      locationPlaceholder: "Type an address or city",
       myAvailability: "My availability",
       petCareAvailability: "Pet care availability",
       languages: "Languages",
@@ -514,6 +516,10 @@ export const en = {
       photoRetry: "Retry",
       needAtLeastOnePhoto: "Please add at least one photo or video.",
       savePetProfile: "Save pet profile",
+      locationPlaceholder: "Type an address or city",
+      locationHintGoogle:
+        "Start typing for Google address suggestions, or pick a city from the list.",
+      locationHintList: "Choose a suggested city or type your area.",
       savePetAndAddPhotos: "Save pet profile and add photos",
       saveChanges: "Save changes",
       savingPet: "Saving…",
@@ -818,7 +824,7 @@ export const en = {
       displayName: "Display name",
       displayNamePlaceholder: "How others will see you",
       location: "Location",
-      locationPlaceholder: "City, region, or address",
+      locationPlaceholder: "Type an address or city",
       locationHintGoogle: "Start typing for Google address suggestions, or pick a city from the list.",
       locationHintList: "Pick a suggested city or type your area.",
       languages: "Languages",

@@ -99,6 +99,7 @@ export const et = {
   roles: {
     petParent: {
       label: "Loomaomanik",
+      labelGenitive: "loomaomaniku",
       tagline: "Abi oma lemmikule",
       description:
         "Leia usaldusväärsed lemmiklooma sõbrad enda lähedal jalutiste, kodukülastuste, päevase seltsi või ööbimiste jaoks — paindlik, vastutustundlik jagamine ilma puurideta.",
@@ -106,6 +107,7 @@ export const et = {
     },
     petFriend: {
       label: "Loomasõber",
+      labelGenitive: "loomasõbra",
       tagline: "Aeg lemmikloomadega",
       description:
         "Sirvi lemmikloomi, kelle omanikud ootavad vastutustundlikku seltsi — jalutised, külastused, mäng ja soe kodune kogukond.",
@@ -444,7 +446,7 @@ export const et = {
       displayNamePlaceholder: "Kuidas teised sind näevad",
       yourRole: "Sinu roll",
       location: "Asukoht",
-      locationPlaceholder: "Linn, piirkond või aadress",
+      locationPlaceholder: "Sisesta aadress või linn",
       myAvailability: "Minu saadavus",
       petCareAvailability: "Lemmiku hoolduse saadavus",
       languages: "Keeled",
@@ -471,7 +473,7 @@ export const et = {
       bioLabel: "Minust",
       saveError: "Profiili salvestamine ebaõnnestus.",
       locationGoogleHint:
-        "Alusta tippimist Google'i aadressisoovituste jaoks või vali linn nimekirjast.",
+        "Alusta aadressi või linna sisestamist, et näha Google'i soovitusi, või vali linn loendist.",
       locationCityHint: "Vali soovitatud linn või sisesta oma piirkond.",
       myAvailabilityHint:
         "Puuduta päevi, mil oled loomasõbrana lemmikute hooldamiseks saadaval.",
@@ -517,6 +519,10 @@ export const et = {
       photoRetry: "Proovi uuesti",
       needAtLeastOnePhoto: "Lisa vähemalt üks foto või video.",
       savePetProfile: "Salvesta lemmiku profiil",
+      locationPlaceholder: "Sisesta aadress või linn",
+      locationHintGoogle:
+        "Alusta aadressi või linna sisestamist, et näha Google'i soovitusi, või vali linn loendist.",
+      locationHintList: "Vali soovitatud linn või sisesta oma piirkond.",
       savePetAndAddPhotos: "Salvesta profiil ja lisa fotod",
       saveChanges: "Salvesta muudatused",
       savingPet: "Salvestan…",
@@ -826,8 +832,9 @@ export const et = {
       displayName: "Kuvatav nimi",
       displayNamePlaceholder: "Kuidas teised sind näevad",
       location: "Asukoht",
-      locationPlaceholder: "Linn, piirkond või aadress",
-      locationHintGoogle: "Hakka kirjutama Google'i aadressisoovituste jaoks või vali linn nimekirjast.",
+      locationPlaceholder: "Sisesta aadress või linn",
+      locationHintGoogle:
+        "Alusta aadressi või linna sisestamist, et näha Google'i soovitusi, või vali linn loendist.",
       locationHintList: "Vali soovitatud linn või kirjuta oma piirkond.",
       languages: "Keeled",
       languageOtherPlaceholder: "Kirjuta oma keel",
