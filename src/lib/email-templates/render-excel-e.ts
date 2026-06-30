@@ -89,15 +89,28 @@ function ctaHrefForLabel(label: string, vars: EmailTemplateVars): string {
   if (lower.includes("sõnum") || lower.includes("message")) return vars.messageLinkWithConversation;
   if (lower.includes("broneering") || lower.includes("booking")) return vars.viewBookingUrl;
   if (lower.includes("taotl") || lower.includes("request")) return vars.viewIncomingRequestUrl;
-  if (lower.includes("profiil") || lower.includes("profile") || lower.includes("lemmiku"))
-    return vars.managePetProfileUrl;
-  if (lower.includes("lemmikuid") || lower.includes("other pets") || lower.includes("matches"))
-    return vars.browseMatchesUrl;
-  if (lower.includes("loomasõbr") || lower.includes("pet friend")) return vars.browseMatchesUrl;
-  if (lower.includes("paket") || lower.includes("plan") || lower.includes("liikmelisus") || lower.includes("membership"))
-    return vars.membershipUrl;
-  if (lower.includes("kont") || lower.includes("account")) return vars.membershipUrl;
   if (lower.includes("tagasiside") || lower.includes("review")) return vars.reviewLink;
+  if (
+    lower.includes("browse") ||
+    lower.includes("matches") ||
+    lower.includes("other pets") ||
+    lower.includes("lemmikuid") ||
+    lower.includes("lemmikloom") ||
+    lower.includes("loomasõp") ||
+    lower.includes("pet friend") ||
+    lower.includes("vaata teisi")
+  ) {
+    return vars.browseMatchesUrl;
+  }
+  if (lower.includes("profiil") || lower.includes("profile") || lower.includes("halda lemmiku")) {
+    return vars.managePetProfileUrl;
+  }
+  if (lower.includes("paket") || lower.includes("plan") || lower.includes("liikmelisus") || lower.includes("membership")) {
+    return vars.membershipUrl;
+  }
+  if (lower.includes("kont") || lower.includes("account") || lower.includes("dashboard")) {
+    return vars.membershipUrl;
+  }
   return vars.membershipUrl;
 }
 
