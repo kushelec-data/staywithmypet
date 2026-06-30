@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
+  bookingCareTypeLabel,
   bookingStatusBadgeClasses,
   bookingStatusLabel,
   cancelBooking,
@@ -43,7 +44,12 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   const { profile } = useProfile();
   const supabase = useMemo(() => createClient(), []);
   const b = t.bookings;
-
+  const statusCopy = {
+    statusUpcoming: b.statusUpcoming,
+    statusActive: b.statusActive,
+    statusCompleted: b.statusCompleted,
+    statusCancelled: b.statusCancelled,
+  };
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [bookingReviews, setBookingReviews] = useState<ReviewDisplay[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -51,6 +57,13 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const careTypeDisplay = useMemo(
+    () =>
+      booking
+        ? bookingCareTypeLabel(booking.careTypeRaw, locale, b.careTypes) ?? booking.careType
+        : null,
+    [booking, locale, b.careTypes],
+  );
   const dateLabel = useMemo(
     () =>
       booking
@@ -198,7 +211,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
               </p>
             </div>
             <span className={bookingStatusBadgeClasses(booking.displayStatus)}>
-              {bookingStatusLabel(booking.displayStatus)}
+              {bookingStatusLabel(booking.displayStatus, statusCopy)}
             </span>
           </div>
 
@@ -224,7 +237,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.careTypeLabel}</dt>
-              <dd className="mt-1 text-sm font-medium text-foreground">{booking.careType ?? "—"}</dd>
+              <dd className="mt-1 text-sm font-medium text-foreground">{careTypeDisplay ?? "—"}</dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{b.datesLabel}</dt>

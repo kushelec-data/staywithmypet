@@ -107,7 +107,12 @@ export function ChatPanel({
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
   const thumbInitial = displayName.trim().charAt(0).toUpperCase() || "?";
-  const statusDisplay = resolveConversationStatusDisplay(conversation, t.requests);
+  const statusDisplay = resolveConversationStatusDisplay(conversation, t.requests, {
+    statusUpcoming: t.bookings.statusUpcoming,
+    statusActive: t.bookings.statusActive,
+    statusCompleted: t.bookings.statusCompleted,
+    statusCancelled: t.bookings.statusCancelled,
+  });
 
   const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const container = scrollContainerRef.current;

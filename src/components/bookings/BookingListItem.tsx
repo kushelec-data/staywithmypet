@@ -7,6 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { BookingCompleteAction } from "@/components/bookings/BookingCompleteAction";
 import { BookingReviewAction } from "@/components/reviews/BookingReviewAction";
 import {
+  bookingCareTypeLabel,
   bookingDetailsHref,
   bookingStatusBadgeClasses,
   bookingStatusLabel,
@@ -110,6 +111,14 @@ export function BookingListItem({
 }: BookingListItemProps) {
   const { t, locale } = useLanguage();
   const b = t.bookings;
+  const statusCopy = {
+    statusUpcoming: b.statusUpcoming,
+    statusActive: b.statusActive,
+    statusCompleted: b.statusCompleted,
+    statusCancelled: b.statusCancelled,
+  };
+  const careTypeDisplay =
+    bookingCareTypeLabel(booking.careTypeRaw, locale, b.careTypes) ?? booking.careType;
   const dateLabel = formatBookingDatesForRow(
     {
       requested_dates: booking.requestedDates,
@@ -134,7 +143,7 @@ export function BookingListItem({
               </p>
             </div>
             <span className={bookingStatusBadgeClasses(booking.displayStatus)}>
-              {bookingStatusLabel(booking.displayStatus)}
+              {bookingStatusLabel(booking.displayStatus, statusCopy)}
             </span>
           </header>
 
@@ -142,8 +151,8 @@ export function BookingListItem({
             <MetaRow icon={<PetIcon />} label={b.petLabel} value={booking.petName} />
             <MetaRow icon={<UserIcon />} label={b.withLabel} value={booking.otherPartyName} />
             <MetaRow icon={<CalendarIcon />} label={b.datesLabel} value={dateLabel} />
-            {booking.careType ? (
-              <MetaRow icon={<CareIcon />} label={b.careTypeLabel} value={booking.careType} />
+            {careTypeDisplay ? (
+              <MetaRow icon={<CareIcon />} label={b.careTypeLabel} value={careTypeDisplay} />
             ) : null}
             {tab === "completed" && booking.completedAtLabel ? (
               <MetaRow icon={<CalendarIcon />} label={b.completedOn} value={booking.completedAtLabel} />

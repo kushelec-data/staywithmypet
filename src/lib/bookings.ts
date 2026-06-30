@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatCareTypeLabel } from "@/lib/care-type-options";
+import { formatCareTypeLabel, localizeCareTypeLabel, type CareTypeDisplayCopy } from "@/lib/care-type-options";
+import type { Locale } from "@/i18n/translations";
+import type { Dictionary } from "@/i18n/translations";
 import { statusBadgeClass } from "@/lib/status-colors";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import { normalizeRequestMessage } from "@/lib/requests";
@@ -23,6 +25,8 @@ export type Booking = {
   otherPartyId: string;
   otherPartyName: string;
   careType: string | null;
+  /** Stored DB care_type value for locale-aware display labels. */
+  careTypeRaw: string | null;
   message: string | null;
   requestedDates: string[];
   requestedDatesLabel: string | null;
@@ -125,19 +129,43 @@ export function canMarkBookingCompleted(
   );
 }
 
-export function bookingStatusLabel(status: BookingTab): string {
+export function bookingStatusLabel(
+  status: BookingTab,
+  copy?: BookingStatusCopy,
+): string {
+  const labels = copy ?? DEFAULT_BOOKING_STATUS_COPY;
   switch (status) {
     case "upcoming":
-      return "Upcoming";
+      return labels.statusUpcoming;
     case "active":
-      return "Active";
+      return labels.statusActive;
     case "completed":
-      return "Completed";
+      return labels.statusCompleted;
     case "cancelled":
-      return "Cancelled";
+      return labels.statusCancelled;
     default:
       return status;
   }
+}
+
+export type BookingStatusCopy = Pick<
+  Dictionary["bookings"],
+  "statusUpcoming" | "statusActive" | "statusCompleted" | "statusCancelled"
+>;
+
+const DEFAULT_BOOKING_STATUS_COPY: BookingStatusCopy = {
+  statusUpcoming: "Upcoming",
+  statusActive: "Active",
+  statusCompleted: "Completed",
+  statusCancelled: "Cancelled",
+};
+
+export function bookingCareTypeLabel(
+  raw: string | null | undefined,
+  locale: Locale,
+  copy?: CareTypeDisplayCopy,
+): string | null {
+  return localizeCareTypeLabel(raw, locale, copy);
 }
 
 export function bookingStatusBadgeClasses(status: BookingTab): string {
@@ -193,6 +221,7 @@ function mapBookingRow(
     petFriendId: row.pet_friend_id,
     otherPartyId,
     otherPartyName: profileNames.get(otherPartyId) ?? "Member",
+    careTypeRaw: req?.care_type?.trim() || null,
     careType: formatCareTypeLabel(req?.care_type) ?? null,
     message: req?.message ?? null,
     requestedDates,

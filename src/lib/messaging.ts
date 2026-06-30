@@ -12,6 +12,7 @@ import {
   bookingStatusBadgeClasses,
   bookingStatusLabel,
   resolveBookingDisplayStatus,
+  type BookingStatusCopy,
   type BookingTab,
 } from "@/lib/bookings";
 import { formatBookingDatesForRow, type DateFormatLocale } from "@/lib/date-format";
@@ -132,11 +133,12 @@ export function getConversationBookingDisplayStatus(
 export function resolveConversationStatusDisplay(
   conversation: ConversationSummary,
   requestStatusCopy?: RequestStatusCopy,
+  bookingStatusCopy?: BookingStatusCopy,
 ): ConversationStatusDisplay {
   const bookingDisplay = getConversationBookingDisplayStatus(conversation);
   if (bookingDisplay) {
     return {
-      label: bookingStatusLabel(bookingDisplay),
+      label: bookingStatusLabel(bookingDisplay, bookingStatusCopy),
       badgeClasses: bookingStatusBadgeClasses(bookingDisplay),
     };
   }

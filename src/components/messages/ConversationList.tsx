@@ -55,7 +55,12 @@ function ConversationListItem({
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
   const hasUnread = conversation.unreadCount > 0;
-  const statusDisplay = resolveConversationStatusDisplay(conversation, t.requests);
+  const statusDisplay = resolveConversationStatusDisplay(conversation, t.requests, {
+    statusUpcoming: t.bookings.statusUpcoming,
+    statusActive: t.bookings.statusActive,
+    statusCompleted: t.bookings.statusCompleted,
+    statusCancelled: t.bookings.statusCancelled,
+  });
   const conversationDateLabel = formatConversationDateLabel(conversation, locale);
 
   return (

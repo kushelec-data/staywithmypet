@@ -1,4 +1,5 @@
 import { isOtherOptionValue, OTHER_OPTION_VALUE } from "@/lib/other-option";
+import type { Locale } from "@/i18n/translations";
 
 /** Stored care type values — keep unchanged in DB and new records. */
 export const CANONICAL_CARE_TYPE_OPTIONS = [
@@ -215,4 +216,45 @@ export function formatCareTypeLabels(
     .filter((label): label is string => Boolean(label?.trim()));
 
   return dedupeCareTypeDisplayLabels(labels);
+}
+
+export type CareTypeDisplayCopy = {
+  walks: string;
+  daycare: string;
+  homeVisits: string;
+  feeding: string;
+  playVisits: string;
+  overnight: string;
+  other: string;
+};
+
+/** Locale-aware care type label from stored DB value; English uses formatCareTypeLabel. */
+export function localizeCareTypeLabel(
+  raw: string | null | undefined,
+  locale: Locale,
+  copy?: CareTypeDisplayCopy,
+  otherCustom?: string | null,
+): string | null {
+  const enLabel = formatCareTypeLabel(raw, otherCustom);
+  if (!enLabel || locale === "en" || !copy) return enLabel;
+  if (!raw?.trim()) return enLabel;
+  if (isOtherOptionValue(raw)) return copy.other;
+
+  const canonical = resolveCanonicalCareTypeStored(raw.trim());
+  switch (canonical) {
+    case "Walks only":
+      return copy.walks;
+    case "Daycare":
+      return copy.daycare;
+    case "Home visits":
+      return copy.homeVisits;
+    case "Feeding only":
+      return copy.feeding;
+    case "Play visits":
+      return copy.playVisits;
+    case "Overnight care / 24h stay":
+      return copy.overnight;
+    default:
+      return enLabel;
+  }
 }
