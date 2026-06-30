@@ -498,7 +498,7 @@ export const legalDocuments = {
       },
       {
         en: "If you do not agree, you must not use the Service.",
-        et: "Tarbijateade: kui olete tarbija Euroopa Liidus või Euroopa Majanduspiirkonnas, on teil kohustuslikud õigused tarbijakaitseseaduse alusel. Miski nendes Tingimustes ei piira õigusi, mida seadusega piirata ei saa.",
+        et: null,
       },
       {
         en: "Consumer notice: If you are a consumer in the EU/EEA, you have certain mandatory rights under consumer protection law. Nothing in these Terms limits rights that cannot be limited by law.",
@@ -1359,7 +1359,10 @@ export function getLegalDocument(slug: keyof typeof legalDocuments, locale: Loca
   const doc = legalDocuments[slug];
   const title = locale === "et" ? doc.titleEt : doc.titleEn;
   const paragraphs = doc.blocks
-    .map((b) => (locale === "et" && b.et ? b.et : b.en))
-    .filter((p) => !isLegalDateMetadataLine(p));
+    .flatMap((b) => {
+      if (locale === "et" && b.et === null) return [];
+      const text = locale === "et" && b.et ? b.et : b.en;
+      return isLegalDateMetadataLine(text) ? [] : [text];
+    });
   return { title, paragraphs };
 }
