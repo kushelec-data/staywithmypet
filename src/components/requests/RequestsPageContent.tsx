@@ -12,6 +12,7 @@ import { RequestsEmptyState } from "@/components/requests/RequestsEmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { isBookingOverlapError } from "@/lib/bookings";
+import { isRequestExpiredError } from "@/lib/request-validation";
 import {
   cancelRequest,
   fetchIncomingRequests,
@@ -125,9 +126,11 @@ export function RequestsPageContent() {
       setActionError(
         isBookingOverlapError(err)
           ? t.requests.acceptOverlapError
-          : err instanceof Error
-            ? err.message
-            : t.requests.respondError,
+          : err instanceof Error && isRequestExpiredError(err.message)
+            ? t.requests.acceptExpiredError
+            : err instanceof Error
+              ? err.message
+              : t.requests.respondError,
       );
     } finally {
       setActingId(null);

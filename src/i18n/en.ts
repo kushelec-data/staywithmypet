@@ -251,6 +251,8 @@ export const en = {
     sentSuccess: "Request sent!",
     acceptedSuccess: "Request accepted.",
     acceptOverlapError: "These dates overlap with an existing booking for this pet.",
+    acceptExpiredError:
+      "This request has expired because the care dates have already passed.",
     declinedSuccess: "Request declined.",
     cancelledSuccess: "Request cancelled.",
     cannotRequestSelf: "This is your own listing.",

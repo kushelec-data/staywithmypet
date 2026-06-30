@@ -252,6 +252,7 @@ export const et = {
     sentSuccess: "Päring saadetud!",
     acceptedSuccess: "Päring nõustatud.",
     acceptOverlapError: "Need kuupäevad kattuvad selle lemmiku olemasoleva broneeringuga.",
+    acceptExpiredError: "See päring on aegunud, sest hoiukuupäevad on juba möödas.",
     declinedSuccess: "Päring tagasi lükatud.",
     cancelledSuccess: "Päring tühistatud.",
     cannotRequestSelf: "See on sinu enda kuulutus.",

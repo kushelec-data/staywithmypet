@@ -3,6 +3,9 @@ import "server-only";
 import { sendBookingEmailAsync, REVIEW_REMINDER_DELAY_MS } from "@/lib/emails/send-booking";
 import { queueEmailEvent } from "@/lib/email-send";
 import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
+import {
+  areRequestCareDatesPast,
+} from "@/lib/request-validation";
 import { speciesDisplayLabel, type PetSpecies } from "@/lib/pet-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { profileDisplayName } from "@/lib/profile-display";
@@ -264,6 +267,12 @@ export async function triggerRequestStatusEmails(
   if (!row) return;
 
   if (decision === "accepted") {
+    if (areRequestCareDatesPast(row)) {
+      console.warn("[email] skipped booking_confirmed — care dates are in the past", {
+        requestId,
+      });
+      return;
+    }
     await triggerBookingConfirmedForRequest(requestId);
     return;
   }

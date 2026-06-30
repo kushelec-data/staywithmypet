@@ -22,7 +22,9 @@ import {
 import {
   DATE_NOT_AVAILABLE_ERROR,
   isPastDateInput,
+  isRequestExpired,
   PAST_DATE_REQUEST_ERROR,
+  REQUEST_EXPIRED_ERROR,
 } from "@/lib/request-validation";
 import { ensureUserProfile } from "@/lib/profile";
 import { fetchUserPets } from "@/lib/pet-data";
@@ -76,6 +78,8 @@ export type CareRequest = {
   createdAtLabel: string;
   canRespond: boolean;
   canCancel: boolean;
+  /** Pending request whose last care date is before today (UI-only; DB status stays pending). */
+  isExpired: boolean;
 };
 
 export type CreateCareRequestInput = {
@@ -153,7 +157,9 @@ export function requestStatusLabel(
   }
 }
 
-export function requestStatusBadgeClasses(status: RequestRow["status"]): string {
+export function requestStatusBadgeClasses(
+  status: RequestRow["status"] | "expired",
+): string {
   switch (status) {
     case "accepted":
       return statusBadgeClass("booked");
@@ -161,10 +167,18 @@ export function requestStatusBadgeClasses(status: RequestRow["status"]): string 
       return statusBadgeClass("error");
     case "cancelled":
     case "completed":
+    case "expired":
       return statusBadgeClass("unavailable");
     default:
       return statusBadgeClass("pending");
   }
+}
+
+export function getRequestDisplayStatus(
+  request: Pick<CareRequest, "status" | "isExpired">,
+): RequestRow["status"] | "expired" {
+  if (request.isExpired) return "expired";
+  return request.status;
 }
 
 /** Normalize message text for display (spacing, light word-boundary fixes). */
@@ -264,6 +278,7 @@ function mapRequestRow(
   const otherPartyName =
     otherId === senderId ? names.senderName : otherId === receiverId ? names.receiverName : MISSING_PARTICIPANT_LABEL;
   const canOpenMessages = requestAllowsMessaging(row.status, row.message);
+  const expired = isRequestExpired(row);
 
   return {
     id: row.id,
@@ -295,8 +310,9 @@ function mapRequestRow(
     dateLabel: formatRequestDateLabel(row),
     createdAt: row.created_at,
     createdAtLabel: formatCreatedAt(row.created_at),
-    canRespond: receiverId === userId && row.status === "pending",
-    canCancel: senderId === userId && row.status === "pending",
+    canRespond: receiverId === userId && row.status === "pending" && !expired,
+    canCancel: senderId === userId && row.status === "pending" && !expired,
+    isExpired: expired,
   };
 }
 
@@ -733,6 +749,22 @@ export async function respondToRequest(
   requestId: string,
   decision: "accepted" | "declined",
 ): Promise<RespondToRequestResult> {
+  const { data: pendingRow, error: pendingLoadError } = await supabase
+    .from("requests")
+    .select("status, date_from, date_to, requested_dates, pet_parent_id, pet_friend_id")
+    .eq("id", requestId)
+    .eq("receiver_id", userId)
+    .maybeSingle();
+
+  if (pendingLoadError) throw pendingLoadError;
+  if (!pendingRow || pendingRow.status !== "pending") {
+    throw new Error("Request not found.");
+  }
+
+  if (decision === "accepted" && isRequestExpired(pendingRow)) {
+    throw new Error(REQUEST_EXPIRED_ERROR);
+  }
+
   const { error } = await supabase
     .from("requests")
     .update({
@@ -754,21 +786,10 @@ export async function respondToRequest(
     return { conversationId: null };
   }
 
-  const { data: requestRow, error: requestLoadError } = await supabase
-    .from("requests")
-    .select("pet_parent_id, pet_friend_id")
-    .eq("id", requestId)
-    .maybeSingle();
-
-  if (requestLoadError) throw requestLoadError;
-  if (!requestRow) {
-    throw new Error("Request not found.");
-  }
-
   const receiverRole =
-    userId === requestRow.pet_parent_id
+    userId === pendingRow.pet_parent_id
       ? ("pet_parent" as const)
-      : userId === requestRow.pet_friend_id
+      : userId === pendingRow.pet_friend_id
         ? ("pet_friend" as const)
         : null;
   if (!receiverRole) {

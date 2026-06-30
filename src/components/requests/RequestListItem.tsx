@@ -8,6 +8,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { CareRequest } from "@/lib/requests";
 import {
+  getRequestDisplayStatus,
   localizeRequestMessage,
   requestStatusBadgeClasses,
   requestStatusLabel,
@@ -112,6 +113,7 @@ export function RequestListItem({
     : t.requests.requestWith.replace("{name}", request.otherPartyName);
 
   const messageText = localizeRequestMessage(request.message, t.requests);
+  const displayStatus = getRequestDisplayStatus(request);
   const showRespondToMessage = request.canOpenMessages;
   const showParentProfileLink =
     Boolean(request.petParentProfileHref) &&
@@ -132,8 +134,8 @@ export function RequestListItem({
                 {t.requests.sentOn} {request.createdAtLabel}
               </p>
             </div>
-            <span className={requestStatusBadgeClasses(request.status)}>
-              {requestStatusLabel(request.status, t.requests)}
+            <span className={requestStatusBadgeClasses(displayStatus)}>
+              {requestStatusLabel(displayStatus, t.requests)}
             </span>
           </header>
 
