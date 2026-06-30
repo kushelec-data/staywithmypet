@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import { ConsentAwareAnalytics } from "@/components/cookies/ConsentAwareAnalytics";
-import { CookieConsentManager } from "@/components/cookies/CookieConsentManager";
+import { CookieConsentMount } from "@/components/cookies/CookieConsentMount";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { AuthProvider } from "@/context/AuthContext";
-import { CookieConsentProvider } from "@/context/CookieConsentContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { ProfileProvider } from "@/context/ProfileContext";
@@ -48,20 +47,18 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col overflow-x-hidden bg-background font-sans text-foreground antialiased">
         <LanguageProvider>
-          <CookieConsentProvider>
-            <AuthProvider>
-              <ProfileProvider>
-                <FavoritesProvider>
-                  <Navbar />
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                </FavoritesProvider>
-              </ProfileProvider>
-            </AuthProvider>
-            <CookieConsentManager />
-            <ConsentAwareAnalytics />
-          </CookieConsentProvider>
+          <AuthProvider>
+            <ProfileProvider>
+              <FavoritesProvider>
+                <Navbar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </FavoritesProvider>
+            </ProfileProvider>
+          </AuthProvider>
+          <CookieConsentMount />
         </LanguageProvider>
+        <ConsentAwareAnalytics />
       </body>
     </html>
   );

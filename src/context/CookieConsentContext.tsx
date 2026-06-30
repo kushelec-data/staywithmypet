@@ -3,6 +3,10 @@
 import {
   acceptAllConsent,
   consentDraftFromRecord,
+  COOKIE_CONSENT_CHANGE_EVENT,
+  COOKIE_OPEN_PREFERENCES_EVENT,
+  DEFAULT_COOKIE_CONSENT_DRAFT,
+  notifyCookieConsentChange,
   readCookieConsent,
   rejectNonEssentialConsent,
   saveConsentPreferences,
@@ -14,12 +18,10 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
-  useSyncExternalStore,
 } from "react";
-
-const CONSENT_CHANGE_EVENT = "swmp-cookie-consent-change";
 
 type CookieConsentContextValue = {
   consent: CookieConsentRecord | null;
@@ -37,36 +39,47 @@ type CookieConsentContextValue = {
 
 const CookieConsentContext = createContext<CookieConsentContextValue | null>(null);
 
-function subscribeToConsent(onStoreChange: () => void) {
-  if (typeof window === "undefined") return () => {};
-  const handler = () => onStoreChange();
-  window.addEventListener(CONSENT_CHANGE_EVENT, handler);
-  window.addEventListener("storage", handler);
-  return () => {
-    window.removeEventListener(CONSENT_CHANGE_EVENT, handler);
-    window.removeEventListener("storage", handler);
-  };
-}
-
-function getConsentSnapshot(): CookieConsentRecord | null {
-  return readCookieConsent();
-}
-
-function persistConsent(record: CookieConsentRecord) {
-  writeCookieConsent(record);
-  window.dispatchEvent(new Event(CONSENT_CHANGE_EVENT));
-}
-
+/**
+ * Scoped to cookie UI only (inside CookieConsentManager). Never wrap the app shell.
+ */
 export function CookieConsentProvider({ children }: { children: React.ReactNode }) {
-  const consent = useSyncExternalStore(subscribeToConsent, getConsentSnapshot, () => null);
-  const hasDecided = consent !== null;
+  const [consent, setConsent] = useState<CookieConsentRecord | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
-  const [preferenceDraft, setPreferenceDraftState] = useState<CookieConsentDraft>(() =>
-    consentDraftFromRecord(consent),
+  const [preferenceDraft, setPreferenceDraftState] = useState<CookieConsentDraft>(
+    DEFAULT_COOKIE_CONSENT_DRAFT,
   );
 
+  useEffect(() => {
+    setHydrated(true);
+    setConsent(readCookieConsent());
+
+    const syncFromStorage = () => {
+      setConsent(readCookieConsent());
+    };
+
+    const openFromExternal = () => {
+      const stored = readCookieConsent();
+      setConsent(stored);
+      setPreferenceDraftState(consentDraftFromRecord(stored));
+      setPreferencesOpen(true);
+    };
+
+    window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, syncFromStorage);
+    window.addEventListener(COOKIE_OPEN_PREFERENCES_EVENT, openFromExternal);
+    window.addEventListener("storage", syncFromStorage);
+
+    return () => {
+      window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, syncFromStorage);
+      window.removeEventListener(COOKIE_OPEN_PREFERENCES_EVENT, openFromExternal);
+      window.removeEventListener("storage", syncFromStorage);
+    };
+  }, []);
+
   const applyConsent = useCallback((record: CookieConsentRecord) => {
-    persistConsent(record);
+    writeCookieConsent(record);
+    notifyCookieConsentChange();
+    setConsent(record);
     setPreferenceDraftState(consentDraftFromRecord(record));
     setPreferencesOpen(false);
   }, []);
@@ -96,11 +109,13 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
     applyConsent(saveConsentPreferences(preferenceDraft));
   }, [applyConsent, preferenceDraft]);
 
+  const hasDecided = consent !== null;
+
   const value = useMemo<CookieConsentContextValue>(
     () => ({
       consent,
       hasDecided,
-      showBanner: !hasDecided,
+      showBanner: hydrated && !hasDecided,
       preferencesOpen,
       preferenceDraft,
       acceptAll,
@@ -115,6 +130,7 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
       closePreferences,
       consent,
       hasDecided,
+      hydrated,
       openPreferences,
       preferenceDraft,
       preferencesOpen,

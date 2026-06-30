@@ -1,5 +1,9 @@
 export const COOKIE_CONSENT_STORAGE_KEY = "staywithmypet_cookie_consent";
 
+export const COOKIE_CONSENT_CHANGE_EVENT = "swmp-cookie-consent-change";
+
+export const COOKIE_OPEN_PREFERENCES_EVENT = "swmp-open-cookie-preferences";
+
 export type CookieConsentCategories = {
   /** Always true — auth, security, language, and other essential cookies. */
   necessary: true;
@@ -48,6 +52,7 @@ export function saveConsentPreferences(draft: CookieConsentDraft): CookieConsent
   };
 }
 
+/** Read stored consent. Call only from useEffect or event handlers (browser APIs). */
 export function readCookieConsent(): CookieConsentRecord | null {
   if (typeof window === "undefined") return null;
   try {
@@ -68,9 +73,20 @@ export function readCookieConsent(): CookieConsentRecord | null {
   }
 }
 
+/** Persist consent. Call only from useEffect or event handlers (browser APIs). */
 export function writeCookieConsent(record: CookieConsentRecord): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, JSON.stringify(record));
+}
+
+export function notifyCookieConsentChange(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(COOKIE_CONSENT_CHANGE_EVENT));
+}
+
+export function requestOpenCookiePreferences(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(COOKIE_OPEN_PREFERENCES_EVENT));
 }
 
 export function consentDraftFromRecord(record: CookieConsentRecord | null): CookieConsentDraft {

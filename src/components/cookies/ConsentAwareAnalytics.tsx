@@ -1,13 +1,38 @@
 "use client";
 
-import { useCookieConsent } from "@/context/CookieConsentContext";
-import { Analytics } from "@vercel/analytics/next";
+import {
+  COOKIE_CONSENT_CHANGE_EVENT,
+  readCookieConsent,
+} from "@/lib/cookie-consent";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 
-/** Loads Vercel Analytics only after the user opts in to analytics cookies. */
+const Analytics = dynamic(
+  () => import("@vercel/analytics/next").then((mod) => ({ default: mod.Analytics })),
+  { ssr: false },
+);
+
+/** Body-level analytics gate — reads consent in useEffect only; never wraps the app. */
 export function ConsentAwareAnalytics() {
-  const { consent } = useCookieConsent();
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
 
-  if (!consent?.analytics) return null;
+  useEffect(() => {
+    const sync = () => {
+      const consent = readCookieConsent();
+      setAnalyticsEnabled(consent?.analytics === true);
+    };
+
+    sync();
+    window.addEventListener(COOKIE_CONSENT_CHANGE_EVENT, sync);
+    window.addEventListener("storage", sync);
+
+    return () => {
+      window.removeEventListener(COOKIE_CONSENT_CHANGE_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  if (!analyticsEnabled) return null;
 
   return <Analytics />;
 }
