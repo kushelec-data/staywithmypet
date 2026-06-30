@@ -422,12 +422,12 @@ export const et = {
       petParentTitle: "Loomaomaniku liikmelisus",
       petFriendTitle: "Loomasõbra liikmelisus",
       petParentSubtitle:
-        "Plaanid loomaomanikele — saada päringuid, broneeri hooldust ja kirjuta sõnumeid, kui oled valmis.",
+        "Plaanid loomaomanikele — saada päringuid, broneeri hoid ja kirjuta sõnumeid, kui oled valmis.",
       petFriendSubtitle:
         "Plaanid loomasõpradele — võta hooldust vastu, koordineeri broneeringuid ja kirjuta sõnumeid, kui oled valmis.",
       activeHeadline: "Sinu {role} liikmelisus on aktiivne",
       inactiveHeadline: "Aktiivset {role} liikmelisust pole",
-      dualMember: "Kahe rolli liige — mõlemad rollid on aktiivsed",
+      dualMember: "Kahe rolli pakett — mõlemad rollid on aktiivsed",
       planLabel: "Plaan",
       startedLabel: "Algus",
       endsLabel: "Lõpp",
@@ -437,7 +437,7 @@ export const et = {
       activePlanSuffix: "{plan} plaan",
       browseFreeUpgrade: "Sirvi tasuta; tasulised funktsioonid avanevad liikmelisusega.",
       activeUnlocks:
-        "Sinu {role} liikmelisus võimaldab selles režiimis sõnumeid saata ja broneeringuid teha.",
+        "Sinu {role} liikmelisus võimaldab selles rollis sõnumeid saata ja broneeringuid teha.",
       choosePlanStripe:
         "Vali allpool {role} plaan ja maksa turvaliselt Stripe'i kaudu (TEST režiim). Enne uuendamist saad tasuta sirvida.",
     },
@@ -1271,7 +1271,7 @@ export const et = {
   },
   membershipCheckout: {
     paymentSuccess:
-      "Sinu liikmelisus on aktiivne. Saad selles režiimis kasutada tasulisi funktsioone.",
+      "Sinu liikmelisus on aktiivne. Saad selles rollis kasutada tasulisi funktsioone.",
     paymentPending:
       "Makse laekus — liikmelisus aktiveerub peagi. Kui see ei uuene, värskenda lehte.",
     paymentWebhookPending:
