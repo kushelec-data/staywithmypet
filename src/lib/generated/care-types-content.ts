@@ -36,7 +36,7 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     },
     heroTitle: { en: "Calm, home-based daycare for your pet", et: "Rahulik päevahoid päris kodus" },
     intro: { en: "Pet daycare through Stay With My Pet offers daytime companionship in a real home — not a noisy facility or cage-based environment.\n\nYour pet spends the day relaxed, cared for, and emotionally supported.", et: "Stay With My Peti päevahoid pakub sinu lemmikule päevast seltsi ja hoolt koduses keskkonnas, mitte lärmakas asutuses või puuris.\n\nSinu lemmik veedab päeva rahulikult, hoitult ja turvaliselt, olles kellegi juures, kes on päriselt kohal ja pühendunud." },
-    cardSummary: { en: "Pet daycare through Stay With My Pet offers daytime companionship in a real home — not a noisy facility or cage-based environment.", et: "Stay With My Peti päevahoid pakub sinu lemmikule päevast seltsi ja hoolt koduses keskkonnas, mitte lärmakas asutuses või puuris." },
+    cardSummary: { en: "Daytime companionship that feels like a second home, not a facility.", et: "Rahulik päev koos hooliva inimesega – koduses keskkonnas, mitte asutuses." },
     whatIsIt: {
       en: {
               "title": "What is home pet daycare?",
@@ -138,7 +138,7 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     },
     heroTitle: { en: "Reliable dog walks that fit your pet’s daily routine", et: "Usaldusväärsed jalutuskäigud sinu koera rütmis" },
     intro: { en: "Dog walks through Stay With My Pet offer consistent, one-to-one outdoor care that keeps your dog active, calm, and happy — even when your schedule is full.\n\nInstead of short, task-focused walks, our approach is personal, routine-based, and built on trust between your dog and a familiar person.", et: "Stay With My Peti kaudu pakutavad koerte jalutuskäigud on rahulikud, personaalsed ja üks-ühele. Need aitavad hoida sinu koera aktiivse, tasakaalus ja rõõmsana ka siis, kui sinu enda päevad on pikad või ajagraafik tihe.\n\nMe ei paku kiireid „ära-tehtud“ jalutusi. Meie lähenemine põhineb rutiinil, järjepidevusel ja usaldusel, mis tekib koera ja tuttava inimese vahel." },
-    cardSummary: { en: "Dog walks through Stay With My Pet offer consistent, one-to-one outdoor care that keeps your dog active, calm, and happy — even when your schedule is full.", et: "Stay With My Peti kaudu pakutavad koerte jalutuskäigud on rahulikud, personaalsed ja üks-ühele. Need aitavad hoida sinu koera aktiivse, tasakaalus ja rõõmsana ka siis, kui sinu enda päevad on pikad või ajagraafik tihe." },
+    cardSummary: { en: "Reliable walks that fit your pet's routine – even when your day doesn't.", et: "Jalutuskäigud sinu koera tavapärases rütmis – ka siis, kui sinu päev on tihe." },
     whatIsIt: {
       en: {
               "title": "What are dog walk services?",
@@ -234,14 +234,14 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     },
   },
   "overnight-care": {
-    name: { en: "Overnight care", et: "Ööhoid" },
+    name: { en: "Overnight care", et: "Ööpäevaringne hoid" },
     meta: {
       title: { en: "Overnight Pet Care / 24h Stay in a Home Environment", et: "Ööpäevaringne lemmikuhoid / 24 h hoid koduses keskkonnas" },
       description: { en: "When you need to be away overnight or for several days, your pet deserves more than a kennel or hotel. Overnight pet care through Stay With My Pet offers calm, home-based, one-to-one care — in a real home, with a trusted pet friend. Unlike traditional pet hotels, where pets may stay in cages or shared spaces, overnight care provides personal attention, familiar routines, and emotional comfort.", et: "Kui pead olema eemal öö või mitu päeva, vajab sinu lemmik enamat kui puur või hotell. Stay With My Peti ööpäevaringne lemmikuhoid pakub rahulikku, kodust ja isiklikku hoidu – päris kodus, usaldusväärse loomasõbra juures. Erinevalt lemmikloomahotellidest, kus loomad viibivad sageli jagatud ruumides või puurides, tähendab ööpäevaringne hoid üks-ühele tähelepanu, tuttavaid rutiine ja emotsionaalset turvatunnet." },
     },
     heroTitle: { en: "Loving overnight pet care that feels like home", et: "Ööpäevaringne hoid, mis tundub nagu kodu" },
     intro: { en: "When you need to be away overnight or for several days, your pet deserves more than a kennel or hotel. Overnight pet care through Stay With My Pet offers calm, home-based, one-to-one care — in a real home, with a trusted pet friend.\n\nUnlike traditional pet hotels, where pets may stay in cages or shared spaces, overnight care provides personal attention, familiar routines, and emotional comfort.", et: "Kui pead olema eemal öö või mitu päeva, vajab sinu lemmik enamat kui puur või hotell. Stay With My Peti ööpäevaringne lemmikuhoid pakub rahulikku, kodust ja isiklikku hoidu – päris kodus, usaldusväärse loomasõbra juures.\n\nErinevalt lemmikloomahotellidest, kus loomad viibivad sageli jagatud ruumides või puurides, tähendab ööpäevaringne hoid üks-ühele tähelepanu, tuttavaid rutiine ja emotsionaalset turvatunnet." },
-    cardSummary: { en: "When you need to be away overnight or for several days, your pet deserves more than a kennel or hotel. Overnight pet care through Stay With My Pet offers calm, home-based, one-to-one care — in a real home, with a trusted pet friend.", et: "Kui pead olema eemal öö või mitu päeva, vajab sinu lemmik enamat kui puur või hotell. Stay With My Peti ööpäevaringne lemmikuhoid pakub rahulikku, kodust ja isiklikku hoidu – päris kodus, usaldusväärse loomasõbra juures." },
+    cardSummary: { en: "Loving, overnight care when your pet needs a home — not a hotel.", et: "Kui oled eemal, on sinu lemmik hoitud koduses keskkonnas – mitte hotellis." },
     whatIsIt: {
       en: {
               "title": "What is overnight pet care?",
@@ -360,7 +360,7 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     },
     heroTitle: { en: "Care for your pet in the comfort of their own home", et: "Lemmikule vajalik hoid ja tähelepanu tema enda kodus" },
     intro: { en: "Home visits allow your pet to stay in familiar surroundings while still receiving proper care, attention, and check-ins.\n\nPerfect for pets who value routine and calm.", et: "Kodukülastused võimaldavad lemmikul jääda tuttavasse keskkonda, saades samal ajal vajalikku hoolt ja tähelepanu.\n\nSobib eriti hästi rutiini ja rahu hindavatele loomadele." },
-    cardSummary: { en: "Home visits allow your pet to stay in familiar surroundings while still receiving proper care, attention, and check-ins.", et: "Kodukülastused võimaldavad lemmikul jääda tuttavasse keskkonda, saades samal ajal vajalikku hoolt ja tähelepanu." },
+    cardSummary: { en: "Care for your pet in the comfort of their own home.", et: "Lemmik saab jääda oma koju ja oma rutiini juurde." },
     whatIsIt: {
       en: {
               "title": "What are pet home visits?",
@@ -457,14 +457,14 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     },
   },
   "feeding-only": {
-    name: { en: "Feeding only", et: "Ainult toitmine" },
+    name: { en: "Feeding only", et: "Toitmiskülastused" },
     meta: {
       title: { en: "Feeding Only Visits", et: "Toitmiskülastused" },
       description: { en: "Feeding-only visits provide essential care without unnecessary extras. Ideal when your pet is independent but needs consistent meals.", et: "Toitmiskülastused sobivad olukordadesse, kus sinu lemmik on iseseisev, kuid vajab kindlat söögiaega ja värsket vett. See on praktiline ja stressivaba lahendus, ilma liigsete teenuste või muutusteta lemmiku igapäevaelus." },
     },
     heroTitle: { en: "Simple, reliable feeding when that’s all your pet needs", et: "Lihtne ja usaldusväärne abi, kui sinu lemmik vajab vaid toitmist" },
     intro: { en: "Feeding-only visits provide essential care without unnecessary extras.\n\nIdeal when your pet is independent but needs consistent meals.", et: "Toitmiskülastused sobivad olukordadesse, kus sinu lemmik on iseseisev, kuid vajab kindlat söögiaega ja värsket vett.\n\nSee on praktiline ja stressivaba lahendus, ilma liigsete teenuste või muutusteta lemmiku igapäevaelus." },
-    cardSummary: { en: "Feeding-only visits provide essential care without unnecessary extras.", et: "Toitmiskülastused sobivad olukordadesse, kus sinu lemmik on iseseisev, kuid vajab kindlat söögiaega ja värsket vett." },
+    cardSummary: { en: "Simple, reliable feeding when that's all your pet needs.", et: "Lihtne abi, kui lemmik vajab vaid kindlat söögiaega ja värsket vett." },
     whatIsIt: {
       en: {
               "title": "What are feeding-only visits?",
@@ -544,14 +544,14 @@ export const CARE_TYPES_LOCALE_COPY: Record<string, CareTypeLocaleCopy> = {
     },
   },
   "play-visits": {
-    name: { en: "Play visits", et: "Mängukülastused" },
+    name: { en: "Play visits", et: "Mängu- ja seltsikülastused" },
     meta: {
       title: { en: "Play Visits & Companionship", et: "Mänguvisiidid ja selts" },
       description: { en: "Play visits provide emotional enrichment through focused interaction — because pets need more than just food.", et: "Mängu- ja seltsikülastused pakuvad lemmikule emotsionaalset rikastumist läbi päris suhtluse – sest lemmik vajab sageli enamat kui vaid toitu ja täidetud kaussi." },
     },
     heroTitle: { en: "Short visits focused on play, attention, and connection", et: "Lühikesed külastused, mis keskenduvad mängule, tähelepanule ja ühendusele" },
     intro: { en: "Play visits provide emotional enrichment through focused interaction — because pets need more than just food.", et: "Mängu- ja seltsikülastused pakuvad lemmikule emotsionaalset rikastumist läbi päris suhtluse – sest lemmik vajab sageli enamat kui vaid toitu ja täidetud kaussi." },
-    cardSummary: { en: "Play visits provide emotional enrichment through focused interaction — because pets need more than just food.", et: "Mängu- ja seltsikülastused pakuvad lemmikule emotsionaalset rikastumist läbi päris suhtluse – sest lemmik vajab sageli enamat kui vaid toitu ja täidetud kaussi." },
+    cardSummary: { en: "Short visits focused on play, attention, and emotional connection", et: "Lühikesed külastused mänguks, läheduseks ja päris koosolemiseks." },
     whatIsIt: {
       en: {
               "title": "What are play visits?",

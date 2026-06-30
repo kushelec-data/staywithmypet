@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export function ServicesSection() {
   const { t, locale } = useLanguage();
-  const learnMore = locale === "et" ? "Loe lähemalt →" : "Learn more →";
+  const learnMore = t.common.learnMore;
 
   return (
     <section id="services" className={`${PAGE_SECTION} bg-surface/50`}>
