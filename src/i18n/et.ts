@@ -34,6 +34,26 @@ export const et = {
     draftSaved: "Mustand salvestatud",
     draftRestored: "Salvestamata mustand taastati",
   },
+  cookieConsent: {
+    title: "Veel üks asi: küpsised",
+    body: "Kasutame küpsiseid, et parandada kasutuskogemust, hoida veebileht turvalisena ja mõista, kuidas meie teenust kasutatakse. Saad nõustuda kõigi küpsistega, keelduda mittevajalikest küpsistest või muuta oma eelistusi.",
+    acceptAll: "Nõustun kõigiga",
+    rejectNonEssential: "Keeldun mittevajalikest",
+    managePreferences: "Halda eelistusi",
+    savePreferences: "Salvesta eelistused",
+    settingsLink: "Küpsiste seaded",
+    preferencesTitle: "Küpsiste eelistused",
+    necessaryTitle: "Vajalikud küpsised",
+    necessaryDescription:
+      "Vajalikud sisselogimiseks, turvalisuseks, keele-eelistuste ja muude oluliste funktsioonide jaoks. Neid ei saa välja lülitada.",
+    analyticsTitle: "Analüütikaküpsised",
+    analyticsDescription:
+      "Aitavad meil mõista, kuidas veebilehte kasutatakse, anonüümse ja koondatud statistika kaudu (Vercel Web Analytics).",
+    marketingTitle: "Turundusküpsised",
+    marketingDescription:
+      "Kasutatakse reklaami ja turundussõnumite jaoks. Me ei kasuta praegu sellel veebilehel turundusküpsiseid.",
+    alwaysOn: "Alati sees",
+  },
   navbar: {
     searchPets: "Otsi lemmikloomi",
     findCare: "Leia hoidja",

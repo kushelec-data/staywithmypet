@@ -34,6 +34,26 @@ export const en = {
     draftSaved: "Draft saved",
     draftRestored: "Unsaved draft restored",
   },
+  cookieConsent: {
+    title: "One more thing: cookies",
+    body: "We use cookies to improve your experience, keep the site secure, and understand how our service is used. You can accept all cookies, reject non-essential cookies, or manage your preferences.",
+    acceptAll: "Accept all",
+    rejectNonEssential: "Reject non-essential",
+    managePreferences: "Manage preferences",
+    savePreferences: "Save preferences",
+    settingsLink: "Cookie settings",
+    preferencesTitle: "Cookie preferences",
+    necessaryTitle: "Necessary cookies",
+    necessaryDescription:
+      "Required for login, security, language preferences, and other essential site features. These cannot be disabled.",
+    analyticsTitle: "Analytics cookies",
+    analyticsDescription:
+      "Help us understand how the site is used through anonymous, aggregated statistics (Vercel Web Analytics).",
+    marketingTitle: "Marketing cookies",
+    marketingDescription:
+      "Used for promotional messaging and advertising. We do not currently use marketing cookies on this site.",
+    alwaysOn: "Always on",
+  },
   navbar: {
     searchPets: "Search pets",
     findCare: "Find Care",

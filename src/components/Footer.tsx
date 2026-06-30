@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CookieSettingsLink } from "@/components/cookies/CookieSettingsLink";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -212,6 +213,9 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <CookieSettingsLink />
+              </li>
             </ul>
           </nav>
           <div className="mt-4 flex flex-col items-center justify-between gap-3 text-center sm:mt-5 sm:flex-row sm:text-left">
