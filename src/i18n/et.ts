@@ -474,6 +474,10 @@ export const et = {
         "Sinu {role} liikmelisus võimaldab selles rollis sõnumeid saata ja broneeringuid teha.",
       choosePlanStripe:
         "Vali allpool {role} plaan ja maksa turvaliselt Stripe'i kaudu (TEST režiim). Enne uuendamist saad tasuta sirvida.",
+      cancelMembership: "Tühista liikmesus",
+      cancelConfirm: "Kas oled kindel, et soovid selle liikmesuse tühistada?",
+      membershipCancelled: "Liikmesus tühistatud",
+      cancelFailed: "Liikmesuse tühistamine ebaõnnestus",
     },
     profileSetup: {
       pageTitle: "Seadista profiil",

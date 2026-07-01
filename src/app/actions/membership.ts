@@ -1,11 +1,13 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   activeModeToMembershipRole,
   isMembershipActive,
   type MembershipRole,
   type UserMembership,
 } from "@/lib/membership";
+import { cancelUserMembershipAsAdmin } from "@/lib/membership-activate";
 import { fetchUserMemberships } from "@/lib/membership-load";
 import { createClient } from "@/lib/supabase/server";
 
@@ -70,4 +72,27 @@ export async function getMembershipsForActiveModeAction(activeMode: "pet_parent"
   const role = activeModeToMembershipRole(activeMode);
   const active = memberships[role];
   return { memberships, active: isMembershipActive(active) ? active : null };
+}
+
+export async function cancelMembershipAction(
+  role: MembershipRole,
+): Promise<{ ok: true; membership: UserMembership } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "Not signed in." };
+  }
+
+  const result = await cancelUserMembershipAsAdmin(user.id, role);
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  revalidatePath("/membership");
+  revalidatePath("/dashboard");
+
+  return { ok: true, membership: result.membership };
 }

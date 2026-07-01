@@ -171,6 +171,13 @@ export function hasActiveMembershipForRole(
   return isMembershipActive(memberships[role], now);
 }
 
+/** True when the row can be cancelled (production: status must be exactly active). */
+export function canCancelMembership(
+  membership: UserMembership | null | undefined,
+): boolean {
+  return membership?.status === "active";
+}
+
 export function hasActiveMembershipForMode(
   memberships: UserMembershipsByRole,
   mode: ProfileActiveMode,

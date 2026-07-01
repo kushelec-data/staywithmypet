@@ -474,6 +474,10 @@ export const en = {
         "Your {role} membership unlocks messaging and bookings in this mode.",
       choosePlanStripe:
         "Choose a {role} plan below to pay securely with Stripe (TEST mode). Browse for free until you upgrade.",
+      cancelMembership: "Cancel membership",
+      cancelConfirm: "Are you sure you want to cancel this membership?",
+      membershipCancelled: "Membership cancelled",
+      cancelFailed: "Failed to cancel membership",
     },
     profileSetup: {
       pageTitle: "Set up your profile",

@@ -2,12 +2,16 @@ import "server-only";
 
 import { triggerMembershipConfirmationEmail } from "@/lib/membership-emails";
 import {
+  filterActiveMembershipsByRole,
+  indexMemberships,
   membershipPlanLabel,
+  membershipStatusForMode,
   resolvePlanName,
   type MembershipRole,
   type MembershipStatus,
   type UserMembership,
 } from "@/lib/membership";
+import { resolveActiveMode } from "@/lib/profile-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   isInvalidEnumValueError,
@@ -561,4 +565,179 @@ export async function upsertUserMembershipAsAdmin(
     };
   }
   return upsertUserMembership(admin, input);
+}
+
+export type CancelMembershipResult =
+  | { ok: true; membership: UserMembership }
+  | {
+      ok: false;
+      error: string;
+      code?: string | null;
+      step?: string;
+      supabaseError?: SupabaseErrorDetail | null;
+    };
+
+async function syncProfileMembershipStatusAfterChange(
+  admin: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const { data: profile, error: profileError } = await admin
+    .from("profiles")
+    .select("role, active_mode")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError || !profile) return;
+
+  const { data: rows, error: rowsError } = await admin
+    .from(MEMBERSHIP_TABLE)
+    .select(MEMBERSHIP_RETURN_COLUMNS)
+    .eq("user_id", userId);
+
+  if (rowsError) {
+    console.warn("[membership] profile status sync skipped", {
+      userId,
+      message: rowsError.message,
+    });
+    return;
+  }
+
+  const memberships = filterActiveMembershipsByRole(
+    indexMemberships((rows ?? []) as unknown as UserMembership[]),
+  );
+  const mode = resolveActiveMode(
+    (profile.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",
+    profile.active_mode as string | null,
+  );
+  const label = membershipStatusForMode(memberships, mode);
+
+  const { error: updateError } = await admin
+    .from("profiles")
+    .update({ membership_status: label })
+    .eq("id", userId);
+
+  if (updateError) {
+    console.warn("[membership] profiles.membership_status sync failed", {
+      userId,
+      ...supabaseErrorDetail(updateError),
+    });
+  }
+}
+
+/** Cancel one role's membership (status → cancelled). Requires service role. */
+export async function cancelUserMembershipAsAdmin(
+  userId: string,
+  role: MembershipRole,
+): Promise<CancelMembershipResult> {
+  const dbRole = toDbMembershipRole(role);
+  if (!dbRole) {
+    return {
+      ok: false,
+      error: `Invalid membership role "${role}".`,
+      code: "invalid_role",
+      step: "validate_role",
+    };
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      error: "SUPABASE_SERVICE_ROLE_KEY is not configured.",
+      code: "missing_service_role",
+      step: "create_admin_client",
+    };
+  }
+
+  const { data: row, error: fetchError } = await admin
+    .from(MEMBERSHIP_TABLE)
+    .select(MEMBERSHIP_RETURN_COLUMNS)
+    .eq("user_id", userId)
+    .eq("role", dbRole)
+    .maybeSingle();
+
+  if (fetchError) {
+    const detail = supabaseErrorDetail(fetchError);
+    return {
+      ok: false,
+      error: fetchError.message,
+      code: fetchError.code ?? null,
+      step: "load_membership",
+      supabaseError: detail,
+    };
+  }
+
+  if (!row) {
+    return {
+      ok: false,
+      error: "Membership not found for this role.",
+      code: "not_found",
+      step: "load_membership",
+    };
+  }
+
+  const membership = row as unknown as UserMembership;
+  if (membership.status !== "active") {
+    return {
+      ok: false,
+      error: "Only active memberships can be cancelled.",
+      code: "not_active",
+      step: "validate_status",
+    };
+  }
+
+  const subscriptionId = membership.stripe_subscription_id?.trim();
+  if (subscriptionId) {
+    try {
+      const { getStripe } = await import("@/lib/stripe");
+      await getStripe().subscriptions.cancel(subscriptionId);
+      console.log("[membership] stripe subscription cancelled", {
+        userId,
+        role: dbRole,
+        subscriptionId,
+      });
+    } catch (err) {
+      console.warn("[membership] stripe subscription cancel failed (continuing DB cancel)", {
+        userId,
+        role: dbRole,
+        subscriptionId,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  const { data: updated, error: updateError } = await admin
+    .from(MEMBERSHIP_TABLE)
+    .update({
+      status: "cancelled",
+      auto_renew: false,
+    })
+    .eq("id", membership.id)
+    .select(MEMBERSHIP_RETURN_COLUMNS)
+    .single();
+
+  if (updateError || !updated) {
+    const detail = updateError ? supabaseErrorDetail(updateError) : null;
+    return {
+      ok: false,
+      error: updateError?.message ?? "Could not cancel membership.",
+      code: updateError?.code ?? null,
+      step: "cancel_membership",
+      supabaseError: detail,
+    };
+  }
+
+  const cancelled = updated as unknown as UserMembership;
+  console.log("[membership] membership cancelled", {
+    userId,
+    role: dbRole,
+    membershipId: cancelled.id,
+  });
+
+  await syncProfileMembershipStatusAfterChange(admin, userId);
+
+  revalidatePath("/membership");
+  revalidatePath("/dashboard");
+
+  return { ok: true, membership: cancelled };
 }

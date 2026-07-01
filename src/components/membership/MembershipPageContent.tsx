@@ -27,6 +27,7 @@ import { useProfile } from "@/context/ProfileContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   activeModeToMembershipRole,
+  canCancelMembership,
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
   formatMembershipDate,
@@ -39,6 +40,7 @@ import {
   type MembershipRole,
   type UserMembership,
 } from "@/lib/membership";
+import { cancelMembershipAction } from "@/app/actions/membership";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
@@ -81,16 +83,21 @@ function RoleMembershipSummary({
   membership,
   isActive,
   t,
+  onCancel,
+  cancelLoading,
 }: {
   role: MembershipRole;
   membership: UserMembership | null;
   isActive: boolean;
   t: Dictionary;
+  onCancel?: () => void;
+  cancelLoading?: boolean;
 }) {
   const mpage = t.account.membershipPage;
   const roleLabel = role === "pet_parent" ? t.roles.petParent.label : t.roles.petFriend.label;
   const roleGenitive = membershipRoleGenitive(role, t);
   const planName = membership ? localizedMembershipPlanName(membership, t) : null;
+  const showCancel = canCancelMembership(membership);
 
   return (
     <div className={`${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}>
@@ -101,32 +108,46 @@ function RoleMembershipSummary({
           : mpage.inactiveHeadline.replace("{role}", roleGenitive)}
       </p>
       {isActive && membership ? (
-        <dl className="mt-3 space-y-2">
-          {planName ? (
+        <>
+          <dl className="mt-3 space-y-2">
+            {planName ? (
+              <div className="flex justify-between gap-2">
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.planLabel}</dt>
+                <dd className={ACCOUNT_BODY_VALUE}>{planName}</dd>
+              </div>
+            ) : null}
+            {membership.start_date ? (
+              <div className="flex justify-between gap-2">
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
+                <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.start_date)}</dd>
+              </div>
+            ) : null}
+            {membership.end_date ? (
+              <div className="flex justify-between gap-2">
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
+                <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.end_date)}</dd>
+              </div>
+            ) : null}
             <div className="flex justify-between gap-2">
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.planLabel}</dt>
-              <dd className={ACCOUNT_BODY_VALUE}>{planName}</dd>
+              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
+              <dd className={ACCOUNT_BODY_VALUE}>
+                {membership.auto_renew ? mpage.on : mpage.off}
+              </dd>
             </div>
+          </dl>
+          {showCancel && onCancel ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              disabled={cancelLoading}
+              onClick={onCancel}
+            >
+              {cancelLoading ? t.common.loading : mpage.cancelMembership}
+            </Button>
           ) : null}
-          {membership.start_date ? (
-            <div className="flex justify-between gap-2">
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
-              <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.start_date)}</dd>
-            </div>
-          ) : null}
-          {membership.end_date ? (
-            <div className="flex justify-between gap-2">
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
-              <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.end_date)}</dd>
-            </div>
-          ) : null}
-          <div className="flex justify-between gap-2">
-            <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
-            <dd className={ACCOUNT_BODY_VALUE}>
-              {membership.auto_renew ? mpage.on : mpage.off}
-            </dd>
-          </div>
-        </dl>
+        </>
       ) : (
         <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{mpage.browseFreeUpgrade}</p>
       )}
@@ -145,7 +166,8 @@ export function MembershipPageContent({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
-  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+  const [cancelLoadingRole, setCancelLoadingRole] = useState<MembershipRole | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const handledReturnRef = useRef<string | null>(null);
 
@@ -304,27 +326,30 @@ export function MembershipPageContent({
   const useTestAccessFlow = !stripeEnabled;
   const checkoutEnabled = !isActive && (stripeEnabled ? stripeCheckoutReady : true);
 
-  const handleCancelPlan = useCallback(async () => {
-    setCancelError(null);
-    setCancelLoading(true);
-    try {
-      const res = await fetch("/api/stripe/billing-portal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: modeRole, returnTo }),
-      });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        setCancelError(data.error ?? t.membershipCheckout.cancelUnavailable);
-        return;
+  const handleCancelMembership = useCallback(
+    async (role: MembershipRole) => {
+      if (!window.confirm(t.account.membershipPage.cancelConfirm)) return;
+
+      setCancelError(null);
+      setCancelSuccess(null);
+      setCancelLoadingRole(role);
+      try {
+        const result = await cancelMembershipAction(role);
+        if (!result.ok) {
+          setCancelError(result.error ?? t.account.membershipPage.cancelFailed);
+          return;
+        }
+        setCancelSuccess(t.account.membershipPage.membershipCancelled);
+        router.refresh();
+        await refreshProfile({ background: false });
+      } catch {
+        setCancelError(t.account.membershipPage.cancelFailed);
+      } finally {
+        setCancelLoadingRole(null);
       }
-      window.location.href = data.url;
-    } catch {
-      setCancelError(t.membershipCheckout.cancelUnavailable);
-    } finally {
-      setCancelLoading(false);
-    }
-  }, [modeRole, returnTo, t.membershipCheckout.cancelUnavailable]);
+    },
+    [refreshProfile, router, t.account.membershipPage],
+  );
 
   const stripePlans = useMemo(() => {
     const parentFeatures = Object.fromEntries(
@@ -389,12 +414,24 @@ export function MembershipPageContent({
             membership={memberships.pet_parent}
             isActive={hasActiveMembershipForRole(memberships, "pet_parent")}
             t={t}
+            onCancel={
+              canCancelMembership(memberships.pet_parent)
+                ? () => void handleCancelMembership("pet_parent")
+                : undefined
+            }
+            cancelLoading={cancelLoadingRole === "pet_parent"}
           />
           <RoleMembershipSummary
             role="pet_friend"
             membership={memberships.pet_friend}
             isActive={hasActiveMembershipForRole(memberships, "pet_friend")}
             t={t}
+            onCancel={
+              canCancelMembership(memberships.pet_friend)
+                ? () => void handleCancelMembership("pet_friend")
+                : undefined
+            }
+            cancelLoading={cancelLoadingRole === "pet_friend"}
           />
         </div>
       ) : null}
@@ -442,6 +479,18 @@ export function MembershipPageContent({
               ? t.testAccess.membershipIntro.replace("{role}", roleGenitive)
               : mpage.choosePlanStripe.replace("{role}", roleGenitive)}
         </p>
+        {!loading && canCancelMembership(activeMembership) ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            disabled={cancelLoadingRole === modeRole}
+            onClick={() => void handleCancelMembership(modeRole)}
+          >
+            {cancelLoadingRole === modeRole ? t.common.loading : mpage.cancelMembership}
+          </Button>
+        ) : null}
       </AccountCard>
 
       {useTestAccessFlow && !isActive ? (
@@ -465,6 +514,12 @@ export function MembershipPageContent({
       {checkoutBanner ? (
         <p className={`mb-4 px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
           {checkoutBanner}
+        </p>
+      ) : null}
+
+      {cancelSuccess ? (
+        <p className={`mb-4 px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
+          {cancelSuccess}
         </p>
       ) : null}
 
@@ -516,9 +571,13 @@ export function MembershipPageContent({
         useTestAccessFlow={checkoutEnabled && useTestAccessFlow}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
-        cancelPlanLabel={t.membershipCheckout.cancelPlan}
-        cancelPlanLoading={cancelLoading}
-        onCancelPlan={isActive && stripeEnabled ? handleCancelPlan : undefined}
+        cancelPlanLabel={mpage.cancelMembership}
+        cancelPlanLoading={cancelLoadingRole === modeRole}
+        onCancelPlan={
+          canCancelMembership(activeMembership)
+            ? () => void handleCancelMembership(modeRole)
+            : undefined
+        }
       />
     </AccountLayout>
   );
