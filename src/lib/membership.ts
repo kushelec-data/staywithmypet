@@ -126,9 +126,18 @@ function parseMembershipEnd(membership: UserMembership): Date | null {
   return Number.isNaN(end.getTime()) ? null : end;
 }
 
+function startOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** True when membership end_date is on or after the calendar day of `now`. */
+function membershipEndOnOrAfterToday(end: Date, now = new Date()): boolean {
+  return startOfLocalDay(end).getTime() >= startOfLocalDay(now).getTime();
+}
+
 /**
- * Active if status is active|trialing AND (end_date null OR end_date > now).
- * See migration comments for dual-role test cases 1–4.
+ * Active only when status is active|trialing AND (end_date null OR end_date >= today).
+ * Cancelled, inactive, and expired never qualify.
  */
 export function isMembershipActive(
   membership: UserMembership | null | undefined,
@@ -138,7 +147,20 @@ export function isMembershipActive(
   if (membership.status !== "active" && membership.status !== "trialing") return false;
   const end = parseMembershipEnd(membership);
   if (!end) return true;
-  return end > now;
+  return membershipEndOnOrAfterToday(end, now);
+}
+
+/** Profile/UI snapshot: only slots with an effectively active membership (non-active rows omitted). */
+export function filterActiveMembershipsByRole(
+  memberships: UserMembershipsByRole,
+  now = new Date(),
+): UserMembershipsByRole {
+  const petParent = memberships.pet_parent;
+  const petFriend = memberships.pet_friend;
+  return {
+    pet_parent: isMembershipActive(petParent, now) ? petParent : null,
+    pet_friend: isMembershipActive(petFriend, now) ? petFriend : null,
+  };
 }
 
 export function hasActiveMembershipForRole(

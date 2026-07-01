@@ -2,6 +2,7 @@
 
 import {
   activeModeToMembershipRole,
+  isMembershipActive,
   type MembershipRole,
   type UserMembership,
 } from "@/lib/membership";
@@ -67,5 +68,6 @@ export async function getMembershipsForActiveModeAction(activeMode: "pet_parent"
 
   const memberships = await fetchUserMemberships(supabase, user.id);
   const role = activeModeToMembershipRole(activeMode);
-  return { memberships, active: memberships[role] };
+  const active = memberships[role];
+  return { memberships, active: isMembershipActive(active) ? active : null };
 }

@@ -154,6 +154,11 @@ export function MembershipPageContent({
     [searchParams],
   );
 
+  useEffect(() => {
+    if (!user?.id) return;
+    void refreshProfile({ background: true });
+  }, [user?.id, refreshProfile]);
+
   const replaceMembershipUrl = useCallback(
     (role: MembershipRole | null) => {
       router.replace(

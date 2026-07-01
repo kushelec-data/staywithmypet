@@ -33,8 +33,7 @@ import {
   mergePetParentIntoDetails,
   type PetParentProfileFormInput,
 } from "@/lib/profile-parent-form";
-import { emptyMembershipsByRole } from "@/lib/membership";
-import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils";
+import type { ProfileRow } from "@/lib/profile-utils";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { countCompletedBookingsForUser, countReviewsAsReviewee } from "@/lib/bookings-stats";
 import {
@@ -183,12 +182,8 @@ export async function saveUserActiveMode(
   }
 
   assertProfileMatchesUser(reloaded.id, userId);
-  const withMemberships = applyMembershipsToProfile(
-    reloaded,
-    currentProfile.memberships ?? emptyMembershipsByRole(),
-  );
-  console.log("[profile] active_mode saved", withMemberships);
-  return withMemberships;
+  console.log("[profile] active_mode saved", reloaded);
+  return reloaded;
 }
 
 export async function saveUserProfile(

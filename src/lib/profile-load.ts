@@ -1,5 +1,9 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import { DEMO_MEMBERSHIP_LABEL, emptyMembershipsByRole } from "@/lib/membership";
+import {
+  DEMO_MEMBERSHIP_LABEL,
+  emptyMembershipsByRole,
+  filterActiveMembershipsByRole,
+} from "@/lib/membership";
 import { resolveUserMemberships, type MembershipLegacySource } from "@/lib/membership-load";
 import { isAvatarUrlOwnedByUser } from "@/lib/profile-avatar-display";
 import { parseProfileDetails } from "@/lib/profile-details";
@@ -200,7 +204,7 @@ export async function attachMemberships(
     profile.id,
     source as MembershipLegacySource,
   );
-  return applyMembershipsToProfile(profile, memberships);
+  return applyMembershipsToProfile(profile, filterActiveMembershipsByRole(memberships));
 }
 
 function stripProfileWriteColumns(row: Record<string, unknown>): Record<string, unknown> {

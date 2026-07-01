@@ -72,10 +72,10 @@ function mapMembershipRow(data: Record<string, unknown>): UserMembership {
   };
 }
 
-export async function fetchUserMemberships(
+export async function fetchUserMembershipRows(
   supabase: SupabaseClient,
   userId: string,
-): Promise<UserMembershipsByRole> {
+): Promise<UserMembership[]> {
   const stripped: string[] = [];
   let select = MEMBERSHIP_SELECT;
   let { data, error } = await supabase
@@ -102,16 +102,22 @@ export async function fetchUserMemberships(
 
   if (error) {
     if (isMissingRelationError(error)) {
-      return emptyMembershipsByRole();
+      return [];
     }
-    logSupabaseError("fetchUserMemberships", error);
+    logSupabaseError("fetchUserMembershipRows", error);
     throw error;
   }
 
-  const rows = (data ?? []).map((row) =>
+  return (data ?? []).map((row) =>
     mapMembershipRow(row as unknown as Record<string, unknown>),
   );
-  return indexMemberships(rows);
+}
+
+export async function fetchUserMemberships(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<UserMembershipsByRole> {
+  return indexMemberships(await fetchUserMembershipRows(supabase, userId));
 }
 
 export function formatMembershipLoadError(error: PostgrestError | Error): string {
@@ -188,8 +194,8 @@ function legacyMembershipsFromProfileSource(
 }
 
 /**
- * Load memberships from user_memberships, falling back to profiles.membership_status
- * (same rules as ProfileContext) so gating matches the UI.
+ * Load memberships from user_memberships. Legacy profile.membership_status is used only
+ * when the user has zero rows in user_memberships (never when cancelled/inactive rows exist).
  */
 export async function resolveUserMemberships(
   supabase: SupabaseClient,
@@ -197,9 +203,9 @@ export async function resolveUserMemberships(
   legacySource?: MembershipLegacySource | null,
 ): Promise<UserMembershipsByRole> {
   try {
-    const memberships = await fetchUserMemberships(supabase, userId);
-    if (memberships.pet_parent || memberships.pet_friend) {
-      return memberships;
+    const rows = await fetchUserMembershipRows(supabase, userId);
+    if (rows.length > 0) {
+      return indexMemberships(rows);
     }
   } catch (err) {
     if (isPostgrestError(err)) {
@@ -207,6 +213,8 @@ export async function resolveUserMemberships(
     } else {
       console.error("[membership] resolveUserMemberships", err);
     }
+    // Do not synthesize legacy memberships when DB read failed — rows may exist.
+    return emptyMembershipsByRole();
   }
 
   if (legacySource) {
