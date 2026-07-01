@@ -12,6 +12,7 @@ import {
   type UserMembership,
 } from "@/lib/membership";
 import { resolveActiveMode } from "@/lib/profile-mode";
+import { fetchUserMembershipRows } from "@/lib/membership-load";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   isInvalidEnumValueError,
@@ -28,9 +29,58 @@ export const MEMBERSHIP_TABLE = "user_memberships";
 export const MEMBERSHIP_RETURN_COLUMNS =
   "id, user_id, role, plan_id, plan_name, status, start_date, end_date, auto_renew, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_checkout_session_id";
 
+/** Production-safe select for cancel (no plan_name, source, stripe_checkout_session_id). */
+export const MEMBERSHIP_CANCEL_SELECT_COLUMNS =
+  "id, user_id, role, plan_id, status, start_date, end_date, auto_renew, created_at, updated_at";
+
 /** Core columns always present after 20260602100000_user_memberships.sql */
 const MEMBERSHIP_CORE_SELECT_COLUMNS =
   "id, user_id, role, plan_id, status, start_date, end_date, auto_renew";
+
+function mapProductionMembershipRow(data: Record<string, unknown>): UserMembership {
+  const startRaw = data.start_date ?? data.starts_at;
+  const endRaw = data.end_date ?? data.ends_at;
+  return {
+    id: String(data.id),
+    user_id: String(data.user_id),
+    role: data.role as UserMembership["role"],
+    plan_id: String(data.plan_id ?? ""),
+    plan_name: null,
+    status: data.status as UserMembership["status"],
+    start_date: startRaw ? String(startRaw) : new Date().toISOString(),
+    end_date: endRaw == null ? null : String(endRaw),
+    auto_renew: Boolean(data.auto_renew ?? false),
+    stripe_customer_id: null,
+    stripe_subscription_id: null,
+    stripe_price_id: null,
+    stripe_checkout_session_id: null,
+  };
+}
+
+async function loadStripeSubscriptionIdForCancel(
+  admin: SupabaseClient,
+  membershipId: string,
+): Promise<string | null> {
+  const { data, error } = await admin
+    .from(MEMBERSHIP_TABLE)
+    .select("stripe_subscription_id")
+    .eq("id", membershipId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingColumnError(error, "stripe_subscription_id")) {
+      return null;
+    }
+    console.warn("[membership] stripe_subscription_id lookup skipped", {
+      membershipId,
+      message: error.message,
+    });
+    return null;
+  }
+
+  const value = data?.stripe_subscription_id;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
 
 export type UpsertMembershipInput = {
   userId: string;
@@ -589,22 +639,18 @@ async function syncProfileMembershipStatusAfterChange(
 
   if (profileError || !profile) return;
 
-  const { data: rows, error: rowsError } = await admin
-    .from(MEMBERSHIP_TABLE)
-    .select(MEMBERSHIP_RETURN_COLUMNS)
-    .eq("user_id", userId);
-
-  if (rowsError) {
+  let rows: UserMembership[];
+  try {
+    rows = await fetchUserMembershipRows(admin, userId);
+  } catch (err) {
     console.warn("[membership] profile status sync skipped", {
       userId,
-      message: rowsError.message,
+      message: err instanceof Error ? err.message : String(err),
     });
     return;
   }
 
-  const memberships = filterActiveMembershipsByRole(
-    indexMemberships((rows ?? []) as unknown as UserMembership[]),
-  );
+  const memberships = filterActiveMembershipsByRole(indexMemberships(rows));
   const mode = resolveActiveMode(
     (profile.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",
     profile.active_mode as string | null,
@@ -651,9 +697,10 @@ export async function cancelUserMembershipAsAdmin(
 
   const { data: row, error: fetchError } = await admin
     .from(MEMBERSHIP_TABLE)
-    .select(MEMBERSHIP_RETURN_COLUMNS)
+    .select(MEMBERSHIP_CANCEL_SELECT_COLUMNS)
     .eq("user_id", userId)
     .eq("role", dbRole)
+    .eq("status", "active")
     .maybeSingle();
 
   if (fetchError) {
@@ -676,17 +723,9 @@ export async function cancelUserMembershipAsAdmin(
     };
   }
 
-  const membership = row as unknown as UserMembership;
-  if (membership.status !== "active") {
-    return {
-      ok: false,
-      error: "Only active memberships can be cancelled.",
-      code: "not_active",
-      step: "validate_status",
-    };
-  }
+  const membership = mapProductionMembershipRow(row as unknown as Record<string, unknown>);
 
-  const subscriptionId = membership.stripe_subscription_id?.trim();
+  const subscriptionId = await loadStripeSubscriptionIdForCancel(admin, membership.id);
   if (subscriptionId) {
     try {
       const { getStripe } = await import("@/lib/stripe");
@@ -708,13 +747,12 @@ export async function cancelUserMembershipAsAdmin(
 
   const { data: updated, error: updateError } = await admin
     .from(MEMBERSHIP_TABLE)
-    .update({
-      status: "cancelled",
-      auto_renew: false,
-    })
-    .eq("id", membership.id)
-    .select(MEMBERSHIP_RETURN_COLUMNS)
-    .single();
+    .update({ status: "cancelled" })
+    .eq("user_id", userId)
+    .eq("role", dbRole)
+    .eq("status", "active")
+    .select(MEMBERSHIP_CANCEL_SELECT_COLUMNS)
+    .maybeSingle();
 
   if (updateError || !updated) {
     const detail = updateError ? supabaseErrorDetail(updateError) : null;
@@ -727,7 +765,7 @@ export async function cancelUserMembershipAsAdmin(
     };
   }
 
-  const cancelled = updated as unknown as UserMembership;
+  const cancelled = mapProductionMembershipRow(updated as unknown as Record<string, unknown>);
   console.log("[membership] membership cancelled", {
     userId,
     role: dbRole,
