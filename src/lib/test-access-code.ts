@@ -31,12 +31,10 @@ export function planIdForMembershipRole(
   return targetRole === "pet_parent" ? "3-month-owner" : "3-month-friend";
 }
 
+/** Always activate the purchased/selected role only — never expand from profiles.role = both. */
 export function membershipRolesToActivate(
-  profileRole: "pet_parent" | "pet_friend" | "both" | undefined,
+  _profileRole: "pet_parent" | "pet_friend" | "both" | undefined,
   selectedRole: MembershipRole,
 ): MembershipRole[] {
-  if (profileRole === "both") {
-    return ["pet_parent", "pet_friend"];
-  }
   return [selectedRole];
 }

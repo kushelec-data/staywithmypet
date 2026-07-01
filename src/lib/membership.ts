@@ -268,6 +268,21 @@ export function membershipPlansForRole(
   }));
 }
 
+/** Infer role from a legacy plan slug/label (-owner / -friend). Returns null when ambiguous (e.g. "3 Month"). */
+export function inferMembershipRoleFromLegacyLabel(label: string): MembershipRole | null {
+  const normalized = label.trim().toLowerCase();
+  if (!normalized) return null;
+
+  const slug = normalized.replace(/\s+/g, "-");
+  if (slug.endsWith("-owner") || slug.includes("pet-parent") || slug === "parent") {
+    return "pet_parent";
+  }
+  if (slug.endsWith("-friend") || slug.includes("pet-friend") || slug === "friend") {
+    return "pet_friend";
+  }
+  return null;
+}
+
 export function inferPlanIdFromLegacyLabel(
   role: MembershipRole,
   label: string,

@@ -2,11 +2,13 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import {
   emptyMembershipsByRole,
   indexMemberships,
+  inferMembershipRoleFromLegacyLabel,
   inferPlanIdFromLegacyLabel,
   type MembershipRole,
   type UserMembership,
   type UserMembershipsByRole,
 } from "@/lib/membership";
+import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
 import {
   isMissingColumnError,
@@ -19,6 +21,7 @@ import {
 export type MembershipLegacySource = {
   id: string;
   role?: ProfileRole;
+  active_mode?: string | null;
   membership_status?: string | null;
   details?: unknown;
   created_at?: string | null;
@@ -154,6 +157,23 @@ function legacyMembershipForRole(
   };
 }
 
+function legacyMembershipRoleForSource(
+  source: MembershipLegacySource,
+  label: string,
+): MembershipRole {
+  const profileRole = source.role ?? "pet_friend";
+  if (profileRole === "pet_parent" || profileRole === "pet_friend") {
+    return profileRole;
+  }
+
+  const fromLabel = inferMembershipRoleFromLegacyLabel(label);
+  if (fromLabel) return fromLabel;
+
+  return resolveActiveMode("both", source.active_mode) === "pet_friend"
+    ? "pet_friend"
+    : "pet_parent";
+}
+
 function legacyMembershipsFromProfileSource(
   source: MembershipLegacySource,
 ): UserMembershipsByRole {
@@ -161,16 +181,7 @@ function legacyMembershipsFromProfileSource(
   const result = emptyMembershipsByRole();
   if (!label) return result;
 
-  const profileRole = source.role ?? "pet_friend";
-  if (profileRole === "both") {
-    for (const role of ["pet_parent", "pet_friend"] as const) {
-      const row = legacyMembershipForRole(source, role, label);
-      if (row) result[role] = row;
-    }
-    return result;
-  }
-
-  const role: MembershipRole = profileRole === "pet_friend" ? "pet_friend" : "pet_parent";
+  const role = legacyMembershipRoleForSource(source, label);
   const row = legacyMembershipForRole(source, role, label);
   if (row) result[role] = row;
   return result;
@@ -204,7 +215,7 @@ export async function resolveUserMemberships(
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, role, membership_status, details, created_at")
+    .select("id, role, active_mode, membership_status, details, created_at")
     .eq("id", userId)
     .maybeSingle();
 
