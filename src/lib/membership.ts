@@ -87,6 +87,14 @@ export const PLAN_BILLING_INTERVAL: Record<string, MembershipPlanDefinition["bil
   "1-year-friend": "12_months",
 };
 
+/** Plans open for purchase on membership pages (others show Coming Soon). */
+export const PURCHASABLE_MEMBERSHIP_PLAN_IDS = ["3-month-owner", "3-month-friend"] as const;
+
+export function isMembershipPlanPurchasable(planId: string): boolean {
+  const id = planId.trim().toLowerCase();
+  return id === "3-month-owner" || id === "3-month-friend";
+}
+
 /**
  * Client-safe placeholder; server resolves ids via `resolveStripePriceId` in stripe-plans.ts
  * (STRIPE_PARENT_PRICE_ID / STRIPE_FRIEND_PRICE_ID by role).

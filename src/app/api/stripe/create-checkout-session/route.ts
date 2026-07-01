@@ -10,7 +10,7 @@ import {
   stripePriceIdSuffix,
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
-import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
+import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, type MembershipRole } from "@/lib/membership";
 import { sanitizeReturnTo } from "@/lib/membership-return";
 import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
@@ -92,6 +92,10 @@ export async function POST(request: Request) {
 
   if (!planExistsForRole(role, trimmedPlanId)) {
     return NextResponse.json({ error: "Unknown plan for role." }, { status: 400 });
+  }
+
+  if (!isMembershipPlanPurchasable(trimmedPlanId)) {
+    return NextResponse.json({ error: "This plan is not available yet." }, { status: 403 });
   }
 
   logStripeCheckoutPlanResolution("create-checkout-session", trimmedPlanId, role);

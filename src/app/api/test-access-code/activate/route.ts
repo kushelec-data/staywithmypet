@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { upsertUserMembershipAsAdmin } from "@/lib/membership-activate";
-import type { MembershipRole } from "@/lib/membership";
+import { isMembershipPlanPurchasable, type MembershipRole } from "@/lib/membership";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import {
@@ -54,6 +54,10 @@ export async function POST(request: Request) {
   const planId = normalizeCatalogPlanId(rawPlanId);
   if (!planId) {
     return NextResponse.json({ error: `Unknown plan: ${rawPlanId}` }, { status: 400 });
+  }
+
+  if (!isMembershipPlanPurchasable(planId)) {
+    return NextResponse.json({ error: "This plan is not available yet." }, { status: 403 });
   }
 
   const supabase = await createClient();

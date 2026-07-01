@@ -1158,7 +1158,7 @@ export const en = {
     choosePlan: "Choose plan",
     activePlan: "Active plan",
     currentPlan: "Current plan",
-    comingSoon: "Coming soon",
+    comingSoon: "Coming Soon",
     mostPopular: "Most Practical for Recurring Needs",
     redirecting: "Redirecting…",
     checkoutError: "Could not start checkout.",

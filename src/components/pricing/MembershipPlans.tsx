@@ -5,7 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
 import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
-import { formatMembershipDate } from "@/lib/membership";
+import { formatMembershipDate, isMembershipPlanPurchasable } from "@/lib/membership";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 
@@ -85,6 +85,7 @@ function PlanCard({
   currentPlanButtonLabel,
   redirectingLabel,
   checkoutUnavailableLabel,
+  comingSoonLabel,
   popularBadge,
   enableCheckout,
   useTestAccessFlow,
@@ -110,6 +111,7 @@ function PlanCard({
   currentPlanButtonLabel: string;
   redirectingLabel: string;
   checkoutUnavailableLabel: string;
+  comingSoonLabel: string;
   popularBadge: string;
   enableCheckout?: boolean;
   useTestAccessFlow?: boolean;
@@ -131,10 +133,12 @@ function PlanCard({
     planMatchesActive(plan, activePlanId, currentPlanLabel);
 
   const isLoading = checkoutLoadingPlanId === plan.id;
+  const purchaseDisabled = !isMembershipPlanPurchasable(plan.id);
   const canCheckout =
     variant === "account" &&
     (enableCheckout || useTestAccessFlow) &&
     !isCurrent &&
+    !purchaseDisabled &&
     !planConfigError &&
     Boolean(checkoutUserId) &&
     Boolean(checkoutRole) &&
@@ -142,6 +146,8 @@ function PlanCard({
 
   const canCancel =
     variant === "account" && isCurrent && Boolean(onCancelPlan) && Boolean(cancelPlanLabel);
+
+  const showComingSoon = purchaseDisabled && !isCurrent && !canCancel;
 
   const isAccount = variant === "account";
 
@@ -202,14 +208,26 @@ function PlanCard({
         ))}
       </ul>
       {variant === "marketing" ? (
-        <Button
-          href={`/login?next=${encodeURIComponent(MEMBERSHIP_PATH)}`}
-          variant={plan.popular ? "primary" : "secondary"}
-          className="mt-6 w-full sm:mt-8"
-          size="lg"
-        >
-          {choosePlanLabel}
-        </Button>
+        showComingSoon ? (
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-6 w-full cursor-not-allowed opacity-60 sm:mt-8"
+            size="lg"
+            disabled
+          >
+            {comingSoonLabel}
+          </Button>
+        ) : (
+          <Button
+            href={`/login?next=${encodeURIComponent(MEMBERSHIP_PATH)}`}
+            variant={plan.popular ? "primary" : "secondary"}
+            className="mt-6 w-full sm:mt-8"
+            size="lg"
+          >
+            {choosePlanLabel}
+          </Button>
+        )
       ) : (
         <>
           {planConfigError ? (
@@ -224,13 +242,23 @@ function PlanCard({
           ) : null}
           <Button
             type="button"
-            variant={canCancel ? "secondary" : plan.popular ? "primary" : "secondary"}
-            className={`mt-5 w-full sm:mt-6 ${isAccount ? "" : "sm:mt-8"}`}
+            variant={
+              showComingSoon
+                ? "secondary"
+                : canCancel
+                  ? "secondary"
+                  : plan.popular
+                    ? "primary"
+                    : "secondary"
+            }
+            className={`mt-5 w-full sm:mt-6 ${showComingSoon ? "cursor-not-allowed opacity-60" : isAccount ? "" : "sm:mt-8"}`}
             size={isAccount ? "sm" : "lg"}
             disabled={
-              canCancel
-                ? cancelPlanLoading
-                : isCurrent || (!canCheckout && !isCurrent)
+              showComingSoon
+                ? true
+                : canCancel
+                  ? cancelPlanLoading
+                  : isCurrent || (!canCheckout && !isCurrent)
             }
             onClick={() => {
               if (canCancel && onCancelPlan) {
@@ -242,15 +270,17 @@ function PlanCard({
           >
             {isLoading
               ? redirectingLabel
-              : canCancel
-                ? cancelPlanLoading
-                  ? "…"
-                  : cancelPlanLabel!
-                : isCurrent
-                  ? currentPlanButtonLabel
-                  : canCheckout
-                    ? choosePlanLabel
-                    : planConfigError ?? checkoutUnavailableLabel}
+              : showComingSoon
+                ? comingSoonLabel
+                : canCancel
+                  ? cancelPlanLoading
+                    ? "…"
+                    : cancelPlanLabel!
+                  : isCurrent
+                    ? currentPlanButtonLabel
+                    : canCheckout
+                      ? choosePlanLabel
+                      : planConfigError ?? checkoutUnavailableLabel}
           </Button>
         </>
       )}
@@ -318,6 +348,7 @@ export function MembershipPlans({
 
   async function handleChoosePlan(plan: PricingPlan) {
     if (!checkoutUserId || !effectiveCheckoutRole) return;
+    if (!isMembershipPlanPurchasable(plan.id)) return;
     setCheckoutError(null);
     setCheckoutLoadingPlanId(plan.id);
 
@@ -419,7 +450,8 @@ export function MembershipPlans({
             activePlanLabel={t.pricing.activePlan}
             currentPlanButtonLabel={t.pricing.currentPlan}
             redirectingLabel={t.pricing.redirecting}
-            checkoutUnavailableLabel={t.pricing.comingSoon}
+            checkoutUnavailableLabel={t.pricing.checkoutError}
+            comingSoonLabel={t.pricing.comingSoon}
             popularBadge={t.pricing.mostPopular}
             enableCheckout={enableCheckout}
             useTestAccessFlow={useTestAccessFlow}

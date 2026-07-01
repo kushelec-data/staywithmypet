@@ -1167,7 +1167,7 @@ export const et = {
     choosePlan: "Vali pakett",
     activePlan: "Aktiivne plaan",
     currentPlan: "Praegune pakett",
-    comingSoon: "Varsti saadaval",
+    comingSoon: "Peagi saadaval",
     mostPopular: "Kõige praktilisem korduvaks vajaduseks",
     redirecting: "Suunan…",
     checkoutError: "Makse alustamine ebaõnnestus.",
