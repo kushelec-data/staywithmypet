@@ -20,7 +20,6 @@ import {
   activeModeToPricingTab,
   MembershipPlans,
 } from "@/components/pricing/MembershipPlans";
-import { DogStoryCTA } from "@/components/marketing/DogStoryCTA";
 import { PricingSection } from "@/sections/PricingSection";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -387,8 +386,6 @@ export function MembershipPageContent({
   const pageTitle = planMode === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
   const pageSubtitle =
     planMode === "pet_parent" ? mpage.petParentSubtitle : mpage.petFriendSubtitle;
-  const roleLabel =
-    planMode === "pet_parent" ? t.roles.petParent.label : t.roles.petFriend.label;
   const roleGenitive = membershipRoleGenitive(modeRole, t);
   const statusHeadline =
     isActive && activePlanName
@@ -436,62 +433,60 @@ export function MembershipPageContent({
         </div>
       ) : null}
 
-      <AccountCard className={`mb-6 ${ACCOUNT_CARD_PADDING_COMPACT}`}>
-        <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
-        <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>
-          {loading ? t.common.loading : statusHeadline}
-        </p>
-        {!loading && isActive && activePlanName ? (
-          <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>
-            {mpage.activePlanSuffix.replace("{plan}", activePlanName)}
+      {isActive ? (
+        <AccountCard className={`mb-6 ${ACCOUNT_CARD_PADDING_COMPACT}`}>
+          <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
+          <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>
+            {loading ? t.common.loading : statusHeadline}
           </p>
-        ) : null}
-        {!loading && isActive && activeMembership ? (
-          <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-            {activeMembership.start_date ? (
+          {!loading && activePlanName ? (
+            <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>
+              {mpage.activePlanSuffix.replace("{plan}", activePlanName)}
+            </p>
+          ) : null}
+          {!loading && activeMembership ? (
+            <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+              {activeMembership.start_date ? (
+                <div>
+                  <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
+                  <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
+                    {formatMembershipDate(activeMembership.start_date)}
+                  </dd>
+                </div>
+              ) : null}
+              {activeMembership.end_date ? (
+                <div>
+                  <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
+                  <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
+                    {formatMembershipDate(activeMembership.end_date)}
+                  </dd>
+                </div>
+              ) : null}
               <div>
-                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
+                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
                 <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
-                  {formatMembershipDate(activeMembership.start_date)}
+                  {activeMembership.auto_renew ? mpage.on : mpage.off}
                 </dd>
               </div>
-            ) : null}
-            {activeMembership.end_date ? (
-              <div>
-                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
-                <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
-                  {formatMembershipDate(activeMembership.end_date)}
-                </dd>
-              </div>
-            ) : null}
-            <div>
-              <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
-              <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
-                {activeMembership.auto_renew ? mpage.on : mpage.off}
-              </dd>
-            </div>
-          </dl>
-        ) : null}
-        <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
-          {isActive
-            ? mpage.activeUnlocks.replace("{role}", roleGenitive)
-            : useTestAccessFlow
-              ? t.testAccess.membershipIntro.replace("{role}", roleGenitive)
-              : mpage.choosePlanStripe.replace("{role}", roleGenitive)}
-        </p>
-        {!loading && canCancelMembership(activeMembership) ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-4"
-            disabled={cancelLoadingRole === modeRole}
-            onClick={() => void handleCancelMembership(modeRole)}
-          >
-            {cancelLoadingRole === modeRole ? t.common.loading : mpage.cancelMembership}
-          </Button>
-        ) : null}
-      </AccountCard>
+            </dl>
+          ) : null}
+          <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
+            {mpage.activeUnlocks.replace("{role}", roleGenitive)}
+          </p>
+          {!loading && canCancelMembership(activeMembership) ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              disabled={cancelLoadingRole === modeRole}
+              onClick={() => void handleCancelMembership(modeRole)}
+            >
+              {cancelLoadingRole === modeRole ? t.common.loading : mpage.cancelMembership}
+            </Button>
+          ) : null}
+        </AccountCard>
+      ) : null}
 
       {useTestAccessFlow && !isActive ? (
         <p
@@ -547,14 +542,6 @@ export function MembershipPageContent({
         >
           {stripeConfigMessage}
         </p>
-      ) : null}
-
-      {!loading && !isActive ? (
-        <DogStoryCTA
-          withPageShell={false}
-          className="mb-6"
-          membershipHref={buildMembershipPagePath({ role: modeRole, returnTo })}
-        />
       ) : null}
 
       <MembershipPlans
