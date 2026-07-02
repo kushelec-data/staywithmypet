@@ -8,7 +8,7 @@ import {
   type UserMembership,
 } from "@/lib/membership";
 import { cancelUserMembershipAsAdmin } from "@/lib/membership-activate";
-import { fetchUserMemberships } from "@/lib/membership-load";
+import { resolveUserMemberships } from "@/lib/membership-load";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActivateMembershipInput = {
@@ -68,7 +68,7 @@ export async function getMembershipsForActiveModeAction(activeMode: "pet_parent"
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const memberships = await fetchUserMemberships(supabase, user.id);
+  const memberships = await resolveUserMemberships(supabase, user.id);
   const role = activeModeToMembershipRole(activeMode);
   const active = memberships[role];
   return { memberships, active: isMembershipActive(active) ? active : null };

@@ -144,15 +144,15 @@ function membershipEndOnOrAfterToday(end: Date, now = new Date()): boolean {
 }
 
 /**
- * Active only when status is active|trialing AND (end_date null OR end_date >= today).
- * Cancelled, inactive, and expired never qualify.
+ * Active only when status is exactly active AND (end_date null OR end_date >= today).
+ * Cancelled, expired, inactive, and trialing never qualify.
  */
 export function isMembershipActive(
   membership: UserMembership | null | undefined,
   now = new Date(),
 ): boolean {
   if (!membership) return false;
-  if (membership.status !== "active" && membership.status !== "trialing") return false;
+  if (membership.status !== "active") return false;
   const end = parseMembershipEnd(membership);
   if (!end) return true;
   return membershipEndOnOrAfterToday(end, now);

@@ -2,9 +2,8 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import {
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
-  filterActiveMembershipsByRole,
 } from "@/lib/membership";
-import { resolveUserMemberships, type MembershipLegacySource } from "@/lib/membership-load";
+import { resolveUserMemberships } from "@/lib/membership-load";
 import { isAvatarUrlOwnedByUser } from "@/lib/profile-avatar-display";
 import { parseProfileDetails } from "@/lib/profile-details";
 import { resolveActiveMode } from "@/lib/profile-mode";
@@ -197,14 +196,9 @@ export function mapProfileRow(data: ProfileDbRow): ProfileRow {
 export async function attachMemberships(
   supabase: SupabaseClient,
   profile: ProfileRow,
-  source: ProfileDbRow,
 ): Promise<ProfileRow> {
-  const memberships = await resolveUserMemberships(
-    supabase,
-    profile.id,
-    source as MembershipLegacySource,
-  );
-  return applyMembershipsToProfile(profile, filterActiveMembershipsByRole(memberships));
+  const memberships = await resolveUserMemberships(supabase, profile.id);
+  return applyMembershipsToProfile(profile, memberships);
 }
 
 function stripProfileWriteColumns(row: Record<string, unknown>): Record<string, unknown> {
@@ -294,7 +288,7 @@ export async function fetchUserProfile(
       }
       const enriched = await enrichProfileDbRowWithTrustColumns(supabase, userId, row);
       const mapped = mapProfileRow(enriched);
-      return attachMemberships(supabase, mapped, enriched);
+      return attachMemberships(supabase, mapped);
     }
 
     if (!isMissingColumnError(error)) {

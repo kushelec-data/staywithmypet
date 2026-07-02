@@ -4,7 +4,6 @@ import { STATUS_ALERT_WARNING_CLASS } from "@/lib/status-colors";
 import { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { AccountCard } from "@/components/account/AccountCard";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import {
   ACCOUNT_ALERT_SUCCESS_CLASS,
@@ -381,16 +380,10 @@ export function MembershipPageContent({
     return <PricingSection />;
   }
 
-  const loading = profileLoading;
   const mpage = t.account.membershipPage;
   const pageTitle = planMode === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
   const pageSubtitle =
     planMode === "pet_parent" ? mpage.petParentSubtitle : mpage.petFriendSubtitle;
-  const roleGenitive = membershipRoleGenitive(modeRole, t);
-  const statusHeadline =
-    isActive && activePlanName
-      ? mpage.activeHeadline.replace("{role}", roleGenitive)
-      : mpage.inactiveHeadline.replace("{role}", roleGenitive);
 
   return (
     <AccountLayout
@@ -431,61 +424,21 @@ export function MembershipPageContent({
             cancelLoading={cancelLoadingRole === "pet_friend"}
           />
         </div>
-      ) : null}
-
-      {isActive ? (
-        <AccountCard className={`mb-6 ${ACCOUNT_CARD_PADDING_COMPACT}`}>
-          <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
-          <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>
-            {loading ? t.common.loading : statusHeadline}
-          </p>
-          {!loading && activePlanName ? (
-            <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>
-              {mpage.activePlanSuffix.replace("{plan}", activePlanName)}
-            </p>
-          ) : null}
-          {!loading && activeMembership ? (
-            <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-              {activeMembership.start_date ? (
-                <div>
-                  <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
-                  <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
-                    {formatMembershipDate(activeMembership.start_date)}
-                  </dd>
-                </div>
-              ) : null}
-              {activeMembership.end_date ? (
-                <div>
-                  <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
-                  <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
-                    {formatMembershipDate(activeMembership.end_date)}
-                  </dd>
-                </div>
-              ) : null}
-              <div>
-                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
-                <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
-                  {activeMembership.auto_renew ? mpage.on : mpage.off}
-                </dd>
-              </div>
-            </dl>
-          ) : null}
-          <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
-            {mpage.activeUnlocks.replace("{role}", roleGenitive)}
-          </p>
-          {!loading && canCancelMembership(activeMembership) ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              disabled={cancelLoadingRole === modeRole}
-              onClick={() => void handleCancelMembership(modeRole)}
-            >
-              {cancelLoadingRole === modeRole ? t.common.loading : mpage.cancelMembership}
-            </Button>
-          ) : null}
-        </AccountCard>
+      ) : isActive ? (
+        <div className="mb-6">
+          <RoleMembershipSummary
+            role={modeRole}
+            membership={activeMembership}
+            isActive
+            t={t}
+            onCancel={
+              canCancelMembership(activeMembership)
+                ? () => void handleCancelMembership(modeRole)
+                : undefined
+            }
+            cancelLoading={cancelLoadingRole === modeRole}
+          />
+        </div>
       ) : null}
 
       {useTestAccessFlow && !isActive ? (

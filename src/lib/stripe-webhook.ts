@@ -8,7 +8,6 @@ import {
 } from "@/lib/stripe-checkout-activate";
 import { WebhookHandlerError } from "@/lib/stripe-webhook-handler-error";
 import {
-  membershipRoleFromPlanId,
   normalizeCatalogPlanId,
   planIdFromStripePriceId,
 } from "@/lib/stripe-plans";
@@ -185,13 +184,20 @@ async function syncFromSubscription(
   const role =
     overrides?.role ??
     membershipRoleFromMergedMetadata(subscription.metadata) ??
-    (customerMeta ? membershipRoleFromMergedMetadata(customerMeta) : null) ??
-    (planId ? membershipRoleFromPlanId(planId) : null);
+    (customerMeta ? membershipRoleFromMergedMetadata(customerMeta) : null);
 
-  if (!userId || !role || !planId) {
+  if (!role) {
+    console.warn("[stripe] subscription sync skipped: missing membership_role metadata", {
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      metadata: subscription.metadata ?? {},
+    });
+    return;
+  }
+
+  if (!userId || !planId) {
     const missing = [
       !userId ? "user_id" : null,
-      !role ? "role" : null,
       !planId ? "plan_id" : null,
     ].filter(Boolean);
     throw new WebhookHandlerError(
