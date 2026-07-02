@@ -111,10 +111,7 @@ function RoleMembershipSummary({
       : mpage.inactiveHeadline.replace("{role}", roleGenitive);
 
   return (
-    <AccountCard
-      className={ACCOUNT_CARD_PADDING_COMPACT}
-      data-membership-role={role}
-    >
+    <AccountCard className={ACCOUNT_CARD_PADDING_COMPACT}>
       <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
       <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>{headline}</p>
       {isActive && membership ? (

@@ -1,6 +1,5 @@
 import { CommonLoadingFallback } from "@/components/i18n/SuspenseFallbacks";
 import { MembershipPageContent } from "@/components/membership/MembershipPageContent";
-import { logStripeEnvPresence } from "@/lib/debug-stripe-env";
 import {
   stripeCheckoutErrorsForRole,
   stripeCheckoutReadyForRole,
@@ -21,7 +20,6 @@ export const fetchCache = "force-no-store";
 
 export default async function MembershipPage() {
   await connection();
-  logStripeEnvPresence("membership-page");
 
   const stripeCheckoutByRole = {
     pet_parent: stripeCheckoutReadyForRole("pet_parent"),
@@ -33,25 +31,12 @@ export default async function MembershipPage() {
   };
 
   return (
-    <>
-      <div
-        style={{
-          background: "red",
-          color: "white",
-          padding: 30,
-          fontSize: 40,
-          fontWeight: "bold",
-        }}
-      >
-        THIS IS MEMBERSHIP PAGE FROM COMMIT fe6d54d
-      </div>
-      <Suspense fallback={<CommonLoadingFallback />}>
-        <MembershipPageContent
-          stripeCheckoutByRole={stripeCheckoutByRole}
-          stripePlanErrorsByRole={stripePlanErrorsByRole}
-          membershipWebhookWritable={isMembershipWebhookWritable()}
-        />
-      </Suspense>
-    </>
+    <Suspense fallback={<CommonLoadingFallback />}>
+      <MembershipPageContent
+        stripeCheckoutByRole={stripeCheckoutByRole}
+        stripePlanErrorsByRole={stripePlanErrorsByRole}
+        membershipWebhookWritable={isMembershipWebhookWritable()}
+      />
+    </Suspense>
   );
 }
