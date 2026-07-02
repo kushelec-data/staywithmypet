@@ -4,12 +4,12 @@ import { STATUS_ALERT_WARNING_CLASS } from "@/lib/status-colors";
 import { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { AccountCard } from "@/components/account/AccountCard";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import {
   ACCOUNT_ALERT_SUCCESS_CLASS,
   ACCOUNT_BODY_TEXT,
   ACCOUNT_BODY_VALUE,
-  ACCOUNT_CARD_CLASS,
   ACCOUNT_CARD_PADDING_COMPACT,
   ACCOUNT_FIELD_LABEL_CLASS,
   ACCOUNT_SECTION_TITLE,
@@ -25,7 +25,6 @@ import { useProfile } from "@/context/ProfileContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   activeModeToMembershipRole,
-  canCancelMembership,
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
   formatMembershipDate,
@@ -87,52 +86,57 @@ function RoleMembershipSummary({
   membership: UserMembership | null;
   isActive: boolean;
   t: Dictionary;
-  onCancel?: () => void;
+  onCancel: () => void;
   cancelLoading?: boolean;
 }) {
   const mpage = t.account.membershipPage;
-  const roleLabel = role === "pet_parent" ? t.roles.petParent.label : t.roles.petFriend.label;
+  const pageTitle = role === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
   const roleGenitive = membershipRoleGenitive(role, t);
   const planName = membership ? localizedMembershipPlanName(membership, t) : null;
-  const showCancel = canCancelMembership(membership);
+  const headline =
+    isActive && planName
+      ? mpage.activeHeadline.replace("{role}", roleGenitive)
+      : mpage.inactiveHeadline.replace("{role}", roleGenitive);
 
   return (
-    <div className={`${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}>
-      <p className={ACCOUNT_FIELD_LABEL_CLASS}>{roleLabel}</p>
-      <p className={`mt-1 ${ACCOUNT_SECTION_TITLE}`}>
-        {isActive && planName
-          ? mpage.activeHeadline.replace("{role}", roleGenitive)
-          : mpage.inactiveHeadline.replace("{role}", roleGenitive)}
-      </p>
+    <AccountCard className={ACCOUNT_CARD_PADDING_COMPACT}>
+      <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
+      <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>{headline}</p>
       {isActive && membership ? (
         <>
-          <dl className="mt-3 space-y-2">
-            {planName ? (
-              <div className="flex justify-between gap-2">
-                <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.planLabel}</dt>
-                <dd className={ACCOUNT_BODY_VALUE}>{planName}</dd>
-              </div>
-            ) : null}
+          {planName ? (
+            <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>
+              {mpage.activePlanSuffix.replace("{plan}", planName)}
+            </p>
+          ) : null}
+          <dl className="mt-4 grid gap-3 sm:grid-cols-3">
             {membership.start_date ? (
-              <div className="flex justify-between gap-2">
+              <div>
                 <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.startedLabel}</dt>
-                <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.start_date)}</dd>
+                <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
+                  {formatMembershipDate(membership.start_date)}
+                </dd>
               </div>
             ) : null}
             {membership.end_date ? (
-              <div className="flex justify-between gap-2">
+              <div>
                 <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.endsLabel}</dt>
-                <dd className={ACCOUNT_BODY_VALUE}>{formatMembershipDate(membership.end_date)}</dd>
+                <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
+                  {formatMembershipDate(membership.end_date)}
+                </dd>
               </div>
             ) : null}
-            <div className="flex justify-between gap-2">
+            <div>
               <dt className={ACCOUNT_FIELD_LABEL_CLASS}>{mpage.autoRenewLabel}</dt>
-              <dd className={ACCOUNT_BODY_VALUE}>
+              <dd className={`mt-1 ${ACCOUNT_BODY_VALUE}`}>
                 {membership.auto_renew ? mpage.on : mpage.off}
               </dd>
             </div>
           </dl>
-          {showCancel && onCancel ? (
+          <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
+            {mpage.activeUnlocks.replace("{role}", roleGenitive)}
+          </p>
+          {membership.status === "active" ? (
             <Button
               type="button"
               variant="outline"
@@ -148,7 +152,7 @@ function RoleMembershipSummary({
       ) : (
         <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{mpage.browseFreeUpgrade}</p>
       )}
-    </div>
+    </AccountCard>
   );
 }
 
@@ -413,11 +417,7 @@ export function MembershipPageContent({
               membership={memberships[role]}
               isActive
               t={t}
-              onCancel={
-                canCancelMembership(memberships[role])
-                  ? () => void handleCancelMembership(role)
-                  : undefined
-              }
+              onCancel={() => void handleCancelMembership(role)}
               cancelLoading={cancelLoadingRole === role}
             />
           ))}
