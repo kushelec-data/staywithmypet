@@ -1,4 +1,9 @@
 import { formatCareTypeLabels } from "@/lib/care-type-options";
+import {
+  excludeMarketplaceOwnPets,
+  filterPetsWhoseOwnerHasActivePetParentMembership,
+  userHasActiveMembership,
+} from "@/lib/marketplace-membership";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
@@ -363,12 +368,12 @@ export async function fetchPublicSearchPets(
   const result = await queryPublicPets(supabase);
   if (result.error) throw new Error(formatSupabaseError(result.error));
 
-  const excludeOwnerId = options.excludeOwnerId?.trim() || null;
-
-  return (result.data ?? [])
+  const mapped = (result.data ?? [])
     .map((row) => mapRowToPublicSearchPet(row as unknown as PetIntroRow))
-    .filter((p): p is PublicSearchPet => p !== null)
-    .filter((p) => !excludeOwnerId || p.ownerId !== excludeOwnerId);
+    .filter((p): p is PublicSearchPet => p !== null);
+
+  const withoutSelf = excludeMarketplaceOwnPets(mapped, options.excludeOwnerId);
+  return filterPetsWhoseOwnerHasActivePetParentMembership(supabase, withoutSelf);
 }
 
 export async function fetchPublicSearchPetById(
@@ -383,7 +388,13 @@ export async function fetchPublicSearchPetById(
 
     if (!result.error) {
       if (!result.data) return null;
-      return mapRowToPublicSearchPet(result.data as unknown as PetIntroRow, options);
+      const pet = mapRowToPublicSearchPet(result.data as unknown as PetIntroRow, options);
+      if (!pet) return null;
+      if (!options.skipVisibilityFilters) {
+        const ownerEligible = await userHasActiveMembership(supabase, pet.ownerId, "pet_parent");
+        if (!ownerEligible) return null;
+      }
+      return pet;
     }
 
     if (!/column/i.test(result.error.message)) {

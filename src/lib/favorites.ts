@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  filterPetsWhoseOwnerHasActivePetParentMembership,
+  filterProfilesWithActivePetFriendMembership,
+} from "@/lib/marketplace-membership";
 import { mapDbPetToCard } from "@/lib/pet-data";
 import type { Pet } from "@/lib/pets";
 import { mapPetFriendSearchRow, type SearchProfile } from "@/lib/search-profiles";
@@ -120,9 +124,21 @@ export async function fetchSavedItems(
   if (petsResult.error) throw petsResult.error;
   if (friendsResult.error) throw friendsResult.error;
 
-  const pets = (petsResult.data ?? []).map((row, index) =>
+  const petRows = (petsResult.data ?? []).map((row, index) =>
     mapDbPetToCard(row as Parameters<typeof mapDbPetToCard>[0], index),
   );
+
+  const petsWithOwners = (petsResult.data ?? []).map((row, index) => ({
+    pet: petRows[index]!,
+    ownerId: String((row as { owner_id?: string }).owner_id ?? ""),
+  }));
+
+  const membershipFilteredPets = await filterPetsWhoseOwnerHasActivePetParentMembership(
+    supabase,
+    petsWithOwners,
+  );
+
+  const pets = membershipFilteredPets.map((entry) => entry.pet);
 
   const friends: SearchProfile[] = (friendsResult.data ?? []).map((row) =>
     mapPetFriendSearchRow({
@@ -141,7 +157,12 @@ export async function fetchSavedItems(
     }),
   );
 
-  return { pets, friends };
+  const membershipFilteredFriends = await filterProfilesWithActivePetFriendMembership(
+    supabase,
+    friends,
+  );
+
+  return { pets, friends: membershipFilteredFriends };
 }
 
 /** Count Pet Friends who saved this pet; null if favorites table unavailable or denied. */

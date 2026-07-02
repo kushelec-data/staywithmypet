@@ -179,6 +179,15 @@ export function hasActiveMembershipForRole(
   return isMembershipActive(memberships[role], now);
 }
 
+/** Active Pet Friend row in user_memberships (Find Care listing eligibility). */
+export function qualifiesAsActivePetFriendMembership(
+  row: Pick<UserMembership, "status" | "end_date"> | null | undefined,
+  now = new Date(),
+): boolean {
+  if (!row) return false;
+  return isMembershipActive(row as UserMembership, now);
+}
+
 /** Active Pet Parent row in user_memberships (Find Pets listing eligibility). */
 export function qualifiesAsActivePetParentMembership(
   row: Pick<UserMembership, "status" | "end_date"> | null | undefined,

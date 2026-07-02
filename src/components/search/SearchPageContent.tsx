@@ -300,7 +300,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
+    async function loadMarketplaceResults() {
       setLoading(true);
       setLoadError(null);
       try {
@@ -313,7 +313,9 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
             setProfiles([]);
           }
         } else {
-          const rows = await fetchPetFriendSearchProfiles(supabase);
+          const rows = await fetchPetFriendSearchProfiles(supabase, {
+            excludeUserId: user?.id ?? null,
+          });
           if (!cancelled) {
             setProfiles(rows);
             setAllPets([]);
@@ -330,11 +332,21 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
       }
     }
 
-    load();
+    void loadMarketplaceResults();
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void loadMarketplaceResults();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isPets, supabase, user?.id]);
+  }, [isPets, supabase, user?.id, t.search.loadResultsError]);
 
   const filteredSearchPets = useMemo(() => {
     if (!isPets) return [];

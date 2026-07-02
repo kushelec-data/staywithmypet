@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatNearbyLocation } from "@/lib/location-public";
+import {
+  excludeMarketplaceSelf,
+  filterProfilesWithActivePetFriendMembership,
+} from "@/lib/marketplace-membership";
 import { resolveProfilePublicLocation } from "@/lib/profile-location";
 import { blurCoordinates } from "@/lib/map-privacy";
 import { parseCoord } from "@/lib/parse-coord";
@@ -54,20 +58,6 @@ function isListableProfile(row: {
   return Boolean(row.display_name?.trim() && row.bio?.trim() && hasLocation);
 }
 
-/** Pet Friends discoverable on /find-care (not pure Pet Parents). active_mode is dashboard-only. */
-export function isDiscoverablePetFriend(row: {
-  role: ProfileRole;
-  active_mode: string | null | undefined;
-}): boolean {
-  if (row.role === "pet_parent") return false;
-  return row.role === "pet_friend" || row.role === "both";
-}
-
-/** @deprecated inverted — use fetchPetFriendSearchProfiles for /find-care */
-export function profileTabForSearchMode(mode: "pets" | "care"): SearchProfileTab {
-  return mode === "care" ? "pet_friend" : "pet_parent";
-}
-
 type PetFriendSearchRow = {
   id: string;
   display_name: string;
@@ -102,20 +92,17 @@ function isMissingColumnError(error: { message?: string } | null): boolean {
 }
 
 function mapPetFriendSearchRows(data: PetFriendSearchRow[]): SearchProfile[] {
-  return data
-    .filter(isListableProfile)
-    .filter((row) =>
-      isDiscoverablePetFriend({
-        role: row.role as ProfileRole,
-        active_mode: row.active_mode,
-      }),
-    )
-    .map((row) =>
-      mapPetFriendSearchRow({
-        ...row,
-        role: row.role as ProfileRole,
-      }),
-    );
+  return data.filter(isListableProfile).map((row) =>
+    mapPetFriendSearchRow({
+      ...row,
+      role: row.role as ProfileRole,
+    }),
+  );
+}
+
+/** @deprecated inverted — use fetchPetFriendSearchProfiles for /find-care */
+export function profileTabForSearchMode(mode: "pets" | "care"): SearchProfileTab {
+  return mode === "care" ? "pet_friend" : "pet_parent";
 }
 
 /** Resolve profile coords then blur for public map — never expose exact home location. */
@@ -185,9 +172,14 @@ export function mapPetFriendSearchRow(row: PetFriendSearchRow): SearchProfile {
   };
 }
 
-/** Public Pet Friend listings for Pet Parents on /find-care. */
+/** Public Pet Friend listings for Pet Parents on /find-care (active pet_friend membership required). */
+export type FetchPetFriendSearchProfilesOptions = {
+  excludeUserId?: string | null;
+};
+
 export async function fetchPetFriendSearchProfiles(
   supabase: SupabaseClient,
+  options: FetchPetFriendSearchProfilesOptions = {},
 ): Promise<SearchProfile[]> {
   const selects = [PET_FRIEND_SEARCH_SELECT, ...PET_FRIEND_SEARCH_SELECT_FALLBACKS];
 
@@ -196,11 +188,12 @@ export async function fetchPetFriendSearchProfiles(
       .from("profiles")
       .select(selects[i])
       .eq("is_public", true)
-      .in("role", ["pet_friend", "both"])
       .order("created_at", { ascending: false });
 
     if (!error) {
-      return mapPetFriendSearchRows((data ?? []) as unknown as PetFriendSearchRow[]);
+      const mapped = mapPetFriendSearchRows((data ?? []) as unknown as PetFriendSearchRow[]);
+      const withoutSelf = excludeMarketplaceSelf(mapped, options.excludeUserId);
+      return filterProfilesWithActivePetFriendMembership(supabase, withoutSelf);
     }
 
     if (!isMissingColumnError(error) || i === selects.length - 1) {
