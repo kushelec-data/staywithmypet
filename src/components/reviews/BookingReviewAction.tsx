@@ -129,8 +129,12 @@ export function BookingReviewAction({
       onSubmitted();
     } catch (err) {
       if (isDuplicateReviewError(err)) {
-        await loadExistingReview();
-        setError(r.duplicateBookingReview);
+        const own = await loadExistingReview();
+        if (own) {
+          setError(r.duplicateBookingReview);
+        } else {
+          setError(formatReviewError(err, { duplicateMessage: r.duplicateBookingReview }));
+        }
       } else {
         setError(formatReviewError(err, { duplicateMessage: r.duplicateBookingReview }));
       }
