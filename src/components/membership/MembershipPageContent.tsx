@@ -136,18 +136,16 @@ function RoleMembershipSummary({
           <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
             {mpage.activeUnlocks.replace("{role}", roleGenitive)}
           </p>
-          {membership.status === "active" ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              disabled={cancelLoading}
-              onClick={onCancel}
-            >
-              {cancelLoading ? t.common.loading : mpage.cancelMembership}
-            </Button>
-          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            disabled={cancelLoading}
+            onClick={onCancel}
+          >
+            {cancelLoading ? t.common.loading : mpage.cancelMembership}
+          </Button>
         </>
       ) : (
         <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{mpage.browseFreeUpgrade}</p>
