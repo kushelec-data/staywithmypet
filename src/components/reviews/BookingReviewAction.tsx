@@ -9,6 +9,7 @@ import {
   fetchMyReviewDisplayForBooking,
   formatReviewError,
   isDuplicateReviewError,
+  isReviewAuthoredByUser,
   reviewTypeForBookingParticipant,
   revieweeIdForType,
   submitReview,
@@ -45,9 +46,13 @@ export function BookingReviewAction({
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [existingReview, setExistingReview] = useState<ReviewDisplay | null>(
-    existingReviewProp ?? null,
+  const [existingReview, setExistingReview] = useState<ReviewDisplay | null>(() =>
+    isReviewAuthoredByUser(existingReviewProp, userId) ? existingReviewProp ?? null : null,
   );
+
+  const ownExistingReview = isReviewAuthoredByUser(existingReview, userId)
+    ? existingReview
+    : null;
 
   const reviewType = reviewTypeForBookingParticipant(booking, userId);
   if (!reviewType) return null;
@@ -55,18 +60,23 @@ export function BookingReviewAction({
 
   const loadExistingReview = useCallback(async () => {
     const row = await fetchMyReviewDisplayForBooking(supabase, userId, booking.id);
-    setExistingReview(row);
-    return row;
+    const own = isReviewAuthoredByUser(row, userId) ? row : null;
+    setExistingReview(own);
+    return own;
   }, [supabase, userId, booking.id]);
 
   useEffect(() => {
     if (existingReviewProp !== undefined) {
-      setExistingReview(existingReviewProp);
+      setExistingReview(
+        isReviewAuthoredByUser(existingReviewProp, userId) ? existingReviewProp : null,
+      );
       return;
     }
     let cancelled = false;
     void fetchMyReviewDisplayForBooking(supabase, userId, booking.id).then((row) => {
-      if (!cancelled) setExistingReview(row);
+      if (!cancelled) {
+        setExistingReview(isReviewAuthoredByUser(row, userId) ? row : null);
+      }
     });
     return () => {
       cancelled = true;
@@ -129,8 +139,8 @@ export function BookingReviewAction({
     }
   }
 
-  if (existingReview) {
-    return <SubmittedReviewCard review={existingReview} compact />;
+  if (ownExistingReview) {
+    return <SubmittedReviewCard review={ownExistingReview} compact />;
   }
 
   return (

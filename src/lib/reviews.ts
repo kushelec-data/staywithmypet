@@ -144,11 +144,24 @@ export class DuplicateReviewError extends Error {
 export function isDuplicateReviewError(error: unknown): boolean {
   if (error instanceof DuplicateReviewError) return true;
   if (!isPostgrestError(error)) return false;
-  if (error.code === "23505") return true;
+
   const blob = `${error.message} ${error.details ?? ""} ${error.hint ?? ""}`;
-  return /reviews_one_per_reviewer_per_booking|duplicate key|unique constraint|already exists/i.test(
-    blob,
-  );
+  if (/reviews_one_per_reviewer_per_booking/i.test(blob)) return true;
+  if (error.code !== "23505") return false;
+
+  // Only treat unique violations on (booking_id, reviewer_id) as "you already reviewed".
+  return /booking_id.*reviewer_id|reviewer_id.*booking_id/i.test(blob);
+}
+
+/** True when the review row belongs to the signed-in user (not another participant). */
+export function isReviewAuthoredByUser(
+  review: Pick<ReviewDisplay, "reviewerId"> | Pick<ReviewRow, "reviewer_id"> | null | undefined,
+  userId: string,
+): boolean {
+  if (!review || !userId) return false;
+  const reviewerId =
+    "reviewerId" in review ? review.reviewerId : (review as ReviewRow).reviewer_id;
+  return reviewerId === userId;
 }
 
 function formatReviewDate(createdAt: string): string {
@@ -234,8 +247,21 @@ export async function fetchMyReviewForBooking(
   userId: string,
   bookingId: string,
 ): Promise<ReviewRow | null> {
-  const map = await fetchMyReviewsForBookings(supabase, userId, [bookingId]);
-  return map.get(bookingId) ?? null;
+  if (!userId || !bookingId) return null;
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select(REVIEW_SELECT)
+    .eq("booking_id", bookingId)
+    .eq("reviewer_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingRelationError(error)) return null;
+    throw error;
+  }
+
+  return (data as ReviewRow | null) ?? null;
 }
 
 export async function fetchMyReviewDisplayForBooking(
@@ -438,6 +464,9 @@ export function formatReviewError(
       return "Reviews are not set up yet. Run supabase/RUN_THIS_reviews_request_id.sql in the Supabase SQL Editor.";
     }
     const msg = formatSupabaseError(error);
+    if (/request_id/i.test(msg) && /unique|duplicate/i.test(msg)) {
+      return "Reviews could not be saved. Run supabase/RUN_THIS_reviews_two_per_booking.sql in the Supabase SQL Editor.";
+    }
     if (/only allowed after|completed/i.test(msg)) {
       return "Reviews are only available after the booking is completed.";
     }
