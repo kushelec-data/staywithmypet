@@ -4,6 +4,7 @@ import { AppImage } from "@/components/ui/AppImage";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { resolveAvatarPosition } from "@/lib/photo-position";
 import { useLanguage } from "@/context/LanguageContext";
 import { PublicProfileChips } from "@/components/public/PublicProfileChips";
 import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
@@ -45,6 +46,7 @@ export function PublicProfileHero({
             userId={profile.id}
             displayName={profile.display_name}
             avatarUrl={profile.avatar_url}
+            avatarPosition={resolveAvatarPosition(profile.avatar_url, profile.details)}
             size="md"
             shape="rounded-xl"
             sizes="72px"

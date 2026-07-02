@@ -1,6 +1,10 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { fetchUserProfile } from "@/lib/profile-load";
-import { normalizePhotoPosition, type PhotoObjectPosition } from "@/lib/photo-position";
+import {
+  normalizePhotoPosition,
+  syncAvatarPositionInDetails,
+  type PhotoObjectPosition,
+} from "@/lib/photo-position";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { AuthRequiredError, ForbiddenError } from "@/lib/security/assert-owner";
 import { isMissingColumnError, supabaseErrorDetail } from "@/lib/supabase-errors";
@@ -135,6 +139,21 @@ function mapProfileUpdateError(error: PostgrestError): AvatarUploadError {
   );
 }
 
+async function loadProfileDetailsForUpdate(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Record<string, unknown>> {
+  const { data, error } = await supabase.from("profiles").select("details").eq("id", userId).maybeSingle();
+  if (error) {
+    throw mapProfileUpdateError(error as PostgrestError);
+  }
+  const raw = data?.details;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return { ...(raw as Record<string, unknown>) };
+  }
+  return {};
+}
+
 /** profiles.avatar_url is the canonical column (see initial_schema.sql). */
 async function buildAvatarProfileUpdatePayload(
   supabase: SupabaseClient,
@@ -142,22 +161,14 @@ async function buildAvatarProfileUpdatePayload(
   publicUrl: string,
   position?: PhotoObjectPosition,
 ): Promise<Record<string, unknown>> {
-  const row: Record<string, unknown> = { avatar_url: publicUrl };
+  const details = await loadProfileDetailsForUpdate(supabase, userId);
+  syncAvatarPositionInDetails(details, publicUrl, position ? normalizePhotoPosition(position) : undefined);
 
-  if (position) {
-    const { data, error } = await supabase.from("profiles").select("details").eq("id", userId).maybeSingle();
-    if (!error) {
-      const raw = data?.details;
-      const base =
-        raw && typeof raw === "object" && !Array.isArray(raw)
-          ? { ...(raw as Record<string, unknown>) }
-          : {};
-      base.avatar_position = normalizePhotoPosition(position);
-      row.details = base;
-    }
-  }
-
-  return row;
+  return {
+    avatar_url: publicUrl,
+    details,
+    updated_at: new Date().toISOString(),
+  };
 }
 
 /** @deprecated Use AvatarUploadError messages from uploadProfileAvatar instead. */
@@ -277,7 +288,7 @@ export async function uploadProfileAvatar(
   try {
     const profile = await fetchUserProfile(supabase, userId);
     if (profile) {
-      return { ...profile, avatar_url: publicUrl };
+      return profile;
     }
   } catch (err) {
     avatarUploadErrorLog("profile reload after update failed", err);

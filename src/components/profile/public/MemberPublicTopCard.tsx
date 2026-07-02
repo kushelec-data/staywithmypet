@@ -22,7 +22,7 @@ import {
   PUBLIC_OWNER_PETS_SECTION_ID,
   type PublicProfileView,
 } from "@/lib/public-profile";
-import { avatarPositionFromDetails } from "@/lib/photo-position";
+import { resolveAvatarPosition } from "@/lib/photo-position";
 import { resolvedAvailability } from "@/lib/profile-details";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -117,7 +117,7 @@ export function MemberPublicTopCard({
             userId={profile.id}
             displayName={profile.display_name}
             avatarUrl={profile.avatar_url}
-            avatarPosition={avatarPositionFromDetails(profile.details)}
+            avatarPosition={resolveAvatarPosition(profile.avatar_url, profile.details)}
             size="xl"
             shape="rounded"
             sizes="200px"

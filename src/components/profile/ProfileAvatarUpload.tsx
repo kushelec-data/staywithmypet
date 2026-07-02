@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/Button";
 import { validateCropSourceFile } from "@/lib/image-crop";
 import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import {
-  avatarPositionFromDetails,
+  resolveAvatarPosition,
   type PhotoCropSaveResult,
 } from "@/lib/photo-position";
 import { resolveSanitizedAvatarUrl } from "@/lib/profile-avatar-display";
 import { uploadProfileAvatar } from "@/lib/profile-avatar";
 import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase";
+import type { ProfileRow } from "@/lib/profile-utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type ProfileAvatarUploadProps = {
@@ -21,7 +22,7 @@ type ProfileAvatarUploadProps = {
   email?: string | null;
   avatarUrl: string | null;
   profileDetails?: unknown;
-  onAvatarUpdated: (avatarUrl: string) => void;
+  onAvatarUpdated: (profile: ProfileRow) => void;
   /** When false, only the photo is shown (view mode). */
   editable?: boolean;
   disabled?: boolean;
@@ -58,7 +59,7 @@ export function ProfileAvatarUpload({
 
   const safeAvatarUrl = resolveSanitizedAvatarUrl(userId, avatarUrl);
   const shownUrl = previewUrl ?? safeAvatarUrl;
-  const avatarPosition = avatarPositionFromDetails(profileDetails);
+  const avatarPosition = resolveAvatarPosition(avatarUrl, profileDetails);
 
   function openCrop(file?: File, url?: string) {
     if (!editable || disabled || uploading) return;
@@ -87,7 +88,7 @@ export function ProfileAvatarUpload({
       if (nextUrl) {
         const preview = `${nextUrl}${nextUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
         setPreviewUrl(preview);
-        onAvatarUpdated(canonicalUrl ?? nextUrl);
+        onAvatarUpdated(updated);
       } else {
         console.error("[avatar-upload] preview url missing after successful upload", { canonicalUrl });
         setError(t.media.uploadAvatarError);

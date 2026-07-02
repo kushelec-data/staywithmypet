@@ -7,6 +7,7 @@ import type { AccountSidebarSection } from "@/lib/account-nav";
 import type { Dictionary } from "@/i18n/translations";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { resolveAvatarPosition } from "@/lib/photo-position";
 import { profileUsername } from "@/lib/profile-utils";
 import {
   ACCOUNT_CARD_CLASS,
@@ -74,6 +75,7 @@ export function AccountSidebar({
             displayName={displayName}
             email={email}
             avatarUrl={profile?.avatar_url}
+            avatarPosition={resolveAvatarPosition(profile?.avatar_url, profile?.details)}
             size="lg"
             shape="circle"
             loading={authLoading || profileLoading}

@@ -201,6 +201,60 @@ export function avatarPositionFromDetails(detailsRaw: unknown): PhotoObjectPosit
   return parsed ?? { ...DEFAULT_PHOTO_POSITION };
 }
 
+/** Resolve crop for the current avatar URL (gallery map first, then avatar_position). */
+export function resolveAvatarPosition(
+  avatarUrl: string | null | undefined,
+  detailsRaw: unknown,
+): PhotoObjectPosition {
+  const url = avatarUrl?.trim();
+  if (url && detailsRaw && typeof detailsRaw === "object" && !Array.isArray(detailsRaw)) {
+    const map = (detailsRaw as Record<string, unknown>).profile_photo_positions;
+    if (map && typeof map === "object" && !Array.isArray(map)) {
+      const parsed = parsePhotoPosition((map as Record<string, unknown>)[url]);
+      if (parsed) return parsed;
+    }
+  }
+  return avatarPositionFromDetails(detailsRaw);
+}
+
+/** Keep profiles.details.avatar_position aligned with avatar_url. */
+export function syncAvatarPositionInDetails(
+  details: Record<string, unknown>,
+  avatarUrl: string | null | undefined,
+  explicitPosition?: PhotoObjectPosition,
+): void {
+  const url = avatarUrl?.trim();
+
+  if (explicitPosition) {
+    const normalized = normalizePhotoPosition(explicitPosition);
+    details.avatar_position = normalized;
+    if (url) {
+      const map =
+        details.profile_photo_positions &&
+        typeof details.profile_photo_positions === "object" &&
+        !Array.isArray(details.profile_photo_positions)
+          ? { ...(details.profile_photo_positions as Record<string, PhotoObjectPosition>) }
+          : {};
+      map[url] = normalized;
+      details.profile_photo_positions = map;
+    }
+    return;
+  }
+
+  if (!url) {
+    delete details.avatar_position;
+    return;
+  }
+
+  const map = details.profile_photo_positions;
+  if (map && typeof map === "object" && !Array.isArray(map)) {
+    const parsed = parsePhotoPosition((map as Record<string, unknown>)[url]);
+    if (parsed) {
+      details.avatar_position = parsed;
+    }
+  }
+}
+
 export function galleryPositionFromDetails(
   detailsRaw: unknown,
   url: string,

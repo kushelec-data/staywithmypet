@@ -11,7 +11,11 @@ import {
   validateProfileAvatarFile,
   avatarFileExtension,
 } from "@/lib/profile-avatar";
-import { normalizePhotoPosition, type PhotoObjectPosition } from "@/lib/photo-position";
+import {
+  normalizePhotoPosition,
+  syncAvatarPositionInDetails,
+  type PhotoObjectPosition,
+} from "@/lib/photo-position";
 
 export const MAX_PROFILE_GALLERY_PHOTOS = 6;
 
@@ -80,6 +84,9 @@ async function persistGallery(
     photos,
     photoPositions,
   );
+  if (avatarUrl !== undefined) {
+    syncAvatarPositionInDetails(details, avatarUrl);
+  }
   const row: Record<string, unknown> = {
     details,
     updated_at: new Date().toISOString(),

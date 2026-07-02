@@ -237,13 +237,10 @@ export function ProfileSetupForm({
     [],
   );
 
-  function handleAvatarUpdated(url: string) {
-    setAvatarUrl(url);
-    if (profile) {
-      setProfileRow({ ...profile, avatar_url: url });
-    } else {
-      void refreshProfile({ background: true });
-    }
+  function handleAvatarUpdated(updated: ProfileRow) {
+    setAvatarUrl(updated.avatar_url?.trim() || null);
+    setProfileRow(updated);
+    void refreshProfile({ background: true });
     notifyDashboardRefresh();
   }
 

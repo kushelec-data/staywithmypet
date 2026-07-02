@@ -6,6 +6,7 @@ import { heroTrustBadgesFromProfileRow } from "@/lib/public-profile";
 import { ReviewsListModal } from "@/components/reviews/ReviewsListModal";
 import { Button } from "@/components/ui/Button";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { resolveAvatarPosition } from "@/lib/photo-position";
 import { formatActiveMode, resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { absolutePublicProfileUrl } from "@/lib/site-url";
@@ -78,6 +79,7 @@ export function DashboardProfileHero({
             displayName={displayName}
             email={email}
             avatarUrl={profile.avatar_url}
+            avatarPosition={resolveAvatarPosition(profile.avatar_url, profile.details)}
             size="md"
             shape="rounded"
             imageClassName="object-cover ring-2 ring-white/80"

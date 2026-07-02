@@ -7,6 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { resolveAvatarPosition } from "@/lib/photo-position";
 import { getUserMenuLinks } from "@/lib/nav-i18n";
 
 type NavbarUserMenuProps = {
@@ -106,6 +107,7 @@ export function NavbarUserMenu({
             displayName={displayName}
             email={email}
             avatarUrl={profile?.avatar_url}
+            avatarPosition={resolveAvatarPosition(profile?.avatar_url, profile?.details)}
             size="sm"
             shape="circle"
             loading={profileLoading}
