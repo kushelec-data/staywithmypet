@@ -30,7 +30,7 @@ export type SendTransactionalEmailResult = {
   sent: boolean;
   skipped: boolean;
   scheduled?: boolean;
-  reason?: "duplicate" | "no_email" | "no_api_key" | "no_admin" | "send_failed" | "scheduled";
+  reason?: "duplicate" | "no_email" | "no_api_key" | "no_admin" | "send_failed" | "scheduled" | "review_submitted";
 };
 
 type EmailEventLogMeta = {
@@ -276,6 +276,36 @@ export async function scheduleTransactionalEmail(
   return result;
 }
 
+async function shouldSkipReviewReminderEmail(
+  input: SendTransactionalEmailInput,
+): Promise<boolean> {
+  if (
+    input.eventType !== "review_reminder_parent" &&
+    input.eventType !== "review_reminder_friend"
+  ) {
+    return false;
+  }
+  if (!input.bookingId) return false;
+  const { userHasReviewForBooking } = await import("@/lib/booking-review-emails");
+  return userHasReviewForBooking(input.userId, input.bookingId);
+}
+
+async function skipReviewReminderIfSubmitted(
+  input: SendTransactionalEmailInput,
+  uniqueKey: string,
+  logMeta: EmailEventLogMeta,
+): Promise<SendTransactionalEmailResult | null> {
+  if (!(await shouldSkipReviewReminderEmail(input))) return null;
+
+  if (await hasEmailEvent(uniqueKey)) {
+    await markEmailEventSent(uniqueKey);
+  }
+
+  const result = { sent: false, skipped: true, reason: "review_submitted" as const };
+  logEmailEventSendResult(input.eventType, logMeta, result);
+  return result;
+}
+
 export async function sendTransactionalEmail(
   input: SendTransactionalEmailInput,
 ): Promise<SendTransactionalEmailResult> {
@@ -294,6 +324,9 @@ export async function sendTransactionalEmail(
   };
 
   logEmailEventTrigger(input.eventType, logMeta);
+
+  const reviewSkip = await skipReviewReminderIfSubmitted(input, uniqueKey, logMeta);
+  if (reviewSkip) return reviewSkip;
 
   if (await hasEmailEvent(uniqueKey)) {
     const admin = createAdminClient();
@@ -383,6 +416,9 @@ async function sendScheduledRow(
   uniqueKey: string,
   logMeta: EmailEventLogMeta,
 ): Promise<SendTransactionalEmailResult> {
+  const reviewSkip = await skipReviewReminderIfSubmitted(input, uniqueKey, logMeta);
+  if (reviewSkip) return reviewSkip;
+
   const to = await resolveRecipientEmail(input.userId);
   logEmailEventRecipient(input.eventType, { ...logMeta, email: to });
   if (!to) {

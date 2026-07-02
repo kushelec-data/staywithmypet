@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 type RouteContext = { params: Promise<{ id: string }> };
 
 /**
- * POST — send booking-completed + review-reminder emails (legacy path; prefer server action).
+ * POST — send review-request emails for a completed booking (legacy path; prefer server action).
  */
 export async function POST(_request: Request, context: RouteContext) {
   const { id: bookingId } = await context.params;

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { sendBookingEmailAsync, REVIEW_REMINDER_DELAY_MS } from "@/lib/emails/send-booking";
+import { sendBookingEmailAsync } from "@/lib/emails/send-booking";
 import { queueEmailEvent } from "@/lib/email-send";
 import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
 import {
@@ -440,44 +440,7 @@ export async function triggerBookingConfirmedForRequest(requestId: string): Prom
 }
 
 export async function triggerBookingCompletedEmails(bookingId: string): Promise<void> {
-  const booking = await loadBooking(bookingId);
-  if (!booking) return;
-
-  const row = await loadRequest(booking.request_id);
-  const careType = row?.care_type ?? null;
-  const pet = await loadPet(booking.pet_id);
-  const ctx = bookingContext(booking, pet, careType, row);
-  const reviewScheduleAt = new Date(Date.now() + REVIEW_REMINDER_DELAY_MS);
-
-  await Promise.all(
-    [booking.pet_parent_id, booking.pet_friend_id].map(async (userId) => {
-      const recipientName = await loadDisplayName(userId);
-      const otherId =
-        userId === booking.pet_parent_id ? booking.pet_friend_id : booking.pet_parent_id;
-      const otherName = await loadDisplayName(otherId);
-      const role: EmailRecipientRole =
-        userId === booking.pet_parent_id ? "pet_parent" : "pet_friend";
-      const data = { ...ctx, recipientName, otherPartyName: otherName, recipientRole: role };
-
-      await sendBookingEmailAsync({
-        type: "booking_completed",
-        role,
-        userId,
-        data,
-        requestId: booking.request_id,
-        bookingId: booking.id,
-      });
-
-      await sendBookingEmailAsync({
-        type: role === "pet_parent" ? "review_reminder_parent" : "review_reminder_friend",
-        role,
-        userId,
-        data: { ...ctx, recipientName, otherPartyName: otherName },
-        requestId: booking.request_id,
-        bookingId: booking.id,
-        scheduleAt: reviewScheduleAt,
-      });
-    }),
-  );
+  const { triggerBookingReviewRequestEmails } = await import("@/lib/booking-review-emails");
+  await triggerBookingReviewRequestEmails(bookingId);
 }
 

@@ -3,9 +3,9 @@
 import { CompleteBookingModal } from "@/components/bookings/CompleteBookingModal";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
-import { canMarkBookingCompleted, completeBooking, formatBookingError, type Booking } from "@/lib/bookings";
-import { createClient } from "@/lib/supabase";
-import { useMemo, useState } from "react";
+import { canMarkBookingCompleted, type Booking } from "@/lib/bookings";
+import { completeBookingAction } from "@/app/actions/bookings";
+import { useState } from "react";
 
 type BookingCompleteActionProps = {
   booking: Booking;
@@ -16,7 +16,6 @@ type BookingCompleteActionProps = {
 export function BookingCompleteAction({ booking, disabled, onCompleted }: BookingCompleteActionProps) {
   const { t } = useLanguage();
   const b = t.bookings;
-  const supabase = useMemo(() => createClient(), []);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,13 +26,15 @@ export function BookingCompleteAction({ booking, disabled, onCompleted }: Bookin
     setSubmitting(true);
     setError(null);
     try {
-      await completeBooking(supabase, booking.id);
-      const { sendBookingCompletedEmailsAction } = await import("@/app/actions/email-events");
-      void sendBookingCompletedEmailsAction(booking.id);
+      const result = await completeBookingAction(booking.id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       setOpen(false);
       onCompleted();
     } catch (err) {
-      setError(formatBookingError(err));
+      setError(err instanceof Error ? err.message : "Could not update booking.");
     } finally {
       setSubmitting(false);
     }

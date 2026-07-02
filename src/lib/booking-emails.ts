@@ -6,6 +6,7 @@
 import { isTransactionalEmailConfigured } from "@/lib/smtp-config";
 
 export { triggerBookingCompletedEmails as sendBookingCompletionEmails } from "@/lib/email-triggers";
+export { triggerBookingReviewRequestEmails } from "@/lib/booking-review-emails";
 
 export function isBookingEmailConfigured(): boolean {
   return isTransactionalEmailConfigured();
