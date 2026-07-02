@@ -37,6 +37,7 @@ import {
   type UserMembership,
 } from "@/lib/membership";
 import { cancelMembershipAction } from "@/app/actions/membership";
+import { CancelMembershipConfirmModal } from "@/components/membership/CancelMembershipConfirmModal";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
@@ -74,11 +75,21 @@ function membershipRoleGenitive(role: MembershipRole, t: Dictionary): string {
   return role === "pet_parent" ? t.roles.petParent.labelGenitive : t.roles.petFriend.labelGenitive;
 }
 
+function cancelMembershipButtonLabel(
+  role: MembershipRole,
+  dualActive: boolean,
+  mpage: Dictionary["account"]["membershipPage"],
+): string {
+  if (!dualActive) return mpage.cancelMembership;
+  return role === "pet_parent" ? mpage.cancelMembershipPetParent : mpage.cancelMembershipPetFriend;
+}
+
 function RoleMembershipSummary({
   role,
   membership,
   isActive,
   t,
+  cancelLabel,
   onCancel,
   cancelLoading,
 }: {
@@ -86,6 +97,7 @@ function RoleMembershipSummary({
   membership: UserMembership | null;
   isActive: boolean;
   t: Dictionary;
+  cancelLabel: string;
   onCancel: () => void;
   cancelLoading: boolean;
 }) {
@@ -147,7 +159,7 @@ function RoleMembershipSummary({
             disabled={cancelLoading}
             onClick={onCancel}
           >
-            {cancelLoading ? t.common.loading : mpage.cancelMembership}
+            {cancelLoading ? t.common.loading : cancelLabel}
           </Button>
         </>
       ) : (
@@ -171,6 +183,8 @@ export function MembershipPageContent({
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelLoadingRole, setCancelLoadingRole] = useState<MembershipRole | null>(null);
+  const [pendingCancelRole, setPendingCancelRole] = useState<MembershipRole | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const handledReturnRef = useRef<string | null>(null);
 
   const returnTo = useMemo(
@@ -351,7 +365,7 @@ export function MembershipPageContent({
     async (role: MembershipRole) => {
       const membership = memberships[role];
       const page = t.account.membershipPage;
-      if (!membership || !window.confirm(page.cancelConfirm)) return;
+      if (!membership) return;
 
       setCancelLoadingRole(role);
       try {
@@ -361,6 +375,8 @@ export function MembershipPageContent({
           return;
         }
         handleCancelSuccess();
+        setCancelDialogOpen(false);
+        setPendingCancelRole(null);
         router.refresh();
         await refreshProfile({ background: false });
       } catch {
@@ -378,6 +394,23 @@ export function MembershipPageContent({
       router,
     ],
   );
+
+  const requestCancelMembership = useCallback((role: MembershipRole) => {
+    if (!memberships[role]) return;
+    setPendingCancelRole(role);
+    setCancelDialogOpen(true);
+  }, [memberships]);
+
+  const closeCancelDialog = useCallback(() => {
+    if (cancelLoadingRole) return;
+    setCancelDialogOpen(false);
+    setPendingCancelRole(null);
+  }, [cancelLoadingRole]);
+
+  const confirmCancelMembership = useCallback(() => {
+    if (!pendingCancelRole) return;
+    void handleCancelMembership(pendingCancelRole);
+  }, [handleCancelMembership, pendingCancelRole]);
 
   const stripePlans = useMemo(() => {
     const parentFeatures = Object.fromEntries(
@@ -421,6 +454,13 @@ export function MembershipPageContent({
       description={pageSubtitle}
       hideCompleteProfileBanner
     >
+      <CancelMembershipConfirmModal
+        open={cancelDialogOpen}
+        submitting={cancelLoadingRole !== null}
+        onClose={closeCancelDialog}
+        onConfirm={confirmCancelMembership}
+      />
+
       {dualActive ? (
         <p className={`mb-4 inline-flex items-center gap-2 px-3 py-1 text-xs ${ACCOUNT_STATUS_BADGE_CLASS}`}>
           {mpage.dualMember}
@@ -438,7 +478,8 @@ export function MembershipPageContent({
               membership={memberships[role]}
               isActive
               t={t}
-              onCancel={() => void handleCancelMembership(role)}
+              cancelLabel={cancelMembershipButtonLabel(role, dualActive, mpage)}
+              onCancel={() => requestCancelMembership(role)}
               cancelLoading={cancelLoadingRole === role}
             />
           ))}
@@ -515,9 +556,11 @@ export function MembershipPageContent({
         useTestAccessFlow={checkoutEnabled && useTestAccessFlow}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
-        cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}
+        cancelPlanLabel={
+          isActive ? cancelMembershipButtonLabel(modeRole, dualActive, mpage) : undefined
+        }
         cancelPlanLoading={cancelLoadingRole === modeRole}
-        onCancelPlan={isActive ? () => void handleCancelMembership(modeRole) : undefined}
+        onCancelPlan={isActive ? () => requestCancelMembership(modeRole) : undefined}
       />
     </AccountLayout>
   );

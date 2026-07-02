@@ -475,7 +475,13 @@ export const et = {
       choosePlanStripe:
         "Vali allpool {role} plaan ja maksa turvaliselt Stripe'i kaudu (TEST režiim). Enne uuendamist saad tasuta sirvida.",
       cancelMembership: "Tühista liikmesus",
-      cancelConfirm: "Kas oled kindel, et soovid selle liikmesuse tühistada?",
+      cancelMembershipPetParent: "Tühista Pet Parent liikmelisus",
+      cancelMembershipPetFriend: "Tühista Pet Friend liikmelisus",
+      cancelDialogTitle: "Tühistada liikmelisus?",
+      cancelDialogBody:
+        "Sinu liikmelisus tühistatakse kohe ja kaotad selle rolli tasuliste funktsioonide kasutamise võimaluse.",
+      cancelDialogKeep: "Jäta liikmelisus alles",
+      cancelDialogConfirm: "Tühista liikmelisus",
       membershipCancelled: "Liikmesus tühistatud",
       cancelFailed: "Liikmesuse tühistamine ebaõnnestus",
     },

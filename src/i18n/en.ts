@@ -475,7 +475,13 @@ export const en = {
       choosePlanStripe:
         "Choose a {role} plan below to pay securely with Stripe (TEST mode). Browse for free until you upgrade.",
       cancelMembership: "Cancel membership",
-      cancelConfirm: "Are you sure you want to cancel this membership?",
+      cancelMembershipPetParent: "Cancel Pet Parent membership",
+      cancelMembershipPetFriend: "Cancel Pet Friend membership",
+      cancelDialogTitle: "Cancel membership?",
+      cancelDialogBody:
+        "Your membership will be cancelled immediately and you will lose access to paid features for this role.",
+      cancelDialogKeep: "Keep membership",
+      cancelDialogConfirm: "Cancel membership",
       membershipCancelled: "Membership cancelled",
       cancelFailed: "Failed to cancel membership",
     },

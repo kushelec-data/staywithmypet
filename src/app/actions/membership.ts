@@ -74,6 +74,7 @@ export async function getMembershipsForActiveModeAction(activeMode: "pet_parent"
   return { memberships, active: isMembershipActive(active) ? active : null };
 }
 
+/** Cancel one active membership row for the signed-in user and selected role only. */
 export async function cancelMembershipAction(
   role: MembershipRole,
 ): Promise<{ ok: true; membership: UserMembership } | { ok: false; error: string }> {
@@ -84,6 +85,10 @@ export async function cancelMembershipAction(
 
   if (!user) {
     return { ok: false, error: "Not signed in." };
+  }
+
+  if (role !== "pet_parent" && role !== "pet_friend") {
+    return { ok: false, error: "Invalid membership role." };
   }
 
   const result = await cancelUserMembershipAsAdmin(user.id, role);

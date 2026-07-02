@@ -745,9 +745,10 @@ export async function cancelUserMembershipAsAdmin(
     }
   }
 
+  const cancelledAt = new Date().toISOString();
   const { data: updated, error: updateError } = await admin
     .from(MEMBERSHIP_TABLE)
-    .update({ status: "cancelled" })
+    .update({ status: "cancelled", updated_at: cancelledAt })
     .eq("user_id", userId)
     .eq("role", dbRole)
     .eq("status", "active")
