@@ -16,6 +16,8 @@ export const metadata: Metadata = {
 
 /** Read Stripe/Supabase env at request time (not static build) for post-checkout banners. */
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function MembershipPage() {
   await connection();

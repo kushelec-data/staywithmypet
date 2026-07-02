@@ -74,21 +74,27 @@ function membershipRoleGenitive(role: MembershipRole, t: Dictionary): string {
   return role === "pet_parent" ? t.roles.petParent.labelGenitive : t.roles.petFriend.labelGenitive;
 }
 
+/** Bump when membership active-card UI changes (verify in production DOM). */
+export const MEMBERSHIP_ACTIVE_CARD_UI_VERSION = "cancel-debug-v3";
+
 function RoleMembershipSummary({
   role,
   membership,
   isActive,
   t,
-  onCancel,
-  cancelLoading,
+  onCancelSuccess,
+  onCancelError,
 }: {
   role: MembershipRole;
   membership: UserMembership | null;
   isActive: boolean;
   t: Dictionary;
-  onCancel: () => void;
-  cancelLoading?: boolean;
+  onCancelSuccess?: () => void;
+  onCancelError?: (message: string) => void;
 }) {
+  const router = useRouter();
+  const { refreshProfile } = useProfile();
+  const [cancelLoading, setCancelLoading] = useState(false);
   const mpage = t.account.membershipPage;
   const pageTitle = role === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
   const roleGenitive = membershipRoleGenitive(role, t);
@@ -98,8 +104,41 @@ function RoleMembershipSummary({
       ? mpage.activeHeadline.replace("{role}", roleGenitive)
       : mpage.inactiveHeadline.replace("{role}", roleGenitive);
 
+  const handleCancel = useCallback(async () => {
+    if (!membership || !window.confirm(mpage.cancelConfirm)) return;
+
+    setCancelLoading(true);
+    try {
+      const result = await cancelMembershipAction(role);
+      if (!result.ok) {
+        onCancelError?.(result.error ?? mpage.cancelFailed);
+        return;
+      }
+      onCancelSuccess?.();
+      router.refresh();
+      await refreshProfile({ background: false });
+    } catch {
+      onCancelError?.(mpage.cancelFailed);
+    } finally {
+      setCancelLoading(false);
+    }
+  }, [
+    membership,
+    mpage.cancelConfirm,
+    mpage.cancelFailed,
+    onCancelError,
+    onCancelSuccess,
+    refreshProfile,
+    role,
+    router,
+  ]);
+
   return (
-    <AccountCard className={ACCOUNT_CARD_PADDING_COMPACT}>
+    <AccountCard
+      className={ACCOUNT_CARD_PADDING_COMPACT}
+      data-membership-ui={MEMBERSHIP_ACTIVE_CARD_UI_VERSION}
+      data-membership-role={role}
+    >
       <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
       <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>{headline}</p>
       {isActive && membership ? (
@@ -136,16 +175,20 @@ function RoleMembershipSummary({
           <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
             {mpage.activeUnlocks.replace("{role}", roleGenitive)}
           </p>
-          <Button
+          <p
+            className="mt-2 text-sm font-semibold text-red-700"
+            data-testid="membership-cancel-debug-marker"
+          >
+            DEBUG-CANCEL-BUTTON-COMPONENT-REACHED
+          </p>
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            className="mt-4"
+            className="mt-4 rounded-full border border-red-500 bg-white px-4 py-2 text-sm font-semibold text-red-700"
             disabled={cancelLoading}
-            onClick={onCancel}
+            onClick={() => void handleCancel()}
           >
             {cancelLoading ? t.common.loading : mpage.cancelMembership}
-          </Button>
+          </button>
         </>
       ) : (
         <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{mpage.browseFreeUpgrade}</p>
@@ -166,7 +209,6 @@ export function MembershipPageContent({
   const router = useRouter();
   const [checkoutBanner, setCheckoutBanner] = useState<string | null>(null);
   const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
-  const [cancelLoadingRole, setCancelLoadingRole] = useState<MembershipRole | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const handledReturnRef = useRef<string | null>(null);
 
@@ -331,29 +373,17 @@ export function MembershipPageContent({
   const useTestAccessFlow = !stripeEnabled;
   const checkoutEnabled = !isActive && (stripeEnabled ? stripeCheckoutReady : true);
 
-  const handleCancelMembership = useCallback(
-    async (role: MembershipRole) => {
-      if (!window.confirm(t.account.membershipPage.cancelConfirm)) return;
+  const handleCancelSuccess = useCallback(() => {
+    setCancelError(null);
+    setCancelSuccess(t.account.membershipPage.membershipCancelled);
+  }, [t.account.membershipPage.membershipCancelled]);
 
-      setCancelError(null);
+  const handleCancelError = useCallback(
+    (message: string) => {
       setCancelSuccess(null);
-      setCancelLoadingRole(role);
-      try {
-        const result = await cancelMembershipAction(role);
-        if (!result.ok) {
-          setCancelError(result.error ?? t.account.membershipPage.cancelFailed);
-          return;
-        }
-        setCancelSuccess(t.account.membershipPage.membershipCancelled);
-        router.refresh();
-        await refreshProfile({ background: false });
-      } catch {
-        setCancelError(t.account.membershipPage.cancelFailed);
-      } finally {
-        setCancelLoadingRole(null);
-      }
+      setCancelError(message);
     },
-    [refreshProfile, router, t.account.membershipPage],
+    [],
   );
 
   const stripePlans = useMemo(() => {
@@ -415,8 +445,8 @@ export function MembershipPageContent({
               membership={memberships[role]}
               isActive
               t={t}
-              onCancel={() => void handleCancelMembership(role)}
-              cancelLoading={cancelLoadingRole === role}
+              onCancelSuccess={handleCancelSuccess}
+              onCancelError={handleCancelError}
             />
           ))}
         </div>
