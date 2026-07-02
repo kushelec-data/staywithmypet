@@ -31,7 +31,6 @@ import {
   formatMembershipDate,
   hasActiveMembershipForMode,
   hasActiveMembershipForRole,
-  hasDualActiveMemberships,
   membershipPlanLabel,
   membershipPlansForRole,
   membershipStatusForMode,
@@ -301,12 +300,18 @@ export function MembershipPageContent({
         ? "pet_parent"
         : profileMode;
   const memberships = profile?.memberships ?? emptyMembershipsByRole();
+  const activeMembershipRoles = useMemo(() => {
+    const roles: MembershipRole[] = [];
+    if (hasActiveMembershipForRole(memberships, "pet_parent")) roles.push("pet_parent");
+    if (hasActiveMembershipForRole(memberships, "pet_friend")) roles.push("pet_friend");
+    return roles;
+  }, [memberships]);
+  const dualActive = activeMembershipRoles.length === 2;
   const modeTab = activeModeToPricingTab(planMode);
   const status = profile
     ? membershipStatusForMode(memberships, planMode)
     : DEMO_MEMBERSHIP_LABEL;
   const isActive = profile ? hasActiveMembershipForMode(memberships, planMode) : false;
-  const dualActive = hasDualActiveMemberships(memberships);
   const modeRole = activeModeToMembershipRole(planMode);
   const activeMembership = memberships[modeRole];
 
@@ -397,47 +402,25 @@ export function MembershipPageContent({
         </p>
       ) : null}
 
-      {dualActive ? (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
-          <RoleMembershipSummary
-            role="pet_parent"
-            membership={memberships.pet_parent}
-            isActive={hasActiveMembershipForRole(memberships, "pet_parent")}
-            t={t}
-            onCancel={
-              canCancelMembership(memberships.pet_parent)
-                ? () => void handleCancelMembership("pet_parent")
-                : undefined
-            }
-            cancelLoading={cancelLoadingRole === "pet_parent"}
-          />
-          <RoleMembershipSummary
-            role="pet_friend"
-            membership={memberships.pet_friend}
-            isActive={hasActiveMembershipForRole(memberships, "pet_friend")}
-            t={t}
-            onCancel={
-              canCancelMembership(memberships.pet_friend)
-                ? () => void handleCancelMembership("pet_friend")
-                : undefined
-            }
-            cancelLoading={cancelLoadingRole === "pet_friend"}
-          />
-        </div>
-      ) : isActive ? (
-        <div className="mb-6">
-          <RoleMembershipSummary
-            role={modeRole}
-            membership={activeMembership}
-            isActive
-            t={t}
-            onCancel={
-              canCancelMembership(activeMembership)
-                ? () => void handleCancelMembership(modeRole)
-                : undefined
-            }
-            cancelLoading={cancelLoadingRole === modeRole}
-          />
+      {activeMembershipRoles.length > 0 ? (
+        <div
+          className={`mb-6 ${activeMembershipRoles.length > 1 ? "grid gap-4 sm:grid-cols-2" : ""}`}
+        >
+          {activeMembershipRoles.map((role) => (
+            <RoleMembershipSummary
+              key={role}
+              role={role}
+              membership={memberships[role]}
+              isActive
+              t={t}
+              onCancel={
+                canCancelMembership(memberships[role])
+                  ? () => void handleCancelMembership(role)
+                  : undefined
+              }
+              cancelLoading={cancelLoadingRole === role}
+            />
+          ))}
         </div>
       ) : null}
 
@@ -511,13 +494,6 @@ export function MembershipPageContent({
         useTestAccessFlow={checkoutEnabled && useTestAccessFlow}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
-        cancelPlanLabel={mpage.cancelMembership}
-        cancelPlanLoading={cancelLoadingRole === modeRole}
-        onCancelPlan={
-          canCancelMembership(activeMembership)
-            ? () => void handleCancelMembership(modeRole)
-            : undefined
-        }
       />
     </AccountLayout>
   );
