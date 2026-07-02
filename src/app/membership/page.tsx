@@ -33,14 +33,25 @@ export default async function MembershipPage() {
   };
 
   return (
-    <Suspense
-      fallback={<CommonLoadingFallback />}
-    >
-      <MembershipPageContent
-        stripeCheckoutByRole={stripeCheckoutByRole}
-        stripePlanErrorsByRole={stripePlanErrorsByRole}
-        membershipWebhookWritable={isMembershipWebhookWritable()}
-      />
-    </Suspense>
+    <>
+      <div
+        style={{
+          background: "red",
+          color: "white",
+          padding: 30,
+          fontSize: 40,
+          fontWeight: "bold",
+        }}
+      >
+        THIS IS MEMBERSHIP PAGE FROM COMMIT fe6d54d
+      </div>
+      <Suspense fallback={<CommonLoadingFallback />}>
+        <MembershipPageContent
+          stripeCheckoutByRole={stripeCheckoutByRole}
+          stripePlanErrorsByRole={stripePlanErrorsByRole}
+          membershipWebhookWritable={isMembershipWebhookWritable()}
+        />
+      </Suspense>
+    </>
   );
 }
