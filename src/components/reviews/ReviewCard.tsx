@@ -1,7 +1,8 @@
 "use client";
 
 import { ReviewStars } from "@/components/reviews/ReviewStars";
-import type { ReviewDisplay } from "@/lib/reviews";
+import { useLanguage } from "@/context/LanguageContext";
+import { reviewTagLabel, type ReviewDisplay } from "@/lib/reviews";
 
 type ReviewCardProps = {
   review: ReviewDisplay;
@@ -12,6 +13,9 @@ type ReviewCardProps = {
 };
 
 export function ReviewCard({ review, heading, className = "", compact = false }: ReviewCardProps) {
+  const { t } = useLanguage();
+  const tagLabels = { friendTags: t.reviews.friendTags, petTags: t.reviews.petTags };
+
   return (
     <article
       className={`rounded-xl border border-black/[0.06] bg-cream/40 ring-1 ring-black/[0.03] ${
@@ -39,7 +43,7 @@ export function ReviewCard({ review, heading, className = "", compact = false }:
               key={tag}
               className="rounded-full bg-mint/50 px-2.5 py-0.5 text-[0.7rem] font-semibold text-brand-teal"
             >
-              {tag}
+              {reviewTagLabel(tag, tagLabels, review.reviewType)}
             </li>
           ))}
         </ul>

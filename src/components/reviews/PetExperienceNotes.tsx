@@ -6,6 +6,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import {
   aggregatePetExperienceTags,
   fetchPetExperienceReviews,
+  reviewTagLabel,
+  REVIEW_TYPE_FRIEND_PET,
   type ReviewDisplay,
 } from "@/lib/reviews";
 import { createClient } from "@/lib/supabase";
@@ -52,6 +54,7 @@ export function PetExperienceNotes({ petId, compact = false }: PetExperienceNote
   }
 
   const tagSummary = aggregatePetExperienceTags(reviews);
+  const tagLabels = { friendTags: r.friendTags, petTags: r.petTags };
   const avgRating =
     reviews.length > 0
       ? reviews.reduce((sum, rev) => sum + rev.rating, 0) / reviews.length
@@ -86,7 +89,7 @@ export function PetExperienceNotes({ petId, compact = false }: PetExperienceNote
                   key={tag}
                   className="rounded-full border border-brand-teal/20 bg-mint/40 px-2.5 py-0.5 text-xs font-semibold text-brand-teal"
                 >
-                  {tag}
+                  {reviewTagLabel(tag, tagLabels, REVIEW_TYPE_FRIEND_PET)}
                   {count > 1 ? <span className="ml-1 opacity-70">×{count}</span> : null}
                 </li>
               ))}

@@ -52,6 +52,7 @@ export function LeaveReviewModal({
   const reviewingPet = isPetExperienceReviewType(reviewType);
   const title = reviewingPet ? r.modalTitlePet : r.modalTitleFriend;
   const tagOptions = tagsForReviewType(reviewType);
+  const tagLabelMap: Record<string, string> = reviewingPet ? r.petTags : r.friendTags;
   const tagsLabel = reviewingPet ? r.petTagsLabel : r.friendTagsLabel;
   const tagsHint = reviewingPet ? r.petTagsHint : r.friendTagsHint;
   const textPlaceholder = reviewingPet ? r.textPlaceholderPet : r.textPlaceholderFriend;
@@ -125,21 +126,21 @@ export function LeaveReviewModal({
             <p className="text-sm font-semibold text-foreground">{tagsLabel}</p>
             <p className="mt-1 text-xs leading-relaxed text-muted">{tagsHint}</p>
             <ul className="mt-2 flex flex-wrap gap-2">
-              {tagOptions.map((tag) => {
-                const active = selectedTags.includes(tag);
+              {tagOptions.map((tagKey) => {
+                const active = selectedTags.includes(tagKey);
                 return (
-                  <li key={tag}>
+                  <li key={tagKey}>
                     <button
                       type="button"
                       disabled={submitting}
-                      onClick={() => toggleTag(tag)}
+                      onClick={() => toggleTag(tagKey)}
                       className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                         active
                           ? "border-brand-teal bg-brand-teal/10 text-brand-teal"
                           : "border-black/10 bg-cream/50 text-foreground/80 hover:border-brand-teal/30"
                       }`}
                     >
-                      {tag}
+                      {tagLabelMap[tagKey] ?? tagKey}
                     </button>
                   </li>
                 );

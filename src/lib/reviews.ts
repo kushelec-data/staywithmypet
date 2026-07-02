@@ -8,28 +8,73 @@ export const REVIEW_TYPE_FRIEND_PET = "pet_friend_reviews_pet" as const;
 
 export type ReviewType = typeof REVIEW_TYPE_PARENT_FRIEND | typeof REVIEW_TYPE_FRIEND_PET;
 
-export const PET_FRIEND_REVIEW_TAGS = [
-  "Reliable",
-  "Friendly",
-  "Good communication",
-  "Sent updates",
-  "On time",
-  "Caring",
-  "Followed instructions",
+export const PET_FRIEND_REVIEW_TAG_KEYS = [
+  "reliable",
+  "friendly",
+  "good_communication",
+  "sent_updates",
+  "on_time",
+  "caring",
+  "followed_instructions",
 ] as const;
 
-export const PET_EXPERIENCE_REVIEW_TAGS = [
-  "Calm",
-  "Friendly",
-  "Easy to care for",
-  "Energetic",
-  "Shy",
-  "Needs medication",
-  "Good on walks",
+export const PET_EXPERIENCE_REVIEW_TAG_KEYS = [
+  "calm",
+  "friendly",
+  "easy_to_care_for",
+  "energetic",
+  "shy",
+  "needs_medication",
+  "good_on_walks",
 ] as const;
 
-export type PetFriendReviewTag = (typeof PET_FRIEND_REVIEW_TAGS)[number];
-export type PetExperienceReviewTag = (typeof PET_EXPERIENCE_REVIEW_TAGS)[number];
+/** @deprecated Use {@link PET_FRIEND_REVIEW_TAG_KEYS}. */
+export const PET_FRIEND_REVIEW_TAGS = PET_FRIEND_REVIEW_TAG_KEYS;
+
+/** @deprecated Use {@link PET_EXPERIENCE_REVIEW_TAG_KEYS}. */
+export const PET_EXPERIENCE_REVIEW_TAGS = PET_EXPERIENCE_REVIEW_TAG_KEYS;
+
+export type PetFriendReviewTag = (typeof PET_FRIEND_REVIEW_TAG_KEYS)[number];
+export type PetExperienceReviewTag = (typeof PET_EXPERIENCE_REVIEW_TAG_KEYS)[number];
+export type ReviewTagKey = PetFriendReviewTag | PetExperienceReviewTag;
+
+const LEGACY_REVIEW_TAG_KEYS: Record<string, ReviewTagKey> = {
+  Reliable: "reliable",
+  Friendly: "friendly",
+  "Good communication": "good_communication",
+  "Sent updates": "sent_updates",
+  "On time": "on_time",
+  Caring: "caring",
+  "Followed instructions": "followed_instructions",
+  Calm: "calm",
+  "Easy to care for": "easy_to_care_for",
+  Energetic: "energetic",
+  Shy: "shy",
+  "Needs medication": "needs_medication",
+  "Good on walks": "good_on_walks",
+};
+
+export type ReviewTagLabels = {
+  friendTags: Record<string, string>;
+  petTags: Record<string, string>;
+};
+
+/** Normalize stored tag values (legacy English labels or keys) to stable keys. */
+export function normalizeReviewTagKey(tag: string): string {
+  const trimmed = tag.trim();
+  if (!trimmed) return trimmed;
+  return LEGACY_REVIEW_TAG_KEYS[trimmed] ?? trimmed;
+}
+
+export function reviewTagLabel(
+  tag: string,
+  labels: ReviewTagLabels,
+  reviewType?: ReviewType,
+): string {
+  const key = normalizeReviewTagKey(tag);
+  const bucket = reviewType && isPetExperienceReviewType(reviewType) ? labels.petTags : labels.friendTags;
+  return bucket[key] ?? labels.friendTags[key] ?? labels.petTags[key] ?? tag;
+}
 
 export const REVIEW_TEXT_MIN = 10;
 export const REVIEW_TEXT_MAX = 500;
@@ -157,10 +202,10 @@ export function revieweeIdForType(
     : booking.petParentId;
 }
 
-export function tagsForReviewType(reviewType: ReviewType): readonly string[] {
+export function tagsForReviewType(reviewType: ReviewType): readonly ReviewTagKey[] {
   return reviewType === REVIEW_TYPE_PARENT_FRIEND
-    ? PET_FRIEND_REVIEW_TAGS
-    : PET_EXPERIENCE_REVIEW_TAGS;
+    ? PET_FRIEND_REVIEW_TAG_KEYS
+    : PET_EXPERIENCE_REVIEW_TAG_KEYS;
 }
 
 export async function fetchMyReviewsForBookings(
@@ -369,7 +414,8 @@ export function aggregatePetExperienceTags(reviews: ReviewDisplay[]): { tag: str
   const counts = new Map<string, number>();
   for (const review of reviews) {
     for (const tag of review.tags) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      const key = normalizeReviewTagKey(tag);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
     }
   }
   return [...counts.entries()]
