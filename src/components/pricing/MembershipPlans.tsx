@@ -145,9 +145,12 @@ function PlanCard({
     Boolean(onChoosePlan);
 
   const canCancel =
-    variant === "account" && isCurrent && Boolean(onCancelPlan) && Boolean(cancelPlanLabel);
+    variant === "account" &&
+    isCurrent &&
+    typeof onCancelPlan === "function" &&
+    Boolean(cancelPlanLabel?.trim());
 
-  const showComingSoon = purchaseDisabled && !isCurrent && !canCancel;
+  const showComingSoon = purchaseDisabled && !isCurrent;
 
   const isAccount = variant === "account";
 

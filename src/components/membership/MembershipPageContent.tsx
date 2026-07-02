@@ -556,11 +556,11 @@ export function MembershipPageContent({
         useTestAccessFlow={checkoutEnabled && useTestAccessFlow}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
-        cancelPlanLabel={
-          isActive ? cancelMembershipButtonLabel(modeRole, dualActive, mpage) : undefined
-        }
+        cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}
         cancelPlanLoading={cancelLoadingRole === modeRole}
-        onCancelPlan={isActive ? () => requestCancelMembership(modeRole) : undefined}
+        onCancelPlan={
+          isActive ? () => requestCancelMembership(modeRole) : undefined
+        }
       />
     </AccountLayout>
   );
