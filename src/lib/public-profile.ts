@@ -291,8 +291,8 @@ export function showPublicCareSection(profile: PublicProfileView): boolean {
   return profile.role === "pet_friend" || profile.role === "both";
 }
 
-export function showPublicPetsSection(profile: PublicProfileView): boolean {
-  return profile.role === "pet_parent" || profile.role === "both";
+export function showPublicPetsSection(pets: PetIntroDisplay[]): boolean {
+  return pets.length > 0;
 }
 
 export const PUBLIC_OWNER_PETS_SECTION_ID = "owner-pets";

@@ -8,6 +8,7 @@ import { CareSearchParamsSync } from "@/components/search/CareSearchParamsSync";
 import { PetFriendSearchFilters } from "@/components/search/PetFriendSearchFilters";
 import { PetSearchFilters } from "@/components/search/PetSearchFilters";
 import { SearchMapFriendCard, SearchMapPetCard } from "@/components/search/SearchMapResultCard";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   emptyPetFriendSearchFilters,
@@ -264,6 +265,7 @@ function SearchMapResultsList({
 
 export function SearchPageContent({ mode }: SearchPageContentProps) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
   const isPets = mode === "pets";
@@ -303,7 +305,9 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
       setLoadError(null);
       try {
         if (isPets) {
-          const rows = await fetchPublicSearchPets(supabase);
+          const rows = await fetchPublicSearchPets(supabase, {
+            excludeOwnerId: user?.id ?? null,
+          });
           if (!cancelled) {
             setAllPets(rows);
             setProfiles([]);
@@ -330,7 +334,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
     return () => {
       cancelled = true;
     };
-  }, [isPets, supabase]);
+  }, [isPets, supabase, user?.id]);
 
   const filteredSearchPets = useMemo(() => {
     if (!isPets) return [];

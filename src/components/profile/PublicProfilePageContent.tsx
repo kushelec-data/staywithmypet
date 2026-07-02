@@ -73,12 +73,8 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
 
         setProfile(row);
 
-        if (showPublicPetsSection(row)) {
-          const petRows = await fetchPublicPetsForOwner(supabase, profileId);
-          if (!cancelled) setPets(petRows);
-        } else {
-          setPets([]);
-        }
+        const petRows = await fetchPublicPetsForOwner(supabase, profileId);
+        if (!cancelled) setPets(petRows);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : t.publicProfileUi.loadError);
@@ -139,7 +135,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
           profile={profile}
           reviewsAvg={ratingAvg}
           reviewsCount={ratingCount}
-          ownerPets={showPublicPetsSection(profile) ? pets : []}
+          ownerPets={showPublicPetsSection(pets) ? pets : []}
         />
 
         {profile.profilePhotos.length > 0 ? (
@@ -152,7 +148,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
           <div className="min-w-0 space-y-4">
-            {showPublicPetsSection(profile) ? <PublicPetSummary pets={pets} /> : null}
+            {showPublicPetsSection(pets) ? <PublicPetSummary pets={pets} /> : null}
             {showFriendSections ? <PublicMemberCareCard profile={profile} /> : null}
             {showFriendSections ? <PublicMemberLivingCard profile={profile} /> : null}
             <PublicCompactReviewsCard

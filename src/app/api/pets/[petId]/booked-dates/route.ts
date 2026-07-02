@@ -1,4 +1,5 @@
 import { monthBounds } from "@/lib/booking-calendar";
+import { qualifiesAsActivePetParentMembership } from "@/lib/membership";
 import { eachISODateInRangeInclusive } from "@/lib/pet-availability";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -54,6 +55,24 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const admin = createAdminClient();
+
+  if (!isOwner) {
+    if (!admin) {
+      return NextResponse.json({ error: "Not available" }, { status: 404 });
+    }
+
+    const { data: membershipRow } = await admin
+      .from("user_memberships")
+      .select("status, end_date")
+      .eq("user_id", pet.owner_id)
+      .eq("role", "pet_parent")
+      .maybeSingle();
+
+    if (!qualifiesAsActivePetParentMembership(membershipRow)) {
+      return NextResponse.json({ error: "Not available" }, { status: 404 });
+    }
+  }
+
   if (!admin) {
     return NextResponse.json({ dates: [] });
   }

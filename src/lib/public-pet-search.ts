@@ -229,7 +229,7 @@ function ownerEmailVerified(details: unknown): boolean {
   return (details as Record<string, unknown>).email_verified === true;
 }
 
-/** Pet Parents (or both) listing pets on /find-pets — not Pet Friend–only accounts. */
+/** @deprecated Do not use profile.role for listing eligibility; enforced via user_memberships + RLS. */
 export function isPetListingOwnerRole(role: string | null | undefined): boolean {
   return role === "pet_parent" || role === "both";
 }
@@ -254,7 +254,6 @@ function mapRowToPublicSearchPet(
   );
   if (!options.skipVisibilityFilters) {
     if (!owner?.is_public) return null;
-    if (!isPetListingOwnerRole(owner.role)) return null;
     if ("is_public" in row && row.is_public === false) return null;
     if (row.is_active === false) return null;
   } else if (!owner) {
@@ -352,15 +351,24 @@ async function queryPublicPets(supabase: SupabaseClient) {
   return { data: null, error: lastError };
 }
 
+export type FetchPublicSearchPetsOptions = {
+  /** Omit the signed-in user's own pets from marketplace results. */
+  excludeOwnerId?: string | null;
+};
+
 export async function fetchPublicSearchPets(
   supabase: SupabaseClient,
+  options: FetchPublicSearchPetsOptions = {},
 ): Promise<PublicSearchPet[]> {
   const result = await queryPublicPets(supabase);
   if (result.error) throw new Error(formatSupabaseError(result.error));
 
+  const excludeOwnerId = options.excludeOwnerId?.trim() || null;
+
   return (result.data ?? [])
     .map((row) => mapRowToPublicSearchPet(row as unknown as PetIntroRow))
-    .filter((p): p is PublicSearchPet => p !== null);
+    .filter((p): p is PublicSearchPet => p !== null)
+    .filter((p) => !excludeOwnerId || p.ownerId !== excludeOwnerId);
 }
 
 export async function fetchPublicSearchPetById(
