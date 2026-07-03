@@ -6,8 +6,13 @@ import {
 import { parseProfileDetails } from "@/lib/profile-details";
 import type { ProfileRow } from "@/lib/profile-utils";
 import {
+  assertProfilePhotoAccess,
+  avatarStorageErrorDetail,
+  avatarStoragePath,
+  avatarStoragePathFromPublicUrl,
   AVATARS_BUCKET,
-  formatAvatarStorageError,
+  removeAvatarStorageObjects,
+  uploadAvatarStorageObject,
   validateProfileAvatarFile,
   avatarFileExtension,
 } from "@/lib/profile-avatar";
@@ -16,8 +21,21 @@ import {
   syncAvatarPositionInDetails,
   type PhotoObjectPosition,
 } from "@/lib/photo-position";
+import { supabaseErrorDetail } from "@/lib/supabase-errors";
 
 export const MAX_PROFILE_GALLERY_PHOTOS = 6;
+
+function galleryLog(message: string, detail?: Record<string, unknown>): void {
+  if (detail) {
+    console.info(`[profile-gallery] ${message}`, detail);
+  } else {
+    console.info(`[profile-gallery] ${message}`);
+  }
+}
+
+function galleryErrorLog(message: string, detail?: unknown): void {
+  console.error(`[profile-gallery] ${message}`, detail);
+}
 
 export function profilePhotosFromDetails(detailsRaw: unknown): string[] {
   const parsed = parseProfileDetails(detailsRaw);
@@ -95,9 +113,19 @@ async function persistGallery(
     row.avatar_url = avatarUrl;
   }
 
+  galleryLog("persist profile update", {
+    userId,
+    photoCount: photos.length,
+    avatarUrl: avatarUrl ?? undefined,
+  });
+
   const { error } = await supabase.from("profiles").update(row).eq("id", userId);
 
   if (error) {
+    galleryErrorLog("persist profile update failed", {
+      userId,
+      ...supabaseErrorDetail(error as PostgrestError),
+    });
     throw new Error(formatSupabaseError(error as PostgrestError));
   }
 
@@ -106,11 +134,6 @@ async function persistGallery(
     throw new Error("Could not update profile photos.");
   }
   return reloaded;
-}
-
-function galleryStoragePath(userId: string, file: File): string {
-  const ext = avatarFileExtension(file);
-  return `${userId}/gallery/${crypto.randomUUID()}.${ext}`;
 }
 
 export async function uploadProfileGalleryPhoto(
@@ -123,25 +146,13 @@ export async function uploadProfileGalleryPhoto(
     position?: PhotoObjectPosition;
   },
 ): Promise<ProfileRow> {
-  validateProfileAvatarFile(file);
+  const sessionUserId = await assertProfilePhotoAccess(supabase, userId);
 
   if (options.currentPhotos.length >= MAX_PROFILE_GALLERY_PHOTOS) {
     throw new Error(`You can upload up to ${MAX_PROFILE_GALLERY_PHOTOS} profile photos.`);
   }
 
-  const storagePath = galleryStoragePath(userId, file);
-  const { error: uploadError } = await supabase.storage.from(AVATARS_BUCKET).upload(storagePath, file, {
-    cacheControl: "3600",
-    upsert: false,
-    contentType: file.type || undefined,
-  });
-
-  if (uploadError) {
-    throw new Error(formatAvatarStorageError(uploadError.message || "Could not upload photo."));
-  }
-
-  const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(storagePath);
-  const publicUrl = urlData.publicUrl;
+  const { publicUrl } = await uploadAvatarStorageObject(supabase, sessionUserId, file, { gallery: true });
   const nextPhotos = [...options.currentPhotos, publicUrl];
   const nextAvatar =
     options.currentAvatarUrl?.trim() ? options.currentAvatarUrl : publicUrl;
@@ -158,11 +169,33 @@ export async function removeProfileGalleryPhoto(
   url: string,
   options: { currentPhotos: string[]; currentAvatarUrl: string | null },
 ): Promise<ProfileRow> {
+  const sessionUserId = await assertProfilePhotoAccess(supabase, userId, { rateLimit: false });
+
   const nextPhotos = options.currentPhotos.filter((p) => p !== url);
   const wasAvatar = options.currentAvatarUrl === url;
   const nextAvatar = wasAvatar ? nextPhotos[0] ?? null : options.currentAvatarUrl;
 
-  return persistGallery(supabase, userId, nextPhotos, nextAvatar);
+  const updated = await persistGallery(supabase, userId, nextPhotos, nextAvatar);
+
+  const storagePath = avatarStoragePathFromPublicUrl(url);
+  if (storagePath) {
+    try {
+      await removeAvatarStorageObjects(supabase, sessionUserId, [storagePath]);
+    } catch (err) {
+      galleryErrorLog("storage remove after gallery delete failed", {
+        bucket: AVATARS_BUCKET,
+        path: storagePath,
+        userId: sessionUserId,
+        ...(err instanceof Error && "reason" in err
+          ? { message: err.message, reason: (err as { reason?: string }).reason, cause: err.cause }
+          : avatarStorageErrorDetail(err as { message?: string })),
+      });
+    }
+  } else {
+    galleryLog("skip storage remove — URL not in avatars bucket", { url, userId: sessionUserId });
+  }
+
+  return updated;
 }
 
 export async function setMainProfilePhoto(
@@ -171,17 +204,12 @@ export async function setMainProfilePhoto(
   url: string,
   options: { currentPhotos: string[] },
 ): Promise<ProfileRow> {
+  await assertProfilePhotoAccess(supabase, userId, { rateLimit: false });
+
   if (!options.currentPhotos.includes(url)) {
     throw new Error("Choose a photo from your gallery.");
   }
   return persistGallery(supabase, userId, options.currentPhotos, url);
-}
-
-function storagePathFromPublicUrl(url: string): string | null {
-  const marker = `/storage/v1/object/public/${AVATARS_BUCKET}/`;
-  const index = url.indexOf(marker);
-  if (index === -1) return null;
-  return decodeURIComponent(url.slice(index + marker.length));
 }
 
 export async function replaceProfileGalleryPhoto(
@@ -196,27 +224,22 @@ export async function replaceProfileGalleryPhoto(
   },
 ): Promise<ProfileRow> {
   validateProfileAvatarFile(file);
+  const sessionUserId = await assertProfilePhotoAccess(supabase, userId);
 
   if (!options.currentPhotos.includes(oldUrl)) {
     throw new Error("Choose a photo from your gallery.");
   }
 
-  const oldStoragePath = storagePathFromPublicUrl(oldUrl);
+  const oldStoragePath = avatarStoragePathFromPublicUrl(oldUrl);
   const ext = avatarFileExtension(file);
-  const storagePath = oldStoragePath ?? `${userId}/gallery/${crypto.randomUUID()}.${ext}`;
+  const storagePath = oldStoragePath ?? avatarStoragePath(sessionUserId, file, true);
 
-  const { error: uploadError } = await supabase.storage.from(AVATARS_BUCKET).upload(storagePath, file, {
-    cacheControl: "3600",
+  const { publicUrl } = await uploadAvatarStorageObject(supabase, sessionUserId, file, {
+    gallery: true,
     upsert: true,
-    contentType: file.type || undefined,
+    storagePath,
   });
 
-  if (uploadError) {
-    throw new Error(formatAvatarStorageError(uploadError.message || "Could not update photo."));
-  }
-
-  const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(storagePath);
-  const publicUrl = urlData.publicUrl;
   const nextPhotos = options.currentPhotos.map((photo) => (photo === oldUrl ? publicUrl : photo));
   const nextAvatar =
     options.currentAvatarUrl === oldUrl ? publicUrl : options.currentAvatarUrl;
@@ -245,8 +268,24 @@ export async function replaceProfileGalleryPhoto(
   );
 
   if (oldStoragePath && oldStoragePath !== storagePath) {
-    await supabase.storage.from(AVATARS_BUCKET).remove([oldStoragePath]);
+    try {
+      await removeAvatarStorageObjects(supabase, sessionUserId, [oldStoragePath]);
+    } catch (err) {
+      galleryErrorLog("storage remove after gallery replace failed", {
+        bucket: AVATARS_BUCKET,
+        path: oldStoragePath,
+        userId: sessionUserId,
+        ...(err instanceof Error && "reason" in err
+          ? { message: err.message, reason: (err as { reason?: string }).reason, cause: err.cause }
+          : avatarStorageErrorDetail(err as { message?: string })),
+      });
+    }
   }
 
   return updated;
+}
+
+/** @deprecated use avatarStoragePathFromPublicUrl */
+export function storagePathFromPublicUrl(url: string): string | null {
+  return avatarStoragePathFromPublicUrl(url);
 }

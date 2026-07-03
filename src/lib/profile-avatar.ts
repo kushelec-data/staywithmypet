@@ -46,6 +46,157 @@ function avatarUploadErrorLog(message: string, detail?: unknown): void {
   console.error(`[avatar-upload] ${message}`, detail);
 }
 
+type StorageErrorLike = {
+  message?: string;
+  statusCode?: string | number;
+  error?: string;
+  name?: string;
+};
+
+export function avatarStorageErrorDetail(error: StorageErrorLike | null | undefined): Record<string, unknown> {
+  if (!error) return {};
+  return {
+    message: error.message ?? null,
+    statusCode: error.statusCode ?? null,
+    error: error.error ?? null,
+    name: error.name ?? null,
+  };
+}
+
+function logAvatarStorageError(
+  operation: "upload" | "remove" | "update",
+  context: {
+    bucket: string;
+    path: string;
+    userId: string;
+    sessionUserId?: string;
+  },
+  error: StorageErrorLike,
+): void {
+  avatarUploadErrorLog(`${operation} failed`, {
+    bucket: context.bucket,
+    path: context.path,
+    userId: context.userId,
+    sessionUserId: context.sessionUserId ?? null,
+    ...avatarStorageErrorDetail(error),
+  });
+}
+
+export function avatarContentTypeForFile(file: File): string {
+  const ext = avatarFileExtension(file);
+  if (file.type && ALLOWED_TYPES.has(file.type)) return file.type;
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  return "image/jpeg";
+}
+
+export async function assertProfilePhotoAccess(
+  supabase: SupabaseClient,
+  userId: string,
+  options?: { rateLimit?: boolean },
+): Promise<string> {
+  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const sessionUserId = await requireAuthUserId(supabase);
+  assertOwner(userId, sessionUserId);
+  if (options?.rateLimit !== false) {
+    assertRateLimit("file_upload", sessionUserId);
+  }
+  return sessionUserId;
+}
+
+export function avatarStoragePath(userId: string, file: File, gallery = false): string {
+  const ext = avatarFileExtension(file);
+  return gallery ? `${userId}/gallery/${crypto.randomUUID()}.${ext}` : `${userId}/${crypto.randomUUID()}.${ext}`;
+}
+
+export function avatarStoragePathFromPublicUrl(url: string): string | null {
+  const marker = `/storage/v1/object/public/${AVATARS_BUCKET}/`;
+  const index = url.indexOf(marker);
+  if (index === -1) return null;
+  return decodeURIComponent(url.slice(index + marker.length));
+}
+
+export async function uploadAvatarStorageObject(
+  supabase: SupabaseClient,
+  sessionUserId: string,
+  file: File,
+  options?: { gallery?: boolean; upsert?: boolean; storagePath?: string },
+): Promise<{ storagePath: string; publicUrl: string }> {
+  validateProfileAvatarFile(file);
+  const storagePath = options?.storagePath ?? avatarStoragePath(sessionUserId, file, options?.gallery);
+  const contentType = avatarContentTypeForFile(file);
+
+  avatarUploadLog("upload start", {
+    bucket: AVATARS_BUCKET,
+    path: storagePath,
+    userId: sessionUserId,
+    contentType,
+    fileType: file.type || null,
+    fileSize: file.size,
+    upsert: options?.upsert ?? false,
+  });
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  avatarUploadLog("session", {
+    userId: sessionUserId,
+    hasAccessToken: Boolean(sessionData.session?.access_token),
+  });
+
+  const { error: uploadError } = await supabase.storage.from(AVATARS_BUCKET).upload(storagePath, file, {
+    cacheControl: "3600",
+    upsert: options?.upsert ?? false,
+    contentType,
+  });
+
+  if (uploadError) {
+    logAvatarStorageError("upload", { bucket: AVATARS_BUCKET, path: storagePath, userId: sessionUserId }, uploadError);
+    throw mapStorageUploadError(uploadError);
+  }
+
+  const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(storagePath);
+  avatarUploadLog("upload ok", { bucket: AVATARS_BUCKET, path: storagePath, publicUrl: urlData.publicUrl });
+  return { storagePath, publicUrl: urlData.publicUrl };
+}
+
+export async function removeAvatarStorageObjects(
+  supabase: SupabaseClient,
+  sessionUserId: string,
+  storagePaths: string[],
+): Promise<void> {
+  if (storagePaths.length === 0) return;
+
+  for (const path of storagePaths) {
+    const ownerId = path.split("/")[0]?.trim();
+    if (ownerId && ownerId !== sessionUserId) {
+      avatarUploadErrorLog("remove blocked — path owner mismatch", {
+        bucket: AVATARS_BUCKET,
+        path,
+        userId: sessionUserId,
+        pathOwnerId: ownerId,
+      });
+      continue;
+    }
+  }
+
+  avatarUploadLog("remove start", {
+    bucket: AVATARS_BUCKET,
+    paths: storagePaths,
+    userId: sessionUserId,
+  });
+
+  const { error } = await supabase.storage.from(AVATARS_BUCKET).remove(storagePaths);
+  if (error) {
+    logAvatarStorageError(
+      "remove",
+      { bucket: AVATARS_BUCKET, path: storagePaths.join(", "), userId: sessionUserId },
+      error,
+    );
+    throw mapStorageUploadError(error);
+  }
+
+  avatarUploadLog("remove ok", { bucket: AVATARS_BUCKET, paths: storagePaths, userId: sessionUserId });
+}
+
 export function validateProfileAvatarFile(file: File): void {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new AvatarUploadError(
@@ -71,7 +222,8 @@ export function avatarFileExtension(file: File): string {
   return "jpg";
 }
 
-function mapStorageUploadError(message: string): AvatarUploadError {
+function mapStorageUploadError(error: StorageErrorLike): AvatarUploadError {
+  const message = error.message?.trim() || "Could not upload profile photo.";
   const lower = message.toLowerCase();
 
   if (
@@ -111,7 +263,7 @@ function mapStorageUploadError(message: string): AvatarUploadError {
     );
   }
 
-  return new AvatarUploadError("upload_failed", message || "Could not upload profile photo.");
+  return new AvatarUploadError("upload_failed", message, { cause: error });
 }
 
 function mapProfileUpdateError(error: PostgrestError): AvatarUploadError {
@@ -173,7 +325,7 @@ async function buildAvatarProfileUpdatePayload(
 
 /** @deprecated Use AvatarUploadError messages from uploadProfileAvatar instead. */
 export function formatAvatarStorageError(message: string): string {
-  return mapStorageUploadError(message).message;
+  return mapStorageUploadError({ message }).message;
 }
 
 export async function uploadProfileAvatar(
@@ -188,73 +340,30 @@ export async function uploadProfileAvatar(
     size: file.size,
   });
 
-  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
-
   let sessionUserId: string;
   try {
-    sessionUserId = await requireAuthUserId(supabase);
+    sessionUserId = await assertProfilePhotoAccess(supabase, userId);
   } catch (err) {
-    avatarUploadErrorLog("auth error", err);
+    avatarUploadErrorLog("access check failed", {
+      userId,
+      ...(err instanceof Error ? { message: err.message, name: err.name } : { err }),
+    });
     if (err instanceof AuthRequiredError) {
       throw new AvatarUploadError("not_signed_in", "You must be signed in to upload a profile photo.");
     }
-    throw err;
-  }
-
-  try {
-    assertOwner(userId, sessionUserId);
-  } catch (err) {
-    avatarUploadErrorLog("ownership error", err);
     if (err instanceof ForbiddenError) {
       throw new AvatarUploadError(
         "forbidden",
         "You do not have permission to change this profile photo.",
       );
     }
-    throw err;
-  }
-
-  try {
-    assertRateLimit("file_upload", sessionUserId);
-  } catch (err) {
-    avatarUploadErrorLog("rate limit", err);
     throw new AvatarUploadError(
       "rate_limited",
       err instanceof Error ? err.message : "Too many upload attempts. Please try again later.",
     );
   }
 
-  validateProfileAvatarFile(file);
-
-  const ext = avatarFileExtension(file);
-  const storagePath = `${userId}/${crypto.randomUUID()}.${ext}`;
-
-  avatarUploadLog("bucket", { bucket: AVATARS_BUCKET });
-  avatarUploadLog("path", { path: storagePath, userId });
-
-  const contentType =
-    file.type && ALLOWED_TYPES.has(file.type)
-      ? file.type
-      : ext === "png"
-        ? "image/png"
-        : ext === "webp"
-          ? "image/webp"
-          : "image/jpeg";
-
-  const { error: uploadError } = await supabase.storage.from(AVATARS_BUCKET).upload(storagePath, file, {
-    cacheControl: "3600",
-    upsert: false,
-    contentType,
-  });
-
-  if (uploadError) {
-    avatarUploadErrorLog("upload error", uploadError);
-    throw mapStorageUploadError(uploadError.message || "Could not upload profile photo.");
-  }
-
-  const { data: urlData } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(storagePath);
-  const publicUrl = urlData.publicUrl;
-  avatarUploadLog("public url", { publicUrl });
+  const { storagePath, publicUrl } = await uploadAvatarStorageObject(supabase, sessionUserId, file);
 
   const updatePayload = await buildAvatarProfileUpdatePayload(supabase, userId, publicUrl, position);
   avatarUploadLog("profile update payload", {
@@ -279,7 +388,9 @@ export async function uploadProfileAvatar(
       details: detail?.details ?? null,
       hint: detail?.hint ?? null,
     });
-    await supabase.storage.from(AVATARS_BUCKET).remove([storagePath]);
+    await removeAvatarStorageObjects(supabase, sessionUserId, [storagePath]).catch((removeErr) => {
+      avatarUploadErrorLog("cleanup remove after profile update failure", removeErr);
+    });
     throw mapProfileUpdateError(updateError as PostgrestError);
   }
 

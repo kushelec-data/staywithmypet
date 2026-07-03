@@ -10,7 +10,7 @@ import {
   type PhotoCropSaveResult,
 } from "@/lib/photo-position";
 import { resolveSanitizedAvatarUrl } from "@/lib/profile-avatar-display";
-import { uploadProfileAvatar } from "@/lib/profile-avatar";
+import { uploadProfileAvatar, AvatarUploadError } from "@/lib/profile-avatar";
 import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase";
 import type { ProfileRow } from "@/lib/profile-utils";
@@ -95,7 +95,11 @@ export function ProfileAvatarUpload({
       }
       setCropSession(null);
     } catch (err) {
-      console.error("[avatar-upload] error", err);
+      console.error("[avatar-upload] error", {
+        message: err instanceof Error ? err.message : String(err),
+        reason: err instanceof AvatarUploadError ? err.reason : undefined,
+        cause: err instanceof Error ? err.cause : err,
+      });
       if (err instanceof Error && err.message.trim()) {
         setError(err.message);
       } else {
