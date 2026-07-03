@@ -1,4 +1,4 @@
-import { AVATARS_BUCKET } from "@/lib/profile-avatar";
+import { AVATARS_BUCKET, avatarPublicUrlStoragePath } from "@/lib/profile-avatar";
 import { profileInitials } from "@/lib/profile-utils";
 
 /**
@@ -11,13 +11,11 @@ export function isAvatarUrlOwnedByUser(
 ): boolean {
   if (!userId || !avatarUrl?.trim()) return false;
   const url = avatarUrl.trim();
-  const marker = `/storage/v1/object/public/${AVATARS_BUCKET}/`;
-  const idx = url.indexOf(marker);
-  if (idx === -1) {
+  const path = avatarPublicUrlStoragePath(url);
+  if (!path) {
     // OAuth or other external host — not another member's storage object path.
     return !url.includes(`/${AVATARS_BUCKET}/`);
   }
-  const path = decodeURIComponent(url.slice(idx + marker.length));
   const ownerId = path.split("/")[0]?.trim();
   return ownerId === userId;
 }

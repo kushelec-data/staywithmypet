@@ -10,7 +10,7 @@ import {
   type PhotoCropSaveResult,
 } from "@/lib/photo-position";
 import { resolveSanitizedAvatarUrl } from "@/lib/profile-avatar-display";
-import { uploadProfileAvatar, AvatarUploadError } from "@/lib/profile-avatar";
+import { uploadProfileAvatar, logAvatarUploadFailure } from "@/lib/profile-avatar";
 import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase";
 import type { ProfileRow } from "@/lib/profile-utils";
@@ -82,7 +82,9 @@ export function ProfileAvatarUpload({
     setError(null);
     setUploading(true);
     try {
-      const updated = await uploadProfileAvatar(supabase, userId, file, position);
+      const updated = await uploadProfileAvatar(supabase, userId, file, position, {
+        replaceUrl: cropSession?.url ?? null,
+      });
       const canonicalUrl = updated.avatar_url?.trim() || null;
       const nextUrl = resolveSanitizedAvatarUrl(userId, canonicalUrl) ?? canonicalUrl;
       if (nextUrl) {
@@ -90,16 +92,15 @@ export function ProfileAvatarUpload({
         setPreviewUrl(preview);
         onAvatarUpdated(updated);
       } else {
-        console.error("[avatar-upload] preview url missing after successful upload", { canonicalUrl });
+        logAvatarUploadFailure("preview url missing after successful upload", new Error("missing avatar_url"), {
+          userId,
+          canonicalUrl,
+        });
         setError(t.media.uploadAvatarError);
       }
       setCropSession(null);
     } catch (err) {
-      console.error("[avatar-upload] error", {
-        message: err instanceof Error ? err.message : String(err),
-        reason: err instanceof AvatarUploadError ? err.reason : undefined,
-        cause: err instanceof Error ? err.cause : err,
-      });
+      logAvatarUploadFailure("profile avatar upload failed", err, { userId });
       if (err instanceof Error && err.message.trim()) {
         setError(err.message);
       } else {

@@ -14,6 +14,7 @@ import {
   setMainProfilePhoto,
   uploadProfileGalleryPhoto,
 } from "@/lib/profile-gallery";
+import { logAvatarUploadFailure } from "@/lib/profile-avatar";
 import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase";
 import type { ProfileRow } from "@/lib/profile-utils";
@@ -66,6 +67,7 @@ export function ProfileGalleryUpload({
     try {
       return await fn();
     } catch (err) {
+      logAvatarUploadFailure("profile gallery action failed", err, { userId });
       setError(err instanceof Error ? err.message : t.profileEdit.gallery.genericError);
       return undefined;
     } finally {
