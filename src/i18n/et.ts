@@ -943,6 +943,12 @@ export const et = {
     petFriend: {
       title: "Hooldus, mida saan pakkuda",
       description: "Loomaliigid, hoolduselistused, kogemus, kodukeskkond ja saadavus.",
+      preferences: {
+        willingSpecialMedicalNeeds: "Valmis hoolitsema erivajadustega lemmikute eest?",
+        comfortableBehavioralQuirks: "Sobivad ka käitumuslike eripäradega lemmikud?",
+        happySeniorPets: "Valmis hoolitsema eakate lemmikute eest?",
+        happyPuppiesKittens: "Valmis hoolitsema kutsikate ja kassipoegade eest?",
+      },
     },
     availability: {
       title: "Saadavus",

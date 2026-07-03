@@ -82,6 +82,7 @@ export function PetFriendProfileFormSections({
 }: PetFriendProfileFormSectionsProps) {
   const { locale, t } = useLanguage();
   const setup = t.account.profileSetup;
+  const petFriendPreferences = t.profileEdit.petFriend.preferences;
   const pl = (en: string) => translateProfileLabel(en, locale);
 
   const petTypeChipOptions = useMemo(() => toProfileLabeledChipOptions(petTypeOptions, locale), [locale]);
@@ -209,25 +210,25 @@ export function PetFriendProfileFormSections({
             }}
           />
           <ProfileYesNoToggle
-            label={pl("Willing to care for special medical needs?")}
+            label={petFriendPreferences.willingSpecialMedicalNeeds}
             value={form.willingSpecialMedicalNeeds}
             onChange={(v) => patch(form, onChange, { willingSpecialMedicalNeeds: v })}
             disabled={disabled}
           />
           <ProfileYesNoToggle
-            label={pl("Comfortable with behavioral quirks?")}
+            label={petFriendPreferences.comfortableBehavioralQuirks}
             value={form.willingBehavioralQuirks}
             onChange={(v) => patch(form, onChange, { willingBehavioralQuirks: v })}
             disabled={disabled}
           />
           <ProfileYesNoToggle
-            label={pl("Happy to care for senior pets?")}
+            label={petFriendPreferences.happySeniorPets}
             value={form.willingSeniors}
             onChange={(v) => patch(form, onChange, { willingSeniors: v })}
             disabled={disabled}
           />
           <ProfileYesNoToggle
-            label={pl("Happy with puppies & kittens?")}
+            label={petFriendPreferences.happyPuppiesKittens}
             value={form.willingPuppiesKittens}
             onChange={(v) => patch(form, onChange, { willingPuppiesKittens: v })}
             disabled={disabled}

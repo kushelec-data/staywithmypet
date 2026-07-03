@@ -935,6 +935,12 @@ export const en = {
     petFriend: {
       title: "Care I Can Offer",
       description: "Pet types, care preferences, experience, home environment, and availability.",
+      preferences: {
+        willingSpecialMedicalNeeds: "Willing to care for special medical needs?",
+        comfortableBehavioralQuirks: "Comfortable with behavioral quirks?",
+        happySeniorPets: "Happy to care for senior pets?",
+        happyPuppiesKittens: "Happy with puppies & kittens?",
+      },
     },
     availability: {
       title: "Availability",
