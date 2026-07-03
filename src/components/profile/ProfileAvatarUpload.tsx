@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/Button";
 import { validateCropSourceFile } from "@/lib/image-crop";
 import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import {
+  DEFAULT_PHOTO_POSITION,
+  normalizeProfilePhotoUrlKey,
   resolveAvatarPosition,
+  withImageCacheBuster,
   type PhotoCropSaveResult,
 } from "@/lib/photo-position";
 import { resolveSanitizedAvatarUrl } from "@/lib/profile-avatar-display";
@@ -59,7 +62,9 @@ export function ProfileAvatarUpload({
 
   const safeAvatarUrl = resolveSanitizedAvatarUrl(userId, avatarUrl);
   const shownUrl = previewUrl ?? safeAvatarUrl;
-  const avatarPosition = resolveAvatarPosition(avatarUrl, profileDetails);
+  const avatarPosition = previewUrl
+    ? DEFAULT_PHOTO_POSITION
+    : resolveAvatarPosition(avatarUrl, profileDetails);
 
   function openCrop(file?: File, url?: string) {
     if (!editable || disabled || uploading) return;
@@ -83,13 +88,12 @@ export function ProfileAvatarUpload({
     setUploading(true);
     try {
       const updated = await uploadProfileAvatar(supabase, userId, file, position, {
-        replaceUrl: cropSession?.url ?? null,
+        replaceUrl: cropSession?.url ? normalizeProfilePhotoUrlKey(cropSession.url) : null,
       });
       const canonicalUrl = updated.avatar_url?.trim() || null;
       const nextUrl = resolveSanitizedAvatarUrl(userId, canonicalUrl) ?? canonicalUrl;
       if (nextUrl) {
-        const preview = `${nextUrl}${nextUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
-        setPreviewUrl(preview);
+        setPreviewUrl(withImageCacheBuster(nextUrl));
         onAvatarUpdated(updated);
       } else {
         logAvatarUploadFailure("preview url missing after successful upload", new Error("missing avatar_url"), {

@@ -1,11 +1,15 @@
 "use client";
 
 import { PhotoCropModal } from "@/components/media/PhotoCropModal";
+import { PositionedPhoto } from "@/components/media/PositionedPhoto";
 import { Button } from "@/components/ui/Button";
 import { validateCropSourceFile } from "@/lib/image-crop";
-import { galleryPositionFromDetails, type PhotoCropSaveResult } from "@/lib/photo-position";
-import { parseProfileDetails } from "@/lib/profile-details";
-import { PositionedPhoto } from "@/components/media/PositionedPhoto";
+import {
+  galleryPositionFromDetails,
+  normalizeProfilePhotoUrlKey,
+  withImageCacheBuster,
+  type PhotoCropSaveResult,
+} from "@/lib/photo-position";
 import {
   MAX_PROFILE_GALLERY_PHOTOS,
   profilePhotosFromDetails,
@@ -51,14 +55,31 @@ export function ProfileGalleryUpload({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cropSession, setCropSession] = useState<CropSession>(null);
+  const [imageCacheVersions, setImageCacheVersions] = useState<Record<string, number>>({});
 
   const photos = profilePhotosFromDetails(profile?.details ?? {});
-  const profileDetails = parseProfileDetails(profile?.details);
   const slotsLeft = MAX_PROFILE_GALLERY_PHOTOS - photos.length;
   const mainUrl = avatarUrl?.trim() || null;
   const uploadContextRef = useRef({ photos, mainUrl });
 
   uploadContextRef.current = { photos, mainUrl };
+
+  function bumpImageCache(...urls: string[]) {
+    const stamp = Date.now();
+    setImageCacheVersions((prev) => {
+      const next = { ...prev };
+      for (const url of urls) {
+        next[normalizeProfilePhotoUrlKey(url)] = stamp;
+      }
+      return next;
+    });
+  }
+
+  function galleryImageSrc(url: string): string {
+    const key = normalizeProfilePhotoUrlKey(url);
+    const version = imageCacheVersions[key];
+    return version ? withImageCacheBuster(url, version) : url;
+  }
 
   async function run<T>(fn: () => Promise<T>): Promise<T | undefined> {
     if (!editable || disabled || busy) return;
@@ -128,6 +149,7 @@ export function ProfileGalleryUpload({
         }),
       );
       if (updated) {
+        bumpImageCache(cropSession.replaceUrl!, updated.avatar_url ?? cropSession.replaceUrl!);
         onProfileUpdated(updated);
         setCropSession(null);
       }
@@ -144,6 +166,16 @@ export function ProfileGalleryUpload({
     );
 
     if (!updated) return;
+
+    const newPhotoUrl = profilePhotosFromDetails(updated.details).find(
+      (photo) => !ctx.photos.includes(photo),
+    );
+    if (newPhotoUrl) {
+      bumpImageCache(newPhotoUrl);
+    }
+    if (updated.avatar_url) {
+      bumpImageCache(updated.avatar_url);
+    }
 
     uploadContextRef.current = {
       photos: profilePhotosFromDetails(updated.details),
@@ -180,12 +212,9 @@ export function ProfileGalleryUpload({
                   }`}
                 >
                   <PositionedPhoto
-                    src={url}
+                    src={galleryImageSrc(url)}
                     alt=""
-                    position={
-                      profileDetails.profile_photo_positions?.[url] ??
-                      galleryPositionFromDetails(profile?.details, url)
-                    }
+                    position={galleryPositionFromDetails(profile?.details, url)}
                     useAppImage={false}
                     className="aspect-square w-full"
                   />
@@ -214,7 +243,10 @@ export function ProfileGalleryUpload({
                               const updated = await setMainProfilePhoto(supabase, userId, url, {
                                 currentPhotos: photos,
                               });
-                              if (updated) onProfileUpdated(updated);
+                              if (updated) {
+                                if (updated.avatar_url) bumpImageCache(updated.avatar_url, url);
+                                onProfileUpdated(updated);
+                              }
                             })
                           }
                         >
@@ -231,7 +263,17 @@ export function ProfileGalleryUpload({
                               currentPhotos: photos,
                               currentAvatarUrl: mainUrl,
                             });
-                            if (updated) onProfileUpdated(updated);
+                            if (updated) {
+                              setImageCacheVersions((prev) => {
+                                const next = { ...prev };
+                                delete next[normalizeProfilePhotoUrlKey(url)];
+                                if (updated.avatar_url) {
+                                  next[normalizeProfilePhotoUrlKey(updated.avatar_url)] = Date.now();
+                                }
+                                return next;
+                              });
+                              onProfileUpdated(updated);
+                            }
                           })
                         }
                       >

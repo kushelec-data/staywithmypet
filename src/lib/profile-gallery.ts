@@ -18,7 +18,9 @@ import {
 } from "@/lib/profile-avatar";
 import {
   normalizePhotoPosition,
+  normalizeProfilePhotoUrlKey,
   syncAvatarPositionInDetails,
+  DEFAULT_PHOTO_POSITION,
   type PhotoObjectPosition,
 } from "@/lib/photo-position";
 import { supabaseErrorDetail } from "@/lib/supabase-errors";
@@ -64,12 +66,19 @@ export function mergeDetailsProfilePhotos(
         ? { ...(base.profile_photo_positions as Record<string, PhotoObjectPosition>) }
         : {};
     for (const url of photos) {
-      if (photoPositions[url]) {
-        current[url] = normalizePhotoPosition(photoPositions[url]);
+      const key = normalizeProfilePhotoUrlKey(url);
+      const matched = Object.entries(photoPositions).find(
+        ([entryKey]) => normalizeProfilePhotoUrlKey(entryKey) === key,
+      )?.[1];
+      if (matched) {
+        current[key] = normalizePhotoPosition(matched);
       }
     }
     for (const key of Object.keys(current)) {
-      if (!photos.includes(key)) delete current[key];
+      const stillPresent = photos.some(
+        (photoUrl) => normalizeProfilePhotoUrlKey(photoUrl) === normalizeProfilePhotoUrlKey(key),
+      );
+      if (!stillPresent) delete current[key];
     }
     base.profile_photo_positions = current;
   }
@@ -156,9 +165,9 @@ export async function uploadProfileGalleryPhoto(
   const nextPhotos = [...options.currentPhotos, publicUrl];
   const nextAvatar =
     options.currentAvatarUrl?.trim() ? options.currentAvatarUrl : publicUrl;
-  const photoPositions = options.position
-    ? { [publicUrl]: normalizePhotoPosition(options.position) }
-    : undefined;
+  const photoPositions = {
+    [normalizeProfilePhotoUrlKey(publicUrl)]: { ...DEFAULT_PHOTO_POSITION },
+  };
 
   return persistGallery(supabase, userId, nextPhotos, nextAvatar, photoPositions);
 }
@@ -250,14 +259,13 @@ export async function replaceProfileGalleryPhoto(
     !Array.isArray(existingDetails.profile_photo_positions)
       ? { ...(existingDetails.profile_photo_positions as Record<string, PhotoObjectPosition>) }
       : {};
-  if (existingPositions[oldUrl]) {
-    existingPositions[publicUrl] = options.position
-      ? normalizePhotoPosition(options.position)
-      : existingPositions[oldUrl];
-    delete existingPositions[oldUrl];
-  } else if (options.position) {
-    existingPositions[publicUrl] = normalizePhotoPosition(options.position);
+  const urlKey = normalizeProfilePhotoUrlKey(publicUrl);
+  for (const key of Object.keys(existingPositions)) {
+    if (normalizeProfilePhotoUrlKey(key) === normalizeProfilePhotoUrlKey(oldUrl)) {
+      delete existingPositions[key];
+    }
   }
+  existingPositions[urlKey] = { ...DEFAULT_PHOTO_POSITION };
 
   const updated = await persistGallery(
     supabase,

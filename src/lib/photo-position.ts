@@ -20,6 +20,33 @@ export const DEFAULT_PHOTO_POSITION: PhotoObjectPosition = {
   photoScale: 1,
 };
 
+/** Strip cache-buster query strings before using a profile photo URL as a map key. */
+export function normalizeProfilePhotoUrlKey(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.split("?")[0]?.split("#")[0] ?? trimmed;
+}
+
+export function withImageCacheBuster(url: string, version?: number | string): string {
+  const base = normalizeProfilePhotoUrlKey(url);
+  return `${base}?v=${version ?? Date.now()}`;
+}
+
+function lookupPhotoPositionInMap(
+  map: Record<string, unknown>,
+  url: string,
+): PhotoObjectPosition | null {
+  const key = normalizeProfilePhotoUrlKey(url);
+  const direct = parsePhotoPosition(map[key]);
+  if (direct) return direct;
+  for (const [entryKey, value] of Object.entries(map)) {
+    if (normalizeProfilePhotoUrlKey(entryKey) === key) {
+      return parsePhotoPosition(value);
+    }
+  }
+  return null;
+}
+
 const MIN_SCALE = 1;
 const MAX_SCALE = 3;
 
@@ -210,7 +237,7 @@ export function resolveAvatarPosition(
   if (url && detailsRaw && typeof detailsRaw === "object" && !Array.isArray(detailsRaw)) {
     const map = (detailsRaw as Record<string, unknown>).profile_photo_positions;
     if (map && typeof map === "object" && !Array.isArray(map)) {
-      const parsed = parsePhotoPosition((map as Record<string, unknown>)[url]);
+      const parsed = lookupPhotoPositionInMap(map as Record<string, unknown>, url);
       if (parsed) return parsed;
     }
   }
@@ -235,7 +262,13 @@ export function syncAvatarPositionInDetails(
         !Array.isArray(details.profile_photo_positions)
           ? { ...(details.profile_photo_positions as Record<string, PhotoObjectPosition>) }
           : {};
-      map[url] = normalized;
+      const key = normalizeProfilePhotoUrlKey(url);
+      for (const entryKey of Object.keys(map)) {
+        if (normalizeProfilePhotoUrlKey(entryKey) === key && entryKey !== key) {
+          delete map[entryKey];
+        }
+      }
+      map[key] = normalized;
       details.profile_photo_positions = map;
     }
     return;
@@ -248,7 +281,7 @@ export function syncAvatarPositionInDetails(
 
   const map = details.profile_photo_positions;
   if (map && typeof map === "object" && !Array.isArray(map)) {
-    const parsed = parsePhotoPosition((map as Record<string, unknown>)[url]);
+    const parsed = lookupPhotoPositionInMap(map as Record<string, unknown>, url);
     if (parsed) {
       details.avatar_position = parsed;
     }
@@ -266,7 +299,7 @@ export function galleryPositionFromDetails(
   if (!map || typeof map !== "object" || Array.isArray(map)) {
     return { ...DEFAULT_PHOTO_POSITION };
   }
-  const parsed = parsePhotoPosition((map as Record<string, unknown>)[url]);
+  const parsed = lookupPhotoPositionInMap(map as Record<string, unknown>, url);
   return parsed ?? { ...DEFAULT_PHOTO_POSITION };
 }
 

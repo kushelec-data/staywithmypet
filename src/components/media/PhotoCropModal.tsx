@@ -5,18 +5,20 @@ import { useLanguage } from "@/context/LanguageContext";
 import {
   blobToCropFile,
   clampCropTransform,
-  compressImageForUpload,
   cropImageDimensions,
   cropOutputMimeType,
+  cropOutputSize,
   initialCropTransformForEditor,
   loadImageElement,
   PHOTO_LOAD_ERROR,
   renderCropPreviewCanvas,
+  renderCroppedImageBlob,
   type CropShape,
   type CropTransform,
 } from "@/lib/image-crop";
 import {
   cropTransformToPhotoPosition,
+  DEFAULT_PHOTO_POSITION,
   normalizePhotoPosition,
   photoPositionToCropTransform,
   type PhotoCropSaveResult,
@@ -229,13 +231,18 @@ export function PhotoCropModal({
     if (!img || !imageReady || saving || localSaving) return;
     setLocalSaving(true);
     try {
-      const { width, height } = cropImageDimensions(img);
-      const position = cropTransformToPhotoPosition(transform, width, height, VIEWPORT_SIZE);
       const mimeType = cropOutputMimeType(sourceFile?.type ?? "image/jpeg");
-      const blob = await compressImageForUpload(img, mimeType);
+      const blob = await renderCroppedImageBlob({
+        image: img,
+        transform,
+        viewportSize: VIEWPORT_SIZE,
+        outputSize: cropOutputSize(shape),
+        shape,
+        mimeType,
+      });
       const baseName = sourceFile?.name ?? "photo.jpg";
       const file = blobToCropFile(blob, baseName, mimeType);
-      await onSave({ file, position: normalizePhotoPosition(position) });
+      await onSave({ file, position: { ...DEFAULT_PHOTO_POSITION } });
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : t.media.saveCroppedError);
     } finally {
