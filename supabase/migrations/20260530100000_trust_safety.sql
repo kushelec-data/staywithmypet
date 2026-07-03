@@ -1,29 +1,17 @@
 -- Trust & Safety: user reports, blocks, and block checks on requests/messages
 
 -- ---------------------------------------------------------------------------
--- Helpers
+-- Tables (blocked_users before function that references it)
 -- ---------------------------------------------------------------------------
 
-create or replace function public.users_are_blocked(user_a uuid, user_b uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.blocked_users b
-    where (b.blocker_id = user_a and b.blocked_user_id = user_b)
-       or (b.blocker_id = user_b and b.blocked_user_id = user_a)
-  );
-$$;
-
-grant execute on function public.users_are_blocked(uuid, uuid) to authenticated;
-
--- ---------------------------------------------------------------------------
--- Tables
--- ---------------------------------------------------------------------------
+create table if not exists public.blocked_users (
+  id uuid primary key default gen_random_uuid(),
+  blocker_id uuid not null references public.profiles (id) on delete cascade,
+  blocked_user_id uuid not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default timezone('utc', now()),
+  constraint blocked_users_no_self check (blocker_id <> blocked_user_id),
+  constraint blocked_users_unique_pair unique (blocker_id, blocked_user_id)
+);
 
 create table if not exists public.reports (
   id uuid primary key default gen_random_uuid(),
@@ -38,44 +26,14 @@ create table if not exists public.reports (
   constraint reports_reason_not_empty check (char_length(trim(reason)) > 0)
 );
 
+create index if not exists blocked_users_blocker_id_idx on public.blocked_users (blocker_id);
+create index if not exists blocked_users_blocked_user_id_idx on public.blocked_users (blocked_user_id);
 create index if not exists reports_reporter_id_idx on public.reports (reporter_id);
 create index if not exists reports_reported_user_id_idx on public.reports (reported_user_id);
 create index if not exists reports_status_idx on public.reports (status);
 
-create table if not exists public.blocked_users (
-  id uuid primary key default gen_random_uuid(),
-  blocker_id uuid not null references public.profiles (id) on delete cascade,
-  blocked_user_id uuid not null references public.profiles (id) on delete cascade,
-  created_at timestamptz not null default timezone('utc', now()),
-  constraint blocked_users_no_self check (blocker_id <> blocked_user_id),
-  constraint blocked_users_unique_pair unique (blocker_id, blocked_user_id)
-);
-
-create index if not exists blocked_users_blocker_id_idx on public.blocked_users (blocker_id);
-create index if not exists blocked_users_blocked_user_id_idx on public.blocked_users (blocked_user_id);
-
-alter table public.reports enable row level security;
 alter table public.blocked_users enable row level security;
-
--- ---------------------------------------------------------------------------
--- RLS: reports
--- ---------------------------------------------------------------------------
-
-drop policy if exists reports_select_own on public.reports;
-drop policy if exists reports_insert_own on public.reports;
-
-create policy reports_select_own
-  on public.reports for select
-  to authenticated
-  using (reporter_id = (select auth.uid()));
-
-create policy reports_insert_own
-  on public.reports for insert
-  to authenticated
-  with check (
-    reporter_id = (select auth.uid())
-    and reported_user_id <> (select auth.uid())
-  );
+alter table public.reports enable row level security;
 
 -- ---------------------------------------------------------------------------
 -- RLS: blocked_users
@@ -103,8 +61,49 @@ create policy blocked_users_delete_own
   to authenticated
   using (blocker_id = (select auth.uid()));
 
-grant select, insert on public.reports to authenticated;
+-- ---------------------------------------------------------------------------
+-- RLS: reports
+-- ---------------------------------------------------------------------------
+
+drop policy if exists reports_select_own on public.reports;
+drop policy if exists reports_insert_own on public.reports;
+
+create policy reports_select_own
+  on public.reports for select
+  to authenticated
+  using (reporter_id = (select auth.uid()));
+
+create policy reports_insert_own
+  on public.reports for insert
+  to authenticated
+  with check (
+    reporter_id = (select auth.uid())
+    and reported_user_id <> (select auth.uid())
+  );
+
 grant select, insert, delete on public.blocked_users to authenticated;
+grant select, insert on public.reports to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Helpers
+-- ---------------------------------------------------------------------------
+
+create or replace function public.users_are_blocked(user_a uuid, user_b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.blocked_users b
+    where (b.blocker_id = user_a and b.blocked_user_id = user_b)
+       or (b.blocker_id = user_b and b.blocked_user_id = user_a)
+  );
+$$;
+
+grant execute on function public.users_are_blocked(uuid, uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Block checks on requests & messages
@@ -137,19 +136,26 @@ create policy requests_insert_sender
   );
 
 drop policy if exists messages_insert_participant on public.messages;
+drop policy if exists "messages_insert_participant" on public.messages;
 
 create policy messages_insert_participant
   on public.messages for insert
   to authenticated
   with check (
     sender_id = (select auth.uid())
-    and public.is_conversation_participant(conversation_id)
-    and not exists (
+    and exists (
       select 1
       from public.conversations c
-      join public.requests r on r.id = c.request_id
+      inner join public.requests r on r.id = c.request_id
       where c.id = conversation_id
-        and public.users_are_blocked(
+        and r.status in ('pending', 'accepted', 'completed')
+        and (
+          c.pet_parent_id = (select auth.uid())
+          or c.pet_friend_id = (select auth.uid())
+          or r.pet_parent_id = (select auth.uid())
+          or r.pet_friend_id = (select auth.uid())
+        )
+        and not public.users_are_blocked(
           (select auth.uid()),
           case
             when r.pet_parent_id = (select auth.uid()) then r.pet_friend_id

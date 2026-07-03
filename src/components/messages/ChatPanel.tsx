@@ -34,11 +34,12 @@ import {
   type ChatMessage,
   type ConversationSummary,
 } from "@/lib/messaging";
-import { blockUser, formatTrustSafetyError, isUserBlocked } from "@/lib/trust-safety";
+import { blockUser, fetchBlockedUserIds, formatTrustSafetyError, isUserBlocked, unblockUser } from "@/lib/trust-safety";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { useProfile } from "@/context/ProfileContext";
 import { activeModeToMembershipRole } from "@/lib/membership";
@@ -58,6 +59,8 @@ type ChatPanelProps = {
 };
 
 const QUICK_EMOJIS = ["😊", "👍", "🐾", "❤️", "🙏"];
+
+const SUCCESS_TOAST_MS = 4000;
 
 export function ChatPanel({
   conversation,
@@ -86,7 +89,10 @@ export function ChatPanel({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
+  const [blockedByMe, setBlockedByMe] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [toastMounted, setToastMounted] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -121,8 +127,19 @@ export function ChatPanel({
   }, []);
 
   useEffect(() => {
+    setToastMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!successToast) return;
+    const timer = window.setTimeout(() => setSuccessToast(null), SUCCESS_TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [successToast]);
+
+  useEffect(() => {
     prefersSmoothScrollRef.current = false;
     setUpgradeOpen(false);
+    setSuccessToast(null);
   }, [conversationId]);
 
   useEffect(() => {
@@ -137,13 +154,15 @@ export function ChatPanel({
       prefersSmoothScrollRef.current = false;
 
       try {
-        const [rows, isBlocked] = await Promise.all([
+        const [rows, isBlockedEitherWay, blockedIds] = await Promise.all([
           fetchMessages(supabase, conversationId, userId),
           isUserBlocked(supabase, userId, conversation.otherPartyId),
+          fetchBlockedUserIds(supabase, userId),
         ]);
         if (cancelled) return;
         setMessages(rows);
-        setBlocked(isBlocked);
+        setBlocked(isBlockedEitherWay);
+        setBlockedByMe(blockedIds.has(conversation.otherPartyId));
         await markConversationFullyRead(supabase, conversation, userId);
         onConversationRead?.();
       } catch (err) {
@@ -187,13 +206,29 @@ export function ChatPanel({
     prefersSmoothScrollRef.current = true;
   }, [messages.length, loading, conversationId, scrollThreadToBottom]);
 
-  async function handleBlock() {
+  async function handleBlockToggle() {
+    if (blockedByMe) {
+      try {
+        setError(null);
+        await unblockUser(supabase, userId, conversation.otherPartyId);
+        setBlockedByMe(false);
+        const stillBlocked = await isUserBlocked(supabase, userId, conversation.otherPartyId);
+        setBlocked(stillBlocked);
+        setSuccessToast(ts.unblockSuccess);
+      } catch (err) {
+        setError(formatTrustSafetyError(err));
+      }
+      return;
+    }
+
     const confirmed = window.confirm(
       ts.blockConfirm.replace("{name}", conversation.otherPartyName),
     );
     if (!confirmed) return;
     try {
+      setError(null);
       await blockUser(supabase, userId, conversation.otherPartyId);
+      setBlockedByMe(true);
       setBlocked(true);
     } catch (err) {
       setError(formatTrustSafetyError(err));
@@ -331,15 +366,13 @@ export function ChatPanel({
             >
               {ts.reportUser}
             </button>
-            {!blocked ? (
-              <button
-                type="button"
-                onClick={() => void handleBlock()}
-                className={`inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
-              >
-                {ts.blockUser}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleBlockToggle()}
+              className={`inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
+            >
+              {blockedByMe ? ts.unblockUser : ts.blockUser}
+            </button>
           </div>
         </div>
       </header>
@@ -461,6 +494,21 @@ export function ChatPanel({
         returnTo={membershipReturnTo}
         onClose={() => setUpgradeOpen(false)}
       />
+
+      {toastMounted && successToast
+        ? createPortal(
+            <div
+              className="pointer-events-none fixed inset-x-0 bottom-6 z-[99999] flex justify-center px-3 sm:bottom-8"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="rounded-2xl border border-brand-teal/30 bg-mint/90 px-4 py-3 text-sm font-medium text-brand-teal shadow-lg backdrop-blur-sm">
+                {successToast}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
