@@ -22,7 +22,7 @@ export const MESSAGES_PANEL_CLASS =
   "messages-area flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#E4DED2] bg-[#F9F6EF] shadow-[0_1px_2px_rgba(46,107,63,0.05)]";
 
 export const MESSAGES_CHAT_ROOT_CLASS =
-  "flex h-full min-h-0 flex-1 flex-col bg-[#F9F6EF] text-[#2B2B2B]";
+  "flex h-full min-h-0 min-w-0 flex-1 flex-col bg-[#F9F6EF] text-[#2B2B2B]";
 
 export const MESSAGES_HEADER_CLASS =
   "sticky top-0 z-10 shrink-0 border-b border-[#E4DED2] bg-[#F6F2EA]/95 px-3 py-2.5 text-[#2B2B2B] backdrop-blur-sm sm:px-4";

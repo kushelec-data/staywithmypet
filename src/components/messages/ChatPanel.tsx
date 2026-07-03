@@ -288,9 +288,48 @@ export function ChatPanel({
         ? m.inputClosed
         : m.typeMessage;
 
+  const bookingMeta = (
+    <>
+      <span className="font-medium">{conversation.otherPartyName}</span>
+      {conversationDateLabel ? (
+        <span className={MESSAGES_META_TEXT_MUTED_CLASS}> · {conversationDateLabel}</span>
+      ) : null}
+      {conversation.careType ? (
+        <span className={MESSAGES_META_TEXT_MUTED_CLASS}> · {conversation.careType}</span>
+      ) : null}
+    </>
+  );
+
+  const headerActions = (
+    <>
+      {conversation.bookingId ? (
+        <Link
+          href={bookingDetailsHref(conversation.bookingId)}
+          className="inline-flex items-center rounded-full px-2.5 py-1.5 text-[0.6875rem] font-medium text-brand-teal hover:bg-[#DDEEDF] sm:px-2 sm:py-1"
+        >
+          {m.viewBooking}
+        </Link>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => setReportOpen(true)}
+        className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-[0.6875rem] font-medium sm:px-2 sm:py-1 ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
+      >
+        {ts.reportUser}
+      </button>
+      <button
+        type="button"
+        onClick={() => void handleBlockToggle()}
+        className={`inline-flex items-center rounded-full px-2.5 py-1.5 text-[0.6875rem] font-medium sm:px-2 sm:py-1 ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
+      >
+        {blockedByMe ? ts.unblockUser : ts.blockUser}
+      </button>
+    </>
+  );
+
   return (
     <div className={MESSAGES_CHAT_ROOT_CLASS}>
-      <header className={MESSAGES_HEADER_CLASS}>
+      <header className={`${MESSAGES_HEADER_CLASS} flex flex-col gap-2`}>
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -324,8 +363,8 @@ export function ChatPanel({
             </div>
           )}
 
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-1">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
               <h2 className="min-w-0 truncate text-sm font-semibold text-[#2B2B2B]">{displayName}</h2>
               <span
                 className={`${statusDisplay.badgeClasses} w-fit max-w-full shrink-0 !px-1.5 !py-0 !text-[0.5625rem]`}
@@ -333,48 +372,23 @@ export function ChatPanel({
                 {statusDisplay.label}
               </span>
             </div>
-            <p className={`min-w-0 text-[0.6875rem] leading-snug ${MESSAGES_META_TEXT_CLASS}`}>
-              <span className="font-medium">{conversation.otherPartyName}</span>
-              {conversationDateLabel ? (
-                <span className={`break-words ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
-                  {" "}
-                  · {conversationDateLabel}
-                </span>
-              ) : null}
-              {conversation.careType ? (
-                <span className={`break-words ${MESSAGES_META_TEXT_MUTED_CLASS}`}>
-                  {" "}
-                  · {conversation.careType}
-                </span>
-              ) : null}
+            <p
+              className={`mt-0.5 hidden min-w-0 text-[0.6875rem] leading-snug [overflow-wrap:anywhere] lg:block ${MESSAGES_META_TEXT_CLASS}`}
+            >
+              {bookingMeta}
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5">
-            {conversation.bookingId ? (
-              <Link
-                href={bookingDetailsHref(conversation.bookingId)}
-                className="inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium text-brand-teal hover:bg-[#DDEEDF]"
-              >
-                {m.viewBooking}
-              </Link>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setReportOpen(true)}
-              className={`inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
-            >
-              {ts.reportUser}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleBlockToggle()}
-              className={`inline-flex items-center rounded-full px-2 py-1 text-[0.6875rem] font-medium ${MESSAGES_META_TEXT_CLASS} ${MESSAGES_SOFT_HOVER_CLASS}`}
-            >
-              {blockedByMe ? ts.unblockUser : ts.blockUser}
-            </button>
-          </div>
+          <div className="hidden shrink-0 items-center gap-0.5 lg:flex">{headerActions}</div>
         </div>
+
+        <p
+          className={`min-w-0 pl-[5.25rem] text-[0.6875rem] leading-snug [overflow-wrap:anywhere] lg:hidden ${MESSAGES_META_TEXT_CLASS}`}
+        >
+          {bookingMeta}
+        </p>
+
+        <div className="flex min-w-0 flex-wrap items-center gap-1 sm:gap-2 lg:hidden">{headerActions}</div>
       </header>
 
       {cancelledBookingGraceActive && cancelledGraceEndLabel ? (
@@ -420,9 +434,9 @@ export function ChatPanel({
         </p>
       ) : null}
 
-      <form onSubmit={handleSend} className={MESSAGES_INPUT_BAR_CLASS}>
+      <form onSubmit={handleSend} className={`${MESSAGES_INPUT_BAR_CLASS} min-w-0`}>
         {emojiOpen ? (
-          <div className="mb-1.5 flex gap-1">
+          <div className="mb-1.5 flex flex-wrap gap-1">
             {QUICK_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
@@ -435,12 +449,12 @@ export function ChatPanel({
             ))}
           </div>
         ) : null}
-        <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 items-end gap-1 sm:gap-1.5">
           <button
             type="button"
             onClick={() => setEmojiOpen((v) => !v)}
             disabled={!canSend}
-            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base ${MESSAGES_META_TEXT_MUTED_CLASS} ${MESSAGES_SOFT_HOVER_CLASS} disabled:opacity-40`}
+            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base sm:h-10 sm:w-10 ${MESSAGES_META_TEXT_MUTED_CLASS} ${MESSAGES_SOFT_HOVER_CLASS} disabled:opacity-40`}
             aria-label={t.messagesUi.insertEmoji}
           >
             😊
@@ -466,7 +480,7 @@ export function ChatPanel({
           <button
             type="submit"
             disabled={sending || !canSend || !draft.trim()}
-            className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-brand-teal px-4 text-xs font-semibold text-white hover:bg-brand-teal-hover disabled:opacity-50"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-brand-teal px-3 text-xs font-semibold text-white hover:bg-brand-teal-hover disabled:opacity-50 sm:h-10 sm:px-4"
           >
             {sending ? m.sending : m.send}
           </button>

@@ -192,7 +192,7 @@ export function MessagesPageContent() {
     >
       <div className="flex h-[min(78dvh,720px)] min-h-[min(320px,65dvh)] w-full max-w-full min-w-0 flex-col gap-3 overflow-hidden sm:min-h-[420px] lg:flex-row lg:gap-4">
         <aside
-          className={`${MESSAGES_PANEL_CLASS} w-full shrink-0 lg:w-[340px] ${
+          className={`${MESSAGES_PANEL_CLASS} w-full min-w-0 shrink-0 lg:w-[340px] ${
             showMobileChat ? "hidden lg:flex" : "flex"
           }`}
         >
@@ -234,7 +234,7 @@ export function MessagesPageContent() {
         </aside>
 
         <section
-          className={`${MESSAGES_PANEL_CLASS} min-h-0 min-w-0 flex-1 ${
+          className={`${MESSAGES_PANEL_CLASS} min-h-0 w-full min-w-0 flex-1 ${
             showMobileChat ? "flex" : "hidden lg:flex"
           }`}
         >

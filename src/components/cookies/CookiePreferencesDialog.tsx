@@ -21,18 +21,18 @@ function PreferenceToggle({
   const { t } = useLanguage();
 
   return (
-    <div className="rounded-2xl border border-border bg-surface/60 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">{label}</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">{description}</p>
+    <div className="rounded-2xl border border-border bg-surface/60 p-3 sm:p-4">
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1 pr-1">
+          <p className="text-sm font-semibold text-foreground [overflow-wrap:anywhere]">{label}</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted [overflow-wrap:anywhere]">{description}</p>
         </div>
         {disabled ? (
           <span className="shrink-0 rounded-full bg-mint/50 px-2.5 py-1 text-xs font-semibold text-brand-teal">
             {t.cookieConsent.alwaysOn}
           </span>
         ) : (
-          <label className="flex shrink-0 cursor-pointer items-center gap-2">
+          <label className="flex shrink-0 cursor-pointer items-center pl-1">
             <span className="sr-only">{label}</span>
             <input
               type="checkbox"
@@ -75,10 +75,10 @@ export function CookiePreferencesDialog() {
   return (
     <dialog
       ref={dialogRef}
-      className="w-[min(100%,28rem)] max-w-lg rounded-3xl border border-black/10 bg-surface p-0 shadow-xl backdrop:bg-black/40"
+      className="fixed inset-0 z-[100] m-auto w-[min(100%,28rem)] max-w-[calc(100vw-24px)] overflow-hidden rounded-3xl border border-black/10 bg-surface p-0 shadow-xl backdrop:bg-black/40"
       onClose={closePreferences}
     >
-      <div className="px-5 py-5 sm:px-6">
+      <div className="max-h-[calc(100dvh-24px)] overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
         <h2 className="font-heading text-lg font-bold text-foreground">{c.preferencesTitle}</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">{c.body}</p>
 
