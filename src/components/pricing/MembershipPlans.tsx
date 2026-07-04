@@ -13,6 +13,7 @@ export type PricingPlan = {
   id: string;
   name: string;
   price: string;
+  dailyValue?: string;
   features: readonly string[];
   popular?: boolean;
   stripePriceId?: string | null;
@@ -190,6 +191,15 @@ function PlanCard({
       >
         {plan.price}
       </p>
+      {plan.dailyValue ? (
+        <p
+          className={`mt-1 text-sm font-semibold text-[#2E6B3F] ${
+            isAccount ? "" : "sm:mt-1.5"
+          }`}
+        >
+          {plan.dailyValue}
+        </p>
+      ) : null}
       {isCurrent && activePlanEndDate && activePlanEndDateLabel ? (
         <p className={`mt-2 text-sm text-muted ${isAccount ? "" : "sm:mt-3"}`}>
           <span className="font-medium text-foreground">{activePlanEndDateLabel}: </span>
@@ -295,11 +305,15 @@ export function activeModeToPricingTab(mode: ProfileActiveMode): "owner" | "frie
   return mode === "pet_friend" ? "friend" : "owner";
 }
 
-function membershipPlansToPricing(plans: MembershipPlanDefinition[]): PricingPlan[] {
+function membershipPlansToPricing(
+  plans: MembershipPlanDefinition[],
+  dailyValueById: Record<string, string | undefined>,
+): PricingPlan[] {
   return plans.map((p) => ({
     id: p.plan_id,
     name: p.plan_name,
     price: p.price,
+    dailyValue: dailyValueById[p.plan_id],
     features: p.features,
     popular: p.popular,
     stripePriceId: p.future_stripe_price_id,
@@ -338,13 +352,26 @@ export function MembershipPlans({
   }, [modeFilter, initialTab]);
 
   const i18nPlans = tab === "owner" ? t.pricing.petParentPlans : t.pricing.petFriendPlans;
+  const dailyValueById = Object.fromEntries(
+    i18nPlans.map((plan) => [
+      plan.id,
+      "dailyValue" in plan ? plan.dailyValue : undefined,
+    ]),
+  ) as Record<string, string | undefined>;
   const rolePlans =
     plansProp?.filter((p) => p.role === (pricingTab === "owner" ? "pet_parent" : "pet_friend")) ??
     [];
-  const plans =
+  const plans: PricingPlan[] =
     variant === "account" && rolePlans.length > 0
-      ? membershipPlansToPricing(rolePlans)
-      : i18nPlans;
+      ? membershipPlansToPricing(rolePlans, dailyValueById)
+      : i18nPlans.map((plan) => ({
+          id: plan.id,
+          name: plan.name,
+          price: plan.price,
+          features: plan.features,
+          popular: "popular" in plan ? plan.popular : undefined,
+          dailyValue: "dailyValue" in plan ? plan.dailyValue : undefined,
+        }));
 
   const effectiveCheckoutRole: MembershipRole | undefined =
     checkoutRole ?? (pricingTab === "owner" ? "pet_parent" : "pet_friend");

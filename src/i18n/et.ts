@@ -1209,6 +1209,7 @@ export const et = {
         id: "3-month-owner",
         name: "3 kuud",
         price: "€79",
+        dailyValue: "Ainult 0,88 €/päev",
         popular: true,
         features: [
           "Piiramatu arv hoiukokkuleppeid",
@@ -1222,6 +1223,7 @@ export const et = {
         id: "1-year-owner",
         name: "1 aasta",
         price: "€249",
+        dailyValue: "Ainult 0,68 €/päev",
         features: [
           "Piiramatu arv hoiukokkuleppeid aasta vältel",
           "Piiramatu suhtlus teiste liikmetega",
@@ -1247,6 +1249,7 @@ export const et = {
         id: "3-month-friend",
         name: "3 kuud",
         price: "€49",
+        dailyValue: "Ainult 0,54 €/päev",
         popular: true,
         features: [
           "Piiramatud kohtumised kolme kuu jooksul",
@@ -1260,6 +1263,7 @@ export const et = {
         id: "1-year-friend",
         name: "1 aasta",
         price: "€119",
+        dailyValue: "Ainult 0,33 €/päev",
         features: [
           "Piiramatud kohtumised kogu aasta jooksul",
           "Piiramatu suhtlus ja uued tutvused",

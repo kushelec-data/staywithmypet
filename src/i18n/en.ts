@@ -1200,6 +1200,7 @@ export const en = {
         id: "3-month-owner",
         name: "3 Month",
         price: "€79",
+        dailyValue: "Only €0.88/day",
         popular: true,
         features: [
           "Unlimited bookings for 3 months",
@@ -1213,6 +1214,7 @@ export const en = {
         id: "1-year-owner",
         name: "1 Year",
         price: "€249",
+        dailyValue: "Only €0.68/day",
         features: [
           "Unlimited bookings for 12 months",
           "Unlimited messaging and connections",
@@ -1238,6 +1240,7 @@ export const en = {
         id: "3-month-friend",
         name: "3 Month",
         price: "€49",
+        dailyValue: "Only €0.54/day",
         popular: true,
         features: [
           "Unlimited meetups for 3 months",
@@ -1251,6 +1254,7 @@ export const en = {
         id: "1-year-friend",
         name: "1 Year",
         price: "€119",
+        dailyValue: "Only €0.33/day",
         features: [
           "Unlimited meetups for a full year",
           "Unlimited messaging and new connections",
