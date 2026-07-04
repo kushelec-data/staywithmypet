@@ -1,13 +1,30 @@
 import { parseISODateLocal } from "@/lib/pet-availability";
 import { isIsoDateString } from "@/lib/pet-age";
 
-const EUROPEAN_DOB = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+const EUROPEAN_DOB = /^(\d{2})[./](\d{2})[./](\d{4})$/;
 
 export type PetDobValidationReason = "invalid_format" | "invalid_date" | "future";
 
 export type PetDobValidationResult =
   | { ok: true; iso: string }
   | { ok: false; reason: PetDobValidationReason };
+
+/** Progressive DD.MM.YYYY mask from typed or pasted input (digits, dots, slashes, or ISO). */
+export function formatPetDobInput(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+
+  if (isIsoDateString(trimmed)) {
+    return formatIsoDateToEuropean(trimmed);
+  }
+
+  const digits = trimmed.replace(/\D/g, "").slice(0, 8);
+  if (!digits) return "";
+
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
+}
 
 /** ISO YYYY-MM-DD → DD.MM.YYYY for display. */
 export function formatIsoDateToEuropean(iso: string | null | undefined): string {

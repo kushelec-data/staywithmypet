@@ -603,6 +603,7 @@ export const en = {
       errorSelectBreed: "Please select a breed.",
       errorEnterBreed: "Please enter the breed.",
       dobPlaceholder: "DD.MM.YYYY",
+      dobHint: "Enter date as DD.MM.YYYY",
       dobInvalidFormat: "Enter date as DD.MM.YYYY.",
       dobInvalidDate: "That date is not valid.",
       dobFuture: "Date of birth cannot be in the future.",

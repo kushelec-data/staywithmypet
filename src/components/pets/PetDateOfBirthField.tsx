@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/context/LanguageContext";
 import {
+  formatPetDobInput,
   validatePetDateOfBirthDisplay,
   type PetDobValidationReason,
 } from "@/lib/pet-date-of-birth";
@@ -70,16 +71,16 @@ export function PetDateOfBirthField({
       <input
         id={id}
         type="text"
-        inputMode="numeric"
+        inputMode="text"
         autoComplete="bday"
         value={display}
         placeholder={placeholder ?? copy.dobPlaceholder}
         disabled={disabled}
         className="input-field mt-1"
         aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${id}-error` : undefined}
+        aria-describedby={error ? `${id}-error` : `${id}-hint`}
         onChange={(e) => {
-          const next = e.target.value;
+          const next = formatPetDobInput(e.target.value);
           onDisplayChange(next);
           applyValidation(next, false);
         }}
@@ -89,7 +90,11 @@ export function PetDateOfBirthField({
         <p id={`${id}-error`} className="mt-1 text-sm text-red-500" role="alert">
           {error}
         </p>
-      ) : null}
+      ) : (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-muted">
+          {copy.dobHint}
+        </p>
+      )}
     </div>
   );
 }

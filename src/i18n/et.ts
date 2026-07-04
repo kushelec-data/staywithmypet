@@ -605,6 +605,7 @@ export const et = {
       errorSelectBreed: "Palun vali tõug.",
       errorEnterBreed: "Palun sisesta tõug.",
       dobPlaceholder: "PP.KK.AAAA",
+      dobHint: "Sisesta kuupäev kujul PP.KK.AAAA",
       dobInvalidFormat: "Sisesta kuupäev kujul PP.KK.AAAA.",
       dobInvalidDate: "See kuupäev ei ole kehtiv.",
       dobFuture: "Sünnikuupäev ei tohi olla tulevikus.",
