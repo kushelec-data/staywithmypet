@@ -16,3 +16,9 @@ export function getAuthCallbackUrl(nextPath: string) {
   const origin = getAuthRedirectOrigin();
   return `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 }
+
+/** Email confirmation and recovery links (signup confirm, password reset). */
+export function getAuthConfirmUrl(nextPath: string) {
+  const origin = getAuthRedirectOrigin();
+  return `${origin}/auth/confirm?next=${encodeURIComponent(nextPath)}`;
+}

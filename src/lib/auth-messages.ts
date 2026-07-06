@@ -2,11 +2,18 @@ type AuthMessageKey =
   | "errorGeneric"
   | "invalidCredentials"
   | "emailAlreadyRegistered"
+  | "emailNotConfirmed"
   | "weakPassword"
   | "oauthFailed"
   | "profileCreateFailed";
 
 type AuthMessages = Record<AuthMessageKey, string>;
+
+export function isEmailNotConfirmedError(error: unknown): boolean {
+  return (
+    error instanceof Error && error.message.toLowerCase().includes("email not confirmed")
+  );
+}
 
 export function formatAuthError(error: unknown, messages: AuthMessages): string {
   if (!(error instanceof Error)) {
@@ -15,6 +22,9 @@ export function formatAuthError(error: unknown, messages: AuthMessages): string 
 
   const msg = error.message.toLowerCase();
 
+  if (msg.includes("email not confirmed")) {
+    return messages.emailNotConfirmed;
+  }
   if (msg.includes("invalid login credentials") || msg.includes("invalid email or password")) {
     return messages.invalidCredentials;
   }

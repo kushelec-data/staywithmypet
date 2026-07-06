@@ -8,10 +8,10 @@ import { Logo } from "@/components/ui/Logo";
 import { PasswordPolicyChecklist } from "@/components/auth/PasswordPolicyChecklist";
 import { useLanguage } from "@/context/LanguageContext";
 import { completeAuthSession } from "@/lib/auth-flow";
-import { formatAuthError } from "@/lib/auth-messages";
+import { formatAuthError, isEmailNotConfirmedError } from "@/lib/auth-messages";
 import { normalizeFullName } from "@/lib/name-format";
 import { DASHBOARD_PATH, resolveLoginReturnPath, resolvePostLoginPath } from "@/lib/auth-routing";
-import { getAuthCallbackUrl } from "@/lib/auth";
+import { getAuthCallbackUrl, getAuthConfirmUrl } from "@/lib/auth";
 import {
   buildSignupDebugSnapshot,
   isSignupDebugEnabled,
@@ -52,6 +52,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       errorGeneric: t.auth.errorGeneric,
       invalidCredentials: t.auth.invalidCredentials,
       emailAlreadyRegistered: t.auth.emailAlreadyRegistered,
+      emailNotConfirmed: t.auth.emailNotConfirmed,
       weakPassword: t.auth.weakPassword,
       oauthFailed: t.auth.oauthFailed,
       profileCreateFailed: t.auth.profileCreateFailed,
@@ -62,6 +63,11 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [signupDebug, setSignupDebug] = useState<SignupDebugSnapshot | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
   const showSignupDebug = isSignupDebugEnabled();
 
   const isSubmitActive = useCallback(
@@ -111,6 +117,35 @@ export function AuthForm({ mode }: AuthFormProps) {
     });
   }
 
+  async function resendVerificationEmail(email: string) {
+    setResendLoading(true);
+    setResendSuccess(null);
+    setResendError(null);
+
+    try {
+      const limit = checkRateLimit("auth_resend", email.toLowerCase() || "anonymous");
+      if (!limit.ok) {
+        setResendError(rateLimitMessage(limit.retryAfterSec));
+        return;
+      }
+
+      const emailRedirectTo = getAuthConfirmUrl(DASHBOARD_PATH);
+      const { error: resendErr } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo },
+      });
+
+      if (resendErr) throw resendErr;
+      setResendSuccess(t.auth.verificationEmailSent);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t.auth.errorGeneric;
+      setResendError(message || t.auth.errorGeneric);
+    } finally {
+      setResendLoading(false);
+    }
+  }
+
   async function goAfterAuth(message: string, generation: number) {
     if (!isSubmitActive(generation)) return;
     setSuccess(message);
@@ -147,6 +182,9 @@ export function AuthForm({ mode }: AuthFormProps) {
     setSuccess(null);
     setInfo(null);
     setSignupDebug(null);
+    setEmailNotConfirmed(false);
+    setResendSuccess(null);
+    setResendError(null);
     setLoading(true);
 
     const form = new FormData(e.currentTarget);
@@ -172,7 +210,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           if (isSubmitActive(generation)) setError(t.auth.weakPassword);
           return;
         }
-        const emailRedirectTo = getAuthCallbackUrl(DASHBOARD_PATH);
+        const emailRedirectTo = getAuthConfirmUrl(DASHBOARD_PATH);
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password: passwordField,
@@ -202,6 +240,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
 
         if (data.user && !data.session) {
+          setVerificationEmail(email);
           setInfo(t.auth.checkEmail);
           return;
         }
@@ -227,6 +266,10 @@ export function AuthForm({ mode }: AuthFormProps) {
       if (isSignup) {
         const message = err instanceof Error ? err.message : t.auth.errorGeneric;
         setError(message || t.auth.errorGeneric);
+      } else if (isEmailNotConfirmedError(err)) {
+        setVerificationEmail(email);
+        setEmailNotConfirmed(true);
+        setError(formatAuthError(err, authMessages));
       } else {
         setError(formatAuthError(err, authMessages));
       }
@@ -281,9 +324,30 @@ export function AuthForm({ mode }: AuthFormProps) {
             <p className="mt-2 text-sm text-brand-teal" role="status">
               {info}
             </p>
-            <Button href="/login" className="mt-6" size="lg">
-              {t.auth.login.submit}
-            </Button>
+            {resendSuccess ? (
+              <p className={`mt-3 ${STATUS_ALERT_SUCCESS_CLASS}`} role="status">
+                {resendSuccess}
+              </p>
+            ) : null}
+            {resendError ? (
+              <p className={`mt-3 ${STATUS_ALERT_ERROR_CLASS}`} role="alert">
+                {resendError}
+              </p>
+            ) : null}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                disabled={resendLoading || !verificationEmail}
+                onClick={() => void resendVerificationEmail(verificationEmail)}
+              >
+                {resendLoading ? t.auth.pleaseWait : t.auth.resendVerificationEmail}
+              </Button>
+              <Button href="/login" size="lg">
+                {t.auth.login.submit}
+              </Button>
+            </div>
             {showSignupDebug && signupDebug ? <SignupDebugPanel snapshot={signupDebug} /> : null}
           </div>
         </div>
@@ -396,6 +460,30 @@ export function AuthForm({ mode }: AuthFormProps) {
               <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
                 {error}
               </p>
+            ) : null}
+            {emailNotConfirmed && verificationEmail ? (
+              <div className="space-y-3">
+                {resendSuccess ? (
+                  <p className={STATUS_ALERT_SUCCESS_CLASS} role="status">
+                    {resendSuccess}
+                  </p>
+                ) : null}
+                {resendError ? (
+                  <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
+                    {resendError}
+                  </p>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  size="lg"
+                  disabled={resendLoading}
+                  onClick={() => void resendVerificationEmail(verificationEmail)}
+                >
+                  {resendLoading ? t.auth.pleaseWait : t.auth.resendVerificationEmail}
+                </Button>
+              </div>
             ) : null}
             {showSignupDebug && isSignup && signupDebug ? (
               <SignupDebugPanel snapshot={signupDebug} />

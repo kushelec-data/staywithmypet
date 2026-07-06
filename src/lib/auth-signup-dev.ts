@@ -1,10 +1,8 @@
-import { DASHBOARD_PATH } from "@/lib/auth-routing";
-import { getAuthCallbackUrl } from "@/lib/auth";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 
-/** Production callback URL used for Supabase redirect allowlist audits. */
+/** Production confirm URL used for Supabase redirect allowlist audits. */
 export const EXPECTED_PRODUCTION_SIGNUP_CALLBACK =
-  "https://staywithmypet-5296.vercel.app/auth/callback?next=%2Fdashboard";
+  "https://staywithmypet-5296.vercel.app/auth/confirm?next=%2Fdashboard";
 
 export type SignupDebugSnapshot = {
   hasUser: boolean;

@@ -1955,6 +1955,11 @@ export const en = {
     loginSuccess: "Welcome back! Taking you to your dashboard…",
     checkEmail:
       "Account created! Check your email for a confirmation link, then log in.",
+    resendVerificationEmail: "Resend verification email",
+    verificationEmailSent:
+      "Verification email sent. Check your inbox and spam folder.",
+    emailNotConfirmed:
+      "Email not confirmed. Please verify your email or resend the verification email.",
     login: {
       title: "Welcome back",
       subtitle: "Log in to manage your pets and bookings.",

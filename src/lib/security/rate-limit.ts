@@ -8,6 +8,7 @@ const buckets = new Map<string, Bucket>();
 export type RateLimitAction =
   | "auth_login"
   | "auth_signup"
+  | "auth_resend"
   | "care_request"
   | "message_send"
   | "file_upload"
@@ -17,6 +18,7 @@ export type RateLimitAction =
 const LIMITS: Record<RateLimitAction, { max: number; windowMs: number }> = {
   auth_login: { max: 10, windowMs: 15 * 60 * 1000 },
   auth_signup: { max: 5, windowMs: 60 * 60 * 1000 },
+  auth_resend: { max: 5, windowMs: 60 * 60 * 1000 },
   care_request: { max: 20, windowMs: 60 * 60 * 1000 },
   message_send: { max: 60, windowMs: 60 * 60 * 1000 },
   file_upload: { max: 30, windowMs: 60 * 60 * 1000 },

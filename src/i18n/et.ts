@@ -1959,6 +1959,11 @@ export const et = {
     loginSuccess: "Tere tulemast tagasi! Suuname sind juhtpaneelile…",
     checkEmail:
       "Konto loodud! Kontrolli oma e-posti kinnituse lingi jaoks ja logi seejärel sisse.",
+    resendVerificationEmail: "Saada kinnituse e-kiri uuesti",
+    verificationEmailSent:
+      "Kinnituse e-kiri saadeti. Kontrolli postkasti ja rämpsposti.",
+    emailNotConfirmed:
+      "E-post ei ole kinnitatud. Palun kinnita oma e-post või saada kinnituse e-kiri uuesti.",
     login: {
       title: "Tere tulemast tagasi",
       subtitle: "Logi sisse, et hallata lemmikuid ja broneeringuid.",
