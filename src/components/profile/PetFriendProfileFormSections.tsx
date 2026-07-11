@@ -29,6 +29,8 @@ import {
   toProfileStringChipOptions,
 } from "@/lib/profile-option-labels";
 import { translateProfileHelper, translateProfileLabel } from "@/lib/profile-translations";
+import type { ProfileRequiredFieldId } from "@/lib/profile-required-fields";
+import { FormFieldError } from "@/components/forms/RequiredFieldLabel";
 import { ArrowLeftRight, Dog, Heart, Home, MapPin, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
@@ -43,6 +45,8 @@ type PetFriendProfileFormSectionsProps = {
   availabilityDefaultOpen?: boolean;
   /** Render only the Availability section (wizard step). */
   onlyAvailabilitySection?: boolean;
+  required?: boolean;
+  fieldErrors?: Partial<Record<ProfileRequiredFieldId, string>>;
 };
 
 function patch(
@@ -79,6 +83,8 @@ export function PetFriendProfileFormSections({
   petFriendId,
   availabilityDefaultOpen = false,
   onlyAvailabilitySection = false,
+  required = false,
+  fieldErrors,
 }: PetFriendProfileFormSectionsProps) {
   const { locale, t } = useLanguage();
   const setup = t.account.profileSetup;
@@ -151,6 +157,9 @@ export function PetFriendProfileFormSections({
             selected={form.petTypesWilling}
             onToggle={(v) => toggleInList(form, onChange, "petTypesWilling", v)}
             disabled={disabled}
+            required={required}
+            fieldId="friend-pet-types"
+            error={fieldErrors?.pet_types}
             otherField={{
               text: form.petTypesWillingOther,
               onTextChange: (petTypesWillingOther) => patch(form, onChange, { petTypesWillingOther }),
@@ -165,6 +174,9 @@ export function PetFriendProfileFormSections({
             selected={form.preferredPetSizes}
             onToggle={(v) => toggleInList(form, onChange, "preferredPetSizes", v)}
             disabled={disabled}
+            required={required}
+            fieldId="friend-pet-sizes"
+            error={fieldErrors?.pet_sizes}
           />
           <ProfileChipMultiSelect
             label={pl("Available care types")}
@@ -172,6 +184,9 @@ export function PetFriendProfileFormSections({
             selected={form.availableCareTypes}
             onToggle={(v) => toggleInList(form, onChange, "availableCareTypes", v)}
             disabled={disabled}
+            required={required}
+            fieldId="friend-care-services"
+            error={fieldErrors?.care_services}
             otherField={{
               text: form.availableCareTypesOther,
               onTextChange: (availableCareTypesOther) => patch(form, onChange, { availableCareTypesOther }),
@@ -186,6 +201,9 @@ export function PetFriendProfileFormSections({
             value={form.experienceLevel}
             onChange={(experienceLevel) => patch(form, onChange, { experienceLevel })}
             disabled={disabled}
+            required={required}
+            fieldId="friend-experience-level"
+            error={fieldErrors?.experience}
           />
           <ProfileChipSingleSelect
             label={pl("Preferred care location")}
@@ -193,6 +211,9 @@ export function PetFriendProfileFormSections({
             value={form.preferredCareLocation}
             onChange={(preferredCareLocation) => patch(form, onChange, { preferredCareLocation })}
             disabled={disabled}
+            required={required}
+            fieldId="friend-service-area"
+            error={fieldErrors?.service_area}
           />
           <ProfileChipMultiSelect
             label={pl("Pet types previously cared for")}
@@ -209,11 +230,13 @@ export function PetFriendProfileFormSections({
               inputId: "pet_types_previously_borrowed_other",
             }}
           />
+          <div id="friend-care-preference-toggles" className="sm:col-span-2 space-y-0">
           <ProfileYesNoToggle
             label={petFriendPreferences.willingSpecialMedicalNeeds}
             value={form.willingSpecialMedicalNeeds}
             onChange={(v) => patch(form, onChange, { willingSpecialMedicalNeeds: v })}
             disabled={disabled}
+            required={required}
           />
           <ProfileYesNoToggle
             label={petFriendPreferences.comfortableBehavioralQuirks}
@@ -232,7 +255,10 @@ export function PetFriendProfileFormSections({
             value={form.willingPuppiesKittens}
             onChange={(v) => patch(form, onChange, { willingPuppiesKittens: v })}
             disabled={disabled}
+            required={required}
           />
+          <FormFieldError message={fieldErrors?.care_preference_toggles} />
+          </div>
         </ProfileCollapsibleSection>
       ) : null}
 
@@ -269,7 +295,7 @@ export function PetFriendProfileFormSections({
             </select>
           </div>
           {showCalendar ? (
-            <div className="sm:col-span-2">
+            <div id="friend-availability-calendar" className="sm:col-span-2">
               <p className="text-base font-semibold text-foreground">{setup.editMyAvailability}</p>
               <p className="mt-1 text-sm text-muted">{setup.editAvailabilityHint}</p>
               <div className="mt-4 rounded-3xl border border-black/5 bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
@@ -281,6 +307,7 @@ export function PetFriendProfileFormSections({
                   viewRole="pet-friend"
                 />
               </div>
+              <FormFieldError message={fieldErrors?.availability} />
             </div>
           ) : null}
           <div className="sm:col-span-2">
@@ -296,6 +323,30 @@ export function PetFriendProfileFormSections({
               placeholder={translateProfileHelper("e.g. Flexible evenings, school holidays", locale)}
               className="input-field mt-1"
             />
+          </div>
+        </ProfileCollapsibleSection>
+      ) : null}
+
+      {!onlyAvailabilitySection && showCalendar ? (
+        <ProfileCollapsibleSection
+          id="availability"
+          title={pl("Availability")}
+          description={pl("When and how long you can help.")}
+          defaultOpen
+        >
+          <div id="friend-availability-calendar" className="sm:col-span-2">
+            <p className="text-base font-semibold text-foreground">{setup.editMyAvailability}</p>
+            <p className="mt-1 text-sm text-muted">{setup.editAvailabilityHint}</p>
+            <div className="mt-4 rounded-3xl border border-black/5 bg-gradient-to-b from-cream/50 via-mint/15 to-surface p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
+              <AvailabilityCalendar
+                selectedDates={form.availabilitySelectedDates}
+                onChange={(dates) => patch(form, onChange, { availabilitySelectedDates: dates })}
+                disabled={disabled}
+                petFriendId={petFriendId}
+                viewRole="pet-friend"
+              />
+            </div>
+            <FormFieldError message={fieldErrors?.availability} />
           </div>
         </ProfileCollapsibleSection>
       ) : null}

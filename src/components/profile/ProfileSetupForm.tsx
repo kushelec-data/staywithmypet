@@ -66,6 +66,16 @@ import {
   emptyProfileSetupDraft,
   type ProfileSetupDraftData,
 } from "@/lib/form-drafts/profile-setup-draft";
+import { ProfileRequiredFieldsBanner } from "@/components/profile/ProfileRequiredFieldsBanner";
+import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
+import { focusFirstInvalidField, requiredFieldOrderProps } from "@/lib/form-field-focus";
+import {
+  evaluateProfileRequiredFields,
+  validateBasicProfileFormSlice,
+  validatePetFriendFormSlice,
+  type ProfileRequiredFieldId,
+} from "@/lib/profile-required-fields";
+import { mergePetFriendIntoDetails } from "@/lib/profile-friend-form";
 import { formDraftStorageKey } from "@/lib/form-draft-storage";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -168,6 +178,7 @@ export function ProfileSetupForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProfileRequiredFieldId, string>>>({});
   const formInitializedRef = useRef(false);
 
   const draftKey = useMemo(
@@ -259,6 +270,73 @@ export function ProfileSetupForm({
     [role, setup.bioPlaceholders],
   );
 
+  const setupActiveMode = resolveActiveMode(profile?.role ?? role, profile?.active_mode);
+
+  const requiredFieldsResult = useMemo(() => {
+    const locationSave = profileLocationToSaveInput(profileLocation);
+    const details = showFriendProfileSections
+      ? mergePetFriendIntoDetails(profile?.details ?? {}, {
+          ...petFriendForm,
+          availabilitySelectedDates: normalizeAvailabilityDates(
+            petFriendForm.availabilitySelectedDates.length
+              ? petFriendForm.availabilitySelectedDates
+              : availabilitySelectedDates,
+          ),
+        })
+      : profile?.details;
+
+    return evaluateProfileRequiredFields({
+      profile: {
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        bio,
+        languages,
+        location: locationSave.location,
+        public_location: locationSave.publicLocation ?? null,
+        city: locationSave.city ?? null,
+        country: locationSave.country ?? null,
+        google_place_id: locationSave.googlePlaceId ?? null,
+        latitude: locationSave.latitude ?? null,
+        longitude: locationSave.longitude ?? null,
+        role: profile?.role ?? role,
+        active_mode: profile?.active_mode ?? undefined,
+        details: details as import("@/lib/profile-details").ProfileDetails,
+      },
+      activeMode: setupActiveMode,
+      petIntros: [],
+    });
+  }, [
+    displayName,
+    avatarUrl,
+    bio,
+    languages,
+    profileLocation,
+    role,
+    profile,
+    showFriendProfileSections,
+    petFriendForm,
+    availabilitySelectedDates,
+    setupActiveMode,
+  ]);
+
+  function applyValidationIssues(
+    issues: { id: ProfileRequiredFieldId; focusId?: string }[],
+  ): boolean {
+    if (issues.length === 0) {
+      setFieldErrors({});
+      return true;
+    }
+    const errorsCopy = t.profileRequiredFields.errors;
+    const next: Partial<Record<ProfileRequiredFieldId, string>> = {};
+    for (const issue of issues) {
+      next[issue.id] = errorsCopy[issue.id as keyof typeof errorsCopy] ?? t.profileRequiredFields.visibilityHint;
+    }
+    setFieldErrors(next);
+    setError(t.profileRequiredFields.visibilityHint);
+    focusFirstInvalidField(issues);
+    return false;
+  }
+
   function handleBioChange(next: string) {
     const count = getWordCount(next);
     setBio(count > BIO_WORD_MAX ? truncateBioToMaxWords(next) : next);
@@ -313,39 +391,34 @@ export function ProfileSetupForm({
     e.preventDefault();
     if (!user) return;
 
+    setFieldErrors({});
     const trimmedName = normalizeFullName(displayName);
     setDisplayName(trimmedName);
-    if (!trimmedName) {
-      setError(pe.errorDisplayName);
+
+    const basicIssues = validateBasicProfileFormSlice({
+      displayName: trimmedName,
+      avatarUrl,
+      profileLocation,
+      bio,
+      languages,
+      languagesOther,
+    });
+    const friendIssues = showFriendProfileSections
+      ? validatePetFriendFormSlice({
+          ...petFriendForm,
+          availabilitySelectedDates: normalizeAvailabilityDates(
+            petFriendForm.availabilitySelectedDates.length
+              ? petFriendForm.availabilitySelectedDates
+              : availabilitySelectedDates,
+          ),
+        })
+      : [];
+
+    if (!applyValidationIssues([...basicIssues, ...friendIssues])) {
       return;
     }
-    const locationValidation = validateProfileLocationForSave(profileLocation);
-    if (!locationValidation.ok) {
-      const message =
-        locationValidation.error === "placeRequired"
-          ? setup.errorLocationPlaceRequired
-          : pe.errorLocation;
-      setLocationFieldError(message);
-      setError(message);
-      return;
-    }
+
     setLocationFieldError(null);
-    if (languages.length === 0) {
-      setError(pe.errorLanguages);
-      return;
-    }
-    if (profileLanguagesOtherMissing(languages, languagesOther)) {
-      setError(setup.errorLanguageOther);
-      return;
-    }
-    if (!bioValid) {
-      setError(
-        bioWordCount < BIO_WORD_MIN
-          ? pe.errorBioMin
-          : pe.errorBioMax.replace("{max}", String(BIO_WORD_MAX)),
-      );
-      return;
-    }
 
     const ecName =
       trustSafety.emergencyName.trim() || profile?.emergency_contact_name?.trim() || "";
@@ -425,6 +498,7 @@ export function ProfileSetupForm({
   return (
     <form onSubmit={handleSubmit} className="account-card space-y-6 p-6 sm:p-8">
       <FormDraftStatus status={draftStatus} />
+      <ProfileRequiredFieldsBanner result={requiredFieldsResult} />
       {success ? (
         <p className="rounded-xl bg-mint/50 px-3 py-2 text-sm font-medium text-brand-teal" role="status">
           {success}
@@ -445,7 +519,10 @@ export function ProfileSetupForm({
           defaultOpen
         >
         {user ? (
-          <div className="sm:col-span-2 rounded-2xl border border-black/5 bg-surface/80 p-4 sm:p-5">
+          <div
+            id="profile-avatar-upload"
+            className="sm:col-span-2 rounded-2xl border border-black/5 bg-surface/80 p-4 sm:p-5"
+          >
             <ProfileAvatarUpload
               userId={user.id}
               displayName={displayName || profile?.display_name || "User"}
@@ -462,13 +539,14 @@ export function ProfileSetupForm({
               onProfileUpdated={handleProfileGalleryUpdated}
               disabled={saving}
             />
+            <FormFieldError message={fieldErrors.profile_photo} />
           </div>
         ) : null}
 
         <div className="sm:col-span-2">
-          <label htmlFor="display_name" className="form-field-label">
+          <RequiredFieldLabel htmlFor="display_name" required>
             {setup.displayName}
-          </label>
+          </RequiredFieldLabel>
           <input
             id="display_name"
             name="display_name"
@@ -479,7 +557,9 @@ export function ProfileSetupForm({
             autoComplete="name"
             className="input-field mt-1"
             placeholder={setup.displayNamePlaceholder}
+            {...requiredFieldOrderProps(1)}
           />
+          <FormFieldError message={fieldErrors.display_name} />
         </div>
 
         {hideRolePicker && profile?.role_chosen_at ? (
@@ -528,7 +608,7 @@ export function ProfileSetupForm({
             }}
             disabled={saving}
             required
-            error={locationFieldError}
+            error={fieldErrors.location ?? locationFieldError}
           />
         </div>
 
@@ -569,12 +649,14 @@ export function ProfileSetupForm({
           languagesOther={languagesOther}
           onLanguagesChange={setLanguages}
           onLanguagesOtherChange={setLanguagesOther}
+          required
+          error={fieldErrors.languages}
         />
 
         <div className="sm:col-span-2">
-          <label htmlFor="bio" className="form-field-label">
+          <RequiredFieldLabel htmlFor="bio" required>
             {setup.bioLabel}
-          </label>
+          </RequiredFieldLabel>
           <AutoResizeTextarea
             id="bio"
             name="bio"
@@ -587,6 +669,7 @@ export function ProfileSetupForm({
             aria-describedby="bio-word-counter"
           />
           <BioWordCounter id="bio-word-counter" bio={bio} />
+          <FormFieldError message={fieldErrors.bio} />
         </div>
         </ProfileCollapsibleSection>
 
@@ -605,6 +688,8 @@ export function ProfileSetupForm({
             disabled={saving}
             showCalendar={availabilityUx.showPersonalAvailabilityEditor}
             petFriendId={user?.id ?? null}
+            fieldErrors={fieldErrors}
+            required
           />
         ) : null}
       </div>

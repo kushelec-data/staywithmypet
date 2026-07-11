@@ -3,11 +3,7 @@
 import type { ReactNode } from "react";
 import { SelectableChip } from "@/components/ui/SelectableChip";
 import { useLanguage } from "@/context/LanguageContext";
-import {
-  FORM_FIELD_LABEL_CLASS,
-  FORM_FIELD_LEGEND_CLASS,
-  FORM_FIELD_OPTION_LABEL_CLASS,
-} from "@/lib/form-field-styles";
+import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
 import { isOtherOptionValue } from "@/lib/other-option";
 import { translateProfileLabel } from "@/lib/profile-translations";
 
@@ -27,6 +23,9 @@ type ChipMultiSelectProps = {
   disabled?: boolean;
   className?: string;
   otherField?: OtherFieldConfig;
+  required?: boolean;
+  fieldId?: string;
+  error?: string | null;
 };
 
 function normalizeOptions(
@@ -46,6 +45,9 @@ export function ProfileChipMultiSelect({
   disabled,
   className = "sm:col-span-2",
   otherField,
+  required = false,
+  fieldId,
+  error,
 }: ChipMultiSelectProps) {
   const items = normalizeOptions(options);
   const showOtherInput = Boolean(otherField) && selected.some(isOtherOptionValue);
@@ -58,8 +60,10 @@ export function ProfileChipMultiSelect({
   }
 
   return (
-    <div className={className}>
-      <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
+    <div className={className} id={fieldId}>
+      <RequiredFieldLabel as="span" required={required}>
+        {label}
+      </RequiredFieldLabel>
       <div className="mt-2 flex flex-wrap gap-2">
         {items.map((opt) => {
           const isOn = selected.includes(opt.value);
@@ -85,6 +89,7 @@ export function ProfileChipMultiSelect({
           disabled={disabled}
         />
       ) : null}
+      <FormFieldError message={error} />
     </div>
   );
 }
@@ -132,6 +137,9 @@ type ChipSingleSelectProps = {
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  required?: boolean;
+  fieldId?: string;
+  error?: string | null;
 };
 
 export function ProfileChipSingleSelect({
@@ -141,10 +149,15 @@ export function ProfileChipSingleSelect({
   onChange,
   disabled,
   className = "sm:col-span-2",
+  required = false,
+  fieldId,
+  error,
 }: ChipSingleSelectProps) {
   return (
-    <div className={className}>
-      <span className={FORM_FIELD_LABEL_CLASS}>{label}</span>
+    <div className={className} id={fieldId}>
+      <RequiredFieldLabel as="span" required={required}>
+        {label}
+      </RequiredFieldLabel>
       <div className="mt-2 flex flex-wrap gap-2">
         {options.map((opt) => {
           const isOn = value === opt.value;
@@ -161,6 +174,7 @@ export function ProfileChipSingleSelect({
           );
         })}
       </div>
+      <FormFieldError message={error} />
     </div>
   );
 }
@@ -170,11 +184,13 @@ export function ProfileYesNoToggle({
   value,
   onChange,
   disabled,
+  required = false,
 }: {
   label: string;
   value: boolean | null;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  required?: boolean;
 }) {
   const { locale } = useLanguage();
   const yesLabel = translateProfileLabel("Yes", locale);
@@ -182,9 +198,11 @@ export function ProfileYesNoToggle({
 
   return (
     <fieldset className="sm:col-span-1">
-      <legend className={FORM_FIELD_LEGEND_CLASS}>{label}</legend>
+      <RequiredFieldLabel as="legend" required={required}>
+        {label}
+      </RequiredFieldLabel>
       <div className="mt-2 flex gap-3">
-        <label className={FORM_FIELD_OPTION_LABEL_CLASS}>
+        <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
           <input
             type="radio"
             name={label}
@@ -195,7 +213,7 @@ export function ProfileYesNoToggle({
           />
           {yesLabel}
         </label>
-        <label className={FORM_FIELD_OPTION_LABEL_CLASS}>
+        <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
           <input
             type="radio"
             name={label}

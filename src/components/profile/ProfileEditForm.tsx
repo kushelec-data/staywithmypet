@@ -22,8 +22,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { availabilityUxForProfile } from "@/lib/availability-ux";
 import {
-  BIO_WORD_MAX,
-  BIO_WORD_MIN,
   bioWordStatus,
   getWordCount,
   isBioWordCountValid,
@@ -33,7 +31,6 @@ import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesS
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
 import {
   languagesOtherFromDetails,
-  profileLanguagesOtherMissing,
 } from "@/lib/profile-languages";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { normalizeFullName } from "@/lib/name-format";
@@ -41,12 +38,7 @@ import { useRouter } from "next/navigation";
 import { translateProfileLabel } from "@/lib/profile-translations";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
-  isBasicProfileSectionComplete,
-  isAvailabilitySectionComplete,
-  isPetFriendSectionComplete,
-  isPetParentSectionComplete,
   isProfileEditSectionComplete,
-  isTrustSafetySectionComplete,
   profileEditStepFromHash,
   visibleProfileEditSteps,
   type ProfileEditSectionKey,
@@ -95,6 +87,17 @@ import {
   type ProfileEditDraftData,
 } from "@/lib/form-drafts/profile-edit-draft";
 import { formDraftStorageKey } from "@/lib/form-draft-storage";
+import { ProfileRequiredFieldsBanner } from "@/components/profile/ProfileRequiredFieldsBanner";
+import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
+import { focusFirstInvalidField, requiredFieldOrderProps } from "@/lib/form-field-focus";
+import {
+  evaluateProfileRequiredFields,
+  validateBasicProfileFormSlice,
+  validatePetFriendFormSlice,
+  type ProfileRequiredFieldId,
+} from "@/lib/profile-required-fields";
+import { mergePetFriendIntoDetails } from "@/lib/profile-friend-form";
+import { fetchOwnerPetIntros, type PetIntroDisplay } from "@/lib/pet-intro";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 function profileEditStepFromQuery(step: string | null): ProfileEditSectionKey | null {
@@ -192,6 +195,8 @@ export function ProfileEditForm() {
     petParent: false,
   });
   const [errors, setErrors] = useState<Partial<Record<ProfileEditSectionKey, string | null>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProfileRequiredFieldId, string>>>({});
+  const [petIntros, setPetIntros] = useState<PetIntroDisplay[]>([]);
   const [success, setSuccess] = useState<Partial<Record<ProfileEditSectionKey, string | null>>>({});
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
@@ -261,20 +266,85 @@ export function ProfileEditForm() {
   });
 
   const bioWordCount = useMemo(() => getWordCount(bio), [bio]);
-  const bioStatus = bioWordStatus(bioWordCount);
-  const bioValid = isBioWordCountValid(bioWordCount);
+
+  useEffect(() => {
+    if (!user?.id || activeMode !== "pet_parent") {
+      setPetIntros([]);
+      return;
+    }
+    let cancelled = false;
+    void fetchOwnerPetIntros(supabase, user.id).then((rows) => {
+      if (!cancelled) setPetIntros(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, activeMode, supabase, profile?.id, profile?.avatar_url, profile?.bio]);
+
+  const requiredFieldsResult = useMemo(() => {
+    const locationSave = profileLocationToSaveInput(profileLocation);
+    const details =
+      activeMode === "pet_friend"
+        ? mergePetFriendIntoDetails(profile?.details ?? {}, petFriendForm)
+        : profile?.details;
+
+    return evaluateProfileRequiredFields({
+      profile: {
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        bio,
+        languages,
+        location: locationSave.location,
+        public_location: locationSave.publicLocation ?? null,
+        city: locationSave.city ?? null,
+        country: locationSave.country ?? null,
+        google_place_id: locationSave.googlePlaceId ?? null,
+        latitude: locationSave.latitude ?? null,
+        longitude: locationSave.longitude ?? null,
+        role: profile?.role ?? role,
+        active_mode: profile?.active_mode,
+        details,
+      },
+      activeMode,
+      petIntros,
+    });
+  }, [
+    displayName,
+    avatarUrl,
+    bio,
+    languages,
+    profileLocation,
+    profile,
+    role,
+    activeMode,
+    petFriendForm,
+    petIntros,
+  ]);
+
+  function applyValidationIssues(
+    issues: { id: ProfileRequiredFieldId; focusId?: string }[],
+    section: ProfileEditSectionKey,
+  ): boolean {
+    if (issues.length === 0) {
+      setFieldErrors({});
+      return true;
+    }
+    const errorsCopy = t.profileRequiredFields.errors;
+    const next: Partial<Record<ProfileRequiredFieldId, string>> = {};
+    for (const issue of issues) {
+      next[issue.id] =
+        errorsCopy[issue.id as keyof typeof errorsCopy] ?? t.profileRequiredFields.visibilityHint;
+    }
+    setFieldErrors(next);
+    setErrors((prev) => ({ ...prev, [section]: t.profileRequiredFields.visibilityHint }));
+    focusFirstInvalidField(issues);
+    return false;
+  }
 
   const sectionComplete = useCallback(
-    (section: ProfileEditSectionKey) => {
-      if (section === "basic") {
-        return isBasicProfileSectionComplete(profile, bioValid);
-      }
-      if (section === "trust") return isTrustSafetySectionComplete(profile);
-      if (section === "petFriend") return isPetFriendSectionComplete(profile);
-      if (section === "availability") return isAvailabilitySectionComplete(profile);
-      return isPetParentSectionComplete(profile);
-    },
-    [profile, bioValid],
+    (section: ProfileEditSectionKey) =>
+      isProfileEditSectionComplete(section, profile, { petIntros }),
+    [profile, petIntros],
   );
 
   const isStepFieldsEnabled = useCallback(
@@ -412,6 +482,7 @@ export function ProfileEditForm() {
   function startEdit(section: ProfileEditSectionKey) {
     setEditing((prev) => ({ ...prev, [section]: true }));
     setErrors((prev) => ({ ...prev, [section]: null }));
+    setFieldErrors({});
     setSuccess((prev) => ({ ...prev, [section]: null }));
     if (section === "basic") {
       setLocationFieldError(null);
@@ -475,48 +546,31 @@ export function ProfileEditForm() {
     if (!user) return;
     const trimmedName = normalizeFullName(displayName);
     setDisplayName(trimmedName);
-    if (!trimmedName) {
-      setErrors((prev) => ({ ...prev, basic: pe.basic.errorDisplayName }));
-      return;
-    }
-    const locationValidation = validateProfileLocationForSave(profileLocation, {
-      originalDisplayKey: originalLocationKeyRef.current,
+    setFieldErrors({});
+
+    const basicIssues = validateBasicProfileFormSlice({
+      displayName: trimmedName,
+      avatarUrl,
+      profileLocation,
+      bio,
+      languages,
+      languagesOther,
     });
-    if (!locationValidation.ok) {
-      const message =
-        locationValidation.error === "placeRequired"
-          ? pe.basic.errorLocationPlaceRequired
-          : pe.basic.errorLocation;
-      setLocationFieldError(message);
-      setErrors((prev) => ({ ...prev, basic: message }));
-      return;
-    }
-    setLocationFieldError(null);
-    if (languages.length === 0) {
-      setErrors((prev) => ({ ...prev, basic: pe.basic.errorLanguages }));
-      return;
-    }
-    if (profileLanguagesOtherMissing(languages, languagesOther)) {
-      setErrors((prev) => ({ ...prev, basic: pe.basic.errorLanguageOther }));
-      return;
-    }
-    if (!bioValid) {
-      logBio("validation result", {
-        valid: false,
-        wordCount: bioWordCount,
-        status: bioStatus,
-        reason: bioWordCount < BIO_WORD_MIN ? "too_few" : "too_many",
+    if (!applyValidationIssues(basicIssues, "basic")) {
+      const locationValidation = validateProfileLocationForSave(profileLocation, {
+        originalDisplayKey: originalLocationKeyRef.current,
       });
-      setErrors((prev) => ({
-        ...prev,
-        basic:
-          bioWordCount < BIO_WORD_MIN
-            ? pe.basic.errorBioMin
-            : pe.basic.errorBioMax.replace("{max}", String(BIO_WORD_MAX)),
-      }));
+      if (!locationValidation.ok) {
+        const message =
+          locationValidation.error === "placeRequired"
+            ? pe.basic.errorLocationPlaceRequired
+            : pe.basic.errorLocation;
+        setLocationFieldError(message);
+      }
       return;
     }
 
+    setLocationFieldError(null);
     const bioPayload = normalizeBioForSave(bio);
     logBio("save payload", { bio: bioPayload, wordCount: bioWordCount });
 
@@ -615,6 +669,13 @@ export function ProfileEditForm() {
 
   async function handleSavePetFriend(saveAsSection: "petFriend" | "availability" = "petFriend") {
     if (!user) return;
+
+    const friendIssues = validatePetFriendFormSlice(petFriendForm, {
+      scope: saveAsSection === "availability" ? "availability" : "profile",
+    });
+    if (!applyValidationIssues(friendIssues, saveAsSection)) {
+      return;
+    }
 
     const otherError = validateOtherOptionFields([
       { selected: petFriendForm.petTypesWilling, otherText: petFriendForm.petTypesWillingOther, fieldLabel: "pet type" },
@@ -730,7 +791,10 @@ export function ProfileEditForm() {
       content = (
         <>
           {user ? (
-            <div className="rounded-2xl border border-black/5 bg-surface/80 p-4 sm:p-5">
+            <div
+              id="profile-avatar-upload"
+              className="rounded-2xl border border-black/5 bg-surface/80 p-4 sm:p-5"
+            >
               <ProfileAvatarUpload
                 userId={user.id}
                 displayName={displayName || profile?.display_name || "User"}
@@ -749,15 +813,16 @@ export function ProfileEditForm() {
                 editable={basicEnabled}
                 disabled={saving.basic}
               />
+              <FormFieldError message={fieldErrors.profile_photo} />
             </div>
           ) : null}
 
           {profile?.role_chosen_at ? <ProfileRoleStatusCard profile={profile} /> : null}
 
           <div>
-            <label htmlFor="display_name" className="form-field-label">
+            <RequiredFieldLabel htmlFor="display_name" required>
               {pe.basic.displayName}
-            </label>
+            </RequiredFieldLabel>
             <input
               id="display_name"
               name="display_name"
@@ -769,7 +834,9 @@ export function ProfileEditForm() {
               disabled={!basicEnabled || saving.basic || anySaving}
               className="input-field mt-1"
               placeholder={pe.basic.displayNamePlaceholder}
+              {...requiredFieldOrderProps(1)}
             />
+            <FormFieldError message={fieldErrors.display_name} />
           </div>
 
           <ProfileLocationField
@@ -784,7 +851,7 @@ export function ProfileEditForm() {
             }}
             disabled={!basicEnabled || saving.basic || anySaving}
             required
-            error={locationFieldError}
+            error={fieldErrors.location ?? locationFieldError}
           />
 
           <ProfileLanguagesSelector
@@ -796,12 +863,14 @@ export function ProfileEditForm() {
             label={pe.basic.languages}
             otherPlaceholder={pe.basic.languageOtherPlaceholder}
             otherInputId="profile_edit_languages_other"
+            required
+            error={fieldErrors.languages}
           />
 
           <div>
-            <label htmlFor="bio" className="form-field-label">
+            <RequiredFieldLabel htmlFor="bio" required>
               {pe.basic.bio}
-            </label>
+            </RequiredFieldLabel>
             <AutoResizeTextarea
               id="bio"
               name="bio"
@@ -815,6 +884,7 @@ export function ProfileEditForm() {
               aria-describedby="bio-word-counter"
             />
             <BioWordCounter id="bio-word-counter" bio={bio} />
+            <FormFieldError message={fieldErrors.bio} />
           </div>
         </>
       );
@@ -838,6 +908,8 @@ export function ProfileEditForm() {
           showCalendar={availabilityUx.showPersonalAvailabilityEditor}
           petFriendId={user?.id ?? null}
           availabilityDefaultOpen={openAvailabilityPanel}
+          fieldErrors={fieldErrors}
+          required
         />
       );
     } else if (stepId === "availability") {
@@ -850,6 +922,8 @@ export function ProfileEditForm() {
           petFriendId={user?.id ?? null}
           availabilityDefaultOpen
           onlyAvailabilitySection
+          fieldErrors={fieldErrors}
+          required
         />
       );
     } else {
@@ -892,6 +966,7 @@ export function ProfileEditForm() {
   return (
     <>
       <FormDraftStatus status={draftStatus} className="mb-3" />
+      <ProfileRequiredFieldsBanner result={requiredFieldsResult} className="mb-4" />
       <ProfileEditWizard
       steps={wizardSteps}
       activeIndex={activeStepIndex}

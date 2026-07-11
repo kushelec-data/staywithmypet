@@ -15,6 +15,7 @@ import {
   formatSupabaseError,
   upsertProfileRowAndReload,
 } from "@/lib/profile-load";
+import { applyMarketplaceVisibility } from "@/lib/profile-marketplace-visibility";
 import {
   mergeDetailsGooglePlace,
   mergeDetailsTrustFlags,
@@ -406,7 +407,9 @@ export async function saveUserProfile(
 
   console.log("[profile] save payload", { ...row, details: "[merged]" });
 
-  return upsertProfileRowAndReload(supabase, userId, row, "save");
+  const saved = await upsertProfileRowAndReload(supabase, userId, row, "save");
+  await applyMarketplaceVisibility(supabase, userId);
+  return saved;
 }
 
 export type BasicProfileSectionInput = {
@@ -623,7 +626,9 @@ async function persistProfilePartial(
   logLabel: string,
 ): Promise<ProfileRow> {
   console.log(`[profile] ${logLabel} payload`, { ...row, details: row.details ? "[merged]" : undefined });
-  return upsertProfileRowAndReload(supabase, userId, row, logLabel);
+  const saved = await upsertProfileRowAndReload(supabase, userId, row, logLabel);
+  await applyMarketplaceVisibility(supabase, userId);
+  return saved;
 }
 
 export async function saveBasicProfileSection(

@@ -5,6 +5,7 @@ import {
   excludeMarketplaceSelf,
   filterProfilesWithActivePetFriendMembership,
 } from "@/lib/marketplace-membership";
+import { isProfileMarketplaceReady } from "@/lib/profile-required-fields";
 import { resolveProfilePublicLocation } from "@/lib/profile-location";
 import { blurCoordinates } from "@/lib/map-privacy";
 import { parseCoord } from "@/lib/parse-coord";
@@ -51,11 +52,28 @@ function isListableProfile(row: {
   google_place_id?: string | null;
   latitude?: unknown;
   longitude?: unknown;
+  avatar_url?: string | null;
+  languages?: string[] | null;
+  role: ProfileRole;
+  active_mode: string | null;
+  details?: unknown;
 }): boolean {
-  const hasLocation = Boolean(
-    resolveProfilePublicLocation(row) || row.location?.trim(),
-  );
-  return Boolean(row.display_name?.trim() && row.bio?.trim() && hasLocation);
+  return isProfileMarketplaceReady({
+    display_name: row.display_name,
+    avatar_url: row.avatar_url ?? null,
+    bio: row.bio,
+    location: row.location,
+    public_location: row.public_location ?? null,
+    city: row.city ?? null,
+    country: row.country ?? null,
+    google_place_id: row.google_place_id ?? null,
+    latitude: row.latitude as number | null,
+    longitude: row.longitude as number | null,
+    languages: row.languages ?? [],
+    role: row.role,
+    active_mode: row.active_mode as import("@/lib/profile-mode").ProfileActiveMode | null,
+    details: row.details as import("@/lib/profile-details").ProfileDetails | undefined,
+  });
 }
 
 type PetFriendSearchRow = {

@@ -71,6 +71,8 @@ export type PetIntroDisplay = {
   photoPositions: Record<string, PhotoObjectPosition>;
   photoUrls: string[];
   isActive: boolean;
+  /** True when temperament, traits, or notes describe the pet. */
+  hasPersonality: boolean;
 };
 
 type PetPhotoJoin = {
@@ -161,6 +163,17 @@ function resolveAgeLabel(row: PetIntroRow, details: Record<string, unknown>): st
     if (parsed) return parsed;
   }
   return age;
+}
+
+function petHasPersonalityInput(row: PetIntroRow): boolean {
+  const details = detailsOf(row.details);
+  return (
+    pickTemperament(row, details).length > 0 ||
+    Boolean(pickStr(row.positive_traits, details, "positive_traits")) ||
+    Boolean(pickStr(row.challenging_traits, details, "challenging_traits")) ||
+    Boolean(pickStr(row.additional_notes, details, "additional_notes")) ||
+    Boolean(pickStr(row.energy_level, details, "energy_level"))
+  );
 }
 
 /** Compact facts for overview cards (max 3 lines). */
@@ -344,6 +357,7 @@ export function mapRowToPetIntro(
     primaryPhotoPosition: pickPrimaryPhotoPosition(photos),
     photoPositions: photoPositionsByUrl(photos),
     isActive: row.is_active !== false,
+    hasPersonality: petHasPersonalityInput(row),
   };
 }
 

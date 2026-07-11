@@ -7,6 +7,8 @@ import {
   type PetDobValidationReason,
 } from "@/lib/pet-date-of-birth";
 
+import { RequiredFieldLabel } from "@/components/forms/RequiredFieldLabel";
+
 type PetDateOfBirthFieldProps = {
   id: string;
   label: string;
@@ -17,6 +19,7 @@ type PetDateOfBirthFieldProps = {
   onError?: (message: string | null) => void;
   disabled?: boolean;
   placeholder?: string;
+  required?: boolean;
 };
 
 function dobErrorMessage(
@@ -47,6 +50,7 @@ export function PetDateOfBirthField({
   onError,
   disabled,
   placeholder,
+  required,
 }: PetDateOfBirthFieldProps) {
   const { t } = useLanguage();
   const copy = t.account.petsPage;
@@ -65,9 +69,9 @@ export function PetDateOfBirthField({
 
   return (
     <div>
-      <label htmlFor={id} className="form-field-label">
+      <RequiredFieldLabel htmlFor={id} required={required}>
         {label}
-      </label>
+      </RequiredFieldLabel>
       <input
         id={id}
         type="text"

@@ -3,7 +3,7 @@
 import { SelectableChip } from "@/components/ui/SelectableChip";
 import { OtherOptionTextInput } from "@/components/profile/form/ProfileFormFields";
 import { useLanguage } from "@/context/LanguageContext";
-import { FORM_FIELD_LABEL_CLASS } from "@/lib/form-field-styles";
+import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
 import { isOtherOptionValue } from "@/lib/other-option";
 import {
   profileLanguageOptions,
@@ -21,6 +21,9 @@ type ProfileLanguagesSelectorProps = {
   otherPlaceholder?: string;
   otherInputId?: string;
   className?: string;
+  required?: boolean;
+  error?: string | null;
+  fieldId?: string;
 };
 
 export function ProfileLanguagesSelector({
@@ -31,8 +34,11 @@ export function ProfileLanguagesSelector({
   disabled,
   label,
   otherPlaceholder,
-  otherInputId = "profile_languages_other",
+  otherInputId = "profile-languages-other",
   className = "sm:col-span-2",
+  required = false,
+  error,
+  fieldId = "profile-languages",
 }: ProfileLanguagesSelectorProps) {
   const { locale, t } = useLanguage();
   const setup = t.account.profileSetup;
@@ -48,8 +54,10 @@ export function ProfileLanguagesSelector({
   const showOtherInput = languages.some(isOtherOptionValue);
 
   return (
-    <div className={className}>
-      <span className={FORM_FIELD_LABEL_CLASS}>{fieldLabel}</span>
+    <div id={fieldId} className={className}>
+      <RequiredFieldLabel as="span" required={required}>
+        {fieldLabel}
+      </RequiredFieldLabel>
       <div className="mt-2 flex flex-wrap gap-2">
         {profileLanguageOptions.map((lang) => (
           <SelectableChip
@@ -72,6 +80,7 @@ export function ProfileLanguagesSelector({
           disabled={disabled}
         />
       ) : null}
+      <FormFieldError message={error} />
     </div>
   );
 }

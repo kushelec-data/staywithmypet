@@ -1,34 +1,21 @@
-import { getWordCount } from "@/lib/bio-words";
 import type { PetIntroDisplay } from "@/lib/pet-intro";
 import {
-  hasCarePreferences,
-  hasLivingSituation,
-  profileCalendarSelectedDates,
-  type ProfileDetails,
-} from "@/lib/profile-details";
+  evaluateProfileRequiredFields,
+  type ProfileRequiredFieldId,
+} from "@/lib/profile-required-fields";
 import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
-import { hasSavedProfileLocation } from "@/lib/profile-location";
 import type { ProfileRow } from "@/lib/profile-utils";
+import { getWordCount } from "@/lib/bio-words";
 
 /** Minimum bio length counted toward profile completeness (same rule everywhere). */
 export const PROFILE_COMPLETENESS_BIO_MIN_WORDS = 40;
 
-export type CompletenessItemId =
-  | "avatar"
-  | "bio"
-  | "location"
-  | "phone"
-  | "pet_listing"
-  | "pet_care_details"
-  | "pet_availability"
-  | "care_preferences"
-  | "availability"
-  | "living_situation"
-  | "emergency_contact";
+/** @deprecated Use `ProfileRequiredFieldId` from profile-required-fields. */
+export type CompletenessItemId = ProfileRequiredFieldId;
 
 export type CompletenessItem = {
-  id: CompletenessItemId;
+  id: ProfileRequiredFieldId;
   label: string;
   done: boolean;
   href?: string;
@@ -38,34 +25,35 @@ export type ProfileCompleteness = {
   percent: number;
   items: CompletenessItem[];
   missing: CompletenessItem[];
+  completedCount: number;
+  totalCount: number;
+  marketplaceReady: boolean;
 };
 
-export type ProfileCompletenessLabels = {
-  profilePhoto: string;
-  bioCompleted: string;
-  location: string;
-  phone: string;
-  atLeastOnePet: string;
-  petCareDetails: string;
-  petAvailability: string;
-  carePreferences: string;
-  availability: string;
-  livingSituation: string;
-  emergencyContact: string;
-};
+export type ProfileCompletenessLabels = Record<ProfileRequiredFieldId, string>;
 
 export const DEFAULT_PROFILE_COMPLETENESS_LABELS: ProfileCompletenessLabels = {
-  profilePhoto: "Profile photo",
-  bioCompleted: "Bio completed",
+  display_name: "Display name",
+  profile_photo: "Profile photo",
   location: "Location added",
-  phone: "Add phone number",
-  atLeastOnePet: "At least one pet",
-  petCareDetails: "Add pet care needs",
-  petAvailability: "Add pet availability",
-  carePreferences: "Add care preferences",
-  availability: "Add availability",
-  livingSituation: "Complete living situation",
-  emergencyContact: "Add emergency contact",
+  bio: "Bio completed",
+  languages: "Languages",
+  pet_listing: "At least one pet",
+  pet_name: "Pet name",
+  pet_species: "Pet type/species",
+  pet_age: "Pet date of birth or age",
+  pet_size: "Pet size",
+  pet_photo: "Pet photo",
+  pet_personality: "Pet description/personality",
+  pet_care_needs: "Pet care needs",
+  pet_availability: "Pet availability",
+  experience: "Experience with pets",
+  pet_types: "Pet types you can care for",
+  pet_sizes: "Pet sizes you can care for",
+  care_services: "Care services offered",
+  availability: "Availability",
+  service_area: "Service area",
+  care_preference_toggles: "Care preference answers",
 };
 
 /** Fields required to compute completeness (subset of `ProfileRow`). */
@@ -85,15 +73,15 @@ export type ProfileCompletenessInput = Pick<
   | "role"
   | "active_mode"
   | "details"
-  | "emergency_contact_name"
-  | "emergency_contact_phone_e164"
+  | "display_name"
+  | "languages"
 >;
 
 export type ProfileCompletenessOptions = {
   petsCount?: number;
   activeMode?: ProfileActiveMode;
   petIntros?: PetIntroDisplay[];
-  labels?: ProfileCompletenessLabels;
+  labels?: Partial<ProfileCompletenessLabels>;
 };
 
 export function publicProfileHref(profileId: string): string {
@@ -120,120 +108,53 @@ export function isPhoneOnFile(profile: {
   return Boolean(profile.phone_e164?.trim() || profile.phone?.trim());
 }
 
+/** @deprecated Use `isSinglePetMarketplaceReady` from profile-required-fields. */
 export function petsHaveCareDetails(petIntros: PetIntroDisplay[]): boolean {
-  if (petIntros.length === 0) return false;
-  return petIntros.every((pet) => pet.careTypes.length > 0);
+  return petIntros.some((pet) => pet.careTypes.length > 0);
 }
 
+/** @deprecated Use pet availability checks from profile-required-fields. */
 export function petsHaveAvailability(petIntros: PetIntroDisplay[]): boolean {
-  return petIntros.some((pet) => Boolean(pet.careDatesSummary?.trim()));
+  return petIntros.some(
+    (pet) => pet.availabilityDates.length > 0 || Boolean(pet.careDatesSummary?.trim()),
+  );
 }
 
-function sharedProfileItems(
-  profile: ProfileCompletenessInput,
-  labels: ProfileCompletenessLabels,
-): CompletenessItem[] {
-  return [
-    {
-      id: "avatar",
-      label: labels.profilePhoto,
-      done: Boolean(profile.avatar_url?.trim()),
-      href: "/profile/edit",
-    },
-    {
-      id: "bio",
-      label: labels.bioCompleted,
-      done: isBioCompleteForProfile(profile.bio),
-      href: "/profile/edit",
-    },
-    {
-      id: "location",
-      label: labels.location,
-      done: hasSavedProfileLocation(profile),
-      href: "/profile/edit",
-    },
-  ];
-}
-
-function petParentItems(
-  profile: ProfileCompletenessInput,
-  options: ProfileCompletenessOptions,
-  labels: ProfileCompletenessLabels,
-): CompletenessItem[] {
-  const petsCount = options.petsCount ?? 0;
-  const petIntros = options.petIntros ?? [];
-  return [
-    {
-      id: "pet_listing",
-      label: labels.atLeastOnePet,
-      done: petsCount > 0,
-      href: "/pets/new",
-    },
-    {
-      id: "pet_care_details",
-      label: labels.petCareDetails,
-      done: petsCount > 0 && (petIntros.length > 0 ? petsHaveCareDetails(petIntros) : false),
-      href: "/pets",
-    },
-    {
-      id: "pet_availability",
-      label: labels.petAvailability,
-      done: petsCount > 0 && (petIntros.length > 0 ? petsHaveAvailability(petIntros) : false),
-      href: "/pets",
-    },
-  ];
-}
-
-function petFriendItems(
-  profile: ProfileCompletenessInput,
-  labels: ProfileCompletenessLabels,
-): CompletenessItem[] {
-  const details = profile.details ?? {};
-  const hasAvailability = profileCalendarSelectedDates(details).length > 0;
-
-  return [
-    {
-      id: "availability",
-      label: labels.availability,
-      done: hasAvailability,
-      href: "/profile/edit#availability",
-    },
-    {
-      id: "care_preferences",
-      label: labels.carePreferences,
-      done: hasCarePreferences(details),
-      href: "/profile/edit#pet-care-preferences",
-    },
-    {
-      id: "living_situation",
-      label: labels.livingSituation,
-      done: hasLivingSituation(details),
-      href: "/profile/edit#living-situation",
-    },
-  ];
+function resolveLabels(options: ProfileCompletenessOptions): ProfileCompletenessLabels {
+  return { ...DEFAULT_PROFILE_COMPLETENESS_LABELS, ...options.labels };
 }
 
 export function computeProfileCompleteness(
   profile: ProfileCompletenessInput,
   options: ProfileCompletenessOptions = {},
 ): ProfileCompleteness {
-  const labels = options.labels ?? DEFAULT_PROFILE_COMPLETENESS_LABELS;
+  const labels = resolveLabels(options);
   const activeMode =
     options.activeMode ?? resolveActiveMode(profile.role, profile.active_mode);
 
-  const items: CompletenessItem[] = [...sharedProfileItems(profile, labels)];
+  const evaluated = evaluateProfileRequiredFields({
+    profile,
+    activeMode,
+    petIntros: options.petIntros,
+  });
 
-  if (activeMode === "pet_parent") {
-    items.push(...petParentItems(profile, options, labels));
-  } else {
-    items.push(...petFriendItems(profile, labels));
-  }
+  const items: CompletenessItem[] = evaluated.fields.map((field) => ({
+    id: field.id,
+    label: labels[field.labelKey],
+    done: field.done,
+    href: field.href ?? "/profile/edit",
+  }));
 
-  const doneCount = items.filter((i) => i.done).length;
-  const percent = items.length ? Math.round((doneCount / items.length) * 100) : 0;
   const missing = items.filter((i) => !i.done);
 
-  return { percent, items, missing };
+  return {
+    percent: evaluated.percent,
+    items,
+    missing,
+    completedCount: evaluated.completedCount,
+    totalCount: evaluated.totalCount,
+    marketplaceReady: evaluated.marketplaceReady,
+  };
 }
 
 export type CompletenessCheckStatus = "completed" | "pending" | "missing";

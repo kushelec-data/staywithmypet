@@ -64,6 +64,12 @@ import {
 } from "@/lib/pet-date-of-birth";
 import { translateProfileHelper, translateProfileLabel } from "@/lib/profile-translations";
 import { FormDraftStatus } from "@/components/forms/FormDraftStatus";
+import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
+import { focusFirstInvalidField, requiredFieldOrderProps } from "@/lib/form-field-focus";
+import {
+  validatePetProfileFormSlice,
+  type ProfileRequiredFieldId,
+} from "@/lib/profile-required-fields";
 import { useFormDraftStorage } from "@/hooks/useFormDraftStorage";
 import { buildPetFormDraft, type PetFormDraftData } from "@/lib/form-drafts/pet-form-draft";
 import { formDraftStorageKey } from "@/lib/form-draft-storage";
@@ -125,6 +131,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [breedFieldError, setBreedFieldError] = useState<string | null>(null);
   const [dobDisplay, setDobDisplay] = useState("");
   const [dobError, setDobError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProfileRequiredFieldId, string>>>({});
   const formInitializedRef = useRef(false);
   const { locale, t } = useLanguage();
   const petsCopy = t.account.petsPage;
@@ -429,18 +436,38 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     e.preventDefault();
     if (!user) return;
 
+    setFieldErrors({});
+    const hasPhoto = isEdit ? existingPhotos.length > 0 : pendingPhotos.length > 0;
+    const requiredIssues = validatePetProfileFormSlice({
+      name: form.name,
+      speciesForm: form.speciesForm,
+      dateOfBirthDisplay: dobDisplay,
+      size: form.size,
+      temperament: form.temperament,
+      positiveTraits: form.positiveTraits,
+      challengingTraits: form.challengingTraits,
+      additionalNotes: form.additionalNotes,
+      energyLevel: form.energyLevel,
+      careTypes: form.careTypes,
+      availabilityDates: form.availabilityDates,
+      availabilityNotes: form.availability,
+      hasPhoto,
+    });
+    if (requiredIssues.length > 0) {
+      const errorsCopy = t.profileRequiredFields.errors;
+      const next: Partial<Record<ProfileRequiredFieldId, string>> = {};
+      for (const issue of requiredIssues) {
+        next[issue.id] =
+          errorsCopy[issue.id as keyof typeof errorsCopy] ?? t.profileRequiredFields.visibilityHint;
+      }
+      setFieldErrors(next);
+      setError(t.profileRequiredFields.visibilityHint);
+      focusFirstInvalidField(requiredIssues);
+      return;
+    }
+
     const savePayload = buildSavePayload();
     if (!savePayload) return;
-
-    if (isEdit && existingPhotos.length < 1) {
-      setError(petsCopy.needAtLeastOnePhoto);
-      return;
-    }
-
-    if (!isEdit && pendingPhotos.length < 1) {
-      setError(petsCopy.needAtLeastOnePhoto);
-      return;
-    }
 
     setSaving(true);
     setError(null);
@@ -485,6 +512,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <FormDraftStatus status={draftStatus} />
+      <p className="rounded-2xl border border-black/5 bg-mint/20 px-4 py-3 text-sm text-muted">
+        {t.profileRequiredFields.requiredHint}
+      </p>
       {error ? (
         <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
           {error}
@@ -497,6 +527,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           "Add up to 6 photos or videos that best show your pet's personality and charm!",
         )}
       >
+        <div id="pet-photo-upload" className="sm:col-span-2">
+          <RequiredFieldLabel as="span" required>
+            {pl("Pet photo")}
+          </RequiredFieldLabel>
+          <div className="mt-2">
         <PetPhotoUpload
           petId={petId}
           disabled={saving}
@@ -518,13 +553,16 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           onRemoveExistingPhoto={petId ? handleRemoveExistingPhoto : undefined}
           onSetPrimaryExistingPhoto={petId ? handleSetPrimaryExistingPhoto : undefined}
         />
+          </div>
+          <FormFieldError message={fieldErrors.pet_photo} />
+        </div>
       </PetFormSection>
 
       <PetFormSection title={pl("Basic pet details")}>
         <div className="sm:col-span-2">
-          <label htmlFor="pet_name" className="form-field-label">
+          <RequiredFieldLabel htmlFor="pet_name" required>
             {pl("Pet name")}
-          </label>
+          </RequiredFieldLabel>
           <input
             id="pet_name"
             value={form.name}
@@ -532,12 +570,14 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             required
             className="input-field mt-1"
             placeholder="e.g. Luna"
+            {...requiredFieldOrderProps(1)}
           />
+          <FormFieldError message={fieldErrors.pet_name} />
         </div>
         <div>
-          <label htmlFor="species" className="form-field-label">
+          <RequiredFieldLabel htmlFor="species" required>
             {pl("Animal type")}
-          </label>
+          </RequiredFieldLabel>
           <select
             id="species"
             value={form.speciesForm}
@@ -559,6 +599,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
               </option>
             ))}
           </select>
+          <FormFieldError message={fieldErrors.pet_species} />
         </div>
         {form.speciesForm === "other" ? (
           <div>
@@ -612,10 +653,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           display={dobDisplay}
           onDisplayChange={setDobDisplay}
           onIsoChange={(iso) => patch("dateOfBirth", iso)}
-          error={dobError}
+          error={fieldErrors.pet_age ?? dobError}
           onError={setDobError}
           disabled={saving}
           placeholder={petsCopy.dobPlaceholder}
+          required
         />
         <div>
           <label htmlFor="gender" className="form-field-label">
@@ -652,9 +694,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           ) : null}
         </div>
         <div>
-          <label htmlFor="size" className="form-field-label">
+          <RequiredFieldLabel htmlFor="size" required>
             {pl("Weight category")}
-          </label>
+          </RequiredFieldLabel>
           <select
             id="size"
             value={form.size}
@@ -667,6 +709,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
               </option>
             ))}
           </select>
+          <FormFieldError message={fieldErrors.pet_size} />
         </div>
         <div>
           <label htmlFor="energy" className="form-field-label">
@@ -688,6 +731,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       </PetFormSection>
 
       <PetFormSection title={pl("Temperament and care")}>
+        <div id="pet-personality" className="sm:col-span-2">
+          <RequiredFieldLabel as="span" required>
+            {t.profileRequiredFields.items.pet_personality}
+          </RequiredFieldLabel>
+        </div>
         <PetFormChipGroup
           label={pl("Temperament")}
           options={localizedTemperamentOptions}
@@ -806,6 +854,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             className="input-field mt-1"
           />
         </div>
+        <div className="sm:col-span-2">
+          <FormFieldError message={fieldErrors.pet_personality} />
+        </div>
       </PetFormSection>
 
       <PetFormSection title={pl("Pet Friend requirements")}>
@@ -819,8 +870,10 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       </PetFormSection>
 
       <PetFormSection title={pl("Availability and care location")}>
-        <div className="sm:col-span-2">
-          <p className="form-field-label">{pl("Available dates")}</p>
+        <div id="pet-availability-calendar" className="sm:col-span-2">
+          <RequiredFieldLabel as="span" required>
+            {t.profileRequiredFields.items.pet_availability}
+          </RequiredFieldLabel>
           <p className="mt-1 text-xs text-muted">
             {pl(
               "Select days or ranges when your pet can be cared for. Add free-text notes below if needed.",
@@ -835,6 +888,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
               viewRole="pet-parent"
             />
           </div>
+          <FormFieldError message={fieldErrors.pet_availability} />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="availability" className="form-field-label">
@@ -868,8 +922,12 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             ))}
           </div>
         </div>
-        <PetFormChipGroup
-          label={pl("Care type needed")}
+        <div id="pet-care-types" className="sm:col-span-2">
+          <RequiredFieldLabel as="span" required>
+            {t.profileRequiredFields.items.pet_care_needs}
+          </RequiredFieldLabel>
+          <PetFormChipGroup
+          label=""
           options={localizedCareTypeOptions}
           selected={form.careTypes}
           onToggle={(v) => toggleList("careTypes", v)}
@@ -882,6 +940,8 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             inputId: "pet_care_types_other",
           }}
         />
+          <FormFieldError message={fieldErrors.pet_care_needs} />
+        </div>
         <div className="sm:col-span-2">
           <label htmlFor="location" className="form-field-label">
             {pl("Location / address")}

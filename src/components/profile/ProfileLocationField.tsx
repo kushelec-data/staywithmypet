@@ -3,7 +3,7 @@
 import { GooglePlacesInput } from "@/components/location/GooglePlacesInput";
 import { getGoogleMapsApiKey } from "@/lib/google-places-loader";
 import { PROFILE_LOCATION_CITY_OPTIONS, PROFILE_LOCATION_DATALIST_ID } from "@/lib/location-datalist";
-import { FORM_FIELD_LABEL_CLASS } from "@/lib/form-field-styles";
+import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
 import {
   applyGooglePlaceToFormState,
   clearProfileLocationConfirmation,
@@ -29,7 +29,7 @@ export function profileLocationInputValue(state: ProfileLocationFormState): stri
 }
 
 export function ProfileLocationField({
-  id = "location",
+  id = "profile-location-input",
   name = "location",
   label,
   placeholder,
@@ -45,9 +45,9 @@ export function ProfileLocationField({
 
   return (
     <div>
-      <label htmlFor={id} className={FORM_FIELD_LABEL_CLASS}>
+      <RequiredFieldLabel htmlFor={id} required={required}>
         {label}
-      </label>
+      </RequiredFieldLabel>
       <GooglePlacesInput
         id={id}
         name={name}

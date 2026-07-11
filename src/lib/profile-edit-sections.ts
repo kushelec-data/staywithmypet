@@ -1,16 +1,15 @@
-import { getWordCount, isBioWordCountValid } from "@/lib/bio-words";
-import { hasSavedProfileLocation } from "@/lib/profile-location";
-import {
-  hasCarePreferences,
-  hasLivingSituation,
-  profileCalendarSelectedDates,
-} from "@/lib/profile-details";
-import { hasPetParentProfileContent } from "@/lib/profile-parent-form";
+import type { PetIntroDisplay } from "@/lib/pet-intro";
+import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
-import { isPhoneOnFile } from "@/lib/profile-completeness";
 import type { ProfileRow } from "@/lib/profile-utils";
-import type { ProfileActiveMode } from "@/lib/profile-mode";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
+import { isPhoneOnFile } from "@/lib/profile-completeness";
+import {
+  COMMON_REQUIRED_FIELDS,
+  evaluateProfileRequiredFields,
+  isSinglePetMarketplaceReady,
+  PET_FRIEND_REQUIRED_FIELDS,
+} from "@/lib/profile-required-fields";
 
 export type ProfileEditSectionKey = "basic" | "trust" | "petFriend" | "availability" | "petParent";
 
@@ -20,7 +19,6 @@ export function visibleProfileEditSteps(
 ): ProfileEditSectionKey[] {
   const mode = activeMode ?? (role === "pet_parent" ? "pet_parent" : "pet_friend");
   if (mode === "pet_friend") return ["basic", "trust", "petFriend", "availability"];
-  // Pet parent edit: pets and care needs are managed on My Pets — wizard is basic + trust only.
   return ["basic", "trust"];
 }
 
@@ -40,17 +38,31 @@ export function profileEditStepFromHash(hash: string): ProfileEditSectionKey | n
   return HASH_TO_STEP[id] ?? null;
 }
 
+function evaluateForProfile(
+  profile: ProfileRow,
+  petIntros: PetIntroDisplay[] = [],
+): ReturnType<typeof evaluateProfileRequiredFields> {
+  return evaluateProfileRequiredFields({
+    profile,
+    activeMode: resolveActiveMode(profile.role, profile.active_mode),
+    petIntros,
+  });
+}
+
+function fieldDone(
+  result: ReturnType<typeof evaluateProfileRequiredFields>,
+  id: (typeof COMMON_REQUIRED_FIELDS)[number]["id"],
+): boolean {
+  return result.fields.find((f) => f.id === id)?.done ?? false;
+}
+
 export function isBasicProfileSectionComplete(
   profile: ProfileRow | null,
-  bioValid: boolean,
+  _bioValid?: boolean,
 ): boolean {
   if (!profile) return false;
-  return Boolean(
-    profile.display_name?.trim() &&
-      hasSavedProfileLocation(profile) &&
-      (profile.languages?.length ?? 0) > 0 &&
-      bioValid,
-  );
+  const result = evaluateForProfile(profile);
+  return COMMON_REQUIRED_FIELDS.every((def) => fieldDone(result, def.id));
 }
 
 export function isTrustSafetySectionComplete(profile: ProfileRow | null): boolean {
@@ -59,37 +71,38 @@ export function isTrustSafetySectionComplete(profile: ProfileRow | null): boolea
   return isPhoneOnFile(profile) || Boolean(emergency?.name?.trim());
 }
 
+const FRIEND_PROFILE_FIELD_IDS = PET_FRIEND_REQUIRED_FIELDS.filter(
+  (f) => f.id !== "availability",
+).map((f) => f.id);
+
 export function isPetFriendSectionComplete(profile: ProfileRow | null): boolean {
-  if (!profile?.details) return false;
-  const details = profile.details;
-  return (
-    hasCarePreferences(details) ||
-    hasLivingSituation(details) ||
-    profileCalendarSelectedDates(details).length > 0
-  );
+  if (!profile) return false;
+  const result = evaluateForProfile(profile);
+  return FRIEND_PROFILE_FIELD_IDS.every((id) => fieldDone(result, id));
 }
 
 export function isAvailabilitySectionComplete(profile: ProfileRow | null): boolean {
-  if (!profile?.details) return false;
-  return profileCalendarSelectedDates(profile.details).length > 0;
+  if (!profile) return false;
+  const result = evaluateForProfile(profile);
+  return fieldDone(result, "availability");
 }
 
-export function isPetParentSectionComplete(profile: ProfileRow | null): boolean {
+export function isPetParentSectionComplete(
+  profile: ProfileRow | null,
+  petIntros: PetIntroDisplay[] = [],
+): boolean {
   if (!profile) return false;
-  return hasPetParentProfileContent(profile.details ?? {});
+  return petIntros.some(isSinglePetMarketplaceReady);
 }
 
 export function isProfileEditSectionComplete(
   section: ProfileEditSectionKey,
   profile: ProfileRow | null,
-  bioValid?: boolean,
+  options: { petIntros?: PetIntroDisplay[] } = {},
 ): boolean {
   switch (section) {
     case "basic":
-      return isBasicProfileSectionComplete(
-        profile,
-        bioValid ?? isBioWordCountValid(getWordCount(profile?.bio ?? "")),
-      );
+      return isBasicProfileSectionComplete(profile);
     case "trust":
       return isTrustSafetySectionComplete(profile);
     case "petFriend":
@@ -97,6 +110,6 @@ export function isProfileEditSectionComplete(
     case "availability":
       return isAvailabilitySectionComplete(profile);
     case "petParent":
-      return isPetParentSectionComplete(profile);
+      return isPetParentSectionComplete(profile, options.petIntros);
   }
 }

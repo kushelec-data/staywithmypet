@@ -68,31 +68,13 @@ function completenessLabelsFromDictionary(
   pc: Dictionary["profileCompleteness"],
 ): ProfileCompletenessLabels {
   const {
-    profilePhoto,
-    bioCompleted,
-    location,
-    phone,
-    atLeastOnePet,
-    petCareDetails,
-    petAvailability,
-    carePreferences,
-    availability,
-    livingSituation,
-    emergencyContact,
+    sectionTitle: _a,
+    scoreTitle: _b,
+    scoreHelper: _c,
+    profileComplete: _d,
+    ...labels
   } = pc;
-  return {
-    profilePhoto,
-    bioCompleted,
-    location,
-    phone,
-    atLeastOnePet,
-    petCareDetails,
-    petAvailability,
-    carePreferences,
-    availability,
-    livingSituation,
-    emergencyContact,
-  };
+  return labels as ProfileCompletenessLabels;
 }
 
 export function DashboardPageContent() {

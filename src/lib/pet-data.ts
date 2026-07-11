@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Pet } from "@/lib/pets";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
+import { applyMarketplaceVisibility } from "@/lib/profile-marketplace-visibility";
 import { IMAGES, placeholderPetImage } from "@/lib/images";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { resolveBreedForSave } from "@/lib/pet-breeds";
@@ -191,7 +192,7 @@ function buildPetRow(ownerId: string, input: PetProfileFormInput) {
     details: buildPetDetails(input),
     tags,
     is_active: true,
-    is_public: true,
+    is_public: false,
   };
 }
 
@@ -244,6 +245,7 @@ export async function saveNewPet(
     throw new Error(formatSupabaseError(error));
   }
   if (!data) throw new Error("Could not save pet.");
+  await applyMarketplaceVisibility(supabase, ownerId);
   return data.id;
 }
 
@@ -287,6 +289,7 @@ export async function updatePetProfile(
   if (error) {
     throw new Error(formatSupabaseError(error));
   }
+  await applyMarketplaceVisibility(supabase, ownerId);
 }
 
 export async function createPetWithPhotos(
