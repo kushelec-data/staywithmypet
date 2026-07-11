@@ -83,6 +83,8 @@ export const et = {
   footer: {
     tagline:
       "Rohkem armastust. Vähem üksildust. Lemmikloomadele ja inimestele. Kogukonnapõhine platvorm, mis ühendab loomaomanikke ja sõpru vastutustundliku, paindliku hoolduse kaudu.",
+    shortTagline:
+      "Rohkem armastust. Vähem üksildust. Kogukond, mis ühendab loomaomanikke ja loomasõpru vastutustundliku hoolduse kaudu.",
     points: ["Vastutustundlik jagamine", "Kontrollitud kogukond", "Raha ei liigu kasutajate vahel"],
     joinCta: "Liitu kogukonnaga",
     copyright: "© {year} Stay With My Pet. Kõik õigused kaitstud.",

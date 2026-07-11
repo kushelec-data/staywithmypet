@@ -83,6 +83,8 @@ export const en = {
   footer: {
     tagline:
       "More love. Less loneliness. For pets and people. A community-based platform connecting Pet Parents and Pet Friends through responsible, flexible care.",
+    shortTagline:
+      "More love. Less loneliness. A community connecting Pet Parents and Pet Friends through responsible, flexible pet care.",
     points: ["Responsible sharing", "Verified community", "No money between users"],
     joinCta: "Join the community",
     copyright: "© {year} Stay With My Pet. All rights reserved.",
