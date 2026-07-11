@@ -28,6 +28,7 @@ export type ProfileCompleteness = {
   completedCount: number;
   totalCount: number;
   marketplaceReady: boolean;
+  marketplaceMinimumEligible: boolean;
 };
 
 export type ProfileCompletenessLabels = Record<ProfileRequiredFieldId, string>;
@@ -75,6 +76,7 @@ export type ProfileCompletenessInput = Pick<
   | "details"
   | "display_name"
   | "languages"
+  | "is_public"
 >;
 
 export type ProfileCompletenessOptions = {
@@ -154,6 +156,7 @@ export function computeProfileCompleteness(
     completedCount: evaluated.completedCount,
     totalCount: evaluated.totalCount,
     marketplaceReady: evaluated.marketplaceReady,
+    marketplaceMinimumEligible: evaluated.marketplaceMinimumEligible,
   };
 }
 

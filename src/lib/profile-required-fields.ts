@@ -14,6 +14,7 @@ import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
 import type { PetFriendProfileFormInput } from "@/lib/profile-friend-form";
 import type { ProfileRole } from "@/lib/profile-setup";
 import type { ProfileRow } from "@/lib/profile-utils";
+import { profileMeetsAnyMarketplaceMinimum } from "@/lib/profile-marketplace-eligibility";
 
 /** Shared required-field ids — single source for completeness, visibility, and forms. */
 export type ProfileRequiredFieldId =
@@ -110,7 +111,10 @@ export type ProfileRequiredFieldsResult = {
   totalCount: number;
   percent: number;
   missing: ProfileRequiredFieldStatus[];
+  /** Strict profile completion — used for UX guidance, not marketplace listing. */
   marketplaceReady: boolean;
+  /** Minimum fields required to appear on Find Care / Find Pets. */
+  marketplaceMinimumEligible: boolean;
 };
 
 export type EvaluateRequiredFieldsInput = {
@@ -131,6 +135,7 @@ export type EvaluateRequiredFieldsInput = {
   > & {
     active_mode?: ProfileActiveMode | null;
     details?: ProfileDetails | Record<string, unknown> | null;
+    is_public?: boolean | null;
   };
   activeMode?: ProfileActiveMode;
   petIntros?: PetIntroDisplay[];
@@ -334,9 +339,23 @@ export function evaluateProfileRequiredFields(
     percent,
     missing,
     marketplaceReady: commonComplete && roleComplete,
+    marketplaceMinimumEligible: profileMeetsAnyMarketplaceMinimum({
+      display_name: input.profile.display_name,
+      bio: input.profile.bio,
+      location: input.profile.location,
+      public_location: input.profile.public_location,
+      city: input.profile.city,
+      country: input.profile.country,
+      google_place_id: input.profile.google_place_id,
+      latitude: input.profile.latitude,
+      longitude: input.profile.longitude,
+      is_public: input.profile.is_public,
+      role: input.profile.role,
+    }),
   };
 }
 
+/** @deprecated Strict completion only — use `profileMeetsAnyMarketplaceMinimum` for listing eligibility. */
 export function isProfileMarketplaceReady(
   profile: EvaluateRequiredFieldsInput["profile"],
   options: { activeMode?: ProfileActiveMode; petIntros?: PetIntroDisplay[] } = {},

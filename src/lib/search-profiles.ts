@@ -5,7 +5,10 @@ import {
   excludeMarketplaceSelf,
   filterProfilesWithActivePetFriendMembership,
 } from "@/lib/marketplace-membership";
-import { isProfileMarketplaceReady } from "@/lib/profile-required-fields";
+import {
+  isPetFriendMarketplaceMinimumEligible,
+  isDiscoverableOnFindCare,
+} from "@/lib/profile-marketplace-eligibility";
 import { resolveProfilePublicLocation } from "@/lib/profile-location";
 import { blurCoordinates } from "@/lib/map-privacy";
 import { parseCoord } from "@/lib/parse-coord";
@@ -52,15 +55,12 @@ function isListableProfile(row: {
   google_place_id?: string | null;
   latitude?: unknown;
   longitude?: unknown;
-  avatar_url?: string | null;
-  languages?: string[] | null;
+  is_public?: boolean | null;
   role: ProfileRole;
-  active_mode: string | null;
-  details?: unknown;
 }): boolean {
-  return isProfileMarketplaceReady({
+  if (!isDiscoverableOnFindCare(row)) return false;
+  return isPetFriendMarketplaceMinimumEligible({
     display_name: row.display_name,
-    avatar_url: row.avatar_url ?? null,
     bio: row.bio,
     location: row.location,
     public_location: row.public_location ?? null,
@@ -69,10 +69,8 @@ function isListableProfile(row: {
     google_place_id: row.google_place_id ?? null,
     latitude: row.latitude as number | null,
     longitude: row.longitude as number | null,
-    languages: row.languages ?? [],
+    is_public: true,
     role: row.role,
-    active_mode: row.active_mode as import("@/lib/profile-mode").ProfileActiveMode | null,
-    details: row.details as import("@/lib/profile-details").ProfileDetails | undefined,
   });
 }
 

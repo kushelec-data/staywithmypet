@@ -13,6 +13,7 @@ import { pickCareTypesFromRow } from "@/lib/pet-care-type";
 import { blurCoordinates } from "@/lib/map-privacy";
 import { parseCoord } from "@/lib/parse-coord";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
+import { isPetMarketplaceMinimumEligible } from "@/lib/profile-marketplace-eligibility";
 import { formatSupabaseError } from "@/lib/profile-load";
 import {
   petMatchesActivity,
@@ -261,6 +262,16 @@ function mapRowToPublicSearchPet(
     if (!owner?.is_public) return null;
     if ("is_public" in row && row.is_public === false) return null;
     if (row.is_active === false) return null;
+    if (
+      !isPetMarketplaceMinimumEligible({
+        name: strFrom(row.name),
+        species: strFrom(row.species),
+        is_public: "is_public" in row ? (row.is_public as boolean | null) : true,
+        is_active: row.is_active as boolean | null,
+      })
+    ) {
+      return null;
+    }
   } else if (!owner) {
     return null;
   }

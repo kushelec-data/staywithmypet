@@ -26,11 +26,11 @@ export function ProfileRequiredFieldsBanner({
           .replace("{completed}", String(result.completedCount))
           .replace("{total}", String(result.totalCount))}
       </p>
-      {!result.marketplaceReady ? (
+      {!result.marketplaceMinimumEligible ? (
         <p className="mt-1 text-brand-teal">{copy.visibilityHint}</p>
-      ) : (
+      ) : result.marketplaceReady ? (
         <p className="mt-1 font-medium text-brand-teal">{copy.marketplaceReady}</p>
-      )}
+      ) : null}
     </div>
   );
 }
