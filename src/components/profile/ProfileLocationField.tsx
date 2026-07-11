@@ -69,7 +69,9 @@ export function ProfileLocationField({
           ))}
         </datalist>
       ) : null}
-      <p className="mt-1 text-xs text-muted">{useGoogle ? hintGoogle : hintFallback}</p>
+      <p className="mt-1 whitespace-pre-line text-xs text-muted">
+        {useGoogle ? hintGoogle : hintFallback}
+      </p>
       {error ? (
         <p className="mt-1 text-xs text-brand-pink" role="alert">
           {error}

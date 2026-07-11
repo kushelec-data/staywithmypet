@@ -35,7 +35,7 @@ export type ProfileCompletenessLabels = Record<ProfileRequiredFieldId, string>;
 export const DEFAULT_PROFILE_COMPLETENESS_LABELS: ProfileCompletenessLabels = {
   display_name: "Display name",
   profile_photo: "Profile photo",
-  location: "Location added",
+  location: "Address added",
   bio: "Bio completed",
   languages: "Languages",
   pet_listing: "At least one pet",
