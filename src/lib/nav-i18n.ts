@@ -11,8 +11,13 @@ export const primaryNavConfig = [
   { href: "/about", labelKey: "about" },
 ] as const;
 
-/** Center nav when logged in — marketing pages omitted. */
-export const loggedInPrimaryNavConfig = primaryNavConfig.slice(0, 5);
+/** Center nav when logged in — hide marketing/info pages (How It Works, Pricing, FAQ). */
+export const loggedInPrimaryNavConfig = primaryNavConfig.filter(
+  (item) =>
+    item.labelKey !== "howItWorks" &&
+    item.labelKey !== "pricing" &&
+    item.labelKey !== "faq",
+);
 
 export type NavbarLabelKey = (typeof primaryNavConfig)[number]["labelKey"];
 
