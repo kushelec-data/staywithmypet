@@ -7,18 +7,37 @@ import {
   attachBookingIdToRequestAcceptance,
   bookingTermsContextForRole,
   findBookingIdForRequest,
-  hasAcceptedTermsVersion,
   hasBookingTermsForRequest,
+  isTermsSchemaMissingError,
   recordTermsAcceptance,
   type TermsAcceptanceContext,
 } from "@/lib/terms-acceptance";
-import type { MembershipRole } from "@/lib/membership";
+import {
+  hasActiveMembershipForRole,
+  type MembershipRole,
+  type UserMembershipsByRole,
+} from "@/lib/membership";
+import { loadMembershipsForUser, MEMBERSHIP_REQUIRED_MESSAGE } from "@/lib/membership-access";
+import { isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
 import { headers } from "next/headers";
 
-export type SubmitCareRequestInput = Omit<CreateCareRequestInput, "senderId"> & {
+export type SubmitCareRequestInput = Omit<CreateCareRequestInput, "senderId" | "requestId"> & {
   termsAccepted?: boolean;
   senderRole?: MembershipRole;
 };
+
+export type CareRequestActionErrorCode =
+  | "NOT_SIGNED_IN"
+  | "MEMBERSHIP_REQUIRED"
+  | "TERMS_REQUIRED"
+  | "TERMS_STORAGE_ERROR"
+  | "TERMS_SCHEMA_MISSING"
+  | "REQUEST_CREATE_ERROR"
+  | "VALIDATION_ERROR";
+
+export type SubmitCareRequestResult =
+  | { success: true; requestId: string }
+  | { success: false; code: CareRequestActionErrorCode; message: string };
 
 async function requireUserId(): Promise<string | null> {
   const supabase = await createClient();
@@ -29,31 +48,46 @@ async function requireUserId(): Promise<string | null> {
 }
 
 async function requestMeta(): Promise<{ ipAddress: string | null; userAgent: string | null }> {
-  const h = await headers();
-  const forwarded = h.get("x-forwarded-for");
-  const ipAddress = forwarded?.split(",")[0]?.trim() ?? h.get("x-real-ip");
-  const userAgent = h.get("user-agent");
-  return { ipAddress: ipAddress ?? null, userAgent: userAgent ?? null };
+  try {
+    const h = await headers();
+    const forwarded = h.get("x-forwarded-for");
+    const ipAddress = forwarded?.split(",")[0]?.trim() ?? h.get("x-real-ip");
+    const userAgent = h.get("user-agent");
+    return { ipAddress: ipAddress ?? null, userAgent: userAgent ?? null };
+  } catch (err) {
+    console.warn("[care-request:submit] requestMeta unavailable", {
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return { ipAddress: null, userAgent: null };
+  }
 }
 
-async function ensureTermsRecorded(
-  userId: string,
-  context: TermsAcceptanceContext,
-  requestId: string,
-): Promise<void> {
-  const supabase = await createClient();
-  const already = await hasBookingTermsForRequest(supabase, userId, requestId, context);
-  if (already) return;
+function membershipSnapshot(
+  memberships: UserMembershipsByRole,
+  role: MembershipRole,
+): Record<string, unknown> {
+  const row = memberships[role];
+  return {
+    role,
+    hasActive: hasActiveMembershipForRole(memberships, role),
+    status: row?.status ?? null,
+    planId: row?.plan_id ?? null,
+    endDate: row?.end_date ?? null,
+  };
+}
 
-  const meta = await requestMeta();
-  const recorded = await recordTermsAcceptance(supabase, userId, {
-    context,
-    requestId,
-    ...meta,
-  });
-  if (!recorded.ok) {
-    throw new Error("Could not record Terms of Use acceptance.");
-  }
+function membershipRequiredMessage(role: MembershipRole): string {
+  return role === "pet_parent"
+    ? "An active Pet Parent membership is required to send a care request."
+    : "An active Pet Friend membership is required to send a care request.";
+}
+
+function termsStorageFriendlyMessage(): string {
+  return "We could not save your Terms acceptance. Please try again.";
+}
+
+function termsSchemaFriendlyMessage(): string {
+  return "Terms acceptance is not configured yet. Please contact support or try again later.";
 }
 
 /**
@@ -62,67 +96,178 @@ async function ensureTermsRecorded(
  */
 export async function submitCareRequestAction(
   input: SubmitCareRequestInput,
-): Promise<{ requestId: string }> {
+): Promise<SubmitCareRequestResult> {
   const userId = await requireUserId();
   if (!userId) {
-    throw new Error("Not signed in.");
+    return { success: false, code: "NOT_SIGNED_IN", message: "Not signed in." };
   }
 
-  if (!input.termsAccepted || !input.senderRole) {
-    throw new Error("Terms of Use acceptance is required before sending a booking request.");
+  console.info("[care-request:submit] start", {
+    userId,
+    petId: input.petId,
+    senderRole: input.senderRole ?? null,
+    termsAccepted: Boolean(input.termsAccepted),
+  });
+
+  if (!input.termsAccepted) {
+    console.warn("[care-request:submit] terms not accepted", { userId });
+    return {
+      success: false,
+      code: "TERMS_REQUIRED",
+      message: "Terms of Use acceptance is required before sending a booking request.",
+    };
+  }
+
+  if (!input.senderRole) {
+    return {
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: "Could not determine your membership role for this request.",
+    };
   }
 
   const supabase = await createClient();
-  const hasCurrentTerms = await hasAcceptedTermsVersion(supabase, userId);
-  if (!hasCurrentTerms && !input.termsAccepted) {
-    throw new Error("Please accept the latest Terms of Use before continuing.");
+  const memberships = await loadMembershipsForUser(supabase, userId);
+  const membershipResult = membershipSnapshot(memberships, input.senderRole);
+
+  console.info("[care-request:submit] membership check", {
+    userId,
+    petId: input.petId,
+    ...membershipResult,
+  });
+
+  if (!hasActiveMembershipForRole(memberships, input.senderRole)) {
+    return {
+      success: false,
+      code: "MEMBERSHIP_REQUIRED",
+      message: membershipRequiredMessage(input.senderRole),
+    };
   }
 
-  const { requestId } = await createCareRequest(supabase, {
-    ...input,
-    senderId: userId,
+  const requestId = crypto.randomUUID();
+  const termsContext = bookingTermsContextForRole(input.senderRole);
+  const meta = await requestMeta();
+  const termsRecorded = await recordTermsAcceptance(supabase, userId, {
+    context: termsContext,
+    membershipRole: input.senderRole,
+    requestId,
+    ...meta,
   });
 
-  await ensureTermsRecorded(
+  console.info("[care-request:submit] terms acceptance", {
     userId,
-    bookingTermsContextForRole(input.senderRole),
     requestId,
-  );
-
-  console.info("[request-email] request created", {
-    requestId,
-    senderId: userId,
-    receiverId: input.receiverId,
-    petId: input.petId,
-    petParentId: input.petParentId,
-    petFriendId: input.petFriendId,
+    context: termsContext,
+    ok: termsRecorded.ok,
+    ...(termsRecorded.ok
+      ? {}
+      : {
+          code: termsRecorded.code,
+          message: termsRecorded.error,
+          details: termsRecorded.details,
+          hint: termsRecorded.hint,
+        }),
   });
+
+  if (!termsRecorded.ok) {
+    if (isTermsSchemaMissingError(termsRecorded)) {
+      return {
+        success: false,
+        code: "TERMS_SCHEMA_MISSING",
+        message: termsSchemaFriendlyMessage(),
+      };
+    }
+    return {
+      success: false,
+      code: "TERMS_STORAGE_ERROR",
+      message: termsStorageFriendlyMessage(),
+    };
+  }
 
   try {
-    await deliverCareRequestNotifications(requestId, userId);
-  } catch (err) {
-    console.error("[request-email] error", {
+    const created = await createCareRequest(supabase, {
+      ...input,
+      senderId: userId,
       requestId,
-      stage: "deliverCareRequestNotifications",
-      message: err instanceof Error ? err.message : String(err),
     });
-  }
 
-  return { requestId };
+    console.info("[care-request:submit] request created", {
+      userId,
+      requestId: created.requestId,
+      petId: input.petId,
+      receiverId: input.receiverId,
+    });
+
+    try {
+      await deliverCareRequestNotifications(created.requestId, userId);
+    } catch (err) {
+      console.error("[request-email] error", {
+        requestId: created.requestId,
+        stage: "deliverCareRequestNotifications",
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    return { success: true, requestId: created.requestId };
+  } catch (err) {
+    if (err instanceof Error && err.message.includes(MEMBERSHIP_REQUIRED_MESSAGE)) {
+      console.warn("[care-request:submit] membership denied in createCareRequest", {
+        userId,
+        petId: input.petId,
+        senderRole: input.senderRole,
+      });
+      return {
+        success: false,
+        code: "MEMBERSHIP_REQUIRED",
+        message: membershipRequiredMessage(input.senderRole),
+      };
+    }
+
+    if (isPostgrestError(err)) {
+      logSupabaseError("care-request:submit insert", err);
+      console.error("[care-request:submit] request insert failed", {
+        userId,
+        petId: input.petId,
+        code: err.code,
+        message: err.message,
+        details: err.details,
+        hint: err.hint,
+      });
+    } else {
+      console.error("[care-request:submit] request create failed", {
+        userId,
+        petId: input.petId,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    return {
+      success: false,
+      code: "REQUEST_CREATE_ERROR",
+      message: "Could not send request. Please try again.",
+    };
+  }
 }
 
 export async function acceptCareRequestAction(input: {
   requestId: string;
   receiverRole: MembershipRole;
   termsAccepted?: boolean;
-}): Promise<{ conversationId: string | null }> {
+}): Promise<
+  | { success: true; conversationId: string | null }
+  | { success: false; code: CareRequestActionErrorCode; message: string }
+> {
   const userId = await requireUserId();
   if (!userId) {
-    throw new Error("Not signed in.");
+    return { success: false, code: "NOT_SIGNED_IN", message: "Not signed in." };
   }
 
   if (!input.termsAccepted) {
-    throw new Error("Terms of Use acceptance is required before accepting a booking.");
+    return {
+      success: false,
+      code: "TERMS_REQUIRED",
+      message: "Terms of Use acceptance is required before accepting a booking.",
+    };
   }
 
   const supabase = await createClient();
@@ -143,27 +288,51 @@ export async function acceptCareRequestAction(input: {
       ...meta,
     });
     if (!recorded.ok) {
-      throw new Error("Could not record Terms of Use acceptance.");
+      if (isTermsSchemaMissingError(recorded)) {
+        return {
+          success: false,
+          code: "TERMS_SCHEMA_MISSING",
+          message: termsSchemaFriendlyMessage(),
+        };
+      }
+      return {
+        success: false,
+        code: "TERMS_STORAGE_ERROR",
+        message: termsStorageFriendlyMessage(),
+      };
     }
   }
 
-  const { conversationId } = await respondToRequest(
-    supabase,
-    userId,
-    input.requestId,
-    "accepted",
-  );
-
-  const bookingId = await findBookingIdForRequest(supabase, input.requestId);
-  if (bookingId) {
-    await attachBookingIdToRequestAcceptance(
+  try {
+    const { conversationId } = await respondToRequest(
       supabase,
       userId,
       input.requestId,
-      bookingId,
-      context,
+      "accepted",
     );
-  }
 
-  return { conversationId };
+    const bookingId = await findBookingIdForRequest(supabase, input.requestId);
+    if (bookingId) {
+      await attachBookingIdToRequestAcceptance(
+        supabase,
+        userId,
+        input.requestId,
+        bookingId,
+        context,
+      );
+    }
+
+    return { success: true, conversationId };
+  } catch (err) {
+    console.error("[care-request:accept] failed", {
+      userId,
+      requestId: input.requestId,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return {
+      success: false,
+      code: "REQUEST_CREATE_ERROR",
+      message: err instanceof Error ? err.message : "Could not accept this request.",
+    };
+  }
 }

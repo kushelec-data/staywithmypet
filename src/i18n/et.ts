@@ -253,6 +253,13 @@ export const et = {
     loadError: "Päringuid ei saanud laadida.",
     respondError: "Päringut ei saanud uuendada.",
     saveError: "Päringut ei saanud saata. Proovi uuesti.",
+    petParentMembershipRequired:
+      "Hoolduspäringu saatmiseks on vajalik aktiivne lemmikloomaomaniku liikmesus.",
+    petFriendMembershipRequired:
+      "Hoolduspäringu saatmiseks on vajalik aktiivne loomasõbra liikmesus.",
+    viewMembershipPlans: "Vaata liikmesuse plaane",
+    termsSchemaMissing:
+      "Kasutustingimuste nõusolek pole veel seadistatud. Võta ühendust toe või proovi hiljem uuesti.",
     sendRequest: "Saada päring",
     sendCareRequest: "Saada hoiupäring",
     requestSent: "Päring saadetud",

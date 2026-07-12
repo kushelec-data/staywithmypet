@@ -115,11 +115,15 @@ export function RequestsPageContent() {
       if (decision === "accepted") {
         if (!receiverRole) throw new Error(t.requests.respondError);
         const { acceptCareRequestAction } = await import("@/app/actions/care-requests");
-        const { conversationId } = await acceptCareRequestAction({
+        const result = await acceptCareRequestAction({
           requestId,
           receiverRole,
           termsAccepted,
         });
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+        const { conversationId } = result;
         try {
           const { sendRequestStatusEmailsAction } = await import("@/app/actions/email-events");
           await sendRequestStatusEmailsAction(requestId, decision);

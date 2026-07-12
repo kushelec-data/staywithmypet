@@ -91,6 +91,8 @@ export type CreateCareRequestInput = {
   message: string;
   careType: string;
   selectedDates: string[];
+  /** When set, used as the request row id (terms acceptance may reference it first). */
+  requestId?: string;
 };
 
 /** Preferred label for care requests using stored selected dates when available. */
@@ -677,7 +679,7 @@ export async function createCareRequest(
   const careType = input.careType.trim();
   const message = input.message.trim() || null;
 
-  const requestId = crypto.randomUUID();
+  const requestId = input.requestId ?? crypto.randomUUID();
   const payload: RequestInsert = {
     id: requestId,
     pet_id: input.petId,
@@ -697,7 +699,7 @@ export async function createCareRequest(
   if (error) {
     logSupabaseError("insert", error);
     console.error("[request] insert payload", payload);
-    throw error;
+    throw new Error(error.message || "Could not create care request.");
   }
 
   console.info("[request:delivery] inserted", {

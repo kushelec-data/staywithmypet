@@ -21,12 +21,14 @@ import { formatRequestSubmitErrorForUi } from "@/lib/supabase-errors";
 import { createClient } from "@/lib/supabase";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import type { CareRequestActionErrorCode } from "@/app/actions/care-requests";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { membershipUpsellVariantForRequest } from "@/lib/membership-upsell";
 import { useProfile } from "@/context/ProfileContext";
 import {
-  canUseMembershipFeaturesForMode,
   emptyMembershipsByRole,
+  hasActiveMembershipForRole,
 } from "@/lib/membership";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 import { isMembershipRequiredError } from "@/lib/membership-access";
@@ -98,10 +100,16 @@ export function SendRequestButton({
 
   const senderMode: ProfileActiveMode =
     target.kind === "pet" ? "pet_friend" : "pet_parent";
+  const senderRole = senderMode === "pet_friend" ? "pet_friend" : "pet_parent";
   const memberships = profile?.memberships ?? emptyMembershipsByRole();
-  const membershipReady = Boolean(user) && !profileLoading;
-  const needsUpgrade =
-    membershipReady && !canUseMembershipFeaturesForMode(memberships, senderMode);
+  const membershipCheckReady = Boolean(user) && !profileLoading && !authLoading;
+  const hasSenderMembership =
+    membershipCheckReady && hasActiveMembershipForRole(memberships, senderRole);
+  const needsUpgrade = membershipCheckReady && !hasSenderMembership;
+  const membershipRequiredMessage =
+    senderRole === "pet_parent"
+      ? t.requests.petParentMembershipRequired
+      : t.requests.petFriendMembershipRequired;
 
   const bookableDates = useMemo(() => {
     const min = todayDateInputValue();
@@ -164,6 +172,11 @@ export function SendRequestButton({
     if (!isControlledModal || !requestModalOpen || !user || blocked || authLoading || profileLoading) {
       return;
     }
+    if (needsUpgrade) {
+      setOpen(false);
+      openUpgradeToast();
+      return;
+    }
     if (target.kind !== "profile") {
       setOpen(true);
       return;
@@ -188,7 +201,26 @@ export function SendRequestButton({
     petsLoading,
     router,
     setOpen,
+    needsUpgrade,
+    openUpgradeToast,
   ]);
+
+  function resolveSubmitErrorMessage(code: CareRequestActionErrorCode): string {
+    switch (code) {
+      case "MEMBERSHIP_REQUIRED":
+        return membershipRequiredMessage;
+      case "TERMS_REQUIRED":
+        return t.termsAcceptance.errors.acceptanceRequired;
+      case "TERMS_STORAGE_ERROR":
+        return t.termsAcceptance.errors.recordFailed;
+      case "TERMS_SCHEMA_MISSING":
+        return t.requests.termsSchemaMissing;
+      case "NOT_SIGNED_IN":
+        return t.auth.errorGeneric;
+      default:
+        return t.requests.saveError;
+    }
+  }
 
   async function handleOpen() {
     if (authLoading || profileLoading || blocked) return;
@@ -289,7 +321,7 @@ export function SendRequestButton({
     setError(null);
     try {
       const { submitCareRequestAction } = await import("@/app/actions/care-requests");
-      await submitCareRequestAction({
+      const result = await submitCareRequestAction({
         petId,
         petParentId,
         petFriendId,
@@ -298,8 +330,17 @@ export function SendRequestButton({
         careType: values.careType,
         selectedDates: values.selectedDates,
         termsAccepted: values.termsAccepted,
-        senderRole: target.kind === "pet" ? "pet_friend" : "pet_parent",
+        senderRole,
       });
+
+      if (!result.success) {
+        if (result.code === "MEMBERSHIP_REQUIRED") {
+          openUpgradeToast();
+        }
+        setError(resolveSubmitErrorMessage(result.code));
+        return;
+      }
+
       setOpen(false);
       setSuccess(true);
     } catch (err) {
@@ -343,10 +384,22 @@ export function SendRequestButton({
           size={size}
           className={`w-full ${className}`}
           onClick={handleOpen}
-          disabled={authLoading || profileLoading || blocked || success}
+          disabled={authLoading || profileLoading || blocked || success || needsUpgrade}
         >
           {buttonLabel}
         </Button>
+      ) : null}
+
+      {needsUpgrade && membershipCheckReady && !blocked ? (
+        <div className="mt-2 space-y-2 text-center text-xs">
+          <p className="text-muted">{membershipRequiredMessage}</p>
+          <Link
+            href="/membership"
+            className="inline-flex font-semibold text-brand-teal hover:underline"
+          >
+            {t.requests.viewMembershipPlans}
+          </Link>
+        </div>
       ) : null}
 
       {success ? (
@@ -372,6 +425,8 @@ export function SendRequestButton({
         requestPetId={target.kind === "pet" ? target.petId : null}
         availableDates={bookableDates}
         initialSelectedDates={initialSelectedDates}
+        membershipBlocked={needsUpgrade}
+        membershipMessage={membershipRequiredMessage}
         onClose={() => setOpen(false)}
         onSubmit={handleSubmit}
       />

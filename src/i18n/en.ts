@@ -252,6 +252,13 @@ export const en = {
     loadError: "Could not load requests.",
     respondError: "Could not update this request.",
     saveError: "Could not send request. Please try again.",
+    petParentMembershipRequired:
+      "An active Pet Parent membership is required to send a care request.",
+    petFriendMembershipRequired:
+      "An active Pet Friend membership is required to send a care request.",
+    viewMembershipPlans: "View membership plans",
+    termsSchemaMissing:
+      "Terms acceptance is not configured yet. Please contact support or try again later.",
     sendRequest: "Send request",
     sendCareRequest: "Send care request",
     requestSent: "Request sent",

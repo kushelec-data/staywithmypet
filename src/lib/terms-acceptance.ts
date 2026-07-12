@@ -104,7 +104,10 @@ export async function recordTermsAcceptance(
   supabase: SupabaseClient,
   userId: string,
   input: RecordTermsAcceptanceInput,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true }
+  | { ok: false; error: string; code?: string | null; details?: string | null; hint?: string | null }
+> {
   const { error } = await supabase.from("terms_acceptance").insert({
     user_id: userId,
     terms_version: input.termsVersion ?? CURRENT_TERMS_VERSION,
@@ -119,10 +122,35 @@ export async function recordTermsAcceptance(
   });
 
   if (error) {
-    console.error("[terms] record failed", error.message);
-    return { ok: false, error: error.message };
+    console.error("[terms] record failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    return {
+      ok: false,
+      error: error.message,
+      code: error.code ?? null,
+      details: error.details ?? null,
+      hint: error.hint ?? null,
+    };
   }
   return { ok: true };
+}
+
+export function isTermsSchemaMissingError(error: {
+  code?: string | null;
+  message?: string;
+}): boolean {
+  const code = error.code ?? "";
+  const message = error.message ?? "";
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    /relation.*terms_acceptance.*does not exist/i.test(message) ||
+    /schema cache.*terms_acceptance/i.test(message)
+  );
 }
 
 export async function attachBookingIdToRequestAcceptance(

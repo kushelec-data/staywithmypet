@@ -5,6 +5,7 @@ import { RequestBookingCalendar } from "@/components/calendar/RequestBookingCale
 import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
 import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
 import { Button } from "@/components/ui/Button";
+import Link from "next/link";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { careTypeRequestOptions } from "@/lib/care-type-options";
 import { translateProfileLabel } from "@/lib/profile-translations";
@@ -37,6 +38,8 @@ type RequestModalProps = {
   requestPetId?: string | null;
   availableDates: string[];
   initialSelectedDates?: string[];
+  membershipBlocked?: boolean;
+  membershipMessage?: string;
   onClose: () => void;
   onSubmit: (values: RequestFormValues) => void;
 };
@@ -52,6 +55,8 @@ export function RequestModal({
   requestPetId,
   availableDates,
   initialSelectedDates = [],
+  membershipBlocked = false,
+  membershipMessage,
   onClose,
   onSubmit,
 }: RequestModalProps) {
@@ -118,6 +123,10 @@ export function RequestModal({
     }
     if (!termsAccepted) {
       setLocalError(t.termsAcceptance.errors.acceptanceRequired);
+      return;
+    }
+    if (membershipBlocked) {
+      setLocalError(membershipMessage ?? t.requests.petParentMembershipRequired);
       return;
     }
 
@@ -233,15 +242,32 @@ export function RequestModal({
           </label>
         </div>
 
-        <TermsReviewBanner className="mt-4" />
-        <TermsAcceptanceCheckbox
-          variant="booking"
-          id="request-booking-terms"
-          checked={termsAccepted}
-          onCheckedChange={setTermsAccepted}
-          disabled={submitting}
-          className="mt-4"
-        />
+        {membershipBlocked ? (
+          <div
+            className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+            role="status"
+          >
+            <p>{membershipMessage ?? t.requests.petParentMembershipRequired}</p>
+            <Link
+              href="/membership"
+              className="mt-2 inline-flex font-semibold text-brand-teal hover:underline"
+            >
+              {t.requests.viewMembershipPlans}
+            </Link>
+          </div>
+        ) : (
+          <>
+            <TermsReviewBanner className="mt-4" />
+            <TermsAcceptanceCheckbox
+              variant="booking"
+              id="request-booking-terms"
+              checked={termsAccepted}
+              onCheckedChange={setTermsAccepted}
+              disabled={submitting}
+              className="mt-4"
+            />
+          </>
+        )}
 
         {displayError ? (
           <p
@@ -256,7 +282,11 @@ export function RequestModal({
           <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
             {t.requests.cancel}
           </Button>
-          <Button type="submit" size="sm" disabled={submitting || !termsAccepted}>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={submitting || membershipBlocked || !termsAccepted}
+          >
             {submitting ? t.auth.pleaseWait : t.requests.submit}
           </Button>
         </div>
