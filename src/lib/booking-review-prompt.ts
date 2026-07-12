@@ -1,9 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  autoCompleteDueBookings,
-  fetchBookings,
-  type Booking,
-} from "@/lib/bookings";
+import { fetchBookings, type Booking } from "@/lib/bookings";
 import {
   fetchMyReviewsForBookings,
   reviewTypeForBookingParticipant,
@@ -14,8 +10,6 @@ export async function fetchFirstBookingNeedingReview(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Booking | null> {
-  await autoCompleteDueBookings(supabase);
-
   const completed = await fetchBookings(supabase, userId, "completed");
   if (!completed.length) return null;
 

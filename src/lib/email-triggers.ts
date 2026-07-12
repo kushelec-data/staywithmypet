@@ -440,7 +440,7 @@ export async function triggerBookingConfirmedForRequest(requestId: string): Prom
 }
 
 export async function triggerBookingCompletedEmails(bookingId: string): Promise<void> {
-  const { triggerBookingReviewRequestEmails } = await import("@/lib/booking-review-emails");
-  await triggerBookingReviewRequestEmails(bookingId);
+  const { onBookingCompleted } = await import("@/lib/booking-completion");
+  await onBookingCompleted(bookingId, "manual");
 }
 

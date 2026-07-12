@@ -10,7 +10,7 @@ import {
   triggerEmailVerified,
   triggerPhoneVerified,
 } from "@/lib/email-triggers";
-import { triggerBookingReviewRequestEmails } from "@/lib/booking-review-emails";
+import { onBookingCompleted } from "@/lib/booking-completion";
 import { computeProfileCompleteness } from "@/lib/profile-completeness";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { fetchUserProfile } from "@/lib/profile-load";
@@ -208,7 +208,7 @@ export async function sendBookingCompletedEmailsAction(bookingId: string): Promi
   if (!data) return;
   if (userId !== data.pet_parent_id && userId !== data.pet_friend_id) return;
 
-  await triggerBookingReviewRequestEmails(bookingId);
+  await onBookingCompleted(bookingId, "manual");
 }
 
 export async function sendNewMessageEmailAction(input: {

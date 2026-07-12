@@ -1,6 +1,6 @@
 "use server";
 
-import { triggerBookingReviewRequestEmails } from "@/lib/booking-review-emails";
+import { onBookingCompleted } from "@/lib/booking-completion";
 import { completeBooking, formatBookingError } from "@/lib/bookings";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,8 +36,10 @@ export async function completeBookingAction(
     return { ok: false, error: "Not allowed." };
   }
 
+  const wasAlreadyCompleted = booking.status === "completed";
+
   try {
-    if (booking.status !== "completed") {
+    if (!wasAlreadyCompleted) {
       await completeBooking(supabase, bookingId.trim());
     }
   } catch (err) {
@@ -45,10 +47,11 @@ export async function completeBookingAction(
   }
 
   try {
-    await triggerBookingReviewRequestEmails(bookingId.trim());
+    await onBookingCompleted(bookingId.trim(), "manual");
   } catch (err) {
     console.error("[booking] review request emails failed", {
       bookingId,
+      path: "manual",
       message: err instanceof Error ? err.message : String(err),
     });
   }

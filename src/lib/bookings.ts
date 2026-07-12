@@ -266,12 +266,51 @@ async function enrichBookings(
   return rows.map((row) => mapBookingRow(row, petNames, profileNames, userId));
 }
 
+/** UTC calendar date (matches auto_complete_due_bookings_for_user SQL). */
+function todayUtcDateInput(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function findDueAutoCompleteBookingIds(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string[]> {
+  const todayUtc = todayUtcDateInput();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id")
+    .or(`pet_parent_id.eq.${userId},pet_friend_id.eq.${userId}`)
+    .not("status", "in", "(cancelled,completed)")
+    .lt("end_date", todayUtc);
+
+  if (error) {
+    console.warn("[bookings] auto-complete due query failed", {
+      userId,
+      message: error.message,
+      code: error.code,
+    });
+    return [];
+  }
+
+  return (data ?? []).map((row) => String(row.id));
+}
+
+async function runAutoCompleteWithReviewEmails(supabase: SupabaseClient): Promise<void> {
+  const newlyCompleted = await autoCompleteDueBookings(supabase);
+  if (!newlyCompleted.length) return;
+
+  const { triggerAutoCompletedReviewEmailsAction } = await import(
+    "@/app/actions/booking-review-emails"
+  );
+  void triggerAutoCompletedReviewEmailsAction(newlyCompleted);
+}
+
 export async function fetchBookings(
   supabase: SupabaseClient,
   userId: string,
   tab: BookingTab,
 ): Promise<Booking[]> {
-  await autoCompleteDueBookings(supabase);
+  await runAutoCompleteWithReviewEmails(supabase);
   const rows = await fetchBookingRows(supabase, userId, tab);
   const enriched = await enrichBookings(supabase, rows, userId);
   return enriched.filter((b) => b.displayStatus === tab);
@@ -282,7 +321,7 @@ export async function fetchBookingById(
   userId: string,
   bookingId: string,
 ): Promise<BookingDetail | null> {
-  await autoCompleteDueBookings(supabase);
+  await runAutoCompleteWithReviewEmails(supabase);
   const filter = `pet_parent_id.eq.${userId},pet_friend_id.eq.${userId}`;
 
   let row: BookingRowWithRequest | null = null;
@@ -357,14 +396,29 @@ export async function completeBooking(
   if (error) throw error;
 }
 
-/** Persist completed status when end_date is in the past (idempotent). */
-export async function autoCompleteDueBookings(supabase: SupabaseClient): Promise<void> {
+/**
+ * Persist completed status when end_date is in the past (idempotent).
+ * Returns booking IDs that were due and transitioned by this call.
+ */
+export async function autoCompleteDueBookings(supabase: SupabaseClient): Promise<string[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.id) return [];
+
+  const dueIds = await findDueAutoCompleteBookingIds(supabase, user.id);
+  if (!dueIds.length) return [];
+
   const { error } = await supabase.rpc("auto_complete_due_bookings_for_user");
-  if (!error) return;
-  if (isPostgrestError(error) && /auto_complete_due_bookings|Could not find the function/i.test(error.message)) {
-    return;
+  if (!error) return dueIds;
+
+  if (
+    isPostgrestError(error) &&
+    /auto_complete_due_bookings|Could not find the function/i.test(error.message)
+  ) {
+    return [];
   }
-  if (isMissingRelationError(error)) return;
+  if (isMissingRelationError(error)) return [];
   throw error;
 }
 

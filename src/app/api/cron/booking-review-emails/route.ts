@@ -1,3 +1,4 @@
+import { isCronRecoveryConfigured } from "@/lib/booking-completion";
 import { processPendingBookingReviewEmails } from "@/lib/booking-review-emails";
 import { NextResponse } from "next/server";
 
@@ -11,12 +12,19 @@ function isAuthorized(request: Request): boolean {
 
 /**
  * POST /api/cron/booking-review-emails
- * Sends "Leave a Review" emails for completed bookings (manual or auto-completed).
+ * Daily recovery/backfill for review reminder emails on completed bookings.
  *
- * Vercel Cron (see vercel.json): hourly
+ * Vercel Cron (see vercel.json): daily at 08:00 UTC — valid on Hobby plan.
  * Auth: Authorization: Bearer CRON_SECRET (Vercel) or x-cron-secret
  */
 export async function POST(request: Request) {
+  if (!isCronRecoveryConfigured()) {
+    console.error(
+      "[cron:booking-review-emails] CRON_SECRET or EMAIL_INTERNAL_SECRET is not configured",
+    );
+    return NextResponse.json({ error: "Cron not configured" }, { status: 503 });
+  }
+
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
