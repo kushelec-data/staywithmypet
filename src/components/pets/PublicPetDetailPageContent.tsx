@@ -141,7 +141,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
           className={`mb-4 ${STATUS_ALERT_WARNING_CLASS}`}
           role="status"
         >
-          Preview only — turn on public listing in pet settings so others can find this page.
+          {detail.previewListingPrivate}
         </p>
       ) : null}
 

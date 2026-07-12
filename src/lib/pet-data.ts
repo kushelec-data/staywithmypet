@@ -119,7 +119,7 @@ function buildPetDetails(input: PetProfileFormInput): Record<string, unknown> {
   };
 }
 
-function buildPetRow(ownerId: string, input: PetProfileFormInput) {
+function buildPetProfileFields(input: PetProfileFormInput) {
   const extraTags: string[] = [];
   if (input.speciesForm !== input.species && input.speciesForm) {
     extraTags.push(`species:${input.speciesForm}`);
@@ -159,7 +159,6 @@ function buildPetRow(ownerId: string, input: PetProfileFormInput) {
   ].filter(Boolean);
 
   return {
-    owner_id: ownerId,
     name: input.name.trim(),
     species: input.species,
     breed:
@@ -191,9 +190,26 @@ function buildPetRow(ownerId: string, input: PetProfileFormInput) {
     description: careNeeds || null,
     details: buildPetDetails(input),
     tags,
+  };
+}
+
+/** Fields persisted on pet profile save — never includes visibility flags. */
+export function buildPetUpdateFields(_ownerId: string, input: PetProfileFormInput) {
+  return buildPetProfileFields(input);
+}
+
+function buildPetInsertRow(ownerId: string, input: PetProfileFormInput) {
+  return {
+    ...buildPetProfileFields(input),
+    owner_id: ownerId,
     is_active: true,
     is_public: false,
   };
+}
+
+/** Legacy rows may have is_public null; treat as listed unless explicitly false. */
+export function resolvePetListingIsPublic(value: boolean | null | undefined): boolean {
+  return value !== false;
 }
 
 export async function saveNewPet(
@@ -201,7 +217,7 @@ export async function saveNewPet(
   ownerId: string,
   input: PetProfileFormInput,
 ): Promise<string> {
-  const fullRow = buildPetRow(ownerId, input);
+  const fullRow = buildPetInsertRow(ownerId, input);
 
   let { data, error } = await supabase.from("pets").insert(fullRow).select("id").single();
 
@@ -255,8 +271,7 @@ export async function updatePetProfile(
   petId: string,
   input: PetProfileFormInput,
 ): Promise<void> {
-  const fullRow = buildPetRow(ownerId, input);
-  const { owner_id: _o, is_active: _a, ...updates } = fullRow;
+  const updates = buildPetUpdateFields(ownerId, input);
 
   let { error } = await supabase.from("pets").update(updates).eq("id", petId).eq("owner_id", ownerId);
 
@@ -264,21 +279,21 @@ export async function updatePetProfile(
     const fallback = await supabase
       .from("pets")
       .update({
-        name: fullRow.name,
-        species: fullRow.species,
-        breed: fullRow.breed,
-        age_label: fullRow.age_label,
-        size_label: fullRow.size_label,
-        temperament: fullRow.temperament,
-        care_needs: fullRow.care_needs,
-        availability: fullRow.availability,
-        availability_dates: fullRow.availability_dates,
-        location: fullRow.location,
-        address: fullRow.address,
-        latitude: fullRow.latitude,
-        longitude: fullRow.longitude,
-        description: fullRow.description,
-        tags: fullRow.tags,
+        name: updates.name,
+        species: updates.species,
+        breed: updates.breed,
+        age_label: updates.age_label,
+        size_label: updates.size_label,
+        temperament: updates.temperament,
+        care_needs: updates.care_needs,
+        availability: updates.availability,
+        availability_dates: updates.availability_dates,
+        location: updates.location,
+        address: updates.address,
+        latitude: updates.latitude,
+        longitude: updates.longitude,
+        description: updates.description,
+        tags: updates.tags,
         details: buildPetDetails(input),
       })
       .eq("id", petId)
@@ -290,6 +305,24 @@ export async function updatePetProfile(
     throw new Error(formatSupabaseError(error));
   }
   await applyMarketplaceVisibility(supabase, ownerId);
+}
+
+/** Owner-only: explicit Find Pets listing toggle. */
+export async function updatePetListingVisibility(
+  supabase: SupabaseClient,
+  ownerId: string,
+  petId: string,
+  isPublic: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("pets")
+    .update({ is_public: isPublic })
+    .eq("id", petId)
+    .eq("owner_id", ownerId);
+
+  if (error) {
+    throw new Error(formatSupabaseError(error));
+  }
 }
 
 export async function createPetWithPhotos(

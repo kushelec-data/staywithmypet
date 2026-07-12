@@ -5,6 +5,7 @@ import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheck
 import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
 import { Button } from "@/components/ui/Button";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
+import { PetListingVisibilityControl } from "@/components/pets/PetListingVisibilityControl";
 import { PetFormChipGroup, PetFormSection } from "@/components/pets/PetFormSection";
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
 import { PetPhotoUpload, type ExistingPetPhotoItem } from "@/components/pets/PetPhotoUpload";
@@ -15,10 +16,11 @@ import {
   fetchUserPets,
   saveNewPet,
   toDbSpecies,
+  updatePetListingVisibility,
   updatePetProfile,
   type PetProfileFormInput,
 } from "@/lib/pet-data";
-import { mapPetRecordToFormInput } from "@/lib/pet-form-mapper";
+import { mapPetRecordToFormInput, mapPetListingIsPublic } from "@/lib/pet-form-mapper";
 import { GooglePlacesInput } from "@/components/location/GooglePlacesInput";
 import {
   finalizeLocationText,
@@ -137,6 +139,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProfileRequiredFieldId, string>>>({});
   const [listingTermsAccepted, setListingTermsAccepted] = useState(false);
   const [requiresListingTerms, setRequiresListingTerms] = useState(false);
+  const [isListedPublicly, setIsListedPublicly] = useState(false);
+  const [listingVisibilitySaving, setListingVisibilitySaving] = useState(false);
+  const [listingVisibilitySuccess, setListingVisibilitySuccess] = useState(false);
   const formInitializedRef = useRef(false);
   const { locale, t } = useLanguage();
   const petsCopy = t.account.petsPage;
@@ -260,6 +265,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             setForm(mapped);
             setDobDisplay(dob);
           }
+          setIsListedPublicly(mapPetListingIsPublic(row));
         }
         setDobError(null);
         const loadedPhotos = await fetchPetPhotosForOwner(supabase, ownerId, petId!);
@@ -306,6 +312,25 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     if (!user?.id || !petId) return;
     const loadedPhotos = await fetchPetPhotosForOwner(supabase, user.id, petId);
     setExistingPhotos(mapLoadedPhotos(loadedPhotos));
+  }
+
+  async function handleListingVisibilityChange(next: boolean) {
+    if (!user?.id || !petId) return;
+    const previous = isListedPublicly;
+    setIsListedPublicly(next);
+    setListingVisibilitySaving(true);
+    setListingVisibilitySuccess(false);
+    setError(null);
+    try {
+      await updatePetListingVisibility(supabase, user.id, petId, next);
+      setListingVisibilitySuccess(true);
+      notifyDashboardRefresh();
+    } catch (err) {
+      setIsListedPublicly(previous);
+      setError(err instanceof Error ? err.message : t.account.petsPage.savePetError);
+    } finally {
+      setListingVisibilitySaving(false);
+    }
   }
 
   async function handleUploadPhoto(file: File, position?: PhotoObjectPosition) {
@@ -563,6 +588,16 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
           {error}
         </p>
+      ) : null}
+
+      {isEdit && petId ? (
+        <PetListingVisibilityControl
+          checked={isListedPublicly}
+          disabled={saving}
+          saving={listingVisibilitySaving}
+          success={listingVisibilitySuccess}
+          onChange={(next) => void handleListingVisibilityChange(next)}
+        />
       ) : null}
 
       <PetFormSection

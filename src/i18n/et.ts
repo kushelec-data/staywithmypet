@@ -628,6 +628,10 @@ export const et = {
       deletingPet: "Kustutan…",
       deletePetSuccess: "Lemmiku profiil kustutatud.",
       deletePetError: "Lemmiku profiili kustutamine ebaõnnestus.",
+      findPetsListingLabel: "Näita seda lemmikut lehel Leia lemmikuid",
+      findPetsListingHelper: "Kui see on sisse lülitatud, saavad teised liikmed seda lemmikut leida.",
+      listingVisibilityUpdated: "Lemmiku nähtavus on uuendatud.",
+      savingListingVisibility: "Uuendan nähtavust…",
     },
   },
   dashboardHome: {
@@ -825,6 +829,8 @@ export const et = {
     additionalInfo: "Lisainfo",
     friendRequirements: "Nõuded loomasõbrale",
     backToEditPet: "Tagasi lemmiku profiili muutma",
+    previewListingPrivate:
+      "Ainult eelvaade — lülita lemmiku seadetes avalik kuulutus sisse, et teised seda lehte leiaksid.",
     aboutPet: "{name} tutvustus",
     petParent: "Loomaomanik",
     viewProfile: "Vaata profiili",

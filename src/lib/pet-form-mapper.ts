@@ -1,5 +1,5 @@
 import type { PetProfileFormInput } from "@/lib/pet-data";
-import { toDbSpecies } from "@/lib/pet-data";
+import { resolvePetListingIsPublic, toDbSpecies } from "@/lib/pet-data";
 import { breedFormStateFromStored } from "@/lib/pet-breeds";
 import { normalizePetWeightStorageValue } from "@/lib/pet-weight";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
@@ -86,4 +86,8 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
     longitude: numOpt(record, "longitude"),
     googlePlaceId: strOptDetails(record, "google_place_id"),
   };
+}
+
+export function mapPetListingIsPublic(record: PetDbRecord): boolean {
+  return resolvePetListingIsPublic(record.is_public as boolean | null | undefined);
 }

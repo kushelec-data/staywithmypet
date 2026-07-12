@@ -1,7 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  isPetMarketplaceMinimumEligible,
-  isPetParentProfileMarketplaceMinimumEligible,
   profileMeetsAnyMarketplaceMinimum,
 } from "@/lib/profile-marketplace-eligibility";
 import { fetchUserProfile } from "@/lib/profile-load";
@@ -55,7 +53,7 @@ async function fetchPetVisibilityRows(
  * Sync marketplace visibility flags without retroactively hiding legacy listings.
  * - Never sets profiles.is_public or pets.is_public to false.
  * - Heals profiles wrongly demoted to is_public=false when minimum eligibility is met.
- * - May promote pets to is_public=true when owner + pet minimums are met.
+ * - Pet Find Pets listing (pets.is_public) changes only via the owner listing toggle.
  */
 export async function applyMarketplaceVisibility(
   supabase: SupabaseClient,
@@ -87,24 +85,11 @@ export async function applyMarketplaceVisibility(
   const petRows = await fetchPetVisibilityRows(supabase, userId);
   if (petRows.length === 0) return;
 
-  const ownerParentMinimum = isPetParentProfileMarketplaceMinimumEligible(profileInput);
-
   await Promise.all(
     petRows.map((pet) => {
-      const updates: { is_active: boolean; is_public?: boolean } = {
+      const updates: { is_active: boolean } = {
         is_active: pet.is_active !== false,
       };
-
-      const petMinimum = isPetMarketplaceMinimumEligible({
-        name: pet.name,
-        species: pet.species,
-        is_public: pet.is_public,
-        is_active: pet.is_active,
-      });
-
-      if (pet.is_public !== false && ownerParentMinimum && petMinimum && pet.is_public !== true) {
-        updates.is_public = true;
-      }
 
       return supabase.from("pets").update(updates).eq("id", pet.id).eq("owner_id", userId);
     }),

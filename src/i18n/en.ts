@@ -626,6 +626,10 @@ export const en = {
       deletingPet: "Deleting…",
       deletePetSuccess: "Pet profile deleted.",
       deletePetError: "Could not delete pet profile.",
+      findPetsListingLabel: "Show this pet in Find Pets",
+      findPetsListingHelper: "When enabled, other members can discover this pet.",
+      listingVisibilityUpdated: "Pet listing visibility updated.",
+      savingListingVisibility: "Updating listing visibility…",
     },
   },
   dashboardHome: {
@@ -819,6 +823,8 @@ export const en = {
     additionalInfo: "Additional info",
     friendRequirements: "Pet friend requirements",
     backToEditPet: "Back to editing pet profile",
+    previewListingPrivate:
+      "Preview only — turn on public listing in pet settings so others can find this page.",
     aboutPet: "About {name}",
     petParent: "Pet parent",
     viewProfile: "View profile",
