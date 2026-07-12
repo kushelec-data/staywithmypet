@@ -6,7 +6,13 @@ import {
   logAuthCallbackWarn,
   waitForAuthUser,
 } from "@/lib/auth-callback";
+import {
+  CURRENT_TERMS_VERSION,
+  recordTermsAcceptance,
+  SIGNUP_TERMS_COOKIE,
+} from "@/lib/terms-acceptance";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 function redirectTo(origin: string, path: string): NextResponse {
@@ -60,6 +66,13 @@ export async function GET(request: Request) {
   }
 
   logAuthCallback("user present", { userId: user.id });
+
+  const cookieStore = await cookies();
+  const signupTermsCookie = cookieStore.get(SIGNUP_TERMS_COOKIE)?.value;
+  if (signupTermsCookie === CURRENT_TERMS_VERSION) {
+    await recordTermsAcceptance(supabase, user.id, { context: "signup" });
+    cookieStore.delete(SIGNUP_TERMS_COOKIE);
+  }
 
   const { profile, ensureError } = await ensureOAuthProfile(supabase, user);
 

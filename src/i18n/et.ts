@@ -2086,4 +2086,63 @@ export const et = {
       legend: "Sinu roll",
     },
   },
+  termsAcceptance: {
+    banner: {
+      message: "Palun tutvu uusimate kasutustingimustega ja nõustu nendega enne jätkamist.",
+    },
+    signup: {
+      beforeTerms: "Olen lugenud",
+      termsLink: "kasutustingimusi",
+      beforePrivacy: "ja nõustun nendega ning kinnitan, et olen tutvunud",
+      privacyLink: "privaatsuspoliitikaga",
+      suffix: ".",
+    },
+    membership: {
+      beforeTerms: "Nõustun",
+      termsLink: "kasutustingimuste",
+      suffix: ", liikmesuse kestuse, tühistamistingimuste ja pikendamise tingimustega.",
+    },
+    booking: {
+      beforeTerms: "Olen broneeringu andmed üle vaadanud ning nõustun",
+      termsLink: "kasutustingimuste",
+      beforeSafety: ",",
+      safetyLink: "ohutusjuhiste",
+      suffix: " ja tühistamisreeglitega.",
+    },
+    calendarNotice: {
+      beforeTerms: "Sellele broneeringule kehtivad StayWithMyPet",
+      termsLink: "kasutustingimused",
+      beforeSafety: "ja",
+      safetyLink: "ohutusjuhised",
+      suffix: ".",
+    },
+    membershipPlan: {
+      ariaLabel: "Liikmesuse plaani üksikasjad",
+      oneTime: {
+        title: "Ühekordne",
+        bullets: [
+          "Kehtib ainult ühe broneeringu jaoks.",
+          "Ei pikene automaatselt.",
+        ],
+      },
+      threeMonth: {
+        title: "3 kuud",
+        bullets: [
+          "Kehtib 3 kuud.",
+          "Pikeneb perioodi lõpus automaatselt, kui seda enne pikendamist ei tühistata.",
+        ],
+      },
+      oneYear: {
+        title: "1 aasta",
+        bullets: [
+          "Kehtib 1 aasta.",
+          "Pikeneb perioodi lõpus automaatselt, kui seda enne pikendamist ei tühistata.",
+        ],
+      },
+    },
+    errors: {
+      acceptanceRequired: "Jätkamiseks pead kasutustingimustega nõustuma.",
+      recordFailed: "Nõusolekut ei õnnestunud salvestada. Proovi uuesti.",
+    },
+  },
 } satisfies import("./translations").Dictionary;

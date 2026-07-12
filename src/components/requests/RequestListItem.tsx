@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBookingGuidanceNote";
+import { BookingTermsNotice } from "@/components/legal/BookingTermsNotice";
+import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
+import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
+import { bookingTermsContextForRole } from "@/lib/terms-acceptance";
+import type { MembershipRole } from "@/lib/membership";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { CareRequest } from "@/lib/requests";
 import {
@@ -14,12 +19,14 @@ import {
   requestStatusLabel,
 } from "@/lib/requests";
 import { ACCOUNT_CARD_CLASS, ACCOUNT_LIST_ITEM_TITLE } from "@/lib/account-ui";
+import { useEffect, useState } from "react";
 
 type RequestListItemProps = {
   request: CareRequest;
   direction: "incoming" | "outgoing";
+  currentUserId?: string;
   acting: boolean;
-  onAccept?: (id: string) => void;
+  onAccept?: (id: string, termsAccepted: boolean, receiverRole: MembershipRole) => void;
   onDecline?: (id: string) => void;
   onCancel?: (id: string) => void;
 };
@@ -90,12 +97,64 @@ function MetaRow({
 export function RequestListItem({
   request,
   direction,
+  currentUserId,
   acting,
   onAccept,
   onDecline,
   onCancel,
 }: RequestListItemProps) {
   const { t, locale } = useLanguage();
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAlreadyAccepted, setTermsAlreadyAccepted] = useState(false);
+  const [termsCheckLoading, setTermsCheckLoading] = useState(false);
+
+  const receiverRole: MembershipRole | null =
+    currentUserId === request.petParentId
+      ? "pet_parent"
+      : currentUserId === request.petFriendId
+        ? "pet_friend"
+        : null;
+
+  const showAcceptTerms =
+    request.canRespond &&
+    direction === "incoming" &&
+    request.status === "pending" &&
+    receiverRole !== null;
+
+  useEffect(() => {
+    if (!showAcceptTerms || !receiverRole) {
+      setTermsAlreadyAccepted(false);
+      return;
+    }
+
+    let cancelled = false;
+    setTermsCheckLoading(true);
+    (async () => {
+      try {
+        const { hasBookingTermsForRequestAction } = await import("@/app/actions/terms-acceptance");
+        const accepted = await hasBookingTermsForRequestAction(
+          request.id,
+          bookingTermsContextForRole(receiverRole),
+        );
+        if (!cancelled) {
+          setTermsAlreadyAccepted(accepted);
+          if (accepted) setTermsAccepted(true);
+        }
+      } catch {
+        if (!cancelled) setTermsAlreadyAccepted(false);
+      } finally {
+        if (!cancelled) setTermsCheckLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showAcceptTerms, receiverRole, request.id]);
+
+  const canAccept =
+    termsAlreadyAccepted || (termsAccepted && !termsCheckLoading);
+
   const dateLabel = formatBookingDatesForRow(
     {
       requested_dates: request.requestedDates,
@@ -189,8 +248,9 @@ export function RequestListItem({
           ) : null}
 
           {request.status === "accepted" ? (
-            <div className="border-t border-[#E5E2D8] pt-4">
+            <div className="border-t border-[#E5E2D8] pt-4 space-y-3">
               <ConfirmedBookingGuidanceNote messagesHref={`/messages?request=${request.id}`} />
+              <BookingTermsNotice />
             </div>
           ) : null}
 
@@ -207,6 +267,18 @@ export function RequestListItem({
 
           {showActions ? (
             <div className="flex flex-col gap-2 border-t border-black/5 pt-4 dark:border-border sm:flex-row sm:flex-wrap sm:justify-end">
+              {showAcceptTerms && !termsAlreadyAccepted ? (
+                <div className="w-full space-y-3 sm:col-span-full">
+                  <TermsReviewBanner />
+                  <TermsAcceptanceCheckbox
+                    variant="booking"
+                    id={`accept-terms-${request.id}`}
+                    checked={termsAccepted}
+                    onCheckedChange={setTermsAccepted}
+                    disabled={acting || termsCheckLoading}
+                  />
+                </div>
+              ) : null}
               {showRespondToMessage ? (
                 <Button
                   href={request.messagesHref}
@@ -222,9 +294,11 @@ export function RequestListItem({
                   <Button
                     type="button"
                     size="sm"
-                    disabled={acting}
+                    disabled={acting || !canAccept || !receiverRole}
                     className="w-full sm:w-auto"
-                    onClick={() => onAccept?.(request.id)}
+                    onClick={() =>
+                      receiverRole && onAccept?.(request.id, termsAccepted || termsAlreadyAccepted, receiverRole)
+                    }
                   >
                     {t.requests.accept}
                   </Button>

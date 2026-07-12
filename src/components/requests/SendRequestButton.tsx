@@ -297,6 +297,8 @@ export function SendRequestButton({
         message: values.message,
         careType: values.careType,
         selectedDates: values.selectedDates,
+        termsAccepted: values.termsAccepted,
+        senderRole: target.kind === "pet" ? "pet_friend" : "pet_parent",
       });
       setOpen(false);
       setSuccess(true);

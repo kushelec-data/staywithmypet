@@ -14,12 +14,18 @@ import {
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeCatalogPlanId } from "@/lib/stripe-plans";
+import {
+  CURRENT_TERMS_VERSION,
+  hasAcceptedTermsVersion,
+  recordTermsAcceptance,
+} from "@/lib/terms-acceptance";
 
 type ActivateBody = {
   code?: string;
   role?: string;
   planId?: string;
   plan_id?: string;
+  termsAccepted?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -66,6 +72,43 @@ export async function POST(request: Request) {
     userId = await requireAuthUserId(supabase);
   } catch {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  if (!body.termsAccepted) {
+    return NextResponse.json(
+      { error: "Terms of Use acceptance is required before activating membership." },
+      { status: 400 },
+    );
+  }
+
+  const ipAddress =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip");
+  const userAgent = request.headers.get("user-agent");
+
+  const termsRecorded = await recordTermsAcceptance(supabase, userId, {
+    context: "membership_coupon_activation",
+    termsVersion: CURRENT_TERMS_VERSION,
+    membershipRole: selectedRole,
+    planId,
+    couponCode: code,
+    ipAddress: ipAddress ?? null,
+    userAgent: userAgent ?? null,
+  });
+
+  if (!termsRecorded.ok) {
+    return NextResponse.json(
+      { error: "Could not record Terms of Use acceptance." },
+      { status: 500 },
+    );
+  }
+
+  const hasCurrentTerms = await hasAcceptedTermsVersion(supabase, userId);
+  if (!hasCurrentTerms) {
+    return NextResponse.json(
+      { error: "Terms of Use acceptance was not stored." },
+      { status: 500 },
+    );
   }
 
   const { data: profile, error: profileError } = await supabase

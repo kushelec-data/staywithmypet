@@ -4,6 +4,7 @@ import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import Link from "next/link";
 import { BookingCompleteAction } from "@/components/bookings/BookingCompleteAction";
 import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBookingGuidanceNote";
+import { BookingTermsNotice } from "@/components/legal/BookingTermsNotice";
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
 import { BookingReviewBanner } from "@/components/messages/BookingReviewBanner";
 import { UserSafetyActions } from "@/components/trust/UserSafetyActions";
@@ -216,10 +217,12 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
           </div>
 
           {showConfirmedGuidance ? (
-            <ConfirmedBookingGuidanceNote
-              className="mt-5"
-              messagesHref={messagesHrefForBooking(booking.requestId)}
-            />
+            <div className="mt-5 space-y-3">
+              <ConfirmedBookingGuidanceNote
+                messagesHref={messagesHrefForBooking(booking.requestId)}
+              />
+              <BookingTermsNotice />
+            </div>
           ) : null}
 
           <dl className="mt-6 grid gap-3 border-t border-black/5 pt-6 sm:grid-cols-2">

@@ -3,6 +3,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AccountLayout } from "@/components/account/AccountLayout";
+import { MembershipPlanTermsInfo } from "@/components/legal/MembershipPlanTermsInfo";
+import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
+import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -26,6 +29,7 @@ export function TestAccessCodePageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [code, setCode] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -84,6 +88,7 @@ export function TestAccessCodePageClient() {
           code: code.trim(),
           role,
           planId,
+          termsAccepted,
         }),
       });
       const data = (await res.json()) as {
@@ -133,6 +138,9 @@ export function TestAccessCodePageClient() {
         onSubmit={handleSubmit}
         className={`${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT} max-w-lg`}
       >
+        <TermsReviewBanner className="mb-4" />
+        <MembershipPlanTermsInfo planId={planId} className="mb-4" />
+
         <label htmlFor="test-access-code" className={ACCOUNT_FIELD_LABEL_CLASS}>
           {ta.codeLabel}
         </label>
@@ -150,6 +158,15 @@ export function TestAccessCodePageClient() {
         />
         <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{ta.codeHint}</p>
 
+        <TermsAcceptanceCheckbox
+          variant="membership"
+          id="membership-terms"
+          checked={termsAccepted}
+          onCheckedChange={setTermsAccepted}
+          disabled={submitting}
+          className="mt-4"
+        />
+
         {error ? (
           <p className="mt-4 text-sm text-red-600" role="alert">
             {error}
@@ -157,7 +174,12 @@ export function TestAccessCodePageClient() {
         ) : null}
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Button type="submit" variant="primary" size="md" disabled={submitting || !code.trim()}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            disabled={submitting || !code.trim() || !termsAccepted}
+          >
             {submitting ? ta.activating : ta.activateButton}
           </Button>
           <Button href="/membership" variant="secondary" size="md">

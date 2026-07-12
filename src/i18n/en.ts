@@ -2083,4 +2083,60 @@ export const en = {
       legend: "Your role",
     },
   },
+  termsAcceptance: {
+    banner: {
+      message: "Please review and accept the latest Terms of Use before continuing.",
+    },
+    signup: {
+      beforeTerms: "I have read and agree to the",
+      termsLink: "Terms of Use",
+      beforePrivacy: "and acknowledge the",
+      privacyLink: "Privacy Policy",
+      suffix: ".",
+    },
+    membership: {
+      beforeTerms: "I agree to the",
+      termsLink: "Terms of Use",
+      suffix: ", membership duration, cancellation conditions and renewal terms.",
+    },
+    booking: {
+      beforeTerms: "I have reviewed the booking details and agree to the",
+      termsLink: "Terms of Use",
+      beforeSafety: ",",
+      safetyLink: "Safety Guidelines",
+      suffix: " and cancellation policy.",
+    },
+    calendarNotice: {
+      beforeTerms: "This booking is governed by the StayWithMyPet",
+      termsLink: "Terms of Use",
+      beforeSafety: "and",
+      safetyLink: "Safety Guidelines",
+      suffix: ".",
+    },
+    membershipPlan: {
+      ariaLabel: "Membership plan details",
+      oneTime: {
+        title: "One Time",
+        bullets: ["Valid for one booking only.", "Does not renew automatically."],
+      },
+      threeMonth: {
+        title: "3 Month",
+        bullets: [
+          "Valid for 3 months.",
+          "Automatically renews at the end of the period unless cancelled before renewal.",
+        ],
+      },
+      oneYear: {
+        title: "1 Year",
+        bullets: [
+          "Valid for 1 year.",
+          "Automatically renews at the end of the period unless cancelled before renewal.",
+        ],
+      },
+    },
+    errors: {
+      acceptanceRequired: "You must accept the Terms of Use to continue.",
+      recordFailed: "Could not save your acceptance. Please try again.",
+    },
+  },
 } as const;

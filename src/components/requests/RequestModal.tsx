@@ -2,6 +2,8 @@
 
 import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
 import { RequestBookingCalendar } from "@/components/calendar/RequestBookingCalendar";
+import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
+import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
 import { Button } from "@/components/ui/Button";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { careTypeRequestOptions } from "@/lib/care-type-options";
@@ -20,6 +22,7 @@ export type RequestFormValues = {
   selectedDates: string[];
   message: string;
   careType: string;
+  termsAccepted: boolean;
 };
 
 type RequestModalProps = {
@@ -58,6 +61,7 @@ export function RequestModal({
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedPetId, setSelectedPetId] = useState(requestPetId ?? pets[0]?.id ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const calendarPetId = requestPetId ?? (showPetSelector ? selectedPetId : null);
   const charCount = countMessageCharacters(message);
   const wasOpenRef = useRef(false);
@@ -78,6 +82,7 @@ export function RequestModal({
       setMessage("");
       setSelectedDates([]);
       setLocalError(null);
+      setTermsAccepted(false);
       setSelectedPetId(requestPetId ?? pets[0]?.id ?? "");
     }
   }, [open, requestPetId, pets, initialSelectedDates]);
@@ -111,6 +116,10 @@ export function RequestModal({
       }
       return;
     }
+    if (!termsAccepted) {
+      setLocalError(t.termsAcceptance.errors.acceptanceRequired);
+      return;
+    }
 
     setLocalError(null);
     onSubmit({
@@ -118,6 +127,7 @@ export function RequestModal({
       selectedDates,
       message: msg,
       careType,
+      termsAccepted,
     });
   }
 
@@ -223,6 +233,16 @@ export function RequestModal({
           </label>
         </div>
 
+        <TermsReviewBanner className="mt-4" />
+        <TermsAcceptanceCheckbox
+          variant="booking"
+          id="request-booking-terms"
+          checked={termsAccepted}
+          onCheckedChange={setTermsAccepted}
+          disabled={submitting}
+          className="mt-4"
+        />
+
         {displayError ? (
           <p
             className={`mt-4 whitespace-pre-wrap ${STATUS_ALERT_ERROR_CLASS}`}
@@ -236,7 +256,7 @@ export function RequestModal({
           <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
             {t.requests.cancel}
           </Button>
-          <Button type="submit" size="sm" disabled={submitting}>
+          <Button type="submit" size="sm" disabled={submitting || !termsAccepted}>
             {submitting ? t.auth.pleaseWait : t.requests.submit}
           </Button>
         </div>

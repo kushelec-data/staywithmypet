@@ -25,6 +25,8 @@ import { passwordMeetsPolicy } from "@/lib/password-policy";
 import { createClient } from "@/lib/supabase";
 import { rateLimitMessage, checkRateLimit } from "@/lib/security/rate-limit";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
+import { CURRENT_TERMS_VERSION, SIGNUP_TERMS_COOKIE } from "@/lib/terms-acceptance";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -68,6 +70,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const showSignupDebug = isSignupDebugEnabled();
 
   const isSubmitActive = useCallback(
@@ -85,7 +88,10 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   useEffect(() => {
     setLoading(false);
-  }, [pathname, mode]);
+    if (!isSignup) {
+      setTermsAccepted(false);
+    }
+  }, [pathname, mode, isSignup]);
 
   useEffect(() => {
     const onPageShow = (event: PageTransitionEvent) => {
@@ -206,6 +212,10 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
 
       if (isSignup) {
+        if (!termsAccepted) {
+          if (isSubmitActive(generation)) setError(t.termsAcceptance.errors.acceptanceRequired);
+          return;
+        }
         if (!passwordMeetsPolicy(passwordField)) {
           if (isSubmitActive(generation)) setError(t.auth.weakPassword);
           return;
@@ -215,7 +225,10 @@ export function AuthForm({ mode }: AuthFormProps) {
           email,
           password: passwordField,
           options: {
-            data: { display_name: name || undefined },
+            data: {
+              display_name: name || undefined,
+              terms_version_accepted: CURRENT_TERMS_VERSION,
+            },
             emailRedirectTo,
           },
         });
@@ -235,6 +248,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (data.session && data.user) {
           await finishSession(name);
           if (!isSubmitActive(generation)) return;
+          try {
+            const { recordTermsAcceptanceAction } = await import("@/app/actions/terms-acceptance");
+            await recordTermsAcceptanceAction({ context: "signup" });
+          } catch {
+            /* metadata sync on next session will backfill */
+          }
           await goAfterAuth(t.auth.signupSuccess, generation);
           return;
         }
@@ -287,10 +306,21 @@ export function AuthForm({ mode }: AuthFormProps) {
     setInfo(null);
     setLoading(true);
 
+    if (isSignup && !termsAccepted) {
+      if (isSubmitActive(generation)) {
+        setError(t.termsAcceptance.errors.acceptanceRequired);
+        setLoading(false);
+      }
+      return;
+    }
+
     const oauthReturn =
       resolveLoginReturnPath(searchParams.get("next")) ?? DASHBOARD_PATH;
 
     try {
+      if (isSignup) {
+        document.cookie = `${SIGNUP_TERMS_COOKIE}=${CURRENT_TERMS_VERSION}; path=/; max-age=600; SameSite=Lax`;
+      }
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -370,7 +400,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             variant="secondary"
             className="w-full"
             size="lg"
-            disabled={loading}
+            disabled={loading || (isSignup && !termsAccepted)}
             onClick={handleGoogle}
           >
             {t.auth.continueWithGoogle}
@@ -455,7 +485,15 @@ export function AuthForm({ mode }: AuthFormProps) {
                 </>
               )}
             </div>
-            {isSignup && <p className="text-xs text-muted">{t.auth.signup.terms}</p>}
+            {isSignup ? (
+              <TermsAcceptanceCheckbox
+                variant="signup"
+                id="signup-terms"
+                checked={termsAccepted}
+                onCheckedChange={setTermsAccepted}
+                disabled={loading}
+              />
+            ) : null}
             {error ? (
               <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
                 {error}
@@ -493,7 +531,12 @@ export function AuthForm({ mode }: AuthFormProps) {
                 {success}
               </p>
             ) : null}
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={loading || (isSignup && !termsAccepted)}
+            >
               {loading ? t.auth.pleaseWait : copy.submit}
             </Button>
           </form>

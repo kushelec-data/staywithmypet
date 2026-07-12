@@ -17,10 +17,10 @@ import {
   cancelRequest,
   fetchIncomingRequests,
   fetchOutgoingRequests,
-  respondToRequest,
   type CareRequest,
   type RequestStatus,
 } from "@/lib/requests";
+import type { MembershipRole } from "@/lib/membership";
 import { markRequestNotificationsRead } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -99,7 +99,12 @@ export function RequestsPageContent() {
     router.push(`/requests?direction=${next}`);
   }
 
-  async function handleRespond(requestId: string, decision: "accepted" | "declined") {
+  async function handleRespond(
+    requestId: string,
+    decision: "accepted" | "declined",
+    termsAccepted = false,
+    receiverRole?: MembershipRole,
+  ) {
     if (!user) return;
     setActingId(requestId);
     setActionError(null);
@@ -107,20 +112,37 @@ export function RequestsPageContent() {
     const previous = requests;
     setRequests(patchRequestStatus(requests, requestId, decision));
     try {
-      const { conversationId } = await respondToRequest(supabase, user.id, requestId, decision);
+      if (decision === "accepted") {
+        if (!receiverRole) throw new Error(t.requests.respondError);
+        const { acceptCareRequestAction } = await import("@/app/actions/care-requests");
+        const { conversationId } = await acceptCareRequestAction({
+          requestId,
+          receiverRole,
+          termsAccepted,
+        });
+        try {
+          const { sendRequestStatusEmailsAction } = await import("@/app/actions/email-events");
+          await sendRequestStatusEmailsAction(requestId, decision);
+        } catch (emailErr) {
+          console.error("[email-event] accept/decline action failed", emailErr);
+        }
+        if (conversationId) {
+          router.push(`/messages?conversation=${conversationId}`);
+          return;
+        }
+        setActionSuccess(t.requests.acceptedSuccess);
+        return;
+      }
+
+      const { respondToRequest } = await import("@/lib/requests");
+      await respondToRequest(supabase, user.id, requestId, decision);
       try {
         const { sendRequestStatusEmailsAction } = await import("@/app/actions/email-events");
         await sendRequestStatusEmailsAction(requestId, decision);
       } catch (emailErr) {
         console.error("[email-event] accept/decline action failed", emailErr);
       }
-      if (decision === "accepted" && conversationId) {
-        router.push(`/messages?conversation=${conversationId}`);
-        return;
-      }
-      setActionSuccess(
-        decision === "accepted" ? t.requests.acceptedSuccess : t.requests.declinedSuccess,
-      );
+      setActionSuccess(t.requests.declinedSuccess);
     } catch (err) {
       setRequests(previous);
       setActionError(
@@ -210,8 +232,14 @@ export function RequestsPageContent() {
                 key={request.id}
                 request={request}
                 direction={direction}
+                currentUserId={user?.id}
                 acting={actingId === request.id}
-                onAccept={isIncoming ? (id) => handleRespond(id, "accepted") : undefined}
+                onAccept={
+                  isIncoming
+                    ? (id, termsAccepted, receiverRole) =>
+                        handleRespond(id, "accepted", termsAccepted, receiverRole)
+                    : undefined
+                }
                 onDecline={isIncoming ? (id) => handleRespond(id, "declined") : undefined}
                 onCancel={!isIncoming ? handleCancel : undefined}
               />

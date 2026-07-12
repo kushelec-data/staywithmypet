@@ -1,5 +1,6 @@
 "use client";
 
+import { BookingTermsNotice } from "@/components/legal/BookingTermsNotice";
 import { AppImage } from "@/components/ui/AppImage";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
@@ -122,6 +123,8 @@ export function BookingPopover({
           </div>
         ) : null}
       </dl>
+
+      <BookingTermsNotice />
 
       <Button href={bookingDetailsHref(booking.id)} size="sm" className="w-full">
         {t.bookingCalendar.viewBooking}

@@ -1,6 +1,8 @@
 "use client";
 
 import { STATUS_ALERT_ERROR_CLASS } from "@/lib/status-colors";
+import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
+import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
 import { Button } from "@/components/ui/Button";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { PetFormChipGroup, PetFormSection } from "@/components/pets/PetFormSection";
@@ -10,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import {
   fetchPetForOwner,
+  fetchUserPets,
   saveNewPet,
   toDbSpecies,
   updatePetProfile,
@@ -132,6 +135,8 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [dobDisplay, setDobDisplay] = useState("");
   const [dobError, setDobError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<ProfileRequiredFieldId, string>>>({});
+  const [listingTermsAccepted, setListingTermsAccepted] = useState(false);
+  const [requiresListingTerms, setRequiresListingTerms] = useState(false);
   const formInitializedRef = useRef(false);
   const { locale, t } = useLanguage();
   const petsCopy = t.account.petsPage;
@@ -204,6 +209,32 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     formInitializedRef.current = true;
     markHydratedFromServer(buildPetFormDraft(emptyForm(), ""));
   }, [user?.id, isEdit, markHydratedFromServer]);
+
+  useEffect(() => {
+    if (!user?.id || isEdit) {
+      setRequiresListingTerms(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pets, status] = await Promise.all([
+          fetchUserPets(supabase, user.id),
+          import("@/app/actions/terms-acceptance").then((m) => m.getTermsAcceptanceStatusAction()),
+        ]);
+        if (cancelled) return;
+        const isFirstListing = pets.length === 0;
+        setRequiresListingTerms(isFirstListing && !status.hasCurrentVersion);
+      } catch {
+        if (!cancelled) setRequiresListingTerms(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, isEdit, supabase]);
 
   useEffect(() => {
     if (!petId || !user?.id) return;
@@ -469,6 +500,11 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     const savePayload = buildSavePayload();
     if (!savePayload) return;
 
+    if (requiresListingTerms && !listingTermsAccepted) {
+      setError(t.termsAcceptance.errors.acceptanceRequired);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -480,6 +516,14 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         router.push("/pets");
         router.refresh();
         return;
+      }
+
+      if (requiresListingTerms) {
+        const { recordTermsAcceptanceAction } = await import("@/app/actions/terms-acceptance");
+        const recorded = await recordTermsAcceptanceAction({ context: "first_listing" });
+        if (!recorded.ok) {
+          throw new Error(t.termsAcceptance.errors.recordFailed);
+        }
       }
 
       const newPetId = await saveNewPet(supabase, user.id, savePayload);
@@ -986,7 +1030,24 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         </div>
       </PetFormSection>
 
-      <Button type="submit" variant="primary" disabled={saving}>
+      {requiresListingTerms ? (
+        <div className="space-y-3">
+          <TermsReviewBanner />
+          <TermsAcceptanceCheckbox
+            variant="signup"
+            id="first-listing-terms"
+            checked={listingTermsAccepted}
+            onCheckedChange={setListingTermsAccepted}
+            disabled={saving}
+          />
+        </div>
+      ) : null}
+
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={saving || (requiresListingTerms && !listingTermsAccepted)}
+      >
         {saving ? petsCopy.savingPet : petsCopy.savePetProfile}
       </Button>
     </form>
