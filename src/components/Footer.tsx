@@ -198,12 +198,31 @@ function LoggedOutFooterBody({
 
 function LoggedInFooterBody({
   legalLinks,
+  utilityLinks,
   year,
 }: {
   legalLinks: { href: string; label: string }[];
+  utilityLinks: { href: string; label: string }[];
   year: number;
 }) {
-  return <FooterLegalRow legalLinks={legalLinks} year={year} compact />;
+  return (
+    <div className="min-w-0">
+      {utilityLinks.length > 0 ? (
+        <nav aria-label="Site" className="mb-3 min-w-0">
+          <ul className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            {utilityLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className={LEGAL_LINK_CLASS}>
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
+      <FooterLegalRow legalLinks={legalLinks} year={year} compact />
+    </div>
+  );
 }
 
 export function Footer() {
@@ -219,6 +238,8 @@ export function Footer() {
     { href: "/privacy", label: g.company.privacy },
     { href: "/safety", label: g.company.safety },
   ];
+
+  const loggedInUtilityLinks = [{ href: "/articles", label: g.company.articles }];
 
   const footerGroups: FooterLinkGroup[] = [
     {
@@ -255,7 +276,11 @@ export function Footer() {
       <div className={`${PAGE_CONTAINER} min-w-0 py-5 sm:py-6`}>
         <div className="card-elevated min-w-0 overflow-hidden rounded-2xl p-4 sm:p-5 lg:p-6">
           {isLoggedIn ? (
-            <LoggedInFooterBody legalLinks={legalLinks} year={year} />
+            <LoggedInFooterBody
+              legalLinks={legalLinks}
+              utilityLinks={loggedInUtilityLinks}
+              year={year}
+            />
           ) : (
             <>
               <LoggedOutFooterBody footerGroups={footerGroups} />

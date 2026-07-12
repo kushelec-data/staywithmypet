@@ -8,6 +8,7 @@ export const primaryNavConfig = [
   { href: "/how-it-works", labelKey: "howItWorks" },
   { href: "/pricing", labelKey: "pricing" },
   { href: "/faq", labelKey: "faq" },
+  { href: "/articles", labelKey: "articles" },
   { href: "/about", labelKey: "about" },
 ] as const;
 
@@ -17,6 +18,7 @@ export const loggedInPrimaryNavConfig = primaryNavConfig.filter(
     item.labelKey !== "howItWorks" &&
     item.labelKey !== "pricing" &&
     item.labelKey !== "faq",
+  // Articles stays visible for logged-in users.
 );
 
 export type NavbarLabelKey = (typeof primaryNavConfig)[number]["labelKey"];
