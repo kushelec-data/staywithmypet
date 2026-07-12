@@ -33,6 +33,11 @@ import { isBookingOverlapError } from "@/lib/bookings";
 import { pickSupabaseJoin, profileDisplayName } from "@/lib/profile-display";
 import { isMissingRelationError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
 import {
+  buildCareRequestCreateFailure,
+  logCareRequestCreateFailure,
+  type CreateCareRequestResult,
+} from "@/lib/request-create-errors";
+import {
   INCOMING_REQUEST_COLUMNS,
   isIncomingRequest,
   isOutgoingRequest,
@@ -632,99 +637,128 @@ async function assertRequestedDatesAvailable(
 export async function createCareRequest(
   supabase: SupabaseClient,
   input: CreateCareRequestInput,
-): Promise<{ requestId: string }> {
-  const { assertRateLimit, requireAuthUserId } = await import("@/lib/security");
-  const sessionUserId = await requireAuthUserId(supabase);
-  assertRateLimit("care_request", sessionUserId);
-
-  if (input.senderId !== sessionUserId) {
-    throw new Error("Invalid request participants.");
-  }
-
-  if (input.petParentId === input.petFriendId || input.senderId === input.receiverId) {
-    throw new Error("You cannot send a request to yourself.");
-  }
-
-  const { isUserBlocked, BLOCKED_USER_MESSAGE } = await import("@/lib/trust-safety");
-  if (await isUserBlocked(supabase, input.senderId, input.receiverId)) {
-    throw new Error(BLOCKED_USER_MESSAGE);
-  }
-
-  if (input.senderId !== input.petParentId && input.senderId !== input.petFriendId) {
-    throw new Error("Invalid request participants.");
-  }
-
-  if (input.receiverId !== input.petParentId && input.receiverId !== input.petFriendId) {
-    throw new Error("Invalid request participants.");
-  }
-
-  const senderMode =
-    input.senderId === input.petParentId ? ("pet_parent" as const) : ("pet_friend" as const);
-  const { assertActiveMembership } = await import("@/lib/membership-access");
-  await assertActiveMembership(supabase, input.senderId, senderMode);
-
-  const requestedDates = normalizeAvailabilityDates(input.selectedDates);
-  if (!requestedDates.length) {
-    throw new Error("Please select at least one date from the calendar.");
-  }
-
-  if (requestedDates.some((d) => isPastDateInput(d))) {
-    throw new Error(PAST_DATE_REQUEST_ERROR);
-  }
-
-  await assertRequestedDatesAvailable(supabase, input, requestedDates);
-
-  const dateFrom = requestedDates[0];
-  const dateTo = requestedDates[requestedDates.length - 1];
-  const careType = input.careType.trim();
-  const message = input.message.trim() || null;
-
-  const requestId = input.requestId ?? crypto.randomUUID();
-  const payload: RequestInsert = {
-    id: requestId,
-    pet_id: input.petId,
-    pet_parent_id: input.petParentId,
-    pet_friend_id: input.petFriendId,
-    sender_id: input.senderId,
-    receiver_id: input.receiverId,
-    requested_dates: requestedDates,
-    date_from: dateFrom,
-    date_to: dateTo,
-    care_type: careType,
-    message,
-    status: "pending",
+): Promise<CreateCareRequestResult> {
+  const logContext = {
+    petId: input.petId,
+    petParentId: input.petParentId,
+    petFriendId: input.petFriendId,
+    senderId: input.senderId,
+    receiverId: input.receiverId,
+    careType: input.careType,
+    selectedDates: input.selectedDates,
+    requestId: input.requestId ?? null,
   };
 
-  const { error } = await supabase.from("requests").insert(payload);
-  if (error) {
-    logSupabaseError("insert", error);
-    console.error("[request] insert payload", payload);
-    throw new Error(error.message || "Could not create care request.");
-  }
+  const senderRole =
+    input.senderId === input.petParentId ? ("pet_parent" as const) : ("pet_friend" as const);
 
-  console.info("[request:delivery] inserted", {
-    requestId,
-    senderId: payload.sender_id,
-    receiverId: payload.receiver_id,
-    petParentId: payload.pet_parent_id,
-    petFriendId: payload.pet_friend_id,
-    status: payload.status,
-  });
+  try {
+    const { assertRateLimit, requireAuthUserId } = await import("@/lib/security");
+    const sessionUserId = await requireAuthUserId(supabase);
+    assertRateLimit("care_request", sessionUserId);
 
-  if (message) {
-    try {
-      await ensureConversationForRequest(supabase, requestId);
-      await seedRequestMessageIfAbsent(supabase, requestId);
-    } catch (err) {
-      if (isPostgrestError(err)) {
-        logSupabaseError("request message seed", err);
-      } else {
-        console.error("[request] message seed", err);
+    if (input.senderId !== sessionUserId) {
+      return buildCareRequestCreateFailure("Invalid request participants.", senderRole);
+    }
+
+    if (input.petParentId === input.petFriendId || input.senderId === input.receiverId) {
+      return buildCareRequestCreateFailure("You cannot send a request to yourself.", senderRole);
+    }
+
+    const { isUserBlocked, BLOCKED_USER_MESSAGE } = await import("@/lib/trust-safety");
+    if (await isUserBlocked(supabase, input.senderId, input.receiverId)) {
+      return buildCareRequestCreateFailure(BLOCKED_USER_MESSAGE, senderRole);
+    }
+
+    if (input.senderId !== input.petParentId && input.senderId !== input.petFriendId) {
+      return buildCareRequestCreateFailure("Invalid request participants.", senderRole);
+    }
+
+    if (input.receiverId !== input.petParentId && input.receiverId !== input.petFriendId) {
+      return buildCareRequestCreateFailure("Invalid request participants.", senderRole);
+    }
+
+    const senderMode =
+      input.senderId === input.petParentId ? ("pet_parent" as const) : ("pet_friend" as const);
+    const { assertActiveMembership } = await import("@/lib/membership-access");
+    await assertActiveMembership(supabase, input.senderId, senderMode);
+
+    const requestedDates = normalizeAvailabilityDates(input.selectedDates);
+    if (!requestedDates.length) {
+      return buildCareRequestCreateFailure(
+        "Please select at least one date from the calendar.",
+        senderRole,
+      );
+    }
+
+    if (requestedDates.some((d) => isPastDateInput(d))) {
+      return buildCareRequestCreateFailure(PAST_DATE_REQUEST_ERROR, senderRole);
+    }
+
+    await assertRequestedDatesAvailable(supabase, input, requestedDates);
+
+    const dateFrom = requestedDates[0];
+    const dateTo = requestedDates[requestedDates.length - 1];
+    const careType = input.careType.trim();
+    const message = input.message.trim() || null;
+
+    const requestId = input.requestId ?? crypto.randomUUID();
+    const payload: RequestInsert = {
+      id: requestId,
+      pet_id: input.petId,
+      pet_parent_id: input.petParentId,
+      pet_friend_id: input.petFriendId,
+      sender_id: input.senderId,
+      receiver_id: input.receiverId,
+      requested_dates: requestedDates,
+      date_from: dateFrom,
+      date_to: dateTo,
+      care_type: careType,
+      message,
+      status: "pending",
+    };
+
+    console.info("[care-request:create] insert start", logContext);
+
+    const { error } = await supabase.from("requests").insert(payload);
+    if (error) {
+      logSupabaseError("insert", error);
+      logCareRequestCreateFailure("insert", { ...logContext, payload }, error);
+      return buildCareRequestCreateFailure(error, senderRole);
+    }
+
+    console.info("[request:delivery] inserted", {
+      requestId,
+      senderId: payload.sender_id,
+      receiverId: payload.receiver_id,
+      petParentId: payload.pet_parent_id,
+      petFriendId: payload.pet_friend_id,
+      status: payload.status,
+    });
+
+    if (message) {
+      try {
+        await ensureConversationForRequest(supabase, requestId);
+        await seedRequestMessageIfAbsent(supabase, requestId);
+      } catch (err) {
+        if (isPostgrestError(err)) {
+          logSupabaseError("request message seed", err);
+        } else {
+          console.error("[request] message seed", err);
+        }
       }
     }
-  }
 
-  return { requestId };
+    return { ok: true, requestId };
+  } catch (err) {
+    if (isPostgrestError(err)) {
+      logCareRequestCreateFailure("unexpected", logContext, err);
+      return buildCareRequestCreateFailure(err, senderRole);
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    logCareRequestCreateFailure("unexpected", logContext, message);
+    return buildCareRequestCreateFailure(message, senderRole);
+  }
 }
 
 export function logRequestSubmitFailure(

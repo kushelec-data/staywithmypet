@@ -252,6 +252,9 @@ export const en = {
     loadError: "Could not load requests.",
     respondError: "Could not update this request.",
     saveError: "Could not send request. Please try again.",
+    invalidDates: "Please select one or more available dates.",
+    duplicateRequest: "You already have a request for these dates.",
+    permissionDenied: "This request cannot be sent. Please check the pet and booking details.",
     petParentMembershipRequired:
       "An active Pet Parent membership is required to send a care request.",
     petFriendMembershipRequired:

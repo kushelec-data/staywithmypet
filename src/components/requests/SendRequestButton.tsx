@@ -217,6 +217,12 @@ export function SendRequestButton({
         return t.termsAcceptance.errors.schemaMissing;
       case "TERMS_AUTH_ERROR":
         return t.termsAcceptance.errors.sessionInvalid;
+      case "INVALID_DATES":
+        return t.requests.invalidDates;
+      case "REQUEST_ALREADY_EXISTS":
+        return t.requests.duplicateRequest;
+      case "REQUEST_PERMISSION_DENIED":
+        return t.requests.permissionDenied;
       case "NOT_SIGNED_IN":
         return t.auth.errorGeneric;
       default:

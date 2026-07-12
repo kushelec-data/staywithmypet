@@ -2,6 +2,10 @@
 
 import { deliverCareRequestNotifications } from "@/lib/request-delivery";
 import { createCareRequest, respondToRequest, type CreateCareRequestInput } from "@/lib/requests";
+import {
+  type CareRequestCreateErrorCode,
+  type CreateCareRequestResult,
+} from "@/lib/request-create-errors";
 import { createClient } from "@/lib/supabase/server";
 import {
   attachBookingIdToRequestAcceptance,
@@ -13,15 +17,13 @@ import {
   friendlyTermsInsertMessage,
   hasBookingTermsForRequest,
   recordTermsAcceptance,
-  type TermsAcceptanceContext,
 } from "@/lib/terms-acceptance";
 import {
   hasActiveMembershipForRole,
   type MembershipRole,
   type UserMembershipsByRole,
 } from "@/lib/membership";
-import { loadMembershipsForUser, MEMBERSHIP_REQUIRED_MESSAGE } from "@/lib/membership-access";
-import { isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
+import { loadMembershipsForUser } from "@/lib/membership-access";
 import { headers } from "next/headers";
 
 export type SubmitCareRequestInput = Omit<CreateCareRequestInput, "senderId" | "requestId"> & {
@@ -31,12 +33,11 @@ export type SubmitCareRequestInput = Omit<CreateCareRequestInput, "senderId" | "
 
 export type CareRequestActionErrorCode =
   | "NOT_SIGNED_IN"
-  | "MEMBERSHIP_REQUIRED"
+  | CareRequestCreateErrorCode
   | "TERMS_REQUIRED"
   | "TERMS_STORAGE_ERROR"
   | "TERMS_SCHEMA_MISSING"
   | "TERMS_AUTH_ERROR"
-  | "REQUEST_CREATE_ERROR"
   | "VALIDATION_ERROR";
 
 function termsErrorCode(kind: ReturnType<typeof classifyTermsInsertError>): CareRequestActionErrorCode {
@@ -102,6 +103,15 @@ function mapTermsInsertFailure(
   };
 }
 
+function mapCreateFailure(
+  created: Extract<CreateCareRequestResult, { ok: false }>,
+): { code: CareRequestActionErrorCode; message: string } {
+  return {
+    code: created.code,
+    message: created.message,
+  };
+}
+
 /**
  * Creates a care request server-side and delivers owner/requester email notifications.
  * Email failures are logged but never block a successful insert.
@@ -117,7 +127,12 @@ export async function submitCareRequestAction(
   console.info("[care-request:submit] start", {
     userId,
     petId: input.petId,
+    petParentId: input.petParentId,
+    petFriendId: input.petFriendId,
+    receiverId: input.receiverId,
     senderRole: input.senderRole ?? null,
+    careType: input.careType,
+    selectedDates: input.selectedDates,
     termsAccepted: Boolean(input.termsAccepted),
   });
 
@@ -172,7 +187,7 @@ export async function submitCareRequestAction(
     termsVersion: CURRENT_TERMS_VERSION,
     acceptanceContext: termsContext,
     membershipRole: input.senderRole,
-    planId: null,
+    planId: membershipResult.planId ?? null,
     bookingId: null,
     ok: termsRecorded.ok,
     ...(termsRecorded.ok
@@ -190,85 +205,80 @@ export async function submitCareRequestAction(
     return { success: false, ...mapTermsInsertFailure(termsRecorded) };
   }
 
-  try {
-    const created = await createCareRequest(supabase, {
-      ...input,
-      senderId: userId,
+  const created = await createCareRequest(supabase, {
+    ...input,
+    senderId: userId,
+    requestId,
+  });
+
+  console.info("[care-request:submit] request insert", {
+    userId,
+    plannedRequestId: requestId,
+    petId: input.petId,
+    petParentId: input.petParentId,
+    petFriendId: input.petFriendId,
+    receiverId: input.receiverId,
+    ok: created.ok,
+    ...(created.ok
+      ? { requestId: created.requestId }
+      : {
+          code: created.supabaseCode ?? created.code,
+          message: created.error,
+          details: created.details,
+          hint: created.hint,
+          userCode: created.code,
+        }),
+  });
+
+  if (!created.ok) {
+    return { success: false, ...mapCreateFailure(created) };
+  }
+
+  const linked = await attachRequestIdToTermsAcceptance(
+    supabase,
+    userId,
+    termsRecorded.id,
+    requestId,
+  );
+  if (!linked.ok) {
+    console.error("[care-request:submit] terms request_id link failed", {
+      userId,
+      acceptanceId: termsRecorded.id,
+      requestId,
+      code: linked.code,
+      message: linked.error,
+    });
+  } else {
+    console.info("[care-request:submit] terms linked to request", {
+      userId,
+      acceptanceId: termsRecorded.id,
       requestId,
     });
+  }
 
-    const linked = await attachRequestIdToTermsAcceptance(
-      supabase,
-      userId,
-      termsRecorded.id,
-      requestId,
-    );
-    if (!linked.ok) {
-      console.error("[care-request:submit] terms request_id link failed", {
-        userId,
-        acceptanceId: termsRecorded.id,
-        requestId,
-        code: linked.code,
-        message: linked.error,
-      });
-    }
-
-    console.info("[care-request:submit] request created", {
+  try {
+    await deliverCareRequestNotifications(created.requestId, userId);
+    console.info("[care-request:submit] notifications delivered", {
       userId,
       requestId: created.requestId,
-      petId: input.petId,
-      receiverId: input.receiverId,
     });
-
-    try {
-      await deliverCareRequestNotifications(created.requestId, userId);
-    } catch (err) {
-      console.error("[request-email] error", {
-        requestId: created.requestId,
-        stage: "deliverCareRequestNotifications",
-        message: err instanceof Error ? err.message : String(err),
-      });
-    }
-
-    return { success: true, requestId: created.requestId };
   } catch (err) {
-    if (err instanceof Error && err.message.includes(MEMBERSHIP_REQUIRED_MESSAGE)) {
-      console.warn("[care-request:submit] membership denied in createCareRequest", {
-        userId,
-        petId: input.petId,
-        senderRole: input.senderRole,
-      });
-      return {
-        success: false,
-        code: "MEMBERSHIP_REQUIRED",
-        message: membershipRequiredMessage(input.senderRole),
-      };
-    }
-
-    if (isPostgrestError(err)) {
-      logSupabaseError("care-request:submit insert", err);
-      console.error("[care-request:submit] request insert failed", {
-        userId,
-        petId: input.petId,
-        code: err.code,
-        message: err.message,
-        details: err.details,
-        hint: err.hint,
-      });
-    } else {
-      console.error("[care-request:submit] request create failed", {
-        userId,
-        petId: input.petId,
-        message: err instanceof Error ? err.message : String(err),
-      });
-    }
-
-    return {
-      success: false,
-      code: "REQUEST_CREATE_ERROR",
-      message: "Could not send request. Please try again.",
-    };
+    console.error("[care-request:submit] notification delivery failed", {
+      userId,
+      requestId: created.requestId,
+      stage: "deliverCareRequestNotifications",
+      message: err instanceof Error ? err.message : String(err),
+    });
   }
+
+  console.info("[care-request:submit] success", {
+    userId,
+    requestId: created.requestId,
+    petId: input.petId,
+    receiverId: input.receiverId,
+  });
+
+  return { success: true, requestId: created.requestId };
 }
 
 export async function acceptCareRequestAction(input: {

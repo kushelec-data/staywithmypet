@@ -253,6 +253,10 @@ export const et = {
     loadError: "Päringuid ei saanud laadida.",
     respondError: "Päringut ei saanud uuendada.",
     saveError: "Päringut ei saanud saata. Proovi uuesti.",
+    invalidDates: "Palun vali üks või mitu vaba kuupäeva.",
+    duplicateRequest: "Sul on nende kuupäevade jaoks juba päring olemas.",
+    permissionDenied:
+      "Seda päringut ei saa saata. Kontrolli looma ja broneeringu andmeid.",
     petParentMembershipRequired:
       "Hoolduspäringu saatmiseks on vajalik aktiivne lemmikloomaomaniku liikmesus.",
     petFriendMembershipRequired:
