@@ -2156,6 +2156,9 @@ export const et = {
     errors: {
       acceptanceRequired: "Jätkamiseks pead kasutustingimustega nõustuma.",
       recordFailed: "Nõusolekut ei õnnestunud salvestada. Proovi uuesti.",
+      schemaMissing:
+        "Kasutustingimuste nõusolek pole veel seadistatud. Võta ühendust toe.",
+      sessionInvalid: "Sinu sessiooni ei õnnestunud kinnitada. Palun logi uuesti sisse.",
     },
   },
 } satisfies import("./translations").Dictionary;

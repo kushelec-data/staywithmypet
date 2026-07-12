@@ -5,10 +5,13 @@ import { createCareRequest, respondToRequest, type CreateCareRequestInput } from
 import { createClient } from "@/lib/supabase/server";
 import {
   attachBookingIdToRequestAcceptance,
+  attachRequestIdToTermsAcceptance,
   bookingTermsContextForRole,
+  classifyTermsInsertError,
+  CURRENT_TERMS_VERSION,
   findBookingIdForRequest,
+  friendlyTermsInsertMessage,
   hasBookingTermsForRequest,
-  isTermsSchemaMissingError,
   recordTermsAcceptance,
   type TermsAcceptanceContext,
 } from "@/lib/terms-acceptance";
@@ -32,8 +35,15 @@ export type CareRequestActionErrorCode =
   | "TERMS_REQUIRED"
   | "TERMS_STORAGE_ERROR"
   | "TERMS_SCHEMA_MISSING"
+  | "TERMS_AUTH_ERROR"
   | "REQUEST_CREATE_ERROR"
   | "VALIDATION_ERROR";
+
+function termsErrorCode(kind: ReturnType<typeof classifyTermsInsertError>): CareRequestActionErrorCode {
+  if (kind === "schema_missing") return "TERMS_SCHEMA_MISSING";
+  if (kind === "rls_auth") return "TERMS_AUTH_ERROR";
+  return "TERMS_STORAGE_ERROR";
+}
 
 export type SubmitCareRequestResult =
   | { success: true; requestId: string }
@@ -82,12 +92,14 @@ function membershipRequiredMessage(role: MembershipRole): string {
     : "An active Pet Friend membership is required to send a care request.";
 }
 
-function termsStorageFriendlyMessage(): string {
-  return "We could not save your Terms acceptance. Please try again.";
-}
-
-function termsSchemaFriendlyMessage(): string {
-  return "Terms acceptance is not configured yet. Please contact support or try again later.";
+function mapTermsInsertFailure(
+  termsRecorded: Extract<Awaited<ReturnType<typeof recordTermsAcceptance>>, { ok: false }>,
+): { code: CareRequestActionErrorCode; message: string } {
+  const code = termsErrorCode(termsRecorded.kind);
+  return {
+    code,
+    message: friendlyTermsInsertMessage(termsRecorded.kind),
+  };
 }
 
 /**
@@ -150,38 +162,32 @@ export async function submitCareRequestAction(
   const termsRecorded = await recordTermsAcceptance(supabase, userId, {
     context: termsContext,
     membershipRole: input.senderRole,
-    requestId,
+    termsVersion: CURRENT_TERMS_VERSION,
     ...meta,
   });
 
   console.info("[care-request:submit] terms acceptance", {
     userId,
     requestId,
-    context: termsContext,
+    termsVersion: CURRENT_TERMS_VERSION,
+    acceptanceContext: termsContext,
+    membershipRole: input.senderRole,
+    planId: null,
+    bookingId: null,
     ok: termsRecorded.ok,
     ...(termsRecorded.ok
-      ? {}
+      ? { acceptanceId: termsRecorded.id }
       : {
           code: termsRecorded.code,
           message: termsRecorded.error,
           details: termsRecorded.details,
           hint: termsRecorded.hint,
+          kind: termsRecorded.kind,
         }),
   });
 
   if (!termsRecorded.ok) {
-    if (isTermsSchemaMissingError(termsRecorded)) {
-      return {
-        success: false,
-        code: "TERMS_SCHEMA_MISSING",
-        message: termsSchemaFriendlyMessage(),
-      };
-    }
-    return {
-      success: false,
-      code: "TERMS_STORAGE_ERROR",
-      message: termsStorageFriendlyMessage(),
-    };
+    return { success: false, ...mapTermsInsertFailure(termsRecorded) };
   }
 
   try {
@@ -190,6 +196,22 @@ export async function submitCareRequestAction(
       senderId: userId,
       requestId,
     });
+
+    const linked = await attachRequestIdToTermsAcceptance(
+      supabase,
+      userId,
+      termsRecorded.id,
+      requestId,
+    );
+    if (!linked.ok) {
+      console.error("[care-request:submit] terms request_id link failed", {
+        userId,
+        acceptanceId: termsRecorded.id,
+        requestId,
+        code: linked.code,
+        message: linked.error,
+      });
+    }
 
     console.info("[care-request:submit] request created", {
       userId,
@@ -288,17 +310,9 @@ export async function acceptCareRequestAction(input: {
       ...meta,
     });
     if (!recorded.ok) {
-      if (isTermsSchemaMissingError(recorded)) {
-        return {
-          success: false,
-          code: "TERMS_SCHEMA_MISSING",
-          message: termsSchemaFriendlyMessage(),
-        };
-      }
       return {
         success: false,
-        code: "TERMS_STORAGE_ERROR",
-        message: termsStorageFriendlyMessage(),
+        ...mapTermsInsertFailure(recorded),
       };
     }
   }

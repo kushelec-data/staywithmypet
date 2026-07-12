@@ -1,4 +1,11 @@
--- Permanent Terms of Use acceptance records (versioned, contextual).
+-- Run in Supabase SQL editor if Terms acceptance inserts fail during signup,
+-- membership activation, or care request submission.
+-- Idempotent: safe to run multiple times.
+-- See also: supabase/migrations/20260712150000_terms_acceptance.sql
+
+-- ---------------------------------------------------------------------------
+-- Table
+-- ---------------------------------------------------------------------------
 
 create table if not exists public.terms_acceptance (
   id uuid primary key default gen_random_uuid(),
@@ -40,6 +47,10 @@ create index if not exists terms_acceptance_user_booking_idx
   on public.terms_acceptance (user_id, booking_id)
   where booking_id is not null;
 
+-- ---------------------------------------------------------------------------
+-- RLS
+-- ---------------------------------------------------------------------------
+
 alter table public.terms_acceptance enable row level security;
 
 drop policy if exists "terms_acceptance_select_own" on public.terms_acceptance;
@@ -61,5 +72,15 @@ create policy "terms_acceptance_update_own"
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
+-- ---------------------------------------------------------------------------
+-- Grants (new tables are not covered by older blanket grants)
+-- ---------------------------------------------------------------------------
+
 grant select, insert, update on public.terms_acceptance to authenticated;
 grant all on public.terms_acceptance to service_role;
+
+-- ---------------------------------------------------------------------------
+-- PostgREST schema reload
+-- ---------------------------------------------------------------------------
+
+notify pgrst, 'reload schema';

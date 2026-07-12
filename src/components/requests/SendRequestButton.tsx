@@ -214,7 +214,9 @@ export function SendRequestButton({
       case "TERMS_STORAGE_ERROR":
         return t.termsAcceptance.errors.recordFailed;
       case "TERMS_SCHEMA_MISSING":
-        return t.requests.termsSchemaMissing;
+        return t.termsAcceptance.errors.schemaMissing;
+      case "TERMS_AUTH_ERROR":
+        return t.termsAcceptance.errors.sessionInvalid;
       case "NOT_SIGNED_IN":
         return t.auth.errorGeneric;
       default:
