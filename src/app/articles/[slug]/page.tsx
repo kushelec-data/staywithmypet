@@ -1,5 +1,5 @@
-import { ArticleDetail } from "@/components/articles/ArticleDetail";
-import { ARTICLES, getArticleBySlug } from "@/lib/articles";
+import { ArticleDetailPageClient } from "../ArticleDetailPageClient";
+import { ARTICLE_SLUGS } from "@/lib/articles";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -8,24 +8,19 @@ type PageProps = {
 };
 
 export function generateStaticParams() {
-  return ARTICLES.map((article) => ({ slug: article.slug }));
+  return ARTICLE_SLUGS.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
-  if (!article) {
+  if (!ARTICLE_SLUGS.includes(slug)) {
     return { title: "Article not found" };
   }
-  return {
-    title: article.title,
-    description: article.excerpt,
-  };
+  return { title: "Article" };
 }
 
 export default async function ArticleDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
-  if (!article) notFound();
-  return <ArticleDetail article={article} />;
+  if (!ARTICLE_SLUGS.includes(slug)) notFound();
+  return <ArticleDetailPageClient slug={slug} />;
 }

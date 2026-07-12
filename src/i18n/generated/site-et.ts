@@ -168,6 +168,455 @@ export const siteEtPartial = {
       },
     },
   },
+  articlesPage: {
+    title: "Meie lood & nõuanded",
+    subtitle: "Praktilised soovitused, kasulikud nipid ja inspireerivad lood kõigile loomaomanikele ja hoidjatele.",
+    readMore: "Loe artiklit →",
+    backToArticles: "Tagasi artiklite juurde",
+    relatedArticles: "Seotud artiklid",
+    readTime: "{minutes} min lugemist",
+    categories: {
+      petCare: "Lemmiklooma hooldus",
+      trustSafety: "Usaldus ja turvalisus",
+      petFriendTips: "Loomasõbra nõuanded",
+      petParentTips: "Loomaomaniku nõuanded",
+    },
+    cta: {
+      title: "Valmis leidma usaldusväärset hoidu?",
+      description: "Otsi hoidjat enda lähedalt või liitu loomasõbrana ja veeta tähendusrikast aega lemmikloomadega.",
+      primary: "Leia hoidja",
+      secondary: "Hakka loomasõbraks",
+    },
+    items: [
+      {
+        slug: "choose-the-right-pet-friend",
+        title: "Kuidas valida oma koerale või kassile sobiv loomasõber",
+        excerpt: "Miks läbimõeldud valik on oluline",
+        body: [
+          {
+            type: "h2",
+            text: "Miks läbimõeldud valik on oluline",
+          },
+          {
+            type: "p",
+            text: "Iga lemmik on ainulaadne – oma iseloomu, harjumuste ja vajadustega. Kui valid oma koerale või kassile ajutist hoolt pakkuvat loomasõpra, on oluline leida inimene, kelle eluviis, hoiak ja suhtumine loomadesse sobivad sinu lemmikuga. Hästi läbimõeldud sobivus aitab tagada, et sinu lemmik tunneks end turvaliselt, rahulikult ja hoituna ka siis, kui sind ennast läheduses ei ole.",
+          },
+          {
+            type: "h2",
+            text: "Millele loomasõpra valides tähelepanu pöörata",
+          },
+          {
+            type: "p",
+            text: "Valmisolek pühenduda ja vastutada",
+          },
+          {
+            type: "p",
+            text: "Varasem kogemus võib olla kasulik, kuid kõige olulisem on siiras soov hoolida, õppida ja võtta vastutus sinu lemmiku heaolu eest. Hooliv suhtumine, avatus juhistele ning valmisolek kohaneda on sageli palju olulisemad kui aastatepikkune kogemus.",
+          },
+          {
+            type: "h2",
+            text: "Aeg ja kättesaadavus",
+          },
+          {
+            type: "p",
+            text: "Kas loomasõbral on piisavalt aega sinu lemmiku jaoks? Jalutuskäigud, mängimine, toitmine või lihtsalt kohal olemine – järjepidev tähelepanu on lemmiku heaolu ja turvatunde jaoks väga oluline.",
+          },
+          {
+            type: "h2",
+            text: "Kodune keskkond",
+          },
+          {
+            type: "p",
+            text: "Kas keskkond on lemmikule turvaline ja sobiv? Rahulik, ohutu ruum ilma ohtudeta ning piisava liikumis- ja puhkevõimalusega aitab koeral või kassil end kiiremini ja mugavamalt sisse seada.",
+          },
+          {
+            type: "h2",
+            text: "Iseloomude sobivus",
+          },
+          {
+            type: "p",
+            text: "Kõik inimesed ei sobi igale lemmikule – ja see on täiesti okei. Mõned loomasõbrad naudivad aktiivseid koeri ja pikki jalutuskäike, teised tunnevad end paremini rahulike kasside või vaiksemate loomadega. Oluline on, et nii lemmik kui ka loomasõber tunneksid end koos hästi.",
+          },
+          {
+            type: "h2",
+            text: "Usaldus ja avatud suhtlus",
+          },
+          {
+            type: "p",
+            text: "Enne kui usaldad oma lemmiku kellegi teise hoole alla, on oluline kohtuda ja avameelselt suhelda. Rääkige läbi igapäevased rutiinid, söögiajad, harjumused ning võimalikud tervisega seotud vajadused. Selge ja aus suhtlus loob usalduse ja aitab vältida arusaamatusi.",
+          },
+          {
+            type: "h2",
+            text: "Õige sobivuse väärtus",
+          },
+          {
+            type: "p",
+            text: "Hästi valitud loomasõber aitab sinu lemmikul tunda end turvaliselt, mõistetuna ja hoituna. Sina kui loomaomanik saad meelerahu, teades, et sinu lemmik on heades kätes. Loomasõber omakorda saab tähendusrikka kogemuse, toreda seltsi ning võimaluse kasvada vastutustundlikuks ja hoolivaks hooldajaks.",
+          },
+        ],
+      },
+      {
+        slug: "borrowing-a-dog-what-you-need-to-know",
+        title: "Koera hoidmine: mida tasub enne teada",
+        excerpt: "See ei ole ainult lõbu ja mäng.",
+        body: [
+          {
+            type: "p",
+            text: "See ei ole ainult lõbu ja mäng.",
+          },
+          {
+            type: "p",
+            text: "Koera hoidmine võib paljudele loomasõpradele olla kaua oodatud unistuse täitumine, pakkudes võimalust kogeda koeraga koos olemise rõõmu ka siis, kui püsiv lemmik ei ole parasjagu võimalik. Samas kaasneb sellega ka vastutus. Koerad on elusolendid, kellel on igapäevased vajadused, harjumused ja emotsioonid.",
+          },
+          {
+            type: "h2",
+            text: "Küsimused, mida endalt enne koera hoidmist küsida",
+          },
+          {
+            type: "p",
+            text: "Kas olen valmis koeraga iga päev jalutama, olenemata ilmast?",
+          },
+          {
+            type: "p",
+            text: "Kas mul on aega mängimiseks ja sideme loomiseks?",
+          },
+          {
+            type: "p",
+            text: "Kas saan hakkama igapäevase hooldusega, nagu toitmine ja puhtuse hoidmine?",
+          },
+          {
+            type: "p",
+            text: "Kas tean, kuidas tegutseda, kui koer jääb haigeks või ehmub?",
+          },
+          {
+            type: "h2",
+            text: "Praktiline ettevalmistus",
+          },
+          {
+            type: "p",
+            text: "Enne koera hoidmise alustamist on oluline kohtuda nii koera kui ka loomaomanikuga. Arutage läbi koera rutiinid, toitumine ja iseloomujooned ning leppige kokku, kuidas käituda hädaolukorras. Selge kokkulepe loob turvatunde nii koerale kui ka inimestele.",
+          },
+          {
+            type: "h2",
+            text: "Emotsionaalne väärtus",
+          },
+          {
+            type: "p",
+            text: "Koera eest hoolitsemine pakub seltsi, rõõmu ja rohkem liikumist igapäevaellu. Samal ajal annab see võimaluse kogeda, mida koeraga koos elamine päriselt tähendab – ning aitab mõista, kas ollakse tulevikus valmis ka püsivamaks sidemeks.",
+          },
+        ],
+      },
+      {
+        slug: "introduce-your-pet-to-new-pet-friend-safely",
+        title: "Kuidas uuele loomasõbrale oma lemmikut turvaliselt tutvustada",
+        excerpt: "Rahulik algus loob hea kogemuse.",
+        body: [
+          {
+            type: "p",
+            text: "Rahulik algus loob hea kogemuse.",
+          },
+          {
+            type: "p",
+            text: "Uue inimesega kohtumine võib lemmiku jaoks olla kas põnev või hoopis pingeline. Olgu tegu koera, kassi või küülikuga – esimene mulje loeb. Et sinu lemmik tunneks end turvaliselt ja loomasõber saaks positiivse kogemuse, tasub võtta aega ja liikuda samm-sammult.",
+          },
+          {
+            type: "h2",
+            text: "Samm-sammuline lähenemine:",
+          },
+          {
+            type: "p",
+            text: "Kohtuge neutraalses kohas. Koerte puhul alusta õues – vaikses pargis või hoovis. Kasside ja väiksemate lemmikute jaoks vali rahulik tuba, kus nad tunnevad end turvaliselt.",
+          },
+          {
+            type: "p",
+            text: "Hoia kohtumine lühike ja positiivne. Ära koorma lemmikut üle. Esimesel korral piisab mõnest minutist sõbralikust kontaktist.",
+          },
+          {
+            type: "p",
+            text: "Jälgi kehakeelt. Saba liputamine, lõdvestunud hoiak ja rahulik nuusutamine on head märgid. Peitumine, susisemine, vaikseks jäämine või urisemine viitavad sellele, et lemmik vajab rohkem aega.",
+          },
+          {
+            type: "p",
+            text: "Premeeri rahulikku käitumist. Maiused ja kiitus aitavad lemmikul seostada uut inimest positiivsete tunnetega.",
+          },
+          {
+            type: "p",
+            text: "Pea meeles, et usaldus tekib ajaga. Lase lemmikul ise tempot määrata – üsna pea võib ta oma uut sõpra tervitada juba rõõmu ja elevusega.",
+          },
+        ],
+      },
+      {
+        slug: "building-trust-as-a-pet-friend",
+        title: "Usalduse loomine loomasõbrana: kuidas jätta hea esmamulje",
+        excerpt: "Sa oled enamat kui lihtsalt lemmiku hoidja – sa oled tema sõber. Esimene kohtumine lemmikuga on väga oluline, sest loomad tajuvad kiiresti meie meeleolu ja energiat. Rahulik enesekindlus aitab neil end turvaliselt tunda.",
+        body: [
+          {
+            type: "p",
+            text: "Sa oled enamat kui lihtsalt lemmiku hoidja – sa oled tema sõber. Esimene kohtumine lemmikuga on väga oluline, sest loomad tajuvad kiiresti meie meeleolu ja energiat. Rahulik enesekindlus aitab neil end turvaliselt tunda.",
+          },
+          {
+            type: "h2",
+            text: "Nipid, kuidas usaldust kiiresti luua:",
+          },
+          {
+            type: "p",
+            text: "Ole rahulik ja liigu aeglaselt. Äkilised liigutused võivad arglikke loomi ehmatada.",
+          },
+          {
+            type: "p",
+            text: "Kasuta looma nime pehme häälega. Oma nime kuulmine uue inimese suust loob tuttavlikkust.",
+          },
+          {
+            type: "p",
+            text: "Austa looma isiklikku ruumi. Lase tal ise sinu juurde tulla, selle asemel et kohe kontakti otsida.",
+          },
+          {
+            type: "p",
+            text: "Tutvu tema rutiinidega. Küsi loomaomanikult söögiaegade, jalutuskäikude ja mänguharjumuste kohta ning pea neist kinni.",
+          },
+          {
+            type: "p",
+            text: "Paku õrna lähedust. Igal lemmikul on oma mugavustsoon – jälgi, kuidas ta reageerib.",
+          },
+          {
+            type: "p",
+            text: "Usaldusväärne loomasõber muudab lemmiku maailma avaramaks ja rõõmsamaks. Pea meeles: kannatlikkus, hoolivus ja järjepidevus on parimad tööriistad, mida saad kaasa võtta.",
+          },
+        ],
+      },
+      {
+        slug: "understanding-pet-body-language",
+        title: "Lemmiku kehakeele mõistmine: mida ta sulle tegelikult öelda püüab",
+        excerpt: "Loomad „räägivad“ meiega pidevalt – lihtsalt mitte sõnadega. Oskus märgata ja mõista lemmiku kehakeelt aitab ennetada stressi, arusaamatusi ja isegi õnnetusi.",
+        body: [
+          {
+            type: "p",
+            text: "Loomad „räägivad“ meiega pidevalt – lihtsalt mitte sõnadega. Oskus märgata ja mõista lemmiku kehakeelt aitab ennetada stressi, arusaamatusi ja isegi õnnetusi.",
+          },
+          {
+            type: "h2",
+            text: "Levinumad märgid, millele tähelepanu pöörata:",
+          },
+          {
+            type: "p",
+            text: "Rahulik lemmik: lõdvestunud keha, aeglane sabaliputus (koertel), püstised kõrvad, ühtlane hingamine.",
+          },
+          {
+            type: "p",
+            text: "Stressis lemmik: saba jalge vahel, lontis või vastu pead surutud kõrvad, laienenud pupillid, värisemine, sage haigutamine või huulte lakkumine.",
+          },
+          {
+            type: "p",
+            text: "Õnnelik lemmik: mänguline liikumine, pehme pilkkontakt, lõdvestunud suu, aeglane pilgutamine (eriti kassidel).",
+          },
+          {
+            type: "h2",
+            text: "Hea teada:",
+          },
+          {
+            type: "p",
+            text: "Iga lemmik on erinev. Võta aega, et märgata, milline on just sinu hoolealuse tavapärane käitumine – nii saad kiiresti aru, kui miski ei ole päris nii nagu tavaliselt.",
+          },
+          {
+            type: "p",
+            text: "Lemmiku „keele“ mõistmine on iga tugeva suhte alus – nii loomaomaniku kui ka loomasõbra jaoks.",
+          },
+        ],
+      },
+      {
+        slug: "pet-routines-that-keep-everyone-happy",
+        title: "Tuttav rütm teeb lemmiku õnnelikuks",
+        excerpt: "Järjepidevus loob turvatunde.",
+        body: [
+          {
+            type: "p",
+            text: "Järjepidevus loob turvatunde.",
+          },
+          {
+            type: "p",
+            text: "Lemmikud tunnevad end kõige kindlamalt siis, kui nende päevakava on tuttav ja etteaimatav. Kui rutiin äkitselt muutub, võib loom tunda segadust või ärevust.",
+          },
+          {
+            type: "h2",
+            text: "Soovitused sujuvaks rutiiniks:",
+          },
+          {
+            type: "p",
+            text: "Hoia söögiajad võimalikult samad. Äkilised muutused võivad mõjutada looma enesetunnet ja seedimist.",
+          },
+          {
+            type: "p",
+            text: "Paku iga päev liikumist ja tegevust. Jalutuskäigud, mängimine või nuputamismänguasjad aitavad energiat tasakaalustatult välja elada.",
+          },
+          {
+            type: "p",
+            text: "Ka rahuhetked on olulised. Tasakaalusta aktiivsus puhkeajaga, eriti vanemate lemmikute puhul.",
+          },
+          {
+            type: "p",
+            text: "Kasuta tuttavaid käsklusi ja märguandeid. Küsi loomaomanikult, milliseid sõnu või signaale nende lemmik juba tunneb.",
+          },
+          {
+            type: "p",
+            text: "Kui loomasõber järgib sarnast rutiini nagu loomaomanik, kohaneb loom uues keskkonnas kergemini – ning kogu kogemus on rahulik ja rõõmus kõigile osapooltele.",
+          },
+        ],
+      },
+      {
+        slug: "prepare-your-home-for-a-visiting-pet",
+        title: "Kuidas valmistada oma kodu ette külla tulevaks lemmikuks",
+        excerpt: "Loo turvaline, rahulik ja sõbralik keskkond",
+        body: [
+          {
+            type: "h2",
+            text: "Loo turvaline, rahulik ja sõbralik keskkond",
+          },
+          {
+            type: "p",
+            text: "Lemmiku vastuvõtmine oma koju on tore kogemus – ning väike ettevalmistus aitab palju. Kuigi loomaomanik toob kaasa kõik lemmikule vajaliku, muudab turvaline ja mugav keskkond looma kohanemise lihtsamaks ning teeb kogu kogemuse meeldivaks kõigile osapooltele.",
+          },
+          {
+            type: "p",
+            text: "Kodu ettevalmistamine ei tähenda täiuslikkust – see tähendab hoolivust, tähelepanelikkust ja valmisolekut arvestada teise elusolendi vajadustega.",
+          },
+          {
+            type: "h2",
+            text: "Enne lemmiku saabumist tee järgmist",
+          },
+          {
+            type: "p",
+            text: "Eemalda võimalikud ohud",
+          },
+          {
+            type: "p",
+            text: "Vaata oma kodu läbi looma uudishimulike silmadega. Korista ära kergesti purunevad esemed, kinnita lahtised juhtmed ning eemalda või piira ligipääs kõigele, mis võib olla ohtlik – sealhulgas mürgised taimed, puhastusvahendid, ravimid ja väikesed esemed, mida võiks alla neelata.",
+          },
+          {
+            type: "h2",
+            text: "Vali rahulik puhkekoht",
+          },
+          {
+            type: "p",
+            text: "Lemmik saabub koos talle tuttavate asjadega – pesa, teki, toidunõude ja mänguasjadega. Vali vaikne ja mugav koht, kuhu need paigutada, et loom saaks seal rahulikult puhata ja vajadusel ümbritsevast eemalduda.",
+          },
+          {
+            type: "h2",
+            text: "Sulge aknad, rõdud ja uksed",
+          },
+          {
+            type: "p",
+            text: "Veendu, et aknad, rõdud ja väljapääsud oleksid turvaliselt suletud. Isegi rahulik või toas elav lemmik võib uues keskkonnas käituda ettearvamatult, seega aitab ettevaatus õnnetusi ennetada.",
+          },
+          {
+            type: "h2",
+            text: "Hoia inimtoit kättesaamatus kohas",
+          },
+          {
+            type: "p",
+            text: "Paljud igapäevased toiduained on lemmikloomadele ohtlikud. Hoia toit kindlalt ära panduna ning ära jäta järelvalveta šokolaadi, viinamarju, küpsetatud konte ega muid jääke.",
+          },
+          {
+            type: "h2",
+            text: "Loo ühised kokkulepped pereliikmetega",
+          },
+          {
+            type: "p",
+            text: "Veendu, et kõik kodused teavad külla tulevast lemmikust ning mõistavad põhireegleid – kus loom võib viibida, kuidas temaga suhelda ja millal anda talle ruumi. Ühtsed reeglid loovad loomale turvatunde.",
+          },
+          {
+            type: "h2",
+            text: "Miks ettevalmistus on oluline",
+          },
+          {
+            type: "p",
+            text: "Hoolikalt ette valmistatud kodu vähendab looma stressi, aitab ennetada õnnetusi ning loob usalduse sinu ja loomaomaniku vahel. Mis kõige tähtsam – see näitab austust ja hoolimist sinu neljajalgse külalise vastu ning aitab luua rahuliku ja positiivse kogemuse kõigile.",
+          },
+        ],
+      },
+      {
+        slug: "what-to-do-if-a-pet-gets-homesick",
+        title: "Mida teha, kui lemmikul tekib koduigatsus",
+        excerpt: "See on täiesti normaalne ja mööduv.",
+        body: [
+          {
+            type: "p",
+            text: "See on täiesti normaalne ja mööduv.",
+          },
+          {
+            type: "p",
+            text: "Ka kõige rõõmsameelsemad lemmikud võivad uues keskkonnas olles oma peremeest igatsema hakata. Mõni sööb alguses vähem, tundub vaiksem või hoiab rohkem omaette. Need on sageli täiesti tavapärased märgid esimestel päevadel.",
+          },
+          {
+            type: "h2",
+            text: "Nii saad sina aidata:",
+          },
+          {
+            type: "p",
+            text: "Hoia alles tuttavad lõhnad – kodust kaasa võetud tekk või mänguasi pakub palju turvatunnet. Järgi harjumuspärast rutiini – samad söögiajad ja jalutuskäigud aitavad loomal end kindlamalt tunda. Paku rahulikku lähedust, ilma sundimata – lase lemmikul ise sinu juurde tulla. Mängi ja räägi pehmelt – usaldus tekib väikeste, positiivsete hetkede kaudu.",
+          },
+          {
+            type: "p",
+            text: "Koduigatsus taandub tavaliselt paari päeva jooksul, kui loom harjub ja usaldus kasvab. Kannatlikkus, soe suhtumine ja stabiilne rutiin aitavad sinu hoolealusel tunda end turvaliselt ja hoituna.",
+          },
+        ],
+      },
+      {
+        slug: "emergency-basics-every-pet-friend-should-know",
+        title: "Esmaabi põhitõed, mida iga loomasõber peaks teadma",
+        excerpt: "Hea ettevalmistus annab meelerahu.",
+        body: [
+          {
+            type: "p",
+            text: "Hea ettevalmistus annab meelerahu.",
+          },
+          {
+            type: "p",
+            text: "Õnnetusi juhtub harva, kuid teadmine, kuidas tegutseda, aitab säilitada rahu ja reageerida kiiresti siis, kui see on kõige olulisem.",
+          },
+          {
+            type: "h2",
+            text: "Info, mida peaksid teadma enne, kui broneering algab:",
+          },
+          {
+            type: "h2",
+            text: "lemmiku loomaarsti nimi, aadress ja telefoninumber",
+          },
+          {
+            type: "h2",
+            text: "info võimalike ravimite ja allergiate kohta",
+          },
+          {
+            type: "h2",
+            text: "loomaomaniku kontaktandmed ning kokkulepitud tegevusplaan hädaolukorraks",
+          },
+          {
+            type: "h2",
+            text: "Kui peaks midagi juhtuma:",
+          },
+          {
+            type: "h2",
+            text: "säilita rahu – loomad tajuvad väga hästi paanikat",
+          },
+          {
+            type: "h2",
+            text: "võta kohe ühendust loomaomanikuga",
+          },
+          {
+            type: "p",
+            text: "vajaduse korral pöördu lähimasse loomakliinikusse (hoia aadress eelnevalt salvestatuna)",
+          },
+          {
+            type: "h2",
+            text: "hoia loom soojas ja rahulikus keskkonnas kuni abi saabumiseni",
+          },
+          {
+            type: "p",
+            text: "Valmisolek ei tähenda halva ootamist – see tähendab hoolivat ja vastutustundlikku suhtumist looma heaolusse.",
+          },
+        ],
+      },
+    ],
+  },
   contact: {
     badge: "Kirjuta julgelt",
     title: "Võta meiega ühendust",

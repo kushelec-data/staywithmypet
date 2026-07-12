@@ -4,9 +4,11 @@ import Link from "next/link";
 
 type ArticleCardProps = {
   article: Article;
+  readMoreLabel: string;
+  readTimeTemplate: string;
 };
 
-export function ArticleCard({ article }: ArticleCardProps) {
+export function ArticleCard({ article, readMoreLabel, readTimeTemplate }: ArticleCardProps) {
   return (
     <article className="card-elevated flex min-w-0 flex-col overflow-hidden rounded-3xl border border-black/[0.06] bg-surface shadow-md shadow-black/5 transition-shadow hover:shadow-lg">
       <Link href={`/articles/${article.slug}`} className="block shrink-0">
@@ -28,7 +30,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
             {article.category}
           </span>
           <span>
-            {article.publishedAt} · {formatReadTime(article.readTimeMinutes)}
+            {article.publishedAt} · {formatReadTime(article.readTimeMinutes, readTimeTemplate)}
           </span>
         </div>
         <h2 className="font-heading mt-3 line-clamp-2 text-lg font-semibold leading-snug text-foreground sm:text-xl">
@@ -43,7 +45,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
           href={`/articles/${article.slug}`}
           className="mt-4 text-sm font-semibold text-brand-pink hover:underline"
         >
-          Read article →
+          {readMoreLabel}
         </Link>
       </div>
     </article>

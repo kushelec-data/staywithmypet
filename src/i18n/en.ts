@@ -1855,6 +1855,36 @@ export const en = {
       },
     },
   },
+  articlesPage: {
+    title: "Pet care articles",
+    subtitle:
+      "Helpful guides for Pet Parents and Pet Friends — from first meetings to routines, trust, and safety.",
+    readMore: "Read article →",
+    backToArticles: "Back to articles",
+    relatedArticles: "Related articles",
+    readTime: "{minutes} min read",
+    categories: {
+      petCare: "Pet care",
+      trustSafety: "Trust & safety",
+      petFriendTips: "Pet Friend tips",
+      petParentTips: "Pet Parent tips",
+    },
+    cta: {
+      title: "Ready to find trusted pet care?",
+      description:
+        "Search for care near you, or join as a Pet Friend and spend meaningful time with pets.",
+      primary: "Find care",
+      secondary: "Become a Pet Friend",
+    },
+    items: [
+      {
+        slug: "building-trust-as-a-pet-friend",
+        title: "Building Trust as a Pet Friend",
+        excerpt: "First meetings set the tone.",
+        body: [{ type: "p" as const, text: "Placeholder — replaced by Excel sync." }],
+      },
+    ],
+  },
   contact: {
     badge: "We're here to help",
     title: "Contact us",

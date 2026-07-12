@@ -1859,6 +1859,36 @@ export const et = {
       },
     },
   },
+  articlesPage: {
+    title: "Lemmikloomade hoolduse artiklid",
+    subtitle:
+      "Kasulikud juhendid loomaomanikele ja loomasõpradele — esimestest kohtumistest rutiinide, usalduse ja turvalisuseni.",
+    readMore: "Loe artiklit →",
+    backToArticles: "Tagasi artiklite juurde",
+    relatedArticles: "Seotud artiklid",
+    readTime: "{minutes} min lugemist",
+    categories: {
+      petCare: "Lemmiklooma hooldus",
+      trustSafety: "Usaldus ja turvalisus",
+      petFriendTips: "Loomasõbra nõuanded",
+      petParentTips: "Loomaomaniku nõuanded",
+    },
+    cta: {
+      title: "Valmis leidma usaldusväärset hoidu?",
+      description:
+        "Otsi hoidjat enda lähedalt või liitu loomasõbrana ja veeta tähendusrikast aega lemmikloomadega.",
+      primary: "Leia hoidja",
+      secondary: "Hakka loomasõbraks",
+    },
+    items: [
+      {
+        slug: "building-trust-as-a-pet-friend",
+        title: "Usalduse loomine loomasõbrana",
+        excerpt: "Esimene kohtumine seab tooni.",
+        body: [{ type: "p" as const, text: "Kohatäide — asendatakse Exceli sünkrooniga." }],
+      },
+    ],
+  },
   contact: {
     badge: "Oleme siin, et aidata",
     title: "Võta ühendust",

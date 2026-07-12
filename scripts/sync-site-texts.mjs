@@ -843,6 +843,139 @@ function stripFaqQuestionPrefix(text) {
   return (text ?? "").replace(/^\d+\.\s*/, "").trim();
 }
 
+/** Stable slugs for Articles sheet rows 1–10 (row 1 has no published route). */
+const ARTICLE_SLUG_BY_NUMBER = {
+  1: null,
+  2: "choose-the-right-pet-friend",
+  3: "borrowing-a-dog-what-you-need-to-know",
+  4: "introduce-your-pet-to-new-pet-friend-safely",
+  5: "building-trust-as-a-pet-friend",
+  6: "understanding-pet-body-language",
+  7: "pet-routines-that-keep-everyone-happy",
+  8: "prepare-your-home-for-a-visiting-pet",
+  9: "what-to-do-if-a-pet-gets-homesick",
+  10: "emergency-basics-every-pet-friend-should-know",
+};
+
+function textToArticleBlocks(text) {
+  if (!text) return [];
+  const blocks = [];
+  const sections = text
+    .split(/\n\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  for (const section of sections) {
+    const lines = section
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (lines.length === 0) continue;
+
+    const isBulletList = lines.every((l) => /^[-•●–]\s/.test(l));
+    if (isBulletList) {
+      blocks.push({
+        type: "ul",
+        items: lines.map((l) => l.replace(/^[-•●–]\s+/, "").trim()),
+      });
+      continue;
+    }
+
+    const isNumberedList = lines.every((l) => /^\d+[.)]\s/.test(l));
+    if (isNumberedList) {
+      blocks.push({
+        type: "ol",
+        items: lines.map((l) => l.replace(/^\d+[.)]\s+/, "").trim()),
+      });
+      continue;
+    }
+
+    if (lines.length === 1) {
+      const line = lines[0];
+      if (line.length <= 72 && !/[.!?]$/.test(line)) {
+        blocks.push({ type: "h2", text: line });
+      } else {
+        blocks.push({ type: "p", text: line });
+      }
+      continue;
+    }
+
+    const first = lines[0];
+    if (first.length <= 72 && !/[.!?]$/.test(first)) {
+      blocks.push({ type: "h2", text: first });
+      const rest = lines.slice(1).join(" ");
+      if (rest) blocks.push({ type: "p", text: rest });
+    } else {
+      blocks.push({ type: "p", text: lines.join(" ") });
+    }
+  }
+  return blocks;
+}
+
+function articleExcerptFromBody(bodyText) {
+  const first = (bodyText ?? "")
+    .split(/\n\n+/)
+    .map((p) => p.replace(/\n/g, " ").trim())
+    .find(Boolean);
+  if (!first) return "";
+  return first.length > 220 ? `${first.slice(0, 217).trim()}…` : first;
+}
+
+function parseArticles(rows) {
+  const maxR = Math.max(...Object.keys(rows).map(Number), 0);
+  const articles = [];
+  let current = null;
+
+  for (let r = 1; r <= maxR; r++) {
+    const colA = getCell(rows, r, 1);
+    const colB = getCell(rows, r, 2);
+    const colD = getCell(rows, r, 4);
+    const status = getCell(rows, r, 6);
+
+    const headerMatch = colA.match(/^(\d+)\.0$/);
+    if (headerMatch) {
+      if (current) articles.push(current);
+      const num = Number(headerMatch[1]);
+      current = {
+        number: num,
+        slug: ARTICLE_SLUG_BY_NUMBER[num] ?? null,
+        titleEn: colB,
+        titleEt: colD || null,
+        bodyEn: "",
+        bodyEt: null,
+      };
+      continue;
+    }
+
+    if (!current) continue;
+
+    const en = colB || (colA && !/^\d+\.0$/.test(colA) ? colA : "");
+    const et = colD || null;
+    if (!en || en === current.titleEn) continue;
+
+    const prefer =
+      !current.bodyEn ||
+      status === "ok" ||
+      (en.includes("\n") && en.length >= current.bodyEn.length);
+
+    if (prefer) {
+      current.bodyEn = en;
+      if (et) current.bodyEt = et;
+    }
+  }
+  if (current) articles.push(current);
+
+  return {
+    pageTitleEn: getCell(rows, 1, 1) || "Pet care articles",
+    pageTitleEt: getCell(rows, 1, 4) || null,
+    pageSubtitleEn:
+      getCell(rows, 2, 1) ||
+      "Helpful guides for Pet Parents and Pet Friends — from first meetings to routines, trust, and safety.",
+    pageSubtitleEt: getCell(rows, 2, 4) || null,
+    articles: articles.filter((a) => a.slug),
+  };
+}
+
 function parseFaq(rows) {
   const maxR = Math.max(...Object.keys(rows).map(Number), 0);
   const titleEn = getCell(rows, 2, 2) || "Frequently Asked Questions (FAQ)";
@@ -1139,6 +1272,7 @@ const opening = parseOpeningPage(loadSheet(sheetIndex["Opening page"]));
 const about = parseAbout(loadSheet(sheetIndex["Our Story"]));
 const contact = parseContact(loadSheet(sheetIndex["Contact Us"]));
 const clinics = parseClinics(loadSheet(sheetIndex["Clinics"]));
+const articlesData = parseArticles(loadSheet(sheetIndex["Articles"]));
 const headerFooterRows = loadSheet(sheetIndex["Header and footer"]);
 const navPairs = extractNavPairs(headerFooterRows);
 const footerLegalLabels = extractFooterLegalLabels(headerFooterRows);
@@ -1267,6 +1401,25 @@ const howItWorksExplainerEn = {
   },
 };
 
+const articlesPageItemsEn = articlesData.articles.map((article) => ({
+  slug: article.slug,
+  title: article.titleEn,
+  excerpt: articleExcerptFromBody(article.bodyEn),
+  body: textToArticleBlocks(article.bodyEn),
+}));
+
+const articlesPageItemsEt = articlesData.articles.map((article, i) => {
+  const excerptEn = articleExcerptFromBody(article.bodyEn);
+  const excerptEt = article.bodyEt ? articleExcerptFromBody(article.bodyEt) : null;
+  const bodySource = article.bodyEt || article.bodyEn;
+  return {
+    slug: article.slug,
+    title: track(`articlesPage.items[${i}].title`, article.titleEn, article.titleEt),
+    excerpt: track(`articlesPage.items[${i}].excerpt`, excerptEn, excerptEt),
+    body: textToArticleBlocks(bodySource),
+  };
+});
+
 const howItWorksExplainerEt = {
   heading: track("howItWorksPage.explainerSection.heading", howItWorks.titleEn, howItWorks.titleEt),
   subheading: track("howItWorksPage.explainerSection.subheading", howItWorks.introEn, howItWorks.introEt),
@@ -1333,6 +1486,28 @@ const siteEnPartial = {
     title: howItWorks.titleEn,
     subtitle: howItWorks.subtitleEn,
     explainerSection: howItWorksExplainerEn,
+  },
+  articlesPage: {
+    title: articlesData.pageTitleEn,
+    subtitle: articlesData.pageSubtitleEn,
+    readMore: "Read article →",
+    backToArticles: "Back to articles",
+    relatedArticles: "Related articles",
+    readTime: "{minutes} min read",
+    categories: {
+      petCare: "Pet care",
+      trustSafety: "Trust & safety",
+      petFriendTips: "Pet Friend tips",
+      petParentTips: "Pet Parent tips",
+    },
+    cta: {
+      title: "Ready to find trusted pet care?",
+      description:
+        "Search for care near you, or join as a Pet Friend and spend meaningful time with pets.",
+      primary: "Find care",
+      secondary: "Become a Pet Friend",
+    },
+    items: articlesPageItemsEn,
   },
   contact: {
     badge: contact.badge?.en?.split("?")[0]?.trim() || "Get in Touch",
@@ -1430,6 +1605,35 @@ const siteEtPartial = {
     title: track("howItWorksPage.title", howItWorks.titleEn, howItWorks.titleEt),
     subtitle: track("howItWorksPage.subtitle", howItWorks.subtitleEn, howItWorks.subtitleEt),
     explainerSection: howItWorksExplainerEt,
+  },
+  articlesPage: {
+    title: track("articlesPage.title", articlesData.pageTitleEn, articlesData.pageTitleEt),
+    subtitle: track("articlesPage.subtitle", articlesData.pageSubtitleEn, articlesData.pageSubtitleEt),
+    readMore: track("articlesPage.readMore", "Read article →", "Loe artiklit →"),
+    backToArticles: track("articlesPage.backToArticles", "Back to articles", "Tagasi artiklite juurde"),
+    relatedArticles: track("articlesPage.relatedArticles", "Related articles", "Seotud artiklid"),
+    readTime: track("articlesPage.readTime", "{minutes} min read", "{minutes} min lugemist"),
+    categories: {
+      petCare: track("articlesPage.categories.petCare", "Pet care", "Lemmiklooma hooldus"),
+      trustSafety: track("articlesPage.categories.trustSafety", "Trust & safety", "Usaldus ja turvalisus"),
+      petFriendTips: track("articlesPage.categories.petFriendTips", "Pet Friend tips", "Loomasõbra nõuanded"),
+      petParentTips: track("articlesPage.categories.petParentTips", "Pet Parent tips", "Loomaomaniku nõuanded"),
+    },
+    cta: {
+      title: track(
+        "articlesPage.cta.title",
+        "Ready to find trusted pet care?",
+        "Valmis leidma usaldusväärset hoidu?",
+      ),
+      description: track(
+        "articlesPage.cta.description",
+        "Search for care near you, or join as a Pet Friend and spend meaningful time with pets.",
+        "Otsi hoidjat enda lähedalt või liitu loomasõbrana ja veeta tähendusrikast aega lemmikloomadega.",
+      ),
+      primary: track("articlesPage.cta.primary", "Find care", "Leia hoidja"),
+      secondary: track("articlesPage.cta.secondary", "Become a Pet Friend", "Hakka loomasõbraks"),
+    },
+    items: articlesPageItemsEt,
   },
   contact: {
     badge: track("contact.badge", contact.badge?.en, contact.badge?.et),
@@ -1598,6 +1802,7 @@ fs.writeFileSync(outMissing, JSON.stringify(missingEt, null, 2));
 console.log(`Wrote ${outSiteTexts}`);
 console.log(`Wrote ${outEn} / ${outEt}`);
 console.log(`FAQ items: ${faq.items.length}`);
+console.log(`Articles: ${articlesData.articles.length}`);
 console.log(`Privacy blocks: ${legalDocs.privacy.blocks.length}`);
 console.log(`Terms blocks: ${legalDocs.terms.blocks.length}`);
 console.log(`Safety blocks: ${legalDocs.safety.blocks.length}`);

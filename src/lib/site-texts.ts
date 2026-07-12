@@ -335,10 +335,6 @@ export const legalDocuments = {
         et: "Küpsiseid saab hallata või keelata brauseri seadete kaudu. Nõusolekupõhised küpsised aktiveeritakse ainult teie loal.",
       },
       {
-        en: "We use Vercel Web Analytics to collect anonymous, aggregated usage data (such as page views and referrers) to understand how our website is used and improve the Service. This tool is privacy-focused, does not use advertising cookies, and does not track you across other websites. We do not use Google Analytics.",
-        et: "Kasutame Vercel Web Analyticsi, et koguda anonüümset, koondatud kasutusstatistikat (nt lehevaated ja viitajad), et mõista veebilehe kasutamist ja teenust parendada. See tööriist on privaatsussõbralik, ei kasuta reklaamiküpsiseid ega jälgi teid teistel veebilehtedel. Me ei kasuta Google Analyticsit.",
-      },
-      {
         en: "8. Data Security",
         et: "8. Andmete turvalisus",
       },
@@ -498,7 +494,7 @@ export const legalDocuments = {
       },
       {
         en: "If you do not agree, you must not use the Service.",
-        et: null,
+        et: "Tarbijateade: kui olete tarbija Euroopa Liidus või Euroopa Majanduspiirkonnas, on teil kohustuslikud õigused tarbijakaitseseaduse alusel. Miski nendes Tingimustes ei piira õigusi, mida seadusega piirata ei saa.",
       },
       {
         en: "Consumer notice: If you are a consumer in the EU/EEA, you have certain mandatory rights under consumer protection law. Nothing in these Terms limits rights that cannot be limited by law.",
@@ -1359,10 +1355,7 @@ export function getLegalDocument(slug: keyof typeof legalDocuments, locale: Loca
   const doc = legalDocuments[slug];
   const title = locale === "et" ? doc.titleEt : doc.titleEn;
   const paragraphs = doc.blocks
-    .flatMap((b) => {
-      if (locale === "et" && b.et === null) return [];
-      const text = locale === "et" && b.et ? b.et : b.en;
-      return isLegalDateMetadataLine(text) ? [] : [text];
-    });
+    .map((b) => (locale === "et" && b.et ? b.et : b.en))
+    .filter((p) => !isLegalDateMetadataLine(p));
   return { title, paragraphs };
 }
