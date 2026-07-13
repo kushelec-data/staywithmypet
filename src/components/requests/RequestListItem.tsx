@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBookingGuidanceNote";
 import { BookingTermsNotice } from "@/components/legal/BookingTermsNotice";
-import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
-import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
+import { RequestCardActions } from "@/components/requests/RequestCardActions";
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
-import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { bookingTermsContextForRole } from "@/lib/terms-acceptance";
 import type { MembershipRole } from "@/lib/membership";
@@ -174,18 +172,18 @@ export function RequestListItem({
   const messageText = localizeRequestMessage(request.message, t.requests);
   const displayStatus = getRequestDisplayStatus(request);
   const showRespondToMessage = request.canOpenMessages;
-  const showParentProfileLink =
-    Boolean(request.petParentProfileHref) &&
-    request.petParentProfileHref !== request.otherPartyProfileHref;
-  const showActions =
+  const hasProfileActions = Boolean(request.petProfileHref || request.otherPartyProfileHref);
+  const showRequestActions =
+    hasProfileActions ||
     (request.canRespond && direction === "incoming") ||
     (request.canCancel && direction === "outgoing") ||
-    showRespondToMessage;
+    showRespondToMessage ||
+    showAcceptTerms;
 
   return (
     <li>
-      <article className={`${ACCOUNT_CARD_CLASS} overflow-hidden transition-shadow hover:shadow-[0_2px_8px_rgba(46,107,63,0.08)]`}>
-        <div className="flex flex-col gap-4 p-5 sm:gap-5 sm:p-6">
+      <article className={`${ACCOUNT_CARD_CLASS} min-w-0 transition-shadow hover:shadow-[0_2px_8px_rgba(46,107,63,0.08)]`}>
+        <div className="flex min-w-0 w-full flex-col gap-4 p-5 sm:gap-5 sm:p-6">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <h3 className={ACCOUNT_LIST_ITEM_TITLE}>{title}</h3>
@@ -218,35 +216,6 @@ export function RequestListItem({
             </div>
           ) : null}
 
-          {request.petProfileHref || request.otherPartyProfileHref || showParentProfileLink ? (
-            <div className="flex flex-wrap gap-2 border-t border-[#E5E2D8] pt-4">
-              {request.petProfileHref ? (
-                <Link
-                  href={request.petProfileHref}
-                  className="inline-flex items-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-brand-teal hover:bg-mint/30 dark:border-border dark:bg-surface"
-                >
-                  {t.requests.viewPetProfile}
-                </Link>
-              ) : null}
-              {showParentProfileLink && request.petParentProfileHref ? (
-                <Link
-                  href={request.petParentProfileHref}
-                  className="inline-flex items-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-brand-teal hover:bg-mint/30 dark:border-border dark:bg-surface"
-                >
-                  {t.requests.viewOwnerProfile}
-                </Link>
-              ) : null}
-              {request.otherPartyProfileHref ? (
-                <Link
-                  href={request.otherPartyProfileHref}
-                  className="inline-flex items-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-[0.8125rem] font-medium text-brand-teal hover:bg-mint/30 dark:border-border dark:bg-surface"
-                >
-                  {t.requests.viewProfile}
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
-
           {request.status === "accepted" ? (
             <div className="border-t border-[#E5E2D8] pt-4 space-y-3">
               <ConfirmedBookingGuidanceNote messagesHref={`/messages?request=${request.id}`} />
@@ -265,68 +234,24 @@ export function RequestListItem({
             </div>
           ) : null}
 
-          {showActions ? (
-            <div className="flex flex-col gap-2 border-t border-black/5 pt-4 dark:border-border sm:flex-row sm:flex-wrap sm:justify-end">
-              {showAcceptTerms && !termsAlreadyAccepted ? (
-                <div className="w-full space-y-3 sm:col-span-full">
-                  <TermsReviewBanner />
-                  <TermsAcceptanceCheckbox
-                    variant="booking"
-                    id={`accept-terms-${request.id}`}
-                    checked={termsAccepted}
-                    onCheckedChange={setTermsAccepted}
-                    disabled={acting || termsCheckLoading}
-                  />
-                </div>
-              ) : null}
-              {showRespondToMessage ? (
-                <Button
-                  href={request.messagesHref}
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto"
-                >
-                  {t.requests.respondToMessage}
-                </Button>
-              ) : null}
-              {request.canRespond && direction === "incoming" ? (
-                <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={acting || !canAccept || !receiverRole}
-                    className="w-full sm:w-auto"
-                    onClick={() =>
-                      receiverRole && onAccept?.(request.id, termsAccepted || termsAlreadyAccepted, receiverRole)
-                    }
-                  >
-                    {t.requests.accept}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={acting}
-                    className="w-full border-red-200/80 text-red-700 hover:border-red-300 hover:bg-red-50 sm:w-auto"
-                    onClick={() => onDecline?.(request.id)}
-                  >
-                    {t.requests.decline}
-                  </Button>
-                </>
-              ) : null}
-              {request.canCancel && direction === "outgoing" ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={acting}
-                  className="w-full sm:w-auto"
-                  onClick={() => onCancel?.(request.id)}
-                >
-                  {t.requests.cancelRequest}
-                </Button>
-              ) : null}
-            </div>
+          {showRequestActions ? (
+            <RequestCardActions
+              request={request}
+              direction={direction}
+              copy={t.requests}
+              acting={acting}
+              showRespondToMessage={showRespondToMessage}
+              showAcceptTerms={showAcceptTerms}
+              termsAlreadyAccepted={termsAlreadyAccepted}
+              termsAccepted={termsAccepted}
+              termsCheckLoading={termsCheckLoading}
+              canAccept={canAccept}
+              receiverRole={receiverRole}
+              onTermsAcceptedChange={setTermsAccepted}
+              onAccept={onAccept}
+              onDecline={onDecline}
+              onCancel={onCancel}
+            />
           ) : null}
         </div>
       </article>

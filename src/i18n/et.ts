@@ -325,6 +325,8 @@ export const et = {
     openMessages: "Ava sõnumid",
     respondToMessage: "Vasta sõnumile",
     viewPetProfile: "Vaata lemmiku profiili",
+    viewPetFriendProfile: "Vaata loomasõbra profiili",
+    viewPetParentProfile: "Vaata lemmikloomaomaniku profiili",
     viewProfile: "Vaata profiili",
     viewOwnerProfile: "Vaata omaniku profiili",
     statusPending: "Ootel",

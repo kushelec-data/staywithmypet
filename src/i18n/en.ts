@@ -324,6 +324,8 @@ export const en = {
     openMessages: "Open messages",
     respondToMessage: "Respond to message",
     viewPetProfile: "View pet profile",
+    viewPetFriendProfile: "View Pet Friend profile",
+    viewPetParentProfile: "View Pet Parent profile",
     viewProfile: "View profile",
     viewOwnerProfile: "View owner profile",
     statusPending: "Pending",
