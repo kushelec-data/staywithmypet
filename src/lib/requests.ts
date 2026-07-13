@@ -30,10 +30,16 @@ import { ensureUserProfile } from "@/lib/profile";
 import { fetchUserPets } from "@/lib/pet-data";
 import { fetchUserProfile } from "@/lib/profile-load";
 import { isBookingOverlapError } from "@/lib/bookings";
+import {
+  assertSelectedDatesNotBlocked,
+  PetDatesUnavailableError,
+} from "@/lib/pet-booking-availability";
 import { pickSupabaseJoin, profileDisplayName } from "@/lib/profile-display";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingRelationError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
 import {
   buildCareRequestCreateFailure,
+  buildDatesUnavailableFailure,
   logCareRequestCreateFailure,
   type CreateCareRequestResult,
 } from "@/lib/request-create-errors";
@@ -697,6 +703,15 @@ export async function createCareRequest(
 
     await assertRequestedDatesAvailable(supabase, input, requestedDates);
 
+    const admin = createAdminClient();
+    if (!admin) {
+      return buildCareRequestCreateFailure(
+        "Date availability could not be verified. Please try again later.",
+        senderRole,
+      );
+    }
+    await assertSelectedDatesNotBlocked(admin, input.petId, requestedDates);
+
     const dateFrom = requestedDates[0];
     const dateTo = requestedDates[requestedDates.length - 1];
     const careType = input.careType.trim();
@@ -751,6 +766,10 @@ export async function createCareRequest(
 
     return { ok: true, requestId };
   } catch (err) {
+    if (err instanceof PetDatesUnavailableError) {
+      logCareRequestCreateFailure("dates-unavailable", logContext, err);
+      return buildDatesUnavailableFailure(err, senderRole);
+    }
     if (isPostgrestError(err)) {
       logCareRequestCreateFailure("unexpected", logContext, err);
       return buildCareRequestCreateFailure(err, senderRole);

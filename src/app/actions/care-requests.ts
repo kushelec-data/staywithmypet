@@ -48,7 +48,13 @@ function termsErrorCode(kind: ReturnType<typeof classifyTermsInsertError>): Care
 
 export type SubmitCareRequestResult =
   | { success: true; requestId: string }
-  | { success: false; code: CareRequestActionErrorCode; message: string };
+  | {
+      success: false;
+      code: CareRequestActionErrorCode;
+      message: string;
+      unavailableDates?: string[];
+      blockReason?: "booked" | "pending";
+    };
 
 async function requireUserId(): Promise<string | null> {
   const supabase = await createClient();
@@ -105,10 +111,19 @@ function mapTermsInsertFailure(
 
 function mapCreateFailure(
   created: Extract<CreateCareRequestResult, { ok: false }>,
-): { code: CareRequestActionErrorCode; message: string } {
+): {
+  code: CareRequestActionErrorCode;
+  message: string;
+  unavailableDates?: string[];
+  blockReason?: "booked" | "pending";
+} {
   return {
     code: created.code,
     message: created.message,
+    ...(created.unavailableDates?.length
+      ? { unavailableDates: created.unavailableDates }
+      : {}),
+    ...(created.blockReason ? { blockReason: created.blockReason } : {}),
   };
 }
 

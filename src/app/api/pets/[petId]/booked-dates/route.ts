@@ -1,6 +1,10 @@
 import { monthBounds } from "@/lib/booking-calendar";
 import { qualifiesAsActivePetParentMembership } from "@/lib/membership";
-import { eachISODateInRangeInclusive } from "@/lib/pet-availability";
+import {
+  datesInMonthRange,
+  loadPetBlockingBookedDates,
+  loadPetPendingRequestDates,
+} from "@/lib/pet-booking-availability";
 import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -9,7 +13,7 @@ import { NextResponse } from "next/server";
 type RouteContext = { params: Promise<{ petId: string }> };
 
 /**
- * GET — anonymized booked dates for a public pet (no names/photos).
+ * GET — anonymized booked + pending request dates for a public pet (no names/photos).
  * Query: year, month (1–12).
  */
 export async function GET(request: Request, context: RouteContext) {
@@ -74,29 +78,22 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   if (!admin) {
-    return NextResponse.json({ dates: [] });
+    return NextResponse.json({ dates: [], pendingDates: [] });
   }
 
   const { start, end } = monthBounds(year, month - 1);
 
-  const { data: rows, error } = await admin
-    .from("bookings")
-    .select("start_date, end_date")
-    .eq("pet_id", petId)
-    .in("status", ["upcoming", "active"])
-    .lte("start_date", end)
-    .gte("end_date", start);
+  try {
+    const [bookedSet, pendingSet] = await Promise.all([
+      loadPetBlockingBookedDates(admin, petId, { start, end }),
+      loadPetPendingRequestDates(admin, petId),
+    ]);
 
-  if (error) {
-    return NextResponse.json({ dates: [] });
+    return NextResponse.json({
+      dates: datesInMonthRange(bookedSet, year, month - 1),
+      pendingDates: datesInMonthRange(pendingSet, year, month - 1),
+    });
+  } catch {
+    return NextResponse.json({ dates: [], pendingDates: [] });
   }
-
-  const dates = new Set<string>();
-  for (const row of rows ?? []) {
-    for (const iso of eachISODateInRangeInclusive(row.start_date as string, row.end_date as string)) {
-      dates.add(iso);
-    }
-  }
-
-  return NextResponse.json({ dates: [...dates].sort() });
 }

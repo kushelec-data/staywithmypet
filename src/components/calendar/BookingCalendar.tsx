@@ -129,7 +129,7 @@ export function BookingCalendar({
     mode === "availability-readonly" ? false : Boolean(disabled);
   const today = todayISODate();
 
-  const { dayMap, blockingBookedDateSet, loading } = useCalendarBookings({
+  const { dayMap, blockingBookedDateSet, pendingRequestDateSet, loading } = useCalendarBookings({
     petId,
     petFriendId,
     visibility,
@@ -138,6 +138,19 @@ export function BookingCalendar({
     month,
     enabled: Boolean(petId || petFriendId),
   });
+
+  const [staleSelectionNotice, setStaleSelectionNotice] = useState(false);
+
+  useEffect(() => {
+    if (mode !== "request-select" || !onChange || loading) return;
+
+    const blocked = new Set([...blockingBookedDateSet, ...pendingRequestDateSet]);
+    const next = sortedSelected.filter((d) => !blocked.has(d));
+    if (next.length < sortedSelected.length) {
+      onChange(next);
+      setStaleSelectionNotice(true);
+    }
+  }, [mode, onChange, loading, blockingBookedDateSet, pendingRequestDateSet, sortedSelected]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
@@ -162,7 +175,9 @@ export function BookingCalendar({
 
   function toggle(iso: string, shiftKey = false) {
     if (disabled || !onChange) return;
+    setStaleSelectionNotice(false);
     if (blockingBookedDateSet.has(iso)) return;
+    if (pendingRequestDateSet.has(iso)) return;
     if (iso < today) return;
     if (mode === "request-select" && !availableSet.has(iso)) return;
 
@@ -275,6 +290,8 @@ export function BookingCalendar({
               const isAvailable = availableSet.has(iso);
               const isSelected = selectedSet.has(iso);
               const blockingBooked = blockingBookedDateSet.has(iso);
+              const blockingPending =
+                pendingRequestDateSet.has(iso) && !blockingBooked;
               const primaryBooking = slices[0]?.booking;
               const resolved = resolveCalendarDay(
                 {
@@ -285,12 +302,14 @@ export function BookingCalendar({
                   isSelected,
                   isAvailable,
                   blockingBooked,
+                  blockingPending,
                 },
                 {
                   pastUnavailable: t.bookingCalendar.pastUnavailable,
                   pastCompleted: t.bookingCalendar.pastCompleted,
                   booked: t.bookingCalendar.booked,
                   alreadyBooked: t.bookingCalendar.alreadyBooked,
+                  pendingRequest: t.bookingCalendar.pendingRequest,
                   notAvailable: t.bookingCalendar.notAvailable,
                   available: t.bookingCalendar.legendAvailable,
                   selected: t.bookingCalendar.legendSelected,
@@ -375,6 +394,12 @@ export function BookingCalendar({
       ) : null}
 
       {showLegend ? <CalendarInlineLegend compact={compact} /> : null}
+
+      {staleSelectionNotice && mode === "request-select" ? (
+        <p className="text-xs font-medium text-amber-800" role="status">
+          {t.bookingCalendar.staleSelectionRemoved}
+        </p>
+      ) : null}
 
       {mode === "availability-readonly" ? (
         !showViewOnlyHint ? null : (

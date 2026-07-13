@@ -2,6 +2,11 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { MEMBERSHIP_REQUIRED_MESSAGE } from "@/lib/membership-access";
 import { BLOCKED_USER_MESSAGE } from "@/lib/trust-safety";
 import {
+  DATES_UNAVAILABLE_CODE,
+  PetDatesUnavailableError,
+  type PetCalendarBlockReason,
+} from "@/lib/pet-booking-availability";
+import {
   DATE_NOT_AVAILABLE_ERROR,
   PAST_DATE_REQUEST_ERROR,
 } from "@/lib/request-validation";
@@ -11,6 +16,7 @@ export type CareRequestCreateErrorCode =
   | "MEMBERSHIP_REQUIRED"
   | "TERMS_REQUIRED"
   | "INVALID_DATES"
+  | "DATES_UNAVAILABLE"
   | "REQUEST_ALREADY_EXISTS"
   | "REQUEST_PERMISSION_DENIED"
   | "REQUEST_CREATE_ERROR"
@@ -21,6 +27,8 @@ export type CareRequestCreateFailure = {
   code: CareRequestCreateErrorCode;
   message: string;
   error: string;
+  unavailableDates?: string[];
+  blockReason?: PetCalendarBlockReason;
   supabaseCode?: string | null;
   details?: string | null;
   hint?: string | null;
@@ -32,6 +40,10 @@ export type CreateCareRequestResult =
 
 const INVALID_PARTICIPANTS = "Invalid request participants.";
 const SELF_REQUEST = "You cannot send a request to yourself.";
+const DATES_ALREADY_BOOKED_MESSAGE =
+  "Some selected dates are already booked. Please choose different dates.";
+const DATES_PENDING_MESSAGE =
+  "Some selected dates already have a pending care request. Please choose different dates.";
 
 export function friendlyCareRequestCreateMessage(code: CareRequestCreateErrorCode): string {
   switch (code) {
@@ -39,6 +51,8 @@ export function friendlyCareRequestCreateMessage(code: CareRequestCreateErrorCod
       return "An active Pet Parent membership is required to send a care request.";
     case "INVALID_DATES":
       return "Please select one or more available dates.";
+    case "DATES_UNAVAILABLE":
+      return DATES_ALREADY_BOOKED_MESSAGE;
     case "REQUEST_ALREADY_EXISTS":
       return "You already have a request for these dates.";
     case "REQUEST_PERMISSION_DENIED":
@@ -68,6 +82,9 @@ export function classifyCareRequestCreateError(
   const code = isPostgrestError(error) ? error.code ?? "" : "";
 
   if (message.includes(MEMBERSHIP_REQUIRED_MESSAGE)) return "MEMBERSHIP_REQUIRED";
+  if (error instanceof PetDatesUnavailableError || message === DATES_UNAVAILABLE_CODE) {
+    return "DATES_UNAVAILABLE";
+  }
   if (message === DATE_NOT_AVAILABLE_ERROR || message === PAST_DATE_REQUEST_ERROR) {
     return "INVALID_DATES";
   }
@@ -119,6 +136,25 @@ export function logCareRequestCreateFailure(
     ...context,
     message,
   });
+}
+
+export function buildDatesUnavailableFailure(
+  error: PetDatesUnavailableError,
+  role: "pet_parent" | "pet_friend" = "pet_parent",
+): CareRequestCreateFailure {
+  const message =
+    error.reason === "pending"
+      ? DATES_PENDING_MESSAGE
+      : friendlyCareRequestCreateMessageForRole("DATES_UNAVAILABLE", role);
+
+  return {
+    ok: false,
+    code: "DATES_UNAVAILABLE",
+    message,
+    error: error.message,
+    unavailableDates: error.unavailableDates,
+    blockReason: error.reason,
+  };
 }
 
 export function buildCareRequestCreateFailure(

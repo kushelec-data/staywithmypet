@@ -65,6 +65,7 @@ export type ResolveCalendarDayInput = {
   isSelected: boolean;
   isAvailable: boolean;
   blockingBooked: boolean;
+  blockingPending?: boolean;
 };
 
 export type ResolvedCalendarDay = {
@@ -172,8 +173,10 @@ function resolveCellFill(input: {
   isSelected: boolean;
   isAvailable: boolean;
   blockingBooked: boolean;
+  blockingPending: boolean;
   past: boolean;
   futureBooked: boolean;
+  futurePending: boolean;
   pastOrCompleted: boolean;
   visibility: "full" | "public";
   primaryBooking?: DayBookingSlice["booking"];
@@ -181,23 +184,29 @@ function resolveCellFill(input: {
   const {
     past,
     futureBooked,
+    futurePending,
     pastOrCompleted,
     mode,
     isSelected,
     isAvailable,
     blockingBooked,
+    blockingPending,
     slices,
     visibility,
     primaryBooking,
   } = input;
 
-  if (past && !slices.length && !blockingBooked) return "past";
+  if (past && !slices.length && !blockingBooked && !blockingPending) return "past";
   if (pastOrCompleted) return "past";
 
   if (futureBooked) {
     if (visibility === "public") return "booked";
     if (primaryBooking?.status === "upcoming") return "pending";
     return "booked";
+  }
+
+  if (futurePending) {
+    return "pending";
   }
 
   if (mode === "availability-readonly") {
@@ -222,6 +231,7 @@ export function resolveCalendarDay(
     pastCompleted: string;
     booked: string;
     alreadyBooked: string;
+    pendingRequest: string;
     notAvailable: string;
     available: string;
     selected: string;
@@ -243,6 +253,8 @@ export function resolveCalendarDay(
   const futureBooked =
     hasFutureBlockingBooking(input.iso, input.slices, today) ||
     (input.blockingBooked && !past);
+  const blockingPending = input.blockingPending ?? false;
+  const futurePending = blockingPending && !past && !futureBooked;
   const pastOrCompleted =
     isPastOrCompletedDay(input.iso, input.slices, today) ||
     (input.blockingBooked && past);
@@ -257,8 +269,10 @@ export function resolveCalendarDay(
     !disabled &&
     !past &&
     !futureBooked &&
+    !futurePending &&
     !pastOrCompleted &&
     !input.blockingBooked &&
+    !blockingPending &&
     !hasCompletedBooking(input.slices) &&
     !readonly;
 
@@ -284,8 +298,10 @@ export function resolveCalendarDay(
     isSelected: input.isSelected,
     isAvailable: input.isAvailable,
     blockingBooked: input.blockingBooked,
+    blockingPending,
     past,
     futureBooked,
+    futurePending,
     pastOrCompleted,
     visibility,
     primaryBooking,
@@ -317,6 +333,8 @@ export function resolveCalendarDay(
   } else if (futureBooked) {
     visual =
       cellFill === "pending" && visibility !== "public" ? "future-pending" : "future-booked";
+  } else if (futurePending) {
+    visual = "future-pending";
   } else if (readonly && input.isAvailable) {
     visual = "available";
   } else if (readonly) {
@@ -339,6 +357,9 @@ export function resolveCalendarDay(
     ariaLabel =
       input.mode === "request-select" ? labels.alreadyBooked : labels.booked;
     title = ariaLabel;
+  } else if (futurePending) {
+    ariaLabel = labels.pendingRequest;
+    title = labels.pendingRequest;
   } else if (
     (input.mode === "request-select" || readonly) &&
     !input.isAvailable &&

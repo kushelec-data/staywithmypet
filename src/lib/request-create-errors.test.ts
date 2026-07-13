@@ -3,8 +3,10 @@ import {
   classifyCareRequestCreateError,
   friendlyCareRequestCreateMessage,
   friendlyCareRequestCreateMessageForRole,
+  buildDatesUnavailableFailure,
 } from "@/lib/request-create-errors";
 import { DATE_NOT_AVAILABLE_ERROR } from "@/lib/request-validation";
+import { PetDatesUnavailableError } from "@/lib/pet-booking-availability";
 
 describe("classifyCareRequestCreateError", () => {
   it("detects RLS insert denial", () => {
@@ -39,6 +41,15 @@ describe("classifyCareRequestCreateError", () => {
     expect(friendlyCareRequestCreateMessage("INVALID_DATES")).toBe(
       "Please select one or more available dates.",
     );
+  });
+
+  it("detects booked date conflicts", () => {
+    const err = new PetDatesUnavailableError(["2026-07-16"], "booked");
+    expect(classifyCareRequestCreateError(err)).toBe("DATES_UNAVAILABLE");
+    const failure = buildDatesUnavailableFailure(err, "pet_friend");
+    expect(failure.code).toBe("DATES_UNAVAILABLE");
+    expect(failure.unavailableDates).toEqual(["2026-07-16"]);
+    expect(failure.message).toContain("already booked");
   });
 
   it("detects duplicate key", () => {

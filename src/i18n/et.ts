@@ -298,6 +298,10 @@ export const et = {
     careTypeRequired: "Vali hoolduse tüüp.",
     datesRequired: "Palun vali kalendrist vähemalt üks kuupäev.",
     dateNotAvailable: "Mõni valitud kuupäev pole saadaval.",
+    datesAlreadyBooked:
+      "Mõned valitud kuupäevad on juba broneeritud. Palun vali teised kuupäevad.",
+    datesPending:
+      "Mõned valitud kuupäevad on juba ootel hoolduspäringuga. Palun vali teised kuupäevad.",
     pastDates: "Vali tänane või tuleviku kuupäev.",
     dateRangeInvalid: "Lõppkuupäev peab olema algusest hiljem või sama.",
     addPetFirst: "Lisa lemmikloom enne hoolduspäringu saatmist.",
@@ -850,6 +854,8 @@ export const et = {
   bookingCalendar: {
     alreadyBooked: "Juba broneeritud",
     booked: "Broneeritud",
+    pendingRequest: "Ootel päring",
+    staleSelectionRemoved: "Mõned valitud kuupäevad ei ole enam saadaval.",
     notAvailable: "Pole saadaval",
     noAvailableDates:
       "Saadaolevaid kuupäevi pole veel kirjas. Vaata hiljem uuesti või kirjuta teisele liikmele.",

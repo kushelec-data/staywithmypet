@@ -219,6 +219,8 @@ export function SendRequestButton({
         return t.termsAcceptance.errors.sessionInvalid;
       case "INVALID_DATES":
         return t.requests.invalidDates;
+      case "DATES_UNAVAILABLE":
+        return t.requests.datesAlreadyBooked;
       case "REQUEST_ALREADY_EXISTS":
         return t.requests.duplicateRequest;
       case "REQUEST_PERMISSION_DENIED":
@@ -345,7 +347,13 @@ export function SendRequestButton({
         if (result.code === "MEMBERSHIP_REQUIRED") {
           openUpgradeToast();
         }
-        setError(resolveSubmitErrorMessage(result.code));
+        setError(
+          result.code === "DATES_UNAVAILABLE"
+            ? result.blockReason === "pending"
+              ? t.requests.datesPending
+              : t.requests.datesAlreadyBooked
+            : resolveSubmitErrorMessage(result.code),
+        );
         return;
       }
 

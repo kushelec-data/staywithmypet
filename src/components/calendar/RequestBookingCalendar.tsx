@@ -20,8 +20,8 @@ export function RequestBookingCalendar({
   return (
     <BookingCalendar
       mode="request-select"
-      visibility="full"
-      viewRole="pet-parent"
+      visibility="public"
+      viewRole="public"
       availableDates={availableDates}
       selectedDates={selectedDates}
       onChange={onChange}

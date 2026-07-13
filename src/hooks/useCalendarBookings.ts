@@ -32,6 +32,8 @@ type UseCalendarBookingsResult = {
   dayMap: Map<string, DayBookingSlice[]>;
   /** Upcoming/active only — blocks new selection. */
   blockingBookedDateSet: Set<string>;
+  /** Pending care requests on this pet — blocks new selection in request flow. */
+  pendingRequestDateSet: Set<string>;
   loading: boolean;
   error: string | null;
 };
@@ -48,6 +50,7 @@ export function useCalendarBookings({
   const supabase = useMemo(() => createClient(), []);
   const [bookings, setBookings] = useState<CalendarBooking[]>([]);
   const [publicBookedDates, setPublicBookedDates] = useState<string[]>([]);
+  const [publicPendingDates, setPublicPendingDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedMonthKeysRef = useRef(new Set<string>());
@@ -63,10 +66,11 @@ export function useCalendarBookings({
       setError(null);
       try {
         if (visibility === "public" && petId) {
-          const dates = await fetchPublicBookedDatesForMonth(petId, year, month);
+          const { booked, pending } = await fetchPublicBookedDatesForMonth(petId, year, month);
           if (!cancelled) {
             setBookings([]);
-            setPublicBookedDates(dates);
+            setPublicBookedDates(booked);
+            setPublicPendingDates(pending);
           }
           return;
         }
@@ -75,6 +79,7 @@ export function useCalendarBookings({
           if (!cancelled) {
             setBookings([]);
             setPublicBookedDates([]);
+            setPublicPendingDates([]);
           }
           return;
         }
@@ -88,11 +93,13 @@ export function useCalendarBookings({
         if (!cancelled) {
           setBookings(data);
           setPublicBookedDates([]);
+          setPublicPendingDates([]);
         }
       } catch (err) {
         if (!cancelled) {
           setBookings([]);
           setPublicBookedDates([]);
+          setPublicPendingDates([]);
           setError(err instanceof Error ? err.message : "Could not load bookings");
         }
       } finally {
@@ -110,10 +117,13 @@ export function useCalendarBookings({
   }, [supabase, petId, petFriendId, visibility, year, month, enabled]);
 
   const dayMap = useMemo(() => {
-    if (visibility === "public" && publicBookedDates.length) {
+    if (visibility === "public" && petId) {
       const map = new Map<string, DayBookingSlice[]>();
       for (const iso of publicBookedDates) {
         map.set(iso, []);
+      }
+      for (const iso of publicPendingDates) {
+        if (!map.has(iso)) map.set(iso, []);
       }
       return map;
     }
@@ -121,10 +131,10 @@ export function useCalendarBookings({
       includeStatuses: ["upcoming", "active", "completed"],
     });
     return applyViewRoleToDayMap(raw, viewRole);
-  }, [bookings, publicBookedDates, visibility, viewRole]);
+  }, [bookings, publicBookedDates, publicPendingDates, petId, visibility, viewRole]);
 
   const blockingBookedDateSet = useMemo(() => {
-    if (visibility === "public" && publicBookedDates.length) {
+    if (visibility === "public" && petId) {
       return new Set(publicBookedDates);
     }
     const blocking = mergeBookingsByDay(bookings, {
@@ -133,5 +143,19 @@ export function useCalendarBookings({
     return bookedDatesSet(applyViewRoleToDayMap(blocking, viewRole));
   }, [bookings, publicBookedDates, visibility, viewRole]);
 
-  return { bookings, dayMap, blockingBookedDateSet, loading, error };
+  const pendingRequestDateSet = useMemo(() => {
+    if (visibility === "public") {
+      return new Set(publicPendingDates);
+    }
+    return new Set<string>();
+  }, [publicPendingDates, visibility]);
+
+  return {
+    bookings,
+    dayMap,
+    blockingBookedDateSet,
+    pendingRequestDateSet,
+    loading,
+    error,
+  };
 }

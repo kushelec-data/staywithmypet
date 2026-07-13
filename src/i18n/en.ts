@@ -297,6 +297,10 @@ export const en = {
     careTypeRequired: "Please choose a care type.",
     datesRequired: "Please select at least one date from the calendar.",
     dateNotAvailable: "One or more selected dates are not available.",
+    datesAlreadyBooked:
+      "Some selected dates are already booked. Please choose different dates.",
+    datesPending:
+      "Some selected dates already have a pending care request. Please choose different dates.",
     pastDates: "Please choose today or a future date.",
     dateRangeInvalid: "End date must be on or after start date.",
     addPetFirst: "Add a pet before sending a care request.",
@@ -843,6 +847,8 @@ export const en = {
   bookingCalendar: {
     alreadyBooked: "Already booked",
     booked: "Booked",
+    pendingRequest: "Pending request",
+    staleSelectionRemoved: "Some selected dates are no longer available.",
     notAvailable: "Not available",
     noAvailableDates: "No available dates are listed yet. Check back later or message the other person.",
     prevMonth: "Previous month",

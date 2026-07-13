@@ -138,18 +138,22 @@ export async function fetchCalendarBookingsForMonth(
   });
 }
 
-/** Public pet profile: booked dates only (no PII). */
+/** Public pet profile: booked + pending request dates (no PII). */
 export async function fetchPublicBookedDatesForMonth(
   petId: string,
   year: number,
   month: number,
-): Promise<string[]> {
+): Promise<{ booked: string[]; pending: string[] }> {
   const params = new URLSearchParams({
     year: String(year),
     month: String(month + 1),
   });
-  const res = await fetch(`/api/pets/${petId}/booked-dates?${params}`);
-  if (!res.ok) return [];
-  const body = (await res.json()) as { dates?: string[] };
-  return Array.isArray(body.dates) ? body.dates.filter((d) => typeof d === "string") : [];
+  const res = await fetch(`/api/pets/${petId}/booked-dates?${params}`, { cache: "no-store" });
+  if (!res.ok) return { booked: [], pending: [] };
+  const body = (await res.json()) as { dates?: string[]; pendingDates?: string[] };
+  const booked = Array.isArray(body.dates) ? body.dates.filter((d) => typeof d === "string") : [];
+  const pending = Array.isArray(body.pendingDates)
+    ? body.pendingDates.filter((d) => typeof d === "string")
+    : [];
+  return { booked, pending };
 }
