@@ -71,7 +71,7 @@ export function MessageThread({
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center py-8">
+      <div className="flex min-h-[12rem] items-center justify-center py-8">
         <p className={`text-sm ${MESSAGES_META_TEXT_CLASS}`}>{t.messages.loadingThread}</p>
       </div>
     );
@@ -79,7 +79,7 @@ export function MessageThread({
 
   if (messages.length === 0) {
     return (
-      <div className="flex min-h-full flex-1 flex-col items-center justify-center px-4 py-8 text-center">
+      <div className="flex min-h-full flex-col items-center justify-center px-4 py-8 text-center">
         <p className="text-xl" aria-hidden>
           👋
         </p>
@@ -94,7 +94,7 @@ export function MessageThread({
   const sections = buildThreadSections(messages);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col justify-end px-1 py-2 sm:px-2">
+    <div className="flex min-h-full flex-col justify-end px-1 py-2 sm:px-2">
       {sections.map((section) => (
         <div key={section.dateKey}>
           <DateDivider label={section.label} />

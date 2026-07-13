@@ -326,6 +326,11 @@ body {
   color: #2b2b2b;
 }
 
+.messages-thread-scroll {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 .messages-area .text-foreground {
   color: #2b2b2b;
 }
