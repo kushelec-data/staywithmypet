@@ -2,6 +2,7 @@ import "server-only";
 
 import { sendBookingEmailAsync } from "@/lib/emails/send-booking";
 import { queueEmailEvent } from "@/lib/email-send";
+import { messageEmailDedupeKey } from "@/lib/message-notification-email";
 import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/types";
 import {
   areRequestCareDatesPast,
@@ -393,15 +394,18 @@ export function triggerNewMessageEmail(input: {
   senderName: string;
   conversationId: string;
   messageId: string;
+  messagePreview?: string;
 }): void {
+  const uniqueKey = messageEmailDedupeKey(input.conversationId, input.recipientUserId);
   queueEmailEvent({
     eventType: "new_message",
     userId: input.recipientUserId,
-    uniqueKey: `new_message_${input.conversationId}_${input.messageId}`,
+    uniqueKey,
     context: {
       recipientName: input.recipientName,
       senderName: input.senderName,
       conversationId: input.conversationId,
+      message: input.messagePreview,
     },
   });
 }

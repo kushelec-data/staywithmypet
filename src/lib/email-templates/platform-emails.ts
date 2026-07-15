@@ -1,5 +1,7 @@
 import { buildEmailFromExcelColumnE } from "@/lib/email-templates/render-excel-e";
+import { bookingDateRange } from "@/lib/email-templates/vars";
 import type { EmailLocale } from "@/lib/email-templates/locale";
+import { buildNewMessageNotificationEmail } from "@/lib/message-notification-email";
 import type { EmailTemplate, EmailTemplateContext } from "@/lib/emails/types";
 
 export {
@@ -51,5 +53,16 @@ export function buildNewMessageEmail(
   ctx: EmailTemplateContext,
   locale: EmailLocale,
 ): EmailTemplate {
-  return buildEmailFromExcelColumnE("new_message_subject", "new_message_body", ctx, locale);
+  return buildNewMessageNotificationEmail(
+    {
+      recipientName: ctx.recipientName ?? "Member",
+      senderName: ctx.senderName ?? "Member",
+      conversationId: ctx.conversationId ?? "",
+      messagePreview: ctx.message,
+      petName: ctx.petName,
+      bookingDateRange: bookingDateRange(ctx),
+      bookingStatus: null,
+    },
+    locale,
+  );
 }

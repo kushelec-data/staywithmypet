@@ -10,7 +10,10 @@ import { BookingReviewBanner } from "@/components/messages/BookingReviewBanner";
 import { UserSafetyActions } from "@/components/trust/UserSafetyActions";
 import { VetClinicNearbySection } from "@/components/vet/VetClinicNearbySection";
 import { useProfile } from "@/context/ProfileContext";
+import { BookingParticipantSection } from "@/components/bookings/BookingParticipantSection";
 import { BookingReviewsSection } from "@/components/bookings/BookingReviewsSection";
+import { getBookingParticipantDetailsAction } from "@/app/actions/booking-participants";
+import type { BookingParticipantDetails } from "@/lib/booking-participant-details";
 import { AccountCard } from "@/components/account/AccountCard";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { ACCOUNT_LINK_CLASS } from "@/lib/account-ui";
@@ -52,6 +55,10 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
     statusCancelled: b.statusCancelled,
   };
   const [booking, setBooking] = useState<BookingDetail | null>(null);
+  const [participantDetails, setParticipantDetails] = useState<BookingParticipantDetails | null>(
+    null,
+  );
+  const [participantsLoading, setParticipantsLoading] = useState(false);
   const [bookingReviews, setBookingReviews] = useState<ReviewDisplay[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -123,6 +130,30 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
       cancelled = true;
     };
   }, [authLoading, user, router, supabase, bookingId, b.loadError, b.notFound]);
+
+  useEffect(() => {
+    if (!booking?.id) {
+      setParticipantDetails(null);
+      return;
+    }
+
+    let cancelled = false;
+    setParticipantsLoading(true);
+    void getBookingParticipantDetailsAction(booking.id)
+      .then((data) => {
+        if (!cancelled) setParticipantDetails(data);
+      })
+      .catch(() => {
+        if (!cancelled) setParticipantDetails(null);
+      })
+      .finally(() => {
+        if (!cancelled) setParticipantsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [booking?.id]);
 
   useEffect(() => {
     if (booking?.displayStatus === "completed") {
@@ -264,6 +295,14 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
             <div className="mt-4 rounded-xl bg-cream/60 px-4 py-3 ring-1 ring-black/[0.04]">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">{b.cancelledReasonLabel}</p>
               <p className="mt-1 text-sm leading-relaxed text-foreground/90">{booking.cancelledReason}</p>
+            </div>
+          ) : null}
+
+          {participantDetails ? (
+            <BookingParticipantSection details={participantDetails} />
+          ) : participantsLoading ? (
+            <div className="mt-6 border-t border-black/5 pt-6">
+              <p className="text-sm text-muted">{b.loading}</p>
             </div>
           ) : null}
 

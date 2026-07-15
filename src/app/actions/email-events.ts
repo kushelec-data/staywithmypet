@@ -1,7 +1,7 @@
 "use server";
 
+import { deliverNewMessageNotification } from "@/lib/message-notification-delivery";
 import {
-  triggerNewMessageEmail,
   triggerProfileCompletedEmail,
   triggerRequestCancelledEmails,
   triggerRequestStatusEmails,
@@ -220,30 +220,10 @@ export async function sendNewMessageEmailAction(input: {
   if (!userId || !input.conversationId?.trim() || !input.messageId?.trim()) return;
   if (!input.recipientUserId?.trim() || input.recipientUserId === userId) return;
 
-  const supabase = await createClient();
-  const { data: message } = await supabase
-    .from("messages")
-    .select("id, sender_id, conversation_id")
-    .eq("id", input.messageId.trim())
-    .maybeSingle();
-
-  if (!message || message.sender_id !== userId) return;
-  if (message.conversation_id !== input.conversationId.trim()) return;
-
-  const [{ data: senderProfile }, { data: recipientProfile }] = await Promise.all([
-    supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
-    supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", input.recipientUserId.trim())
-      .maybeSingle(),
-  ]);
-
-  triggerNewMessageEmail({
-    recipientUserId: input.recipientUserId.trim(),
-    recipientName: recipientProfile?.display_name?.trim() || undefined,
-    senderName: senderProfile?.display_name?.trim() || "Member",
+  await deliverNewMessageNotification({
     conversationId: input.conversationId.trim(),
     messageId: input.messageId.trim(),
+    senderUserId: userId,
+    recipientUserId: input.recipientUserId.trim(),
   });
 }

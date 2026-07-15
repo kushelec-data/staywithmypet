@@ -257,13 +257,18 @@ export function ChatPanel({
       setDraft("");
       setEmojiOpen(false);
       onMessageSent(msg.body, msg.createdAt);
-      void import("@/app/actions/email-events").then(({ sendNewMessageEmailAction }) =>
-        sendNewMessageEmailAction({
-          conversationId,
-          messageId: msg.id,
-          recipientUserId: conversation.otherPartyId,
-        }),
-      );
+      void (async () => {
+        try {
+          const { sendNewMessageEmailAction } = await import("@/app/actions/email-events");
+          await sendNewMessageEmailAction({
+            conversationId,
+            messageId: msg.id,
+            recipientUserId: conversation.otherPartyId,
+          });
+        } catch {
+          /* email is best-effort; in-app notification still created by DB trigger */
+        }
+      })();
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
         setUpgradeOpen(true);
