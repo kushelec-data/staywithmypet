@@ -5,6 +5,7 @@ import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { PetCard } from "@/components/pets/PetCard";
 import { OwnerCard } from "@/components/owners/OwnerCard";
 import { CareSearchParamsSync } from "@/components/search/CareSearchParamsSync";
+import { SearchLocationParamsSync } from "@/components/search/SearchLocationParamsSync";
 import { PetFriendSearchFilters } from "@/components/search/PetFriendSearchFilters";
 import { PetSearchFilters } from "@/components/search/PetSearchFilters";
 import { SearchMapFriendCard, SearchMapPetCard } from "@/components/search/SearchMapResultCard";
@@ -391,6 +392,19 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
     setAppliedFriendFilters((prev) => ({ ...prev, careTypesOffered: types }));
   }, []);
 
+  const applyLocationFromUrl = useCallback(
+    (location: string) => {
+      if (isPets) {
+        setPetFilters((prev) => ({ ...prev, location }));
+        setAppliedPetFilters((prev) => ({ ...prev, location }));
+      } else {
+        setFriendFilters((prev) => ({ ...prev, location }));
+        setAppliedFriendFilters((prev) => ({ ...prev, location }));
+      }
+    },
+    [isPets],
+  );
+
   useEffect(() => {
     setViewMode("list");
     setSelectedId(null);
@@ -459,6 +473,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
       }`}
     >
       {!isPets ? <CareSearchParamsSync enabled onCareTypes={applyCareTypesFromUrl} /> : null}
+      <SearchLocationParamsSync onLocation={applyLocationFromUrl} />
 
       {/* Filters — desktop column; mobile list = inline, mobile map = sheet */}
       <div

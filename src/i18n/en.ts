@@ -271,7 +271,8 @@ export const en = {
     dateFrom: "Date from",
     dateTo: "Date to",
     selectDatesLabel: "Care dates",
-    selectDatesHint: "Choose one or more available dates from the calendar.",
+    selectDatesHint:
+      "Available dates for the selected pet. Existing bookings and pending requests are excluded.",
     message: "Message",
     messagePlaceholder: "Introduce yourself and share what you need…",
     messageRequired: "Please add a message.",
@@ -1385,6 +1386,9 @@ export const en = {
     petCarePreferences: "Pet care preferences",
     livingSituation: "Living situation",
     availability: "Availability",
+    generalAvailability: "General availability",
+    generalAvailabilityHint:
+      "Final available dates depend on the selected pet and are shown when you send a request.",
     nearbyArea: "Nearby area",
     approximateAreaOnly: "Approximate area only",
     generalArea: "General area",

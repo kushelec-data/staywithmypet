@@ -16,7 +16,8 @@ import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import { getStripe } from "@/lib/stripe";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
-import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
+import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
+import { maskId } from "@/lib/security/log-redact";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import Stripe from "stripe";
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  const limit = checkRateLimit("api_default", sessionUserId);
+  const limit = await checkRateLimitShared("api_default", sessionUserId);
   if (!limit.ok) {
     return NextResponse.json(
       { error: rateLimitMessage(limit.retryAfterSec) },
@@ -150,9 +151,9 @@ export async function POST(request: Request) {
     priceEnv: resolvedEnvVar,
   });
 
-  console.log("[stripe] checkout session metadata", {
-    user_id: sessionUserId,
-    role: checkoutMetadata.role,
+    console.log("[stripe] checkout session metadata", {
+      user_id: maskId(sessionUserId),
+      role: checkoutMetadata.role,
     membership_role: checkoutMetadata.membership_role,
     plan_id: trimmedPlanId,
     price_env: resolvedEnvVar,
@@ -236,7 +237,7 @@ export async function POST(request: Request) {
     console.log("[stripe] checkout session created", {
       sessionId: session.id,
       mode,
-      user_id: sessionUserId,
+      user_id: maskId(sessionUserId),
       role: checkoutMetadata.role,
       membership_role: checkoutMetadata.membership_role,
       plan_id: trimmedPlanId,

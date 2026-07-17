@@ -16,6 +16,7 @@ import {
 } from "@/lib/stripe-webhook-resolve";
 import { webhookFailureBody } from "@/lib/stripe-webhook-handler-error";
 import { MEMBERSHIP_TABLE } from "@/lib/membership-activate";
+import { maskId, redactEmail } from "@/lib/security/log-redact";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
@@ -45,8 +46,7 @@ function logCheckoutHandlerFailure(
     eventId: event.id,
     sessionId: session.id,
     paymentStatus: session.payment_status,
-    sessionMetadata: meta,
-    metadataUserId: fields.user_id,
+    metadataUserId: maskId(fields.user_id),
     metadataMembershipRole: fields.membership_role,
     metadataRole: fields.role,
     metadataPlanId: fields.plan_id,
@@ -67,8 +67,24 @@ function webhookFailureResponse(err: unknown): NextResponse {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Production-safe config probe (booleans only). */
-export async function GET() {
+/**
+ * Config probe (booleans only). Protected so the configuration surface is not
+ * publicly readable: requires the internal cron/email secret via
+ * `Authorization: Bearer <secret>` or `x-cron-secret`. Returns 404 when the
+ * secret is unset or does not match, hiding the endpoint's existence.
+ */
+export async function GET(request: Request) {
+  const configured =
+    process.env.CRON_SECRET?.trim() || process.env.EMAIL_INTERNAL_SECRET?.trim();
+  const provided =
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ||
+    request.headers.get("x-cron-secret")?.trim() ||
+    request.headers.get("x-email-internal-secret")?.trim();
+
+  if (!configured || !provided || provided !== configured) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   return NextResponse.json(getMembershipWebhookHealth());
 }
 
@@ -141,10 +157,9 @@ export async function POST(request: Request) {
           sessionId: session.id,
           paymentStatus: session.payment_status,
           mode: session.mode,
-          customerEmail,
-          clientReferenceId: session.client_reference_id ?? null,
-          sessionMetadata: meta,
-          metadataFields: fields,
+          customerEmail: redactEmail(customerEmail),
+          clientReferenceId: maskId(session.client_reference_id),
+          metadataUserId: maskId(fields.user_id),
           normalizedRole,
           supabaseTable: MEMBERSHIP_TABLE,
         });

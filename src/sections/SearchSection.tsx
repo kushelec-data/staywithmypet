@@ -1,15 +1,80 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, type KeyboardEvent } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { journeys } from "@/lib/journeys";
 import { CONTENT_CONTAINER, PAGE_SECTION_TIGHT } from "@/lib/layout";
+import { appendSearchLocation } from "@/lib/search-location-params";
+
+type SearchBlock = {
+  id: string;
+  href: string;
+  locationName: string;
+  copy: {
+    role: string;
+    label: string;
+    placeholder: string;
+    button: string;
+  };
+};
+
+function SearchBlockCard({ block }: { block: SearchBlock }) {
+  const router = useRouter();
+  const [location, setLocation] = useState("");
+  const destination = appendSearchLocation(block.href, location);
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    // Respect IME composition (CJK) and Safari's unreliable final event.
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+    event.preventDefault();
+    router.push(destination);
+  };
+
+  return (
+    <article className="flex h-full min-h-0 flex-col rounded-2xl bg-surface p-4 text-center shadow-sm ring-1 ring-border transition-shadow hover:shadow-md sm:p-5 lg:p-6 lg:text-left">
+      <span className="mx-auto inline-flex h-6 w-fit shrink-0 items-center rounded-full bg-lavender/80 px-2.5 text-[0.65rem] font-bold uppercase tracking-wider text-brand-teal lg:mx-0 sm:px-3 sm:text-xs">
+        {block.copy.role}
+      </span>
+
+      <div className="mt-3 flex min-h-0 items-center justify-center lg:min-h-[2.75rem] lg:items-end">
+        <label
+          htmlFor={`search-${block.id}`}
+          className="font-heading text-base font-semibold leading-snug text-foreground sm:text-lg lg:whitespace-nowrap lg:text-[0.9375rem] xl:text-base"
+        >
+          {block.copy.label}
+        </label>
+      </div>
+
+      <div className="mt-4 flex flex-1 flex-col">
+        <input
+          id={`search-${block.id}`}
+          type="text"
+          name={block.locationName}
+          value={location}
+          onChange={(event) => setLocation(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={block.copy.placeholder}
+          className="w-full min-w-0 rounded-xl border border-border bg-background px-4 py-2.5 text-base text-foreground placeholder:text-muted/70 transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 sm:py-3"
+        />
+        <Link
+          href={destination}
+          className="btn-interactive mt-4 inline-flex min-h-[44px] w-full shrink-0 items-center justify-center rounded-full bg-brand-teal px-4 text-center text-sm font-semibold text-white shadow-md shadow-brand-teal/20 hover:bg-brand-teal-hover sm:mt-5 sm:text-base"
+        >
+          {block.copy.button}
+        </Link>
+      </div>
+    </article>
+  );
+}
 
 export function SearchSection() {
   const { t } = useLanguage();
 
-  const blocks = [
+  const blocks: SearchBlock[] = [
     {
       id: journeys["pet-friend"].id,
       href: journeys["pet-friend"].searchHref,
@@ -34,42 +99,10 @@ export function SearchSection() {
           className="mx-auto max-w-2xl"
         />
 
-        <div className="mx-auto mt-6 max-w-6xl rounded-2xl bg-mint/45 p-3 shadow-sm ring-1 ring-mint/80 sm:mt-8 sm:rounded-3xl sm:p-4 md:p-5 lg:p-6">
+        <div className="mx-auto mt-6 max-w-6xl rounded-2xl bg-mint/25 p-3 shadow-sm ring-1 ring-mint/50 sm:mt-8 sm:rounded-3xl sm:p-4 md:p-5 lg:p-6">
           <div className="grid grid-cols-1 items-stretch gap-3 sm:gap-4 lg:grid-cols-2 lg:gap-6">
             {blocks.map((block) => (
-              <article
-                key={block.id}
-                className="flex h-full min-h-0 flex-col rounded-2xl bg-surface/95 p-4 text-center shadow-sm ring-1 ring-black/5 sm:p-5 lg:p-6 lg:text-left"
-              >
-                <span className="mx-auto inline-flex h-6 w-fit shrink-0 items-center rounded-full bg-lavender/80 px-2.5 text-[0.65rem] font-bold uppercase tracking-wider text-brand-teal lg:mx-0 sm:px-3 sm:text-xs">
-                  {block.copy.role}
-                </span>
-
-                <div className="mt-3 flex min-h-0 items-center justify-center lg:min-h-[2.75rem] lg:items-end">
-                  <label
-                    htmlFor={`search-${block.id}`}
-                    className="font-heading text-base font-semibold leading-snug text-foreground sm:text-lg lg:whitespace-nowrap lg:text-[0.9375rem] xl:text-base"
-                  >
-                    {block.copy.label}
-                  </label>
-                </div>
-
-                <div className="mt-4 flex flex-1 flex-col">
-                  <input
-                    id={`search-${block.id}`}
-                    type="text"
-                    name={block.locationName}
-                    placeholder={block.copy.placeholder}
-                    className="w-full min-w-0 rounded-xl border border-black/8 bg-background px-4 py-2.5 text-base text-foreground placeholder:text-muted/70 focus:border-brand-teal focus:outline-none focus:ring-3 focus:ring-brand-teal/15 sm:py-3"
-                  />
-                  <Link
-                    href={block.href}
-                    className="btn-interactive mt-4 inline-flex min-h-[44px] w-full shrink-0 items-center justify-center rounded-full bg-brand-teal px-4 text-center text-sm font-semibold text-white shadow-md shadow-brand-teal/20 hover:bg-brand-teal-hover sm:mt-5 sm:text-base"
-                  >
-                    {block.copy.button}
-                  </Link>
-                </div>
-              </article>
+              <SearchBlockCard key={block.id} block={block} />
             ))}
           </div>
         </div>

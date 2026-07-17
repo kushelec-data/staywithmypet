@@ -853,12 +853,12 @@ export async function sendMessage(
   body: string,
   otherPartyId?: string,
 ): Promise<ChatMessage> {
-  const { assertRateLimit, requireAuthUserId } = await import("@/lib/security");
+  const { assertRateLimitShared, requireAuthUserId } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
   if (senderId !== sessionUserId) {
     throw new Error("You cannot send messages as another user.");
   }
-  assertRateLimit("message_send", sessionUserId);
+  await assertRateLimitShared("message_send", sessionUserId);
 
   const trimmed = body.trim();
   if (!trimmed) throw new Error("Message cannot be empty.");
