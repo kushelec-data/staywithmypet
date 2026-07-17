@@ -5,8 +5,6 @@ import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary"
 import { heroTrustBadgesFromProfileRow } from "@/lib/public-profile";
 import { ReviewsListModal } from "@/components/reviews/ReviewsListModal";
 import { Button } from "@/components/ui/Button";
-import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
-import { resolveAvatarPosition } from "@/lib/photo-position";
 import { formatActiveMode, resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { absolutePublicProfileUrl } from "@/lib/site-url";
@@ -32,7 +30,6 @@ type DashboardProfileHeroProps = {
 export function DashboardProfileHero({
   profile,
   displayName,
-  email,
   publicProfileHref,
   isPublic,
   reviewsAvg = 0,
@@ -68,43 +65,30 @@ export function DashboardProfileHero({
   return (
     <section className={`${DASHBOARD_CARD_CLASS} overflow-hidden`}>
       <div
-        className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+        className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:p-5"
         style={{
           background: `linear-gradient(to bottom right, ${DASHBOARD_COLORS.cardBg}, ${DASHBOARD_COLORS.cardBg}, ${DASHBOARD_COLORS.light})`,
         }}
       >
-        <div className="flex min-w-0 items-center gap-4">
-          <ProfileAvatar
-            userId={profile.id}
-            displayName={displayName}
-            email={email}
-            avatarUrl={profile.avatar_url}
-            avatarPosition={resolveAvatarPosition(profile.avatar_url, profile.details)}
-            size="md"
-            shape="rounded"
-            imageClassName="object-cover ring-2 ring-white/80"
-            className="ring-2 ring-white/80"
+        <div className="min-w-0 flex-1">
+          <ProfileVerificationBadges trustBadges={heroTrustBadges} className="mb-1.5" />
+          <p
+            className={`${DASHBOARD_SCORE_TEXT_CLASS} text-[0.65rem] font-semibold uppercase tracking-wider`}
+          >
+            {roleLabel}
+          </p>
+          <h2 className="break-words text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+            {displayName}
+          </h2>
+          <p className="mt-0.5 truncate text-sm text-muted">{locationLabel}</p>
+          <ProfileRatingSummary
+            ratingAvg={reviewsAvg}
+            reviewCount={reviewsCount}
+            onOpenModal={() => setReviewsOpen(true)}
           />
-          <div className="min-w-0">
-            <ProfileVerificationBadges trustBadges={heroTrustBadges} className="mb-1.5" />
-            <p
-              className={`${DASHBOARD_SCORE_TEXT_CLASS} text-[0.65rem] font-semibold uppercase tracking-wider`}
-            >
-              {roleLabel}
-            </p>
-            <h2 className="break-words text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-              {displayName}
-            </h2>
-            <p className="mt-0.5 truncate text-sm text-muted">{locationLabel}</p>
-            <ProfileRatingSummary
-              ratingAvg={reviewsAvg}
-              reviewCount={reviewsCount}
-              onOpenModal={() => setReviewsOpen(true)}
-            />
-          </div>
         </div>
 
-        <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-start sm:justify-end">
           <Button href="/profile/edit" size="sm">
             {dh.editProfile}
           </Button>
