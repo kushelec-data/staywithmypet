@@ -88,6 +88,9 @@ export function SendRequestButton({
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const upgradeToastOpenRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
+  // Synchronous guard against double submits: state updates are async, so a
+  // fast double-click can re-enter handleSubmit before the button disables.
+  const submitInFlightRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pets, setPets] = useState<RequestPetOption[]>([]);
@@ -263,6 +266,7 @@ export function SendRequestButton({
 
   async function handleSubmit(values: RequestFormValues) {
     if (!user) return;
+    if (submitInFlightRef.current || submitting) return;
 
     let petParentId: string;
     let petFriendId: string;
@@ -327,6 +331,7 @@ export function SendRequestButton({
       return;
     }
 
+    submitInFlightRef.current = true;
     setSubmitting(true);
     setError(null);
     try {
@@ -382,6 +387,7 @@ export function SendRequestButton({
         );
       }
     } finally {
+      submitInFlightRef.current = false;
       setSubmitting(false);
     }
   }

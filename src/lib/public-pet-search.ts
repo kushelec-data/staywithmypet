@@ -339,6 +339,15 @@ function mapRowToPublicSearchPet(
   };
 }
 
+/**
+ * Upper bound on rows fetched for the public marketplace in a single query.
+ * Filters (location, care type, etc.) are applied client-side over this set,
+ * so the cap must be generous, but it prevents an unbounded scan of the entire
+ * active-pet table as inventory grows. Newest listings are prioritised via the
+ * created_at ordering below.
+ */
+export const PUBLIC_PET_RESULT_CAP = 200;
+
 async function queryPublicPets(supabase: SupabaseClient) {
   let lastError: PostgrestError | null = null;
 
@@ -347,7 +356,8 @@ async function queryPublicPets(supabase: SupabaseClient) {
       .from("pets")
       .select(select)
       .eq("is_active", true)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(PUBLIC_PET_RESULT_CAP);
 
     if (selectIncludesIsPublic(select)) {
       query = query.eq("is_public", true);
