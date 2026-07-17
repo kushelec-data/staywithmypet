@@ -2,7 +2,7 @@ import { getStripe } from "@/lib/stripe";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import type { MembershipRole } from "@/lib/membership";
-import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
+import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  const limit = checkRateLimit("api_default", userId);
+  const limit = await checkRateLimitShared("api_default", userId);
   if (!limit.ok) {
     return NextResponse.json(
       { error: rateLimitMessage(limit.retryAfterSec) },

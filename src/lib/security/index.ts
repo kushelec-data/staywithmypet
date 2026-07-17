@@ -8,7 +8,10 @@ export {
 export { logServerError, toFriendlyClientMessage } from "@/lib/security/errors";
 export {
   assertRateLimit,
+  assertRateLimitShared,
   checkRateLimit,
+  checkRateLimitShared,
+  isSharedRateLimitEnabled,
   rateLimitMessage,
   type RateLimitAction,
   type RateLimitResult,

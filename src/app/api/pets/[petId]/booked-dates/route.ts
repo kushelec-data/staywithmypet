@@ -5,7 +5,7 @@ import {
   loadPetBlockingBookedDates,
   loadPetPendingRequestDates,
 } from "@/lib/pet-booking-availability";
-import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
+import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -30,7 +30,7 @@ export async function GET(request: Request, context: RouteContext) {
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "anon";
-  const limit = checkRateLimit("api_default", clientIp);
+  const limit = await checkRateLimitShared("api_default", clientIp);
   if (!limit.ok) {
     return NextResponse.json(
       { error: rateLimitMessage(limit.retryAfterSec) },

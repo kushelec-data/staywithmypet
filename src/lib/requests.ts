@@ -659,9 +659,9 @@ export async function createCareRequest(
     input.senderId === input.petParentId ? ("pet_parent" as const) : ("pet_friend" as const);
 
   try {
-    const { assertRateLimit, requireAuthUserId } = await import("@/lib/security");
+    const { assertRateLimitShared, requireAuthUserId } = await import("@/lib/security");
     const sessionUserId = await requireAuthUserId(supabase);
-    assertRateLimit("care_request", sessionUserId);
+    await assertRateLimitShared("care_request", sessionUserId);
 
     if (input.senderId !== sessionUserId) {
       return buildCareRequestCreateFailure("Invalid request participants.", senderRole);
@@ -716,6 +716,33 @@ export async function createCareRequest(
     const dateTo = requestedDates[requestedDates.length - 1];
     const careType = input.careType.trim();
     const message = input.message.trim() || null;
+
+    // Idempotency guard: if an identical pending request from this sender
+    // already exists (same pet, receiver, care type and date range), reuse it
+    // instead of inserting a duplicate. This absorbs double submits / retries
+    // without a schema change. A concurrent double-insert race remains
+    // theoretically possible; a DB unique constraint would be needed to close
+    // it fully (deferred — would require a migration).
+    const { data: existingPending } = await supabase
+      .from("requests")
+      .select("id")
+      .eq("sender_id", input.senderId)
+      .eq("receiver_id", input.receiverId)
+      .eq("pet_id", input.petId)
+      .eq("care_type", careType)
+      .eq("date_from", dateFrom)
+      .eq("date_to", dateTo)
+      .eq("status", "pending")
+      .limit(1);
+
+    const duplicateRequestId = existingPending?.[0]?.id;
+    if (duplicateRequestId) {
+      console.info("[care-request:create] duplicate pending request suppressed", {
+        ...logContext,
+        existingRequestId: duplicateRequestId,
+      });
+      return { ok: true, requestId: String(duplicateRequestId) };
+    }
 
     const requestId = input.requestId ?? crypto.randomUUID();
     const payload: RequestInsert = {
