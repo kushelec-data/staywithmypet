@@ -15,11 +15,21 @@ export function HomeExploreSection() {
             <Link
               key={link.href}
               href={link.href}
-              className="card-elevated rounded-2xl bg-surface p-5 transition-colors hover:ring-1 hover:ring-brand-teal/20 sm:rounded-3xl sm:p-6"
+              className="group card-elevated flex h-full flex-col rounded-2xl bg-surface p-5 ring-1 ring-border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-brand-teal/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40 sm:rounded-3xl sm:p-6"
             >
-              <h2 className="font-heading text-lg font-semibold text-foreground">{link.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{link.description}</p>
-              <span className="mt-4 inline-block text-sm font-semibold text-brand-teal">{t.common.learnMore}</span>
+              <h2 className="font-heading text-lg font-semibold text-foreground transition-colors group-hover:text-brand-teal">
+                {link.title}
+              </h2>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{link.description}</p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-teal transition-colors group-hover:text-brand-pink">
+                {t.common.learnMore}
+                <span
+                  aria-hidden
+                  className="transition-transform duration-200 group-hover:translate-x-0.5"
+                >
+                  &rarr;
+                </span>
+              </span>
             </Link>
           ))}
         </div>

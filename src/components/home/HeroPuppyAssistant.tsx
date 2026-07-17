@@ -195,7 +195,7 @@ export function HeroPuppyAssistant() {
   return (
     <aside
       aria-label={copy.ariaLabel}
-      className="hero-puppy-assistant pointer-events-none absolute bottom-2 right-1 z-20 flex flex-col items-end sm:bottom-5 sm:right-4 lg:bottom-6 lg:right-6"
+      className="hero-puppy-assistant pointer-events-none absolute bottom-3 left-6 z-20 hidden flex-row items-end gap-2 lg:flex"
     >
       <div className="hero-puppy-assistant__bubble pointer-events-auto relative mb-1 max-w-[10.5rem] rounded-2xl border border-border/70 bg-surface/95 px-3 py-2.5 shadow-lg backdrop-blur-sm sm:max-w-[11rem]">
         <button
