@@ -34,12 +34,12 @@ export function SearchSection() {
           className="mx-auto max-w-2xl"
         />
 
-        <div className="mx-auto mt-6 max-w-6xl rounded-2xl bg-mint/45 p-3 shadow-sm ring-1 ring-mint/80 sm:mt-8 sm:rounded-3xl sm:p-4 md:p-5 lg:p-6">
+        <div className="mx-auto mt-6 max-w-6xl rounded-2xl bg-mint/25 p-3 shadow-sm ring-1 ring-mint/50 sm:mt-8 sm:rounded-3xl sm:p-4 md:p-5 lg:p-6">
           <div className="grid grid-cols-1 items-stretch gap-3 sm:gap-4 lg:grid-cols-2 lg:gap-6">
             {blocks.map((block) => (
               <article
                 key={block.id}
-                className="flex h-full min-h-0 flex-col rounded-2xl bg-surface/95 p-4 text-center shadow-sm ring-1 ring-black/5 sm:p-5 lg:p-6 lg:text-left"
+                className="flex h-full min-h-0 flex-col rounded-2xl bg-surface p-4 text-center shadow-sm ring-1 ring-border transition-shadow hover:shadow-md sm:p-5 lg:p-6 lg:text-left"
               >
                 <span className="mx-auto inline-flex h-6 w-fit shrink-0 items-center rounded-full bg-lavender/80 px-2.5 text-[0.65rem] font-bold uppercase tracking-wider text-brand-teal lg:mx-0 sm:px-3 sm:text-xs">
                   {block.copy.role}
@@ -60,7 +60,7 @@ export function SearchSection() {
                     type="text"
                     name={block.locationName}
                     placeholder={block.copy.placeholder}
-                    className="w-full min-w-0 rounded-xl border border-black/8 bg-background px-4 py-2.5 text-base text-foreground placeholder:text-muted/70 focus:border-brand-teal focus:outline-none focus:ring-3 focus:ring-brand-teal/15 sm:py-3"
+                    className="w-full min-w-0 rounded-xl border border-border bg-background px-4 py-2.5 text-base text-foreground placeholder:text-muted/70 transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 sm:py-3"
                   />
                   <Link
                     href={block.href}

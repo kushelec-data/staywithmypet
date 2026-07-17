@@ -12,15 +12,18 @@ const TRUST_ICONS = ["✓", "★", "💬"] as const;
 function HeroTrustBadges({ labels }: { labels: string[] }) {
   return (
     <ul
-      className="mt-2 flex flex-wrap justify-center gap-1 sm:mt-2.5 sm:gap-1.5 lg:justify-end"
+      className="mt-4 flex flex-wrap justify-center gap-2 sm:mt-5 lg:justify-end"
       aria-label="Platform trust highlights"
     >
       {labels.map((label, index) => (
         <li
           key={label}
-          className="inline-flex max-w-full items-center rounded-full border border-border bg-surface/70 px-2 py-0.5 text-[10px] font-medium text-foreground/85 shadow-sm backdrop-blur-sm sm:px-2.5 sm:py-1 sm:text-[11px]"
+          className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-surface/80 px-3 py-1.5 text-[11px] font-medium text-foreground/90 shadow-sm backdrop-blur-sm sm:text-xs"
         >
-          <span className="mr-0.5 shrink-0 text-[10px] text-brand-teal/90 sm:mr-1 sm:text-[11px]" aria-hidden>
+          <span
+            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-teal/10 text-[10px] text-brand-teal sm:text-[11px]"
+            aria-hidden
+          >
             {TRUST_ICONS[index]}
           </span>
           <span className="truncate">{label}</span>
@@ -55,14 +58,15 @@ export function HeroSection() {
           <div className="relative z-[1] min-w-0 text-center lg:text-left">
             <p
               key={`${locale}-eyebrow`}
-              className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-teal sm:text-sm sm:tracking-[0.2em]"
+              className="inline-flex items-center gap-2 rounded-full border border-brand-teal/20 bg-brand-teal/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-teal sm:text-xs sm:tracking-[0.2em]"
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-teal" aria-hidden />
               {t.hero.eyebrow}
             </p>
 
             <h1
               key={locale}
-              className={`${HEADING_HERO} mx-auto mt-3 max-w-xl whitespace-pre-line sm:mt-4 lg:mx-0`}
+              className={`${HEADING_HERO} mx-auto mt-4 max-w-xl whitespace-pre-line sm:mt-5 lg:mx-0`}
             >
               {t.hero.title}
             </h1>
