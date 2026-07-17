@@ -53,7 +53,7 @@ export function HeroSection() {
 
       <HeroPuppyAssistant />
 
-      <div className={`${CONTENT_CONTAINER} relative z-[1] py-5 sm:py-10 lg:py-12`}>
+      <div className={`${CONTENT_CONTAINER} relative z-[1] py-5 sm:py-10 lg:pb-32 lg:pt-12`}>
         <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12">
           <div className="relative z-[1] min-w-0 text-center lg:text-left">
             <p
