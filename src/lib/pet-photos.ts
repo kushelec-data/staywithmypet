@@ -199,10 +199,10 @@ export async function uploadAndAttachPetPhotos(
 ): Promise<void> {
   if (files.length === 0) return;
 
-  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const { assertRateLimitShared, requireAuthUserId, assertOwner } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
   assertOwner(ownerId, sessionUserId);
-  assertRateLimit("file_upload", sessionUserId);
+  await assertRateLimitShared("file_upload", sessionUserId);
 
   const append = options?.append ?? false;
 
@@ -401,10 +401,10 @@ export async function replacePetPhotoImage(
     throw new Error("Each file must be 3 MB or smaller.");
   }
 
-  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const { assertRateLimitShared, requireAuthUserId, assertOwner } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
   assertOwner(ownerId, sessionUserId);
-  assertRateLimit("file_upload", sessionUserId);
+  await assertRateLimitShared("file_upload", sessionUserId);
 
   const { data: pet, error: petError } = await supabase
     .from("pets")
@@ -537,10 +537,10 @@ export async function deletePetPhotoForOwner(
   petId: string,
   photoId: string,
 ): Promise<void> {
-  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const { assertRateLimitShared, requireAuthUserId, assertOwner } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
   assertOwner(ownerId, sessionUserId);
-  assertRateLimit("file_upload", sessionUserId);
+  await assertRateLimitShared("file_upload", sessionUserId);
 
   const { data: pet, error: petError } = await supabase
     .from("pets")
@@ -601,10 +601,10 @@ export async function setPrimaryPetPhotoForOwner(
   petId: string,
   photoId: string,
 ): Promise<void> {
-  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const { assertRateLimitShared, requireAuthUserId, assertOwner } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
   assertOwner(ownerId, sessionUserId);
-  assertRateLimit("file_upload", sessionUserId);
+  await assertRateLimitShared("file_upload", sessionUserId);
 
   const { data: pet, error: petError } = await supabase
     .from("pets")

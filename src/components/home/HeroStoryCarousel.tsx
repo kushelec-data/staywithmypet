@@ -220,9 +220,9 @@ export function HeroStoryCarousel() {
                 prefersReducedMotion ? "" : ""
               }`}
             >
-              <h3 className="font-heading text-xl font-bold leading-tight drop-shadow-md sm:text-3xl">
+              <h2 className="font-heading text-xl font-bold leading-tight drop-shadow-md sm:text-3xl">
                 {activeSlide.title}
-              </h3>
+              </h2>
               <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-white/90 drop-shadow sm:text-base">
                 {activeSlide.text}
               </p>
@@ -253,11 +253,20 @@ export function HeroStoryCarousel() {
               aria-label={t.hero.storyCarousel.goToSlide
                 .replace("{n}", String(index + 1))
                 .replace("{title}", slide.title)}
-              className={`rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal ${
-                prefersReducedMotion ? "" : "transition-all duration-300 ease-out"
-              } ${isActive ? "h-3 w-3 bg-brand-teal" : "h-2 w-2 bg-brand-teal/30 hover:bg-brand-teal/50"}`}
+              className="group inline-flex h-6 w-6 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
               onClick={() => goToSlide(index)}
-            />
+            >
+              <span
+                aria-hidden
+                className={`block rounded-full ${
+                  prefersReducedMotion ? "" : "transition-all duration-300 ease-out"
+                } ${
+                  isActive
+                    ? "h-3 w-3 bg-brand-teal"
+                    : "h-2 w-2 bg-brand-teal/30 group-hover:bg-brand-teal/50"
+                }`}
+              />
+            </button>
           );
         })}
       </div>

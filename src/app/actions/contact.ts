@@ -1,7 +1,7 @@
 "use server";
 
 import { sendContactFormEmail } from "@/lib/contact-email";
-import { assertRateLimit } from "@/lib/security";
+import { assertRateLimitShared } from "@/lib/security";
 import { buildPhoneE164, normalizeDialCode, normalizeNationalDigits } from "@/lib/phone-eu";
 import { headers } from "next/headers";
 
@@ -56,7 +56,7 @@ export async function submitContactFormAction(
   const phone = national ? buildPhoneE164(dial, national) : null;
 
   try {
-    assertRateLimit("contact_form", await rateLimitIdentity(email));
+    await assertRateLimitShared("contact_form", await rateLimitIdentity(email));
   } catch (err) {
     return {
       ok: false,

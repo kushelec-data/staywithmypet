@@ -136,11 +136,11 @@ export async function assertProfilePhotoAccess(
   userId: string,
   options?: { rateLimit?: boolean },
 ): Promise<string> {
-  const { assertRateLimit, requireAuthUserId, assertOwner } = await import("@/lib/security");
+  const { assertRateLimitShared, requireAuthUserId, assertOwner } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
   assertOwner(userId, sessionUserId);
   if (options?.rateLimit !== false) {
-    assertRateLimit("file_upload", sessionUserId);
+    await assertRateLimitShared("file_upload", sessionUserId);
   }
   return sessionUserId;
 }
