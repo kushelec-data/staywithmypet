@@ -157,10 +157,9 @@ export async function POST(request: Request) {
           sessionId: session.id,
           paymentStatus: session.payment_status,
           mode: session.mode,
-          customerEmail,
-          clientReferenceId: session.client_reference_id ?? null,
-          sessionMetadata: meta,
-          metadataFields: fields,
+          customerEmail: redactEmail(customerEmail),
+          clientReferenceId: maskId(session.client_reference_id),
+          metadataUserId: maskId(fields.user_id),
           normalizedRole,
           supabaseTable: MEMBERSHIP_TABLE,
         });
