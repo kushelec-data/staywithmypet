@@ -32,11 +32,22 @@ export function PublicCompactAvailabilityCard({
     [available, locale],
   );
 
+  const isFriendProfile = Boolean(petFriendId);
+  const sectionTitle = isFriendProfile
+    ? t.publicProfileUi.generalAvailability
+    : t.searchFilters.availability;
+
   return (
     <section className={PUBLIC_CARD}>
-      <h2 className={PUBLIC_SECTION_TITLE}>{t.searchFilters.availability}</h2>
+      <h2 className={PUBLIC_SECTION_TITLE}>{sectionTitle}</h2>
 
       <div className="mt-3 space-y-3">
+        {isFriendProfile ? (
+          <p className="text-xs leading-relaxed text-muted">
+            {t.publicProfileUi.generalAvailabilityHint}
+          </p>
+        ) : null}
+
         {availabilityNotes?.trim() ? (
           <p className="text-xs leading-relaxed text-muted">
             {translateProfileLabel(availabilityNotes.trim(), locale)}

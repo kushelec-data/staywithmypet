@@ -273,7 +273,8 @@ export const et = {
     dateFrom: "Alguskuupäev",
     dateTo: "Lõppkuupäev",
     selectDatesLabel: "Hoolduse kuupäevad",
-    selectDatesHint: "Vali kalendrist üks või mitu vaba kuupäeva.",
+    selectDatesHint:
+      "Valitud lemmiku jaoks saadaval kuupäevad. Olemasolevad broneeringud ja ootel päringud on välistatud.",
     message: "Sõnum",
     messagePlaceholder: "Tutvu enda ja vajadustega…",
     messageRequired: "Palun lisa sõnum.",
@@ -1394,6 +1395,9 @@ export const et = {
     petCarePreferences: "Lemmikuhoolduse eelistused",
     livingSituation: "Elukeskkond",
     availability: "Saadavus",
+    generalAvailability: "Üldine saadavus",
+    generalAvailabilityHint:
+      "Lõplikud vabad kuupäevad sõltuvad valitud lemmikust ja kuvatakse päringu saatmisel.",
     nearbyArea: "Lähedal asuv piirkond",
     approximateAreaOnly: "Ainult ligikaudne piirkond",
     generalArea: "Üldine piirkond",
