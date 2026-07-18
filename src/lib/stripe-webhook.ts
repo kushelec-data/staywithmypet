@@ -211,6 +211,7 @@ async function syncFromSubscription(
     userId,
     role,
     planId,
+    planKey: subscription.metadata.plan_key ?? null,
     status: subscription.status,
   });
 
@@ -228,6 +229,7 @@ async function syncFromSubscription(
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId,
+    source: "stripe_subscription",
     sendConfirmationEmail: status === "active" || status === "trialing",
   });
 

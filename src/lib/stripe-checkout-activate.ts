@@ -12,7 +12,8 @@ import {
   upsertUserMembershipAsAdmin,
   type MembershipPayloadAttempted,
 } from "@/lib/membership-activate";
-import type { MembershipRole, MembershipStatus } from "@/lib/membership";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { qualifiesAsActivePetFriendMembership, type MembershipRole, type MembershipStatus } from "@/lib/membership";
 import type { SupabaseErrorDetail } from "@/lib/supabase-errors";
 import {
   isWebhookHandlerError,
@@ -98,6 +99,35 @@ export async function activateMembershipFromCheckoutSession(
   }
   const planId = normalizeCatalogPlanId(resolvedPlanId) ?? resolvedPlanId;
 
+  const admin = createAdminClient();
+  if (admin) {
+    const { data: existingRow } = await admin
+      .from(MEMBERSHIP_TABLE)
+      .select("status, end_date, stripe_checkout_session_id")
+      .eq("user_id", userId)
+      .eq("role", role)
+      .maybeSingle();
+
+    if (
+      existingRow?.stripe_checkout_session_id === sessionId &&
+      qualifiesAsActivePetFriendMembership(existingRow)
+    ) {
+      console.log("[stripe] checkout session already activated (idempotent)", {
+        sessionId,
+        userId,
+        role,
+      });
+      return {
+        ok: true,
+        activated: true,
+        sessionId,
+        userId,
+        role,
+        planId,
+      };
+    }
+  }
+
   if (!userId?.trim()) {
     const error = `[stripe] checkout ${sessionId}: missing user_id after resolution`;
     console.error("[stripe] checkout activation aborted", { sessionId, metadata: session.metadata ?? {} });
@@ -153,6 +183,7 @@ export async function activateMembershipFromCheckoutSession(
     stripeSubscriptionId: subscription?.id ?? null,
     stripePriceId: resolvedPriceId,
     stripeCheckoutSessionId: session.id,
+    source: "stripe_checkout",
     sendConfirmationEmail: true,
   });
 

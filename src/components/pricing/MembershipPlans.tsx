@@ -39,8 +39,13 @@ type MembershipPlansProps = {
   planCheckoutErrors?: Record<string, string | null>;
   /** After checkout, return user to this path (e.g. pet booking page). */
   checkoutReturnTo?: string | null;
-  /** When true, plan selection redirects to /test-access-code instead of Stripe. */
+  /** Legacy redirect to /test-access-code when Stripe is disabled. */
   useTestAccessFlow?: boolean;
+  /** Label for Stripe checkout CTA (account page). */
+  payWithStripeLabel?: string;
+  /** Secondary link to open platform access code form. */
+  onOpenAccessCode?: (plan: PricingPlan) => void;
+  accessCodeLinkLabel?: string;
   /** Active membership end date (shown on the current plan card). */
   activePlanEndDate?: string | null;
   activePlanEndDateLabel?: string;
@@ -96,6 +101,9 @@ function PlanCard({
   checkoutError,
   planConfigError,
   onChoosePlan,
+  payWithStripeLabel,
+  onOpenAccessCode,
+  accessCodeLinkLabel,
   activePlanEndDate,
   activePlanEndDateLabel,
   cancelPlanLabel,
@@ -122,6 +130,9 @@ function PlanCard({
   checkoutError?: string | null;
   planConfigError?: string | null;
   onChoosePlan?: (plan: PricingPlan) => void;
+  payWithStripeLabel?: string;
+  onOpenAccessCode?: (plan: PricingPlan) => void;
+  accessCodeLinkLabel?: string;
   activePlanEndDate?: string | null;
   activePlanEndDateLabel?: string;
   cancelPlanLabel?: string;
@@ -292,9 +303,22 @@ function PlanCard({
                   : isCurrent
                     ? currentPlanButtonLabel
                     : canCheckout
-                      ? choosePlanLabel
+                      ? payWithStripeLabel && enableCheckout && !useTestAccessFlow
+                        ? payWithStripeLabel
+                        : useTestAccessFlow
+                          ? choosePlanLabel
+                          : choosePlanLabel
                       : planConfigError ?? checkoutUnavailableLabel}
           </Button>
+          {onOpenAccessCode && accessCodeLinkLabel && canCheckout && !useTestAccessFlow ? (
+            <button
+              type="button"
+              onClick={() => onOpenAccessCode(plan)}
+              className="mt-3 w-full text-center text-sm text-muted underline-offset-2 hover:text-foreground hover:underline"
+            >
+              {accessCodeLinkLabel}
+            </button>
+          ) : null}
         </>
       )}
     </article>
@@ -333,6 +357,9 @@ export function MembershipPlans({
   planCheckoutErrors,
   checkoutReturnTo,
   useTestAccessFlow = false,
+  payWithStripeLabel,
+  onOpenAccessCode,
+  accessCodeLinkLabel,
   activePlanEndDate,
   activePlanEndDateLabel,
   cancelPlanLabel,
@@ -491,6 +518,9 @@ export function MembershipPlans({
             checkoutError={checkoutError}
             planConfigError={planCheckoutErrors?.[plan.id] ?? null}
             onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
+            payWithStripeLabel={payWithStripeLabel}
+            onOpenAccessCode={onOpenAccessCode}
+            accessCodeLinkLabel={accessCodeLinkLabel}
             activePlanEndDate={activePlanEndDate}
             activePlanEndDateLabel={activePlanEndDateLabel}
             cancelPlanLabel={cancelPlanLabel}

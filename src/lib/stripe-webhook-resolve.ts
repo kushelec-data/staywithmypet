@@ -2,6 +2,7 @@ import "server-only";
 
 import type Stripe from "stripe";
 import {
+  billingIntervalFromPlanId,
   normalizeCatalogPlanId,
   planIdFromStripePriceId,
 } from "@/lib/stripe-plans";
@@ -36,7 +37,22 @@ export function parseMembershipRoleInput(value: unknown): MembershipRole | null 
   return roleFromStripeMetadata(typeof value === "string" ? value : undefined);
 }
 
-/** Stripe Checkout metadata: UI role alias + canonical DB enum. */
+/** Stripe Checkout metadata: UI role alias + canonical DB enum + plan_key. */
+export function membershipPlanKey(planId: string): string {
+  const normalized = normalizeCatalogPlanId(planId) ?? planId.trim();
+  const interval = billingIntervalFromPlanId(normalized);
+  switch (interval) {
+    case "3_months":
+      return "3-month";
+    case "12_months":
+      return "12-month";
+    case "one_time":
+      return "one-time";
+    default:
+      return normalized;
+  }
+}
+
 export function buildStripeCheckoutMetadata(input: {
   userId: string;
   role: MembershipRole;
@@ -44,11 +60,13 @@ export function buildStripeCheckoutMetadata(input: {
   priceId: string;
   priceEnv: string;
 }): Stripe.Metadata {
+  const planKey = membershipPlanKey(input.planId);
   return {
     user_id: input.userId,
     role: input.role === "pet_parent" ? "parent" : "friend",
     membership_role: input.role,
     plan_id: input.planId,
+    plan_key: planKey,
     plan: input.planId,
     price_id: input.priceId,
     price_env: input.priceEnv,

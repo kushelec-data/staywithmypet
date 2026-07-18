@@ -1,9 +1,10 @@
-import { activateMembershipFromCheckoutSession } from "@/lib/stripe-checkout-activate";
+import { emptyMembershipsByRole, hasActiveMembershipForRole } from "@/lib/membership";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isMembershipConfirmWritable } from "@/lib/stripe-webhook-config";
+import { membershipRoleFromMergedMetadata } from "@/lib/stripe-webhook-resolve";
 import { getStripe } from "@/lib/stripe";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -14,10 +15,13 @@ type ConfirmBody = {
   sessionId?: string;
 };
 
-/** Client fallback when webhook is delayed or misconfigured — verifies session via Stripe API. */
+/**
+ * Read-only status check after Checkout return.
+ * Membership activation is webhook-only — this route never writes to the database.
+ */
 export async function POST(request: Request) {
   if (!isMembershipConfirmWritable()) {
-    console.error("[stripe] confirm-membership: server cannot write memberships");
+    console.error("[stripe] confirm-membership: server cannot verify memberships");
     return NextResponse.json(
       { error: "Membership activation is not configured on the server." },
       { status: 503 },
@@ -69,41 +73,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Checkout session does not belong to this account." }, { status: 403 });
   }
 
-  console.log("[stripe] confirm-membership", {
+  const role = membershipRoleFromMergedMetadata(session.metadata ?? {});
+  const admin = createAdminClient();
+
+  let activated = false;
+  if (admin && role) {
+    const { data: row } = await admin
+      .from("user_memberships")
+      .select("status, end_date, role, plan_id, stripe_checkout_session_id")
+      .eq("user_id", authUserId)
+      .eq("role", role)
+      .maybeSingle();
+
+    if (row) {
+      const memberships = emptyMembershipsByRole();
+      memberships[role] = row as never;
+      activated = hasActiveMembershipForRole(memberships, role);
+    }
+  }
+
+  console.log("[stripe] confirm-membership status", {
     sessionId,
     authUserId,
     paymentStatus: session.payment_status,
+    role,
+    activated,
   });
 
-  const result = await activateMembershipFromCheckoutSession(session);
-
-  if (!result.ok) {
-    return NextResponse.json(
-      {
-        error: result.error,
-        code: result.code ?? null,
-        step: result.step,
-        supabaseError: result.supabaseError ?? null,
-        activated: false,
-      },
-      { status: 500 },
-    );
-  }
-
-  if (!result.activated) {
-    return NextResponse.json({
-      activated: false,
-      pending: true,
-      paymentStatus: session.payment_status,
-    });
-  }
-
-  revalidatePath("/membership");
-  revalidatePath("/dashboard");
-
   return NextResponse.json({
-    activated: true,
-    role: result.role,
-    planId: result.planId,
+    activated,
+    pending: !activated,
+    paymentStatus: session.payment_status,
+    webhookOnly: true,
   });
 }

@@ -31,6 +31,7 @@ import {
   hasActiveMembershipForMode,
   hasActiveMembershipForRole,
   membershipPlanLabel,
+  isMembershipPlanPurchasable,
   membershipPlansForRole,
   membershipStatusForMode,
   type MembershipRole,
@@ -38,6 +39,7 @@ import {
 } from "@/lib/membership";
 import { cancelMembershipAction } from "@/app/actions/membership";
 import { CancelMembershipConfirmModal } from "@/components/membership/CancelMembershipConfirmModal";
+import { AccessCodePanel } from "@/components/membership/AccessCodePanel";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
@@ -182,6 +184,8 @@ export function MembershipPageContent({
   const [cancelLoadingRole, setCancelLoadingRole] = useState<MembershipRole | null>(null);
   const [pendingCancelRole, setPendingCancelRole] = useState<MembershipRole | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [accessCodeOpen, setAccessCodeOpen] = useState(false);
+  const [accessCodePlanId, setAccessCodePlanId] = useState<string | null>(null);
   const handledReturnRef = useRef<string | null>(null);
 
   const returnTo = useMemo(
@@ -342,8 +346,10 @@ export function MembershipPageContent({
   const stripeCheckoutReady = stripeCheckout?.ready ?? false;
   const stripeConfigMessage = stripeCheckout?.message ?? null;
   const stripeEnabled = isStripeCheckoutEnabled();
+  const stripePayEnabled = stripeEnabled && stripeCheckoutReady;
   const useTestAccessFlow = !stripeEnabled;
-  const checkoutEnabled = !isActive && (stripeEnabled ? stripeCheckoutReady : true);
+  const accessCodeEnabled = !isActive;
+  const checkoutEnabled = !isActive && (stripePayEnabled || useTestAccessFlow);
 
   const handleCancelSuccess = useCallback(() => {
     setCancelError(null);
@@ -428,6 +434,17 @@ export function MembershipPageContent({
     }));
   }, [modeRole, t.pricing.petParentPlans, t.pricing.petFriendPlans]);
 
+  const accessCodePlanLabel = useMemo(() => {
+    if (!accessCodePlanId) return "";
+    const plans =
+      modeRole === "pet_parent" ? t.pricing.petParentPlans : t.pricing.petFriendPlans;
+    return plans.find((p) => p.id === accessCodePlanId)?.name ?? accessCodePlanId;
+  }, [accessCodePlanId, modeRole, t.pricing.petFriendPlans, t.pricing.petParentPlans]);
+
+  const defaultAccessCodePlanId = useMemo(() => {
+    return stripePlans.find((p) => isMembershipPlanPurchasable(p.plan_id))?.plan_id ?? null;
+  }, [stripePlans]);
+
   if (authLoading) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 text-center text-muted sm:px-6">
@@ -492,6 +509,26 @@ export function MembershipPageContent({
         </p>
       ) : null}
 
+      {accessCodeOpen && (accessCodePlanId ?? defaultAccessCodePlanId) && !isActive ? (
+        <AccessCodePanel
+          open={accessCodeOpen}
+          onClose={() => {
+            setAccessCodeOpen(false);
+            setAccessCodePlanId(null);
+          }}
+          planId={accessCodePlanId ?? defaultAccessCodePlanId!}
+          planLabel={
+            accessCodePlanLabel ||
+            accessCodePlanId ||
+            defaultAccessCodePlanId ||
+            ""
+          }
+          role={modeRole}
+          returnTo={returnTo}
+          onSuccess={() => void refreshProfile({ background: false })}
+        />
+      ) : null}
+
       {returnTo ? (
         <p
           className="mb-4 rounded-2xl border border-[#2E6B3F]/25 bg-[#DDEEDF]/60 px-4 py-3 text-sm text-foreground"
@@ -549,8 +586,18 @@ export function MembershipPageContent({
         plans={stripePlans}
         checkoutUserId={user.id}
         checkoutRole={modeRole}
-        enableCheckout={checkoutEnabled && stripeEnabled}
+        enableCheckout={checkoutEnabled && stripePayEnabled}
         useTestAccessFlow={checkoutEnabled && useTestAccessFlow}
+        payWithStripeLabel={t.membershipCheckout.payWithStripe}
+        onOpenAccessCode={
+          accessCodeEnabled
+            ? (plan) => {
+                setAccessCodePlanId(plan.id);
+                setAccessCodeOpen(true);
+              }
+            : undefined
+        }
+        accessCodeLinkLabel={accessCodeEnabled ? t.testAccess.alreadyHaveAccessCode : undefined}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
         cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}
