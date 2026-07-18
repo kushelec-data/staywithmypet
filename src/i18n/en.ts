@@ -1440,6 +1440,8 @@ export const en = {
     recordVideo: "Record video",
     uploading: "Uploading…",
     uploadFailed: "Upload failed",
+    mediaUploadFailed: "Media upload failed",
+    messageSaveFailed: "Message could not be saved",
     fileTooLarge: "File too large",
     unsupportedFileType: "Unsupported file type",
     mediaPreviewPhoto: "[Photo]",

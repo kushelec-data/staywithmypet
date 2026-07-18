@@ -1449,6 +1449,8 @@ export const et = {
     recordVideo: "Salvesta video",
     uploading: "Üleslaadimine…",
     uploadFailed: "Üleslaadimine ebaõnnestus",
+    mediaUploadFailed: "Meedia üleslaadimine ebaõnnestus",
+    messageSaveFailed: "Sõnumit ei saanud salvestada",
     fileTooLarge: "Fail on liiga suur",
     unsupportedFileType: "Toetamata failitüüp",
     mediaPreviewPhoto: "[Foto]",
