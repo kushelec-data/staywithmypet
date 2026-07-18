@@ -1295,6 +1295,7 @@ export const en = {
     redirecting: "Redirecting…",
     checkoutError: "Could not start checkout.",
     checkoutMissingUrl: "Checkout session missing URL.",
+    activeMembershipExists: "Active membership already exists",
     petParentPlans: [
       {
         id: "one-time-owner",

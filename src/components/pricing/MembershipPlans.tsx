@@ -10,6 +10,7 @@ import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership"
 import {
   checkoutRuntimeErrorForPlan,
   clearPlanCheckoutError,
+  isOtherPlanBlockedByActiveMembership,
   isPlanCheckoutLoading,
   planConfigErrorForPlan,
   setPlanCheckoutError,
@@ -60,6 +61,8 @@ type MembershipPlansProps = {
   cancelPlanLabel?: string;
   cancelPlanLoading?: boolean;
   onCancelPlan?: () => void;
+  /** When true, non-current plans for this role are disabled (account page). */
+  roleHasActiveMembership?: boolean;
 };
 
 function planId(plan: PricingPlan | MembershipPlanDefinition): string {
@@ -101,11 +104,13 @@ function PlanCard({
   redirectingLabel,
   checkoutUnavailableLabel,
   comingSoonLabel,
+  activeMembershipExistsLabel,
   popularBadge,
   enableCheckout,
   useTestAccessFlow,
   checkoutUserId,
   checkoutRole,
+  roleHasActiveMembership = false,
   checkoutLoadingPlanId,
   checkoutError,
   planConfigError,
@@ -131,11 +136,13 @@ function PlanCard({
   redirectingLabel: string;
   checkoutUnavailableLabel: string;
   comingSoonLabel: string;
+  activeMembershipExistsLabel: string;
   popularBadge: string;
   enableCheckout?: boolean;
   useTestAccessFlow?: boolean;
   checkoutUserId?: string;
   checkoutRole?: MembershipRole;
+  roleHasActiveMembership?: boolean;
   checkoutLoadingPlanId?: string | null;
   checkoutError?: string | null;
   planConfigError?: string | null;
@@ -154,12 +161,19 @@ function PlanCard({
     (Boolean(activePlanId) || Boolean(currentPlanLabel)) &&
     planMatchesActive(plan, activePlanId, currentPlanLabel);
 
+  const blockedByActiveMembership = isOtherPlanBlockedByActiveMembership({
+    variant,
+    roleHasActiveMembership,
+    isCurrentPlan: isCurrent,
+  });
+
   const isLoading = isPlanCheckoutLoading(checkoutLoadingPlanId ?? null, plan.id);
   const purchaseDisabled = !isMembershipPlanPurchasable(plan.id);
   const canCheckout =
     variant === "account" &&
     (enableCheckout || useTestAccessFlow) &&
     !isCurrent &&
+    !blockedByActiveMembership &&
     !purchaseDisabled &&
     !planConfigError &&
     Boolean(checkoutUserId) &&
@@ -293,7 +307,7 @@ function PlanCard({
                     ? "primary"
                     : "secondary"
             }
-            className={`mt-5 w-full sm:mt-6 ${showComingSoon ? "cursor-not-allowed opacity-60" : isAccount ? "" : "sm:mt-8"}`}
+            className={`mt-5 w-full sm:mt-6 ${showComingSoon || blockedByActiveMembership ? "cursor-not-allowed opacity-60" : isAccount ? "" : "sm:mt-8"}`}
             size={isAccount ? "sm" : "lg"}
             data-testid={
               canCheckout && enableCheckout && !useTestAccessFlow
@@ -301,7 +315,7 @@ function PlanCard({
                 : undefined
             }
             disabled={
-              showComingSoon
+              showComingSoon || blockedByActiveMembership
                 ? true
                 : canCancel
                   ? cancelPlanLoading
@@ -321,19 +335,21 @@ function PlanCard({
                 : redirectingLabel
               : showComingSoon
                 ? comingSoonLabel
-                : canCancel
-                  ? cancelPlanLoading
-                    ? "…"
-                    : cancelPlanLabel!
-                  : isCurrent
-                    ? currentPlanButtonLabel
-                    : canCheckout
-                      ? payWithStripeLabel && enableCheckout && !useTestAccessFlow
-                        ? payWithStripeLabel
-                        : useTestAccessFlow
-                          ? choosePlanLabel
-                          : choosePlanLabel
-                      : planConfigError ?? checkoutUnavailableLabel}
+                : blockedByActiveMembership
+                  ? activeMembershipExistsLabel
+                  : canCancel
+                    ? cancelPlanLoading
+                      ? "…"
+                      : cancelPlanLabel!
+                    : isCurrent
+                      ? currentPlanButtonLabel
+                      : canCheckout
+                        ? payWithStripeLabel && enableCheckout && !useTestAccessFlow
+                          ? payWithStripeLabel
+                          : useTestAccessFlow
+                            ? choosePlanLabel
+                            : choosePlanLabel
+                        : planConfigError ?? checkoutUnavailableLabel}
           </Button>
           {canOpenAccessCode ? (
             <button
@@ -390,6 +406,7 @@ export function MembershipPlans({
   cancelPlanLabel,
   cancelPlanLoading = false,
   onCancelPlan,
+  roleHasActiveMembership = false,
 }: MembershipPlansProps) {
   const { t } = useLanguage();
   const lockedTab = modeFilter ?? initialTab;
@@ -430,6 +447,7 @@ export function MembershipPlans({
 
   async function handleChoosePlan(plan: PricingPlan) {
     if (!checkoutUserId || !effectiveCheckoutRole) return;
+    if (roleHasActiveMembership) return;
     const selectedPlanId = planId(plan);
     if (!isMembershipPlanPurchasable(selectedPlanId)) return;
     setCheckoutErrors((prev) => clearPlanCheckoutError(prev, selectedPlanId));
@@ -542,6 +560,7 @@ export function MembershipPlans({
             redirectingLabel={t.pricing.redirecting}
             checkoutUnavailableLabel={t.pricing.checkoutError}
             comingSoonLabel={t.pricing.comingSoon}
+            activeMembershipExistsLabel={t.pricing.activeMembershipExists}
             popularBadge={t.pricing.mostPopular}
             enableCheckout={enableCheckout}
             useTestAccessFlow={useTestAccessFlow}
@@ -559,6 +578,7 @@ export function MembershipPlans({
             cancelPlanLabel={cancelPlanLabel}
             cancelPlanLoading={cancelPlanLoading}
             onCancelPlan={onCancelPlan}
+            roleHasActiveMembership={roleHasActiveMembership}
           />
         ))}
       </div>

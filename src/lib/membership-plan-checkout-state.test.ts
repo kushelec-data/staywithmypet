@@ -8,6 +8,7 @@ import {
 import {
   checkoutRuntimeErrorForPlan,
   clearPlanCheckoutError,
+  isOtherPlanBlockedByActiveMembership,
   isPlanCheckoutLoading,
   planConfigErrorForPlan,
   setPlanCheckoutError,
@@ -81,6 +82,48 @@ describe("per-plan loading state", () => {
     expect(isPlanCheckoutLoading("3-month-owner", "3-month-owner")).toBe(true);
     expect(isPlanCheckoutLoading("3-month-owner", "one-time-owner")).toBe(false);
     expect(isPlanCheckoutLoading(null, "3-month-owner")).toBe(false);
+  });
+});
+
+describe("active membership blocks other plan checkout", () => {
+  it("blocks non-current account plans when the role already has an active membership", () => {
+    expect(
+      isOtherPlanBlockedByActiveMembership({
+        variant: "account",
+        roleHasActiveMembership: true,
+        isCurrentPlan: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not block the current plan card", () => {
+    expect(
+      isOtherPlanBlockedByActiveMembership({
+        variant: "account",
+        roleHasActiveMembership: true,
+        isCurrentPlan: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not block plans when the role has no active membership", () => {
+    expect(
+      isOtherPlanBlockedByActiveMembership({
+        variant: "account",
+        roleHasActiveMembership: false,
+        isCurrentPlan: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not block marketing plan cards", () => {
+    expect(
+      isOtherPlanBlockedByActiveMembership({
+        variant: "marketing",
+        roleHasActiveMembership: true,
+        isCurrentPlan: false,
+      }),
+    ).toBe(false);
   });
 });
 
