@@ -31,6 +31,7 @@ import {
   hasActiveMembershipForMode,
   hasActiveMembershipForRole,
   membershipPlanLabel,
+  membershipRoleTitle,
   membershipPlansForRole,
   membershipStatusForMode,
   type MembershipRole,
@@ -38,10 +39,13 @@ import {
 } from "@/lib/membership";
 import { cancelMembershipAction } from "@/app/actions/membership";
 import { CancelMembershipConfirmModal } from "@/components/membership/CancelMembershipConfirmModal";
+import { InvitedTestUserSection } from "@/components/membership/InvitedTestUserSection";
 import { resolveActiveMode } from "@/lib/profile-mode";
+import { resolveMembershipPlanCheckoutProps } from "@/lib/membership-invited-access";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
+import type { MembershipDeployDiagnostics } from "@/lib/membership-deploy-diagnostics";
 import type { Dictionary } from "@/i18n/translations";
 
 type StripeCheckoutReadiness = {
@@ -54,6 +58,7 @@ type MembershipPageContentProps = {
   stripePlanErrorsByRole?: Record<MembershipRole, Record<string, string | null>>;
   /** Server: STRIPE_WEBHOOK_SECRET + SUPABASE_SERVICE_ROLE_KEY configured. */
   membershipWebhookWritable?: boolean;
+  deployDiagnostics?: MembershipDeployDiagnostics;
 };
 
 function parseCheckoutRole(value: string | null): MembershipRole | null {
@@ -170,6 +175,7 @@ export function MembershipPageContent({
   stripeCheckoutByRole,
   stripePlanErrorsByRole,
   membershipWebhookWritable = true,
+  deployDiagnostics,
 }: MembershipPageContentProps = {}) {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading, refreshProfile } = useProfile();
@@ -342,8 +348,14 @@ export function MembershipPageContent({
   const stripeCheckoutReady = stripeCheckout?.ready ?? false;
   const stripeConfigMessage = stripeCheckout?.message ?? null;
   const stripeEnabled = isStripeCheckoutEnabled();
-  const useTestAccessFlow = !stripeEnabled;
-  const checkoutEnabled = !isActive && (stripeEnabled ? stripeCheckoutReady : true);
+  const stripePayEnabled = stripeEnabled && stripeCheckoutReady;
+  const planCheckout = resolveMembershipPlanCheckoutProps({
+    stripeEnabled,
+    stripePayEnabled,
+    isActive,
+  });
+  const stripeCheckoutBlocked =
+    stripeEnabled && !stripeCheckoutReady && !isActive;
 
   const handleCancelSuccess = useCallback(() => {
     setCancelError(null);
@@ -458,6 +470,21 @@ export function MembershipPageContent({
         onConfirm={confirmCancelMembership}
       />
 
+      {deployDiagnostics?.showBanner ? (
+        <div
+          className="mb-4 rounded-2xl border border-dashed border-amber-500/60 bg-amber-50 px-4 py-3 text-xs text-amber-950"
+          role="status"
+          data-testid="membership-deploy-diagnostics"
+        >
+          <p className="font-semibold">{deployDiagnostics.bannerTitle}</p>
+          <ul className="mt-2 space-y-1 font-mono">
+            {deployDiagnostics.lines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {dualActive ? (
         <p className={`mb-4 inline-flex items-center gap-2 px-3 py-1 text-xs ${ACCOUNT_STATUS_BADGE_CLASS}`}>
           {mpage.dualMember}
@@ -483,7 +510,7 @@ export function MembershipPageContent({
         </div>
       ) : null}
 
-      {useTestAccessFlow && !isActive ? (
+      {planCheckout.useTestAccessFlowOnCards && !isActive ? (
         <p
           className="mb-4 rounded-2xl border border-[#2E6B3F]/25 bg-[#DDEEDF]/60 px-4 py-3 text-sm text-foreground"
           role="status"
@@ -530,7 +557,19 @@ export function MembershipPageContent({
         </p>
       ) : null}
 
-      {stripeEnabled && stripeConfigMessage ? (
+      {stripeCheckoutBlocked ? (
+        <p
+          className={`mb-4 rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`}
+          role="alert"
+        >
+          {deployDiagnostics?.showBanner
+            ? `Stripe checkout is blocked for ${membershipRoleTitle(modeRole)}: ${stripeConfigMessage ?? "configuration incomplete"}. Platform access codes remain available below.`
+            : (stripeConfigMessage ??
+              "Stripe checkout is not configured yet. Use a platform access code if you have one.")}
+        </p>
+      ) : null}
+
+      {stripeEnabled && stripeConfigMessage && !stripeCheckoutBlocked ? (
         <p
           className={`mb-4 rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`}
           role="alert"
@@ -549,8 +588,9 @@ export function MembershipPageContent({
         plans={stripePlans}
         checkoutUserId={user.id}
         checkoutRole={modeRole}
-        enableCheckout={checkoutEnabled && stripeEnabled}
-        useTestAccessFlow={checkoutEnabled && useTestAccessFlow}
+        enableCheckout={planCheckout.enableStripeCheckout}
+        useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
+        payWithStripeLabel={t.membershipCheckout.payWithStripe}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
         cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}
@@ -559,6 +599,10 @@ export function MembershipPageContent({
           isActive ? () => requestCancelMembership(modeRole) : undefined
         }
       />
+
+      {planCheckout.showInvitedAccessSection ? (
+        <InvitedTestUserSection role={modeRole} />
+      ) : null}
     </AccountLayout>
   );
 }

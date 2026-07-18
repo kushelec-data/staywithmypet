@@ -19,12 +19,11 @@ import {
 } from "@/lib/account-ui";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
-import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { membershipRoleTitle, type MembershipRole } from "@/lib/membership";
 
 export function TestAccessCodePageClient() {
   const { user, loading: authLoading } = useAuth();
-  const { profile, refreshProfile } = useProfile();
+  const { refreshProfile } = useProfile();
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -43,7 +42,6 @@ export function TestAccessCodePageClient() {
     [searchParams],
   );
 
-  const dualRole = profile?.role === "both";
   const roleLabel = membershipRoleTitle(role);
   const planLabel = useMemo(() => {
     const plans =
@@ -52,10 +50,6 @@ export function TestAccessCodePageClient() {
   }, [planId, role, t.pricing.petFriendPlans, t.pricing.petParentPlans]);
 
   useEffect(() => {
-    if (isStripeCheckoutEnabled()) {
-      router.replace("/membership");
-      return;
-    }
     if (authLoading) return;
     if (!user) {
       const next = `/test-access-code?${searchParams.toString()}`;
@@ -67,7 +61,7 @@ export function TestAccessCodePageClient() {
     }
   }, [authLoading, planId, router, searchParams, user]);
 
-  if (isStripeCheckoutEnabled() || authLoading || !user || !planId) {
+  if (authLoading || !user || !planId) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 text-center text-muted sm:px-6">
         {t.account.loading}
@@ -127,9 +121,7 @@ export function TestAccessCodePageClient() {
       <div className={`mb-6 ${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}>
         <p className={ACCOUNT_FIELD_LABEL_CLASS}>{ta.selectedPlanLabel}</p>
         <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>
-          {dualRole
-            ? ta.dualRoleSummary.replace("{plan}", planLabel)
-            : ta.singleRoleSummary.replace("{role}", roleLabel).replace("{plan}", planLabel)}
+          {ta.singleRoleSummary.replace("{role}", roleLabel).replace("{plan}", planLabel)}
         </p>
         <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>{ta.freeAccessNote}</p>
       </div>

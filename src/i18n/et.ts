@@ -1300,6 +1300,7 @@ export const et = {
     currentPlan: "Praegune pakett",
     comingSoon: "Peagi saadaval",
     mostPopular: "Kõige praktilisem korduvaks vajaduseks",
+    openingCheckout: "Avan makse…",
     redirecting: "Suunan…",
     checkoutError: "Makse alustamine ebaõnnestus.",
     checkoutMissingUrl: "Makse seansil puudub URL.",
@@ -1446,6 +1447,7 @@ export const et = {
     loadingReviews: "Laen arvustusi…",
   },
   membershipCheckout: {
+    payWithStripe: "Maksa Stripe'iga",
     paymentSuccess:
       "Sinu liikmelisus on aktiivne. Saad selles rollis kasutada tasulisi funktsioone.",
     paymentPending:
@@ -1461,24 +1463,35 @@ export const et = {
       "Paketi tühistamine pole veel saadaval. Palun võta ühendust toega.",
   },
   testAccess: {
+    invitedSection: {
+      title: "Kutsutud testkasutaja?",
+      description:
+        "Kui said StayWithMyPet kutse, aktiveeri oma 3-kuune liikmelisus tasuta platvormi ligipääsukoodiga.",
+      activateButton: "Aktiveeri ligipääsukoodiga",
+    },
+    alreadyHaveAccessCode: "Kas sul on juba ligipääsukood?",
+    accessCodePanelTitle: "Platvormi ligipääsukood",
+    accessCodePanelDescription:
+      "Sisesta platvormi ligipääsukood, et aktiveerida {role} liikmelisus paketile {plan}. See on Stripe maksest eraldi.",
+    closeAccessCode: "Sulge",
     membershipBanner:
-      "Tasuta testligipääs kutsutud kasutajatele. Kaarti pole vaja — vali pakett ja sisesta ligipääsukood.",
+      "Kutsutud kasutajad saavad liikmelisuse aktiveerida platvormi ligipääsukoodiga — kaarti pole vaja.",
     membershipIntro:
-      "Vali allpool {role} pakett. Järgmisel sammul sisestad testligipääsukoodi — makset pole vaja.",
-    pageTitle: "Sisesta testligipääsukood",
+      "Vali allpool {role} pakett. Järgmisel sammul sisestad platvormi ligipääsukoodi — makset pole vaja.",
+    pageTitle: "Sisesta platvormi ligipääsukood",
     pageDescription:
-      "Kutsutud testkasutajad saavad liikmelisuse 3 kuuks tasuta aktiveerida ligipääsukoodiga.",
+      "Sisesta platvormi ligipääsukood, et aktiveerida valitud paketi liikmelisus.",
     selectedPlanLabel: "Valitud pakett",
     singleRoleSummary: "{role} — {plan}",
     dualRoleSummary:
-      "Nii lemmiklooma vanem kui ka sõber — {plan} (3 kuud tasuta mõlema rolli jaoks)",
+      "Nii lemmiklooma vanem kui ka sõber — {plan} (mõlema rolli jaoks)",
     freeAccessNote:
-      "Sinu liikmelisus kehtib 3 kuud. Kaarti ega Stripe makset pole vaja.",
-    codeLabel: "Testligipääsukood",
+      "Sinu liikmelisus kehtib ligipääsukoodiga kaasasoleva perioodi jooksul. Stripe makset pole vaja.",
+    codeLabel: "Platvormi ligipääsukood",
     codePlaceholder: "Sisesta kood",
-    codeHint: "Kasuta kutsutud testkasutajatele jagatud koodi.",
-    invalidCode: "Vale testligipääsukood. Kontrolli koodi ja proovi uuesti.",
-    activateButton: "Aktiveeri tasuta liikmelisus",
+    codeHint: "Kasuta StayWithMyPet poolt antud ligipääsukoodi. See ei ole Stripe kupong.",
+    invalidCode: "Vale ligipääsukood. Kontrolli koodi ja proovi uuesti.",
+    activateButton: "Aktiveeri liikmelisus",
     activating: "Aktiveerin…",
     backToPlans: "Tagasi pakettide juurde",
   },

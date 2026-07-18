@@ -1291,6 +1291,7 @@ export const en = {
     currentPlan: "Current plan",
     comingSoon: "Coming Soon",
     mostPopular: "Most Practical for Recurring Needs",
+    openingCheckout: "Opening checkout…",
     redirecting: "Redirecting…",
     checkoutError: "Could not start checkout.",
     checkoutMissingUrl: "Checkout session missing URL.",
@@ -1437,6 +1438,7 @@ export const en = {
     loadingReviews: "Loading reviews…",
   },
   membershipCheckout: {
+    payWithStripe: "Pay with Stripe",
     paymentSuccess: "Your membership is active. You can use paid features in this mode.",
     paymentPending:
       "Payment received — your membership will activate shortly. Refresh this page if it does not update.",
@@ -1451,24 +1453,35 @@ export const en = {
       "Plan cancellation is not available yet. Please contact support.",
   },
   testAccess: {
+    invitedSection: {
+      title: "Invited test user?",
+      description:
+        "If you received an invitation from StayWithMyPet, activate your 3-month membership free using a platform access code.",
+      activateButton: "Activate with access code",
+    },
+    alreadyHaveAccessCode: "Already have an access code?",
+    accessCodePanelTitle: "Platform access code",
+    accessCodePanelDescription:
+      "Enter your platform access code to activate {role} membership for {plan}. This is separate from Stripe payment.",
+    closeAccessCode: "Close",
     membershipBanner:
-      "Free test access for invited users. No card required — choose a plan, then enter your access code.",
+      "Invited users can activate membership with a platform access code — no card required.",
     membershipIntro:
-      "Choose a {role} plan below. You will enter a test access code on the next step — no payment required.",
-    pageTitle: "Enter test access code",
+      "Choose a {role} plan below. You will enter your platform access code on the next step — no payment required.",
+    pageTitle: "Enter platform access code",
     pageDescription:
-      "Invited test users can unlock membership free for 3 months with an access code.",
+      "Enter your platform access code to activate membership for the selected plan.",
     selectedPlanLabel: "Selected plan",
     singleRoleSummary: "{role} — {plan}",
     dualRoleSummary:
-      "Both Pet Parent and Pet Friend — {plan} (3 months free for each role)",
+      "Both Pet Parent and Pet Friend — {plan} (3 months for each role)",
     freeAccessNote:
-      "Your membership will be active for 3 months. No card or Stripe checkout is required.",
-    codeLabel: "Test access code",
+      "Your membership will be active for the period included with your access code. No Stripe checkout is required.",
+    codeLabel: "Platform access code",
     codePlaceholder: "Enter your code",
-    codeHint: "Use the code shared with invited test users.",
-    invalidCode: "Invalid test access code. Check the code and try again.",
-    activateButton: "Activate free membership",
+    codeHint: "Use the access code provided by StayWithMyPet. This is not a Stripe coupon.",
+    invalidCode: "Invalid access code. Check the code and try again.",
+    activateButton: "Activate membership",
     activating: "Activating…",
     backToPlans: "Back to plans",
   },

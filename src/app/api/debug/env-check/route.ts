@@ -8,14 +8,12 @@ const ENV_VARS = [
   "STRIPE_WEBHOOK_SECRET",
   "SUPABASE_SERVICE_ROLE_KEY",
   "NEXT_PUBLIC_SITE_URL",
+  "STRIPE_PARENT_ONE_TIME_PRICE_ID",
   "STRIPE_PARENT_PRICE_ID",
+  "STRIPE_PARENT_ONE_YEAR_PRICE_ID",
+  "STRIPE_FRIEND_ONE_TIME_PRICE_ID",
   "STRIPE_FRIEND_PRICE_ID",
-  "STRIPE_PRICE_PARENT_1M",
-  "STRIPE_PRICE_PARENT_3M",
-  "STRIPE_PRICE_PARENT_12M",
-  "STRIPE_PRICE_FRIEND_1M",
-  "STRIPE_PRICE_FRIEND_3M",
-  "STRIPE_PRICE_FRIEND_12M",
+  "STRIPE_FRIEND_ONE_YEAR_PRICE_ID",
 ] as const;
 
 function isSet(name: (typeof ENV_VARS)[number]): boolean {
@@ -23,7 +21,8 @@ function isSet(name: (typeof ENV_VARS)[number]): boolean {
 }
 
 export async function GET() {
-  if (process.env.NODE_ENV === "production") {
+  const vercelEnv = process.env.VERCEL_ENV ?? "local";
+  if (process.env.NODE_ENV === "production" && vercelEnv !== "preview") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

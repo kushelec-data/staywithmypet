@@ -4,6 +4,7 @@ import {
   stripeCheckoutErrorsForRole,
   stripeCheckoutReadyForRole,
 } from "@/lib/stripe-plans";
+import { buildMembershipDeployDiagnostics } from "@/lib/membership-deploy-diagnostics";
 import { isMembershipWebhookWritable } from "@/lib/stripe-webhook-config";
 import type { Metadata } from "next";
 import { connection } from "next/server";
@@ -29,6 +30,7 @@ export default async function MembershipPage() {
     pet_parent: stripeCheckoutErrorsForRole("pet_parent"),
     pet_friend: stripeCheckoutErrorsForRole("pet_friend"),
   };
+  const deployDiagnostics = buildMembershipDeployDiagnostics(stripeCheckoutByRole);
 
   return (
     <Suspense fallback={<CommonLoadingFallback />}>
@@ -36,6 +38,7 @@ export default async function MembershipPage() {
         stripeCheckoutByRole={stripeCheckoutByRole}
         stripePlanErrorsByRole={stripePlanErrorsByRole}
         membershipWebhookWritable={isMembershipWebhookWritable()}
+        deployDiagnostics={deployDiagnostics}
       />
     </Suspense>
   );

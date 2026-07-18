@@ -1,3 +1,4 @@
+import { getRequestOrigin } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
@@ -9,14 +10,6 @@ import { NextResponse } from "next/server";
 
 const CANCEL_UNAVAILABLE =
   "Plan cancellation is not available yet. Please contact support.";
-
-function requestOrigin(request: Request): string {
-  const fromHeader = request.headers.get("origin")?.trim();
-  if (fromHeader) return fromHeader.replace(/\/$/, "");
-  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (site) return site.replace(/\/$/, "");
-  return new URL(request.url).origin;
-}
 
 export async function POST(request: Request) {
   let body: { role?: MembershipRole | string; returnTo?: string };
@@ -59,7 +52,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: CANCEL_UNAVAILABLE }, { status: 400 });
   }
 
-  const origin = requestOrigin(request);
+  const origin = getRequestOrigin(request);
   const returnPath = buildMembershipPagePath({
     role,
     returnTo: sanitizeReturnTo(body.returnTo ?? null),

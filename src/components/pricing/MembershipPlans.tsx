@@ -7,6 +7,14 @@ import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
 import { formatMembershipDate, isMembershipPlanPurchasable } from "@/lib/membership";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
+import {
+  checkoutRuntimeErrorForPlan,
+  clearPlanCheckoutError,
+  isPlanCheckoutLoading,
+  planConfigErrorForPlan,
+  setPlanCheckoutError,
+  type PlanCheckoutErrors,
+} from "@/lib/membership-plan-checkout-state";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 
 export type PricingPlan = {
@@ -35,12 +43,17 @@ type MembershipPlansProps = {
   checkoutUserId?: string;
   checkoutRole?: MembershipRole;
   enableCheckout?: boolean;
-  /** Server-resolved per-plan config errors, e.g. "Missing STRIPE_PRICE_PARENT_3M". */
+  /** Server-resolved per-plan config errors, e.g. missing STRIPE_FRIEND_ONE_YEAR_PRICE_ID. */
   planCheckoutErrors?: Record<string, string | null>;
   /** After checkout, return user to this path (e.g. pet booking page). */
   checkoutReturnTo?: string | null;
-  /** When true, plan selection redirects to /test-access-code instead of Stripe. */
+  /** Legacy redirect to /test-access-code when Stripe is disabled. */
   useTestAccessFlow?: boolean;
+  /** Label for Stripe checkout CTA (account page). */
+  payWithStripeLabel?: string;
+  /** Secondary link to open platform access code form. */
+  onOpenAccessCode?: (plan: PricingPlan) => void;
+  accessCodeLinkLabel?: string;
   /** Active membership end date (shown on the current plan card). */
   activePlanEndDate?: string | null;
   activePlanEndDateLabel?: string;
@@ -84,6 +97,7 @@ function PlanCard({
   choosePlanLabel,
   activePlanLabel,
   currentPlanButtonLabel,
+  openingCheckoutLabel,
   redirectingLabel,
   checkoutUnavailableLabel,
   comingSoonLabel,
@@ -96,6 +110,9 @@ function PlanCard({
   checkoutError,
   planConfigError,
   onChoosePlan,
+  payWithStripeLabel,
+  onOpenAccessCode,
+  accessCodeLinkLabel,
   activePlanEndDate,
   activePlanEndDateLabel,
   cancelPlanLabel,
@@ -110,6 +127,7 @@ function PlanCard({
   choosePlanLabel: string;
   activePlanLabel: string;
   currentPlanButtonLabel: string;
+  openingCheckoutLabel: string;
   redirectingLabel: string;
   checkoutUnavailableLabel: string;
   comingSoonLabel: string;
@@ -122,6 +140,9 @@ function PlanCard({
   checkoutError?: string | null;
   planConfigError?: string | null;
   onChoosePlan?: (plan: PricingPlan) => void;
+  payWithStripeLabel?: string;
+  onOpenAccessCode?: (plan: PricingPlan) => void;
+  accessCodeLinkLabel?: string;
   activePlanEndDate?: string | null;
   activePlanEndDateLabel?: string;
   cancelPlanLabel?: string;
@@ -133,7 +154,7 @@ function PlanCard({
     (Boolean(activePlanId) || Boolean(currentPlanLabel)) &&
     planMatchesActive(plan, activePlanId, currentPlanLabel);
 
-  const isLoading = checkoutLoadingPlanId === plan.id;
+  const isLoading = isPlanCheckoutLoading(checkoutLoadingPlanId ?? null, plan.id);
   const purchaseDisabled = !isMembershipPlanPurchasable(plan.id);
   const canCheckout =
     variant === "account" &&
@@ -152,6 +173,14 @@ function PlanCard({
     Boolean(cancelPlanLabel?.trim());
 
   const showComingSoon = purchaseDisabled && !isCurrent;
+
+  const canOpenAccessCode =
+    variant === "account" &&
+    Boolean(onOpenAccessCode) &&
+    Boolean(accessCodeLinkLabel) &&
+    !isCurrent &&
+    !purchaseDisabled &&
+    !useTestAccessFlow;
 
   const isAccount = variant === "account";
 
@@ -266,6 +295,11 @@ function PlanCard({
             }
             className={`mt-5 w-full sm:mt-6 ${showComingSoon ? "cursor-not-allowed opacity-60" : isAccount ? "" : "sm:mt-8"}`}
             size={isAccount ? "sm" : "lg"}
+            data-testid={
+              canCheckout && enableCheckout && !useTestAccessFlow
+                ? "membership-stripe-checkout-button"
+                : undefined
+            }
             disabled={
               showComingSoon
                 ? true
@@ -282,7 +316,9 @@ function PlanCard({
             }}
           >
             {isLoading
-              ? redirectingLabel
+              ? enableCheckout && !useTestAccessFlow
+                ? openingCheckoutLabel
+                : redirectingLabel
               : showComingSoon
                 ? comingSoonLabel
                 : canCancel
@@ -292,9 +328,22 @@ function PlanCard({
                   : isCurrent
                     ? currentPlanButtonLabel
                     : canCheckout
-                      ? choosePlanLabel
+                      ? payWithStripeLabel && enableCheckout && !useTestAccessFlow
+                        ? payWithStripeLabel
+                        : useTestAccessFlow
+                          ? choosePlanLabel
+                          : choosePlanLabel
                       : planConfigError ?? checkoutUnavailableLabel}
           </Button>
+          {canOpenAccessCode ? (
+            <button
+              type="button"
+              onClick={() => onOpenAccessCode!(plan)}
+              className="mt-3 w-full text-center text-sm text-muted underline-offset-2 hover:text-foreground hover:underline"
+            >
+              {accessCodeLinkLabel}
+            </button>
+          ) : null}
         </>
       )}
     </article>
@@ -333,6 +382,9 @@ export function MembershipPlans({
   planCheckoutErrors,
   checkoutReturnTo,
   useTestAccessFlow = false,
+  payWithStripeLabel,
+  onOpenAccessCode,
+  accessCodeLinkLabel,
   activePlanEndDate,
   activePlanEndDateLabel,
   cancelPlanLabel,
@@ -344,7 +396,7 @@ export function MembershipPlans({
   const [tab, setTab] = useState<"owner" | "friend">(lockedTab);
   const pricingTab = modeFilter ?? tab;
   const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState<string | null>(null);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutErrors, setCheckoutErrors] = useState<PlanCheckoutErrors>({});
   const showRoleTabs = variant === "marketing" && !modeFilter;
 
   useEffect(() => {
@@ -378,13 +430,14 @@ export function MembershipPlans({
 
   async function handleChoosePlan(plan: PricingPlan) {
     if (!checkoutUserId || !effectiveCheckoutRole) return;
-    if (!isMembershipPlanPurchasable(plan.id)) return;
-    setCheckoutError(null);
-    setCheckoutLoadingPlanId(plan.id);
+    const selectedPlanId = planId(plan);
+    if (!isMembershipPlanPurchasable(selectedPlanId)) return;
+    setCheckoutErrors((prev) => clearPlanCheckoutError(prev, selectedPlanId));
+    setCheckoutLoadingPlanId(selectedPlanId);
 
     if (useTestAccessFlow) {
       const params = new URLSearchParams({
-        planId: planId(plan),
+        planId: selectedPlanId,
         role: effectiveCheckoutRole === "pet_parent" ? "parent" : "friend",
       });
       if (checkoutReturnTo) {
@@ -400,12 +453,17 @@ export function MembershipPlans({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           role: effectiveCheckoutRole,
-          planId: planId(plan),
+          planId: selectedPlanId,
           userId: checkoutUserId,
           returnTo: checkoutReturnTo ?? undefined,
         }),
       });
-      const data = (await res.json()) as { url?: string; error?: string };
+      const data = (await res.json()) as {
+        url?: string;
+        error?: string;
+        planId?: string;
+        priceEnv?: string | null;
+      };
       if (!res.ok) {
         throw new Error(data.error ?? t.pricing.checkoutError);
       }
@@ -414,7 +472,8 @@ export function MembershipPlans({
       }
       window.location.href = data.url;
     } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : t.pricing.checkoutError);
+      const message = err instanceof Error ? err.message : t.pricing.checkoutError;
+      setCheckoutErrors((prev) => setPlanCheckoutError(prev, selectedPlanId, message));
       setCheckoutLoadingPlanId(null);
     }
   }
@@ -479,6 +538,7 @@ export function MembershipPlans({
             choosePlanLabel={t.pricing.choosePlan}
             activePlanLabel={t.pricing.activePlan}
             currentPlanButtonLabel={t.pricing.currentPlan}
+            openingCheckoutLabel={t.pricing.openingCheckout}
             redirectingLabel={t.pricing.redirecting}
             checkoutUnavailableLabel={t.pricing.checkoutError}
             comingSoonLabel={t.pricing.comingSoon}
@@ -488,9 +548,12 @@ export function MembershipPlans({
             checkoutUserId={checkoutUserId}
             checkoutRole={effectiveCheckoutRole}
             checkoutLoadingPlanId={checkoutLoadingPlanId}
-            checkoutError={checkoutError}
-            planConfigError={planCheckoutErrors?.[plan.id] ?? null}
+            checkoutError={checkoutRuntimeErrorForPlan(checkoutErrors, plan.id)}
+            planConfigError={planConfigErrorForPlan(planCheckoutErrors, plan.id)}
             onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
+            payWithStripeLabel={payWithStripeLabel}
+            onOpenAccessCode={onOpenAccessCode}
+            accessCodeLinkLabel={accessCodeLinkLabel}
             activePlanEndDate={activePlanEndDate}
             activePlanEndDateLabel={activePlanEndDateLabel}
             cancelPlanLabel={cancelPlanLabel}
