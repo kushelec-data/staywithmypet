@@ -36,6 +36,22 @@ function planExistsForRole(role: MembershipRole, planId: string): boolean {
   return MEMBERSHIP_PLAN_CATALOG[role].some((p) => p.id === planId);
 }
 
+function checkoutErrorResponse(
+  planId: string,
+  message: string,
+  status: number,
+): NextResponse {
+  const priceEnv = stripePriceEnvVarForPlanId(planId);
+  return NextResponse.json(
+    {
+      error: message,
+      planId,
+      priceEnv: priceEnv ?? null,
+    },
+    { status },
+  );
+}
+
 function checkoutErrorFromStripe(
   err: unknown,
   planId: string,
@@ -104,7 +120,7 @@ export async function POST(request: Request) {
 
   const configError = stripeCheckoutConfigError(trimmedPlanId);
   if (configError) {
-    return NextResponse.json({ error: configError }, { status: 503 });
+    return checkoutErrorResponse(trimmedPlanId, configError, 503);
   }
 
   const supabase = await createClient();
@@ -148,7 +164,7 @@ export async function POST(request: Request) {
   const resolvedPriceId = resolveStripePriceId(trimmedPlanId);
   const priceError = stripeCheckoutPriceError(trimmedPlanId, resolvedPriceId);
   if (priceError) {
-    return NextResponse.json({ error: priceError }, { status: 503 });
+    return checkoutErrorResponse(trimmedPlanId, priceError, 503);
   }
 
   const {
@@ -202,13 +218,13 @@ export async function POST(request: Request) {
   );
   if (priceTypeError) {
     console.error("[stripe] checkout price validation failed", {
-      selectedPlan: trimmedPlanId,
+      planId: trimmedPlanId,
       role,
       stripeMode: mode,
-      resolvedEnvVar,
+      priceEnv: resolvedEnvVar,
       priceSuffix,
     });
-    return NextResponse.json({ error: priceTypeError }, { status: 400 });
+    return checkoutErrorResponse(trimmedPlanId, priceTypeError, 400);
   }
 
   const { data: existingMembership } = await supabase
@@ -273,6 +289,6 @@ export async function POST(request: Request) {
     });
     const error = checkoutErrorFromStripe(err, trimmedPlanId, mode);
     const status = err instanceof Stripe.errors.StripeInvalidRequestError ? 400 : 500;
-    return NextResponse.json({ error }, { status });
+    return checkoutErrorResponse(trimmedPlanId, error, status);
   }
 }

@@ -4,6 +4,7 @@ import {
   invitedTestAccessCodeHref,
   resolveMembershipPlanCheckoutProps,
 } from "@/lib/membership-invited-access";
+import { isPlanCheckoutLoading } from "@/lib/membership-plan-checkout-state";
 import { isMembershipPlanPurchasable } from "@/lib/membership";
 import { checkoutSessionIsPaid } from "@/lib/stripe-checkout-activate";
 import {

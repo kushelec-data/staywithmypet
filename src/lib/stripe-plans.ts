@@ -93,7 +93,8 @@ export function stripePriceEnvVarForPlanId(planId: string): string | null {
 export function resolveStripePriceId(planId: string): string | null {
   const envName = stripePriceEnvVarForPlanId(planId);
   if (!envName) return null;
-  return readEnvPrice(envName);
+  const priceId = readEnvPrice(envName);
+  return priceId?.trim() || null;
 }
 
 export function stripeCheckoutModeForPlanId(planId: string): "payment" | "subscription" | null {
@@ -238,8 +239,9 @@ export async function validateStripePriceForCheckout(
   if (formatError) return formatError;
 
   const envName = stripePriceEnvVarForPlanId(planId) ?? "STRIPE_*_PRICE_ID";
+  const trimmedPriceId = priceId.trim();
   try {
-    const price = await stripe.prices.retrieve(priceId);
+    const price = await stripe.prices.retrieve(trimmedPriceId);
     const isRecurring = price.type === "recurring";
     if (mode === "payment" && isRecurring) {
       return `Missing or invalid price ID for ${planId}: ${envName} must be a one-time Stripe price (found recurring). Use mode payment for one-time plans.`;
@@ -249,7 +251,7 @@ export async function validateStripePriceForCheckout(
     }
     return null;
   } catch {
-    return `Missing or invalid price ID for ${planId}: ${envName} price …${stripePriceIdSuffix(priceId)} not found in Stripe.`;
+    return `Missing or invalid price ID for ${planId}: ${envName} price …${stripePriceIdSuffix(trimmedPriceId)} not found in Stripe.`;
   }
 }
 

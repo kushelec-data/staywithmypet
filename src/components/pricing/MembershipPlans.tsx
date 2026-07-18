@@ -7,6 +7,14 @@ import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
 import { formatMembershipDate, isMembershipPlanPurchasable } from "@/lib/membership";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
+import {
+  checkoutRuntimeErrorForPlan,
+  clearPlanCheckoutError,
+  isPlanCheckoutLoading,
+  planConfigErrorForPlan,
+  setPlanCheckoutError,
+  type PlanCheckoutErrors,
+} from "@/lib/membership-plan-checkout-state";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 
 export type PricingPlan = {
@@ -146,7 +154,7 @@ function PlanCard({
     (Boolean(activePlanId) || Boolean(currentPlanLabel)) &&
     planMatchesActive(plan, activePlanId, currentPlanLabel);
 
-  const isLoading = checkoutLoadingPlanId === plan.id;
+  const isLoading = isPlanCheckoutLoading(checkoutLoadingPlanId ?? null, plan.id);
   const purchaseDisabled = !isMembershipPlanPurchasable(plan.id);
   const canCheckout =
     variant === "account" &&
@@ -388,7 +396,7 @@ export function MembershipPlans({
   const [tab, setTab] = useState<"owner" | "friend">(lockedTab);
   const pricingTab = modeFilter ?? tab;
   const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState<string | null>(null);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutErrors, setCheckoutErrors] = useState<PlanCheckoutErrors>({});
   const showRoleTabs = variant === "marketing" && !modeFilter;
 
   useEffect(() => {
@@ -422,13 +430,14 @@ export function MembershipPlans({
 
   async function handleChoosePlan(plan: PricingPlan) {
     if (!checkoutUserId || !effectiveCheckoutRole) return;
-    if (!isMembershipPlanPurchasable(plan.id)) return;
-    setCheckoutError(null);
-    setCheckoutLoadingPlanId(plan.id);
+    const selectedPlanId = planId(plan);
+    if (!isMembershipPlanPurchasable(selectedPlanId)) return;
+    setCheckoutErrors((prev) => clearPlanCheckoutError(prev, selectedPlanId));
+    setCheckoutLoadingPlanId(selectedPlanId);
 
     if (useTestAccessFlow) {
       const params = new URLSearchParams({
-        planId: planId(plan),
+        planId: selectedPlanId,
         role: effectiveCheckoutRole === "pet_parent" ? "parent" : "friend",
       });
       if (checkoutReturnTo) {
@@ -444,12 +453,17 @@ export function MembershipPlans({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           role: effectiveCheckoutRole,
-          planId: planId(plan),
+          planId: selectedPlanId,
           userId: checkoutUserId,
           returnTo: checkoutReturnTo ?? undefined,
         }),
       });
-      const data = (await res.json()) as { url?: string; error?: string };
+      const data = (await res.json()) as {
+        url?: string;
+        error?: string;
+        planId?: string;
+        priceEnv?: string | null;
+      };
       if (!res.ok) {
         throw new Error(data.error ?? t.pricing.checkoutError);
       }
@@ -458,7 +472,8 @@ export function MembershipPlans({
       }
       window.location.href = data.url;
     } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : t.pricing.checkoutError);
+      const message = err instanceof Error ? err.message : t.pricing.checkoutError;
+      setCheckoutErrors((prev) => setPlanCheckoutError(prev, selectedPlanId, message));
       setCheckoutLoadingPlanId(null);
     }
   }
@@ -533,8 +548,8 @@ export function MembershipPlans({
             checkoutUserId={checkoutUserId}
             checkoutRole={effectiveCheckoutRole}
             checkoutLoadingPlanId={checkoutLoadingPlanId}
-            checkoutError={checkoutError}
-            planConfigError={planCheckoutErrors?.[plan.id] ?? null}
+            checkoutError={checkoutRuntimeErrorForPlan(checkoutErrors, plan.id)}
+            planConfigError={planConfigErrorForPlan(planCheckoutErrors, plan.id)}
             onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
             payWithStripeLabel={payWithStripeLabel}
             onOpenAccessCode={onOpenAccessCode}
