@@ -10,7 +10,7 @@ import {
   stripePriceIdSuffix,
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
-import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, qualifiesAsActivePetFriendMembership, type MembershipRole } from "@/lib/membership";
+import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, qualifiesAsActivePetFriendMembership, qualifiesAsActivePetParentMembership, type MembershipRole } from "@/lib/membership";
 import { sanitizeReturnTo } from "@/lib/membership-return";
 import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
@@ -134,7 +134,11 @@ export async function POST(request: Request) {
     .eq("role", role)
     .maybeSingle();
 
-  if (qualifiesAsActivePetFriendMembership(activeMembershipRow)) {
+  if (
+    (role === "pet_parent"
+      ? qualifiesAsActivePetParentMembership
+      : qualifiesAsActivePetFriendMembership)(activeMembershipRow)
+  ) {
     return NextResponse.json(
       { error: "You already have an active membership for this role." },
       { status: 409 },

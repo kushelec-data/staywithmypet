@@ -1300,6 +1300,7 @@ export const et = {
     currentPlan: "Praegune pakett",
     comingSoon: "Peagi saadaval",
     mostPopular: "Kõige praktilisem korduvaks vajaduseks",
+    openingCheckout: "Avan makse…",
     redirecting: "Suunan…",
     checkoutError: "Makse alustamine ebaõnnestus.",
     checkoutMissingUrl: "Makse seansil puudub URL.",

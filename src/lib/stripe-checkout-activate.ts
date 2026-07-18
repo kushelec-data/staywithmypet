@@ -13,7 +13,7 @@ import {
   type MembershipPayloadAttempted,
 } from "@/lib/membership-activate";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { qualifiesAsActivePetFriendMembership, type MembershipRole, type MembershipStatus } from "@/lib/membership";
+import { isMembershipActive, type MembershipRole, type MembershipStatus } from "@/lib/membership";
 import type { SupabaseErrorDetail } from "@/lib/supabase-errors";
 import {
   isWebhookHandlerError,
@@ -110,7 +110,7 @@ export async function activateMembershipFromCheckoutSession(
 
     if (
       existingRow?.stripe_checkout_session_id === sessionId &&
-      qualifiesAsActivePetFriendMembership(existingRow)
+      isMembershipActive(existingRow as Parameters<typeof isMembershipActive>[0])
     ) {
       console.log("[stripe] checkout session already activated (idempotent)", {
         sessionId,

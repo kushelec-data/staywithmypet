@@ -35,7 +35,7 @@ type MembershipPlansProps = {
   checkoutUserId?: string;
   checkoutRole?: MembershipRole;
   enableCheckout?: boolean;
-  /** Server-resolved per-plan config errors, e.g. "Missing STRIPE_PRICE_PARENT_3M". */
+  /** Server-resolved per-plan config errors, e.g. missing STRIPE_FRIEND_ONE_YEAR_PRICE_ID. */
   planCheckoutErrors?: Record<string, string | null>;
   /** After checkout, return user to this path (e.g. pet booking page). */
   checkoutReturnTo?: string | null;
@@ -89,6 +89,7 @@ function PlanCard({
   choosePlanLabel,
   activePlanLabel,
   currentPlanButtonLabel,
+  openingCheckoutLabel,
   redirectingLabel,
   checkoutUnavailableLabel,
   comingSoonLabel,
@@ -118,6 +119,7 @@ function PlanCard({
   choosePlanLabel: string;
   activePlanLabel: string;
   currentPlanButtonLabel: string;
+  openingCheckoutLabel: string;
   redirectingLabel: string;
   checkoutUnavailableLabel: string;
   comingSoonLabel: string;
@@ -306,7 +308,9 @@ function PlanCard({
             }}
           >
             {isLoading
-              ? redirectingLabel
+              ? enableCheckout && !useTestAccessFlow
+                ? openingCheckoutLabel
+                : redirectingLabel
               : showComingSoon
                 ? comingSoonLabel
                 : canCancel
@@ -519,6 +523,7 @@ export function MembershipPlans({
             choosePlanLabel={t.pricing.choosePlan}
             activePlanLabel={t.pricing.activePlan}
             currentPlanButtonLabel={t.pricing.currentPlan}
+            openingCheckoutLabel={t.pricing.openingCheckout}
             redirectingLabel={t.pricing.redirecting}
             checkoutUnavailableLabel={t.pricing.checkoutError}
             comingSoonLabel={t.pricing.comingSoon}

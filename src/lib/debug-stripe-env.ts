@@ -11,14 +11,12 @@ export function logStripeEnvPresence(context: string): void {
   console.log(`[stripe-env:${context}] VERCEL_PROJECT_PRODUCTION_URL:`, process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "(unset)");
   console.log(`[stripe-env:${context}] NEXT_PUBLIC_SITE_URL exists:`, hasServerEnv("NEXT_PUBLIC_SITE_URL"));
   const priceEnvVars = [
+    "STRIPE_PARENT_ONE_TIME_PRICE_ID",
     "STRIPE_PARENT_PRICE_ID",
+    "STRIPE_PARENT_ONE_YEAR_PRICE_ID",
+    "STRIPE_FRIEND_ONE_TIME_PRICE_ID",
     "STRIPE_FRIEND_PRICE_ID",
-    "STRIPE_PRICE_PARENT_1M",
-    "STRIPE_PRICE_PARENT_3M",
-    "STRIPE_PRICE_PARENT_12M",
-    "STRIPE_PRICE_FRIEND_1M",
-    "STRIPE_PRICE_FRIEND_3M",
-    "STRIPE_PRICE_FRIEND_12M",
+    "STRIPE_FRIEND_ONE_YEAR_PRICE_ID",
   ] as const;
   for (const name of priceEnvVars) {
     console.log(`[stripe-env:${context}] ${name} exists:`, hasServerEnv(name));

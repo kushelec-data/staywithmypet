@@ -3,8 +3,10 @@ import "server-only";
 import type Stripe from "stripe";
 import {
   billingIntervalFromPlanId,
+  durationMonthsForPlanId,
   normalizeCatalogPlanId,
   planIdFromStripePriceId,
+  stripePlanTypeForPlanId,
 } from "@/lib/stripe-plans";
 import type { MembershipRole } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
@@ -60,14 +62,19 @@ export function buildStripeCheckoutMetadata(input: {
   priceId: string;
   priceEnv: string;
 }): Stripe.Metadata {
-  const planKey = membershipPlanKey(input.planId);
+  const normalizedPlanId = normalizeCatalogPlanId(input.planId) ?? input.planId.trim();
+  const planKey = membershipPlanKey(normalizedPlanId);
+  const planType = stripePlanTypeForPlanId(normalizedPlanId);
+  const durationMonths = durationMonthsForPlanId(normalizedPlanId);
   return {
     user_id: input.userId,
     role: input.role === "pet_parent" ? "parent" : "friend",
     membership_role: input.role,
-    plan_id: input.planId,
+    plan_id: normalizedPlanId,
     plan_key: planKey,
-    plan: input.planId,
+    plan: normalizedPlanId,
+    ...(planType ? { plan_type: planType } : {}),
+    ...(durationMonths ? { duration_months: durationMonths } : {}),
     price_id: input.priceId,
     price_env: input.priceEnv,
   };
