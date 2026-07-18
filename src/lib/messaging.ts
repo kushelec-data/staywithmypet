@@ -18,9 +18,22 @@ import {
 import { formatBookingDatesForRow, type DateFormatLocale } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus, type RequestStatusCopy } from "@/lib/requests";
-import type { BookingStatus } from "@/types/database";
+import type {
+  BookingStatus,
+  Database,
+  MessageInboxPreviewRow,
+  MessageRow as DbMessageRow,
+} from "@/types/database";
+import {
+  MESSAGE_INBOX_PREVIEW_LEGACY_SELECT,
+  MESSAGE_INBOX_PREVIEW_SELECT,
+} from "@/types/database";
 import { isMissingColumnError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
 import { chatMessagePreviewText, type ChatMediaType } from "@/lib/chat-media";
+
+function asMessagingDbClient(supabase: SupabaseClient): SupabaseClient<Database> {
+  return supabase as SupabaseClient<Database>;
+}
 
 export type ChatMessage = {
   id: string;
@@ -370,22 +383,13 @@ type RequestRow = {
   pet_friend_id: string;
 };
 
-type MessageRow = {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  body: string;
-  read_at: string | null;
-  created_at: string;
-  storage_path?: string | null;
-  media_type?: string | null;
-  file_name?: string | null;
-  file_size?: number | null;
-  mime_type?: string | null;
-};
+type MessageRow = DbMessageRow;
 
-const MESSAGE_SELECT =
-  "id, conversation_id, sender_id, body, read_at, created_at, storage_path, media_type, file_name, file_size, mime_type";
+const MESSAGE_THREAD_SELECT =
+  "id, conversation_id, sender_id, body, read_at, created_at, storage_path, media_type, file_name, file_size, mime_type" as const;
+
+const MESSAGE_THREAD_LEGACY_SELECT =
+  "id, conversation_id, sender_id, body, read_at, created_at" as const;
 
 function mapMessageRow(row: MessageRow, userId: string): ChatMessage {
   const mediaType =
@@ -451,6 +455,45 @@ export function formatMessagingError(error: unknown): string {
   }
   if (error instanceof Error && error.message.trim()) return error.message;
   return "Could not load messages.";
+}
+
+async function fetchRecentInboxMessages(
+  supabase: SupabaseClient,
+  conversationIds: string[],
+): Promise<MessageInboxPreviewRow[]> {
+  if (!conversationIds.length) return [];
+
+  const db = asMessagingDbClient(supabase);
+  const withMedia = await db
+    .from("messages")
+    .select(MESSAGE_INBOX_PREVIEW_SELECT)
+    .in("conversation_id", conversationIds)
+    .order("created_at", { ascending: false });
+
+  if (!withMedia.error) {
+    return withMedia.data ?? [];
+  }
+
+  if (!isMissingColumnError(withMedia.error)) {
+    throw withMedia.error;
+  }
+
+  const legacy = await db
+    .from("messages")
+    .select(MESSAGE_INBOX_PREVIEW_LEGACY_SELECT)
+    .in("conversation_id", conversationIds)
+    .order("created_at", { ascending: false });
+
+  if (legacy.error) {
+    throw legacy.error;
+  }
+
+  return (legacy.data ?? []).map((row) => ({
+    conversation_id: row.conversation_id,
+    body: row.body,
+    created_at: row.created_at,
+    media_type: null,
+  }));
 }
 
 async function fetchRequestForConversation(
@@ -710,36 +753,13 @@ export async function fetchConversations(
   const conversationIds = eligibleConversations.map((c) => c.id);
   const lastByConversation = new Map<string, { body: string; created_at: string }>();
 
-  let recentSelect = "conversation_id, body, created_at, media_type";
-  let { data: recentMessages, error: msgError } = await supabase
-    .from("messages")
-    .select(recentSelect)
-    .in("conversation_id", conversationIds)
-    .order("created_at", { ascending: false });
+  const recentMessages = await fetchRecentInboxMessages(supabase, conversationIds);
 
-  if (msgError && isMissingColumnError(msgError)) {
-    recentSelect = "conversation_id, body, created_at";
-    ({ data: recentMessages, error: msgError } = await supabase
-      .from("messages")
-      .select(recentSelect)
-      .in("conversation_id", conversationIds)
-      .order("created_at", { ascending: false }));
-  }
-
-  if (msgError) throw msgError;
-
-  type RecentMessageRow = {
-    conversation_id: string;
-    body: string;
-    created_at: string;
-    media_type?: string | null;
-  };
-
-  for (const m of (recentMessages ?? []) as RecentMessageRow[]) {
+  for (const m of recentMessages) {
     if (!lastByConversation.has(m.conversation_id)) {
       lastByConversation.set(m.conversation_id, {
         body: chatMessagePreviewText({
-          body: m.body as string,
+          body: m.body,
           mediaType:
             m.media_type === "image" || m.media_type === "video"
               ? m.media_type
@@ -893,25 +913,44 @@ export async function fetchMessages(
   conversationId: string,
   userId: string,
 ): Promise<ChatMessage[]> {
-  let select = MESSAGE_SELECT;
-  let { data, error } = await supabase
+  const db = asMessagingDbClient(supabase);
+  const full = await db
     .from("messages")
-    .select(select)
+    .select(MESSAGE_THREAD_SELECT)
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
-  if (error && isMissingColumnError(error)) {
-    select = "id, conversation_id, sender_id, body, read_at, created_at";
-    ({ data, error } = await supabase
-      .from("messages")
-      .select(select)
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true }));
+  if (!full.error) {
+    return (full.data ?? []).map((row) => mapMessageRow(row, userId));
   }
 
-  if (error) throw error;
+  if (!isMissingColumnError(full.error)) {
+    throw full.error;
+  }
 
-  return (data ?? []).map((row) => mapMessageRow(row as MessageRow, userId));
+  const legacy = await db
+    .from("messages")
+    .select(MESSAGE_THREAD_LEGACY_SELECT)
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+
+  if (legacy.error) {
+    throw legacy.error;
+  }
+
+  return (legacy.data ?? []).map((row) =>
+    mapMessageRow(
+      {
+        ...row,
+        storage_path: null,
+        media_type: null,
+        file_name: null,
+        file_size: null,
+        mime_type: null,
+      },
+      userId,
+    ),
+  );
 }
 
 export async function sendMessage(
@@ -1035,7 +1074,7 @@ export async function sendMessage(
   let { data, error } = await supabase
     .from("messages")
     .insert(insertPayload)
-    .select(MESSAGE_SELECT)
+    .select(MESSAGE_THREAD_SELECT)
     .single();
 
   if (error && media && isMissingColumnError(error)) {
