@@ -588,6 +588,7 @@ export function MembershipPageContent({
         plans={stripePlans}
         checkoutUserId={user.id}
         checkoutRole={modeRole}
+        roleHasActiveMembership={hasActiveMembershipForRole(memberships, modeRole)}
         enableCheckout={planCheckout.enableStripeCheckout}
         useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
         payWithStripeLabel={t.membershipCheckout.payWithStripe}

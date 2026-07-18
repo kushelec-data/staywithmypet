@@ -41,3 +41,16 @@ export function planConfigErrorForPlan(
   const value = planCheckoutErrors?.[planId];
   return value ?? null;
 }
+
+/** Non-current plan cards when the role already has an active membership. */
+export function isOtherPlanBlockedByActiveMembership(input: {
+  variant: "marketing" | "account";
+  roleHasActiveMembership: boolean;
+  isCurrentPlan: boolean;
+}): boolean {
+  return (
+    input.variant === "account" &&
+    input.roleHasActiveMembership &&
+    !input.isCurrentPlan
+  );
+}

@@ -1304,6 +1304,7 @@ export const et = {
     redirecting: "Suunan…",
     checkoutError: "Makse alustamine ebaõnnestus.",
     checkoutMissingUrl: "Makse seansil puudub URL.",
+    activeMembershipExists: "Aktiivne liikmelisus on juba olemas",
     petParentPlans: [
       {
         id: "one-time-owner",
