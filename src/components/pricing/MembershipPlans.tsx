@@ -164,6 +164,14 @@ function PlanCard({
 
   const showComingSoon = purchaseDisabled && !isCurrent;
 
+  const canOpenAccessCode =
+    variant === "account" &&
+    Boolean(onOpenAccessCode) &&
+    Boolean(accessCodeLinkLabel) &&
+    !isCurrent &&
+    !purchaseDisabled &&
+    !useTestAccessFlow;
+
   const isAccount = variant === "account";
 
   return (
@@ -310,10 +318,10 @@ function PlanCard({
                           : choosePlanLabel
                       : planConfigError ?? checkoutUnavailableLabel}
           </Button>
-          {onOpenAccessCode && accessCodeLinkLabel && canCheckout && !useTestAccessFlow ? (
+          {canOpenAccessCode ? (
             <button
               type="button"
-              onClick={() => onOpenAccessCode(plan)}
+              onClick={() => onOpenAccessCode!(plan)}
               className="mt-3 w-full text-center text-sm text-muted underline-offset-2 hover:text-foreground hover:underline"
             >
               {accessCodeLinkLabel}

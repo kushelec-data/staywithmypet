@@ -23,7 +23,8 @@ function isSet(name: (typeof ENV_VARS)[number]): boolean {
 }
 
 export async function GET() {
-  if (process.env.NODE_ENV === "production") {
+  const vercelEnv = process.env.VERCEL_ENV ?? "local";
+  if (process.env.NODE_ENV === "production" && vercelEnv !== "preview") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
