@@ -19,6 +19,7 @@ import { getStripe } from "@/lib/stripe";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
 import { maskId } from "@/lib/security/log-redact";
+import { envStringFingerprint, envVarForPlanId } from "@/lib/stripe-runtime-debug";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import Stripe from "stripe";
@@ -178,6 +179,24 @@ export async function POST(request: Request) {
   const stripe = getStripe();
 
   const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId) ?? "STRIPE_*_PRICE_ID";
+  const resolvedPriceFingerprint = envStringFingerprint(resolvedEnvVar);
+
+  console.log("[stripe] checkout plan env resolution", {
+    clickedPlanId: trimmedPlanId,
+    envVarUsed: resolvedEnvVar,
+    envVarFromPlanId: envVarForPlanId(trimmedPlanId),
+    priceFingerprint: {
+      exists: resolvedPriceFingerprint.exists,
+      first10: resolvedPriceFingerprint.first10,
+      last6: resolvedPriceFingerprint.last6,
+      length: resolvedPriceFingerprint.length,
+      hadOuterWhitespace: resolvedPriceFingerprint.hadOuterWhitespace,
+      rawLength: resolvedPriceFingerprint.rawLength,
+    },
+    stripeMode: mode,
+    role,
+  });
+
   const checkoutMetadata = buildStripeCheckoutMetadata({
     userId: sessionUserId,
     role,
@@ -218,10 +237,16 @@ export async function POST(request: Request) {
   );
   if (priceTypeError) {
     console.error("[stripe] checkout price validation failed", {
-      planId: trimmedPlanId,
+      clickedPlanId: trimmedPlanId,
+      envVarUsed: resolvedEnvVar,
+      priceFingerprint: {
+        first10: resolvedPriceFingerprint.first10,
+        last6: resolvedPriceFingerprint.last6,
+        length: resolvedPriceFingerprint.length,
+        hadOuterWhitespace: resolvedPriceFingerprint.hadOuterWhitespace,
+      },
       role,
       stripeMode: mode,
-      priceEnv: resolvedEnvVar,
       priceSuffix,
     });
     return checkoutErrorResponse(trimmedPlanId, priceTypeError, 400);
