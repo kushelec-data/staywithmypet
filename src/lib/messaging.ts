@@ -19,8 +19,8 @@ import { formatBookingDatesForRow, type DateFormatLocale } from "@/lib/date-form
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus, type RequestStatusCopy } from "@/lib/requests";
 import type { BookingStatus } from "@/types/database";
-import { isMissingColumnError, isPostgrestError } from "@/lib/supabase-errors";
-import { logSupabaseError } from "@/lib/supabase-errors";
+import { isMissingColumnError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
+import { chatMessagePreviewText, type ChatMediaType } from "@/lib/chat-media";
 
 export type ChatMessage = {
   id: string;
@@ -30,6 +30,19 @@ export type ChatMessage = {
   readAt: string | null;
   createdAt: string;
   isOwn: boolean;
+  storagePath: string | null;
+  mediaType: ChatMediaType | null;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
+};
+
+export type SendMessageMedia = {
+  storagePath: string;
+  mediaType: ChatMediaType;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
 };
 
 /** Grace period after a booking is cancelled before chat becomes read-only. */
@@ -364,7 +377,37 @@ type MessageRow = {
   body: string;
   read_at: string | null;
   created_at: string;
+  storage_path?: string | null;
+  media_type?: string | null;
+  file_name?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
 };
+
+const MESSAGE_SELECT =
+  "id, conversation_id, sender_id, body, read_at, created_at, storage_path, media_type, file_name, file_size, mime_type";
+
+function mapMessageRow(row: MessageRow, userId: string): ChatMessage {
+  const mediaType =
+    row.media_type === "image" || row.media_type === "video"
+      ? row.media_type
+      : null;
+
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    senderId: row.sender_id,
+    body: row.body ?? "",
+    readAt: row.read_at,
+    createdAt: row.created_at,
+    isOwn: row.sender_id === userId,
+    storagePath: row.storage_path ?? null,
+    mediaType,
+    fileName: row.file_name ?? null,
+    fileSize: row.file_size ?? null,
+    mimeType: row.mime_type ?? null,
+  };
+}
 
 const CONVERSATION_SELECT =
   "id, request_id, pet_parent_id, pet_friend_id, created_at";
@@ -667,18 +710,41 @@ export async function fetchConversations(
   const conversationIds = eligibleConversations.map((c) => c.id);
   const lastByConversation = new Map<string, { body: string; created_at: string }>();
 
-  const { data: recentMessages, error: msgError } = await supabase
+  let recentSelect = "conversation_id, body, created_at, media_type";
+  let { data: recentMessages, error: msgError } = await supabase
     .from("messages")
-    .select("conversation_id, body, created_at")
+    .select(recentSelect)
     .in("conversation_id", conversationIds)
     .order("created_at", { ascending: false });
 
+  if (msgError && isMissingColumnError(msgError)) {
+    recentSelect = "conversation_id, body, created_at";
+    ({ data: recentMessages, error: msgError } = await supabase
+      .from("messages")
+      .select(recentSelect)
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: false }));
+  }
+
   if (msgError) throw msgError;
 
-  for (const m of recentMessages ?? []) {
+  type RecentMessageRow = {
+    conversation_id: string;
+    body: string;
+    created_at: string;
+    media_type?: string | null;
+  };
+
+  for (const m of (recentMessages ?? []) as RecentMessageRow[]) {
     if (!lastByConversation.has(m.conversation_id)) {
       lastByConversation.set(m.conversation_id, {
-        body: m.body,
+        body: chatMessagePreviewText({
+          body: m.body as string,
+          mediaType:
+            m.media_type === "image" || m.media_type === "video"
+              ? m.media_type
+              : null,
+        }),
         created_at: m.created_at,
       });
     }
@@ -827,23 +893,25 @@ export async function fetchMessages(
   conversationId: string,
   userId: string,
 ): Promise<ChatMessage[]> {
-  const { data, error } = await supabase
+  let select = MESSAGE_SELECT;
+  let { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, body, read_at, created_at")
+    .select(select)
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
+  if (error && isMissingColumnError(error)) {
+    select = "id, conversation_id, sender_id, body, read_at, created_at";
+    ({ data, error } = await supabase
+      .from("messages")
+      .select(select)
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true }));
+  }
+
   if (error) throw error;
 
-  return (data ?? []).map((row: MessageRow) => ({
-    id: row.id,
-    conversationId: row.conversation_id,
-    senderId: row.sender_id,
-    body: row.body,
-    readAt: row.read_at,
-    createdAt: row.created_at,
-    isOwn: row.sender_id === userId,
-  }));
+  return (data ?? []).map((row) => mapMessageRow(row as MessageRow, userId));
 }
 
 export async function sendMessage(
@@ -852,6 +920,7 @@ export async function sendMessage(
   senderId: string,
   body: string,
   otherPartyId?: string,
+  media?: SendMessageMedia | null,
 ): Promise<ChatMessage> {
   const { assertRateLimitShared, requireAuthUserId } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
@@ -861,7 +930,9 @@ export async function sendMessage(
   await assertRateLimitShared("message_send", sessionUserId);
 
   const trimmed = body.trim();
-  if (!trimmed) throw new Error("Message cannot be empty.");
+  if (!trimmed && !media?.storagePath) {
+    throw new Error("Message cannot be empty.");
+  }
 
   const { data: conversationRow, error: conversationError } = await supabase
     .from("conversations")
@@ -947,28 +1018,36 @@ export async function sendMessage(
     await assertActiveMembership(supabase, senderId, mode);
   }
 
-  const { data, error } = await supabase
+  const insertPayload: Record<string, unknown> = {
+    conversation_id: conversationId,
+    sender_id: senderId,
+    body: trimmed,
+  };
+
+  if (media) {
+    insertPayload.storage_path = media.storagePath;
+    insertPayload.media_type = media.mediaType;
+    insertPayload.file_name = media.fileName;
+    insertPayload.file_size = media.fileSize;
+    insertPayload.mime_type = media.mimeType;
+  }
+
+  let { data, error } = await supabase
     .from("messages")
-    .insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      body: trimmed,
-    })
-    .select("id, conversation_id, sender_id, body, read_at, created_at")
+    .insert(insertPayload)
+    .select(MESSAGE_SELECT)
     .single();
+
+  if (error && media && isMissingColumnError(error)) {
+    throw new Error(
+      "Chat media is not available yet. Apply the latest Supabase migrations, then refresh.",
+    );
+  }
 
   if (error) throw error;
   const row = data as MessageRow;
 
-  return {
-    id: row.id,
-    conversationId: row.conversation_id,
-    senderId: row.sender_id,
-    body: row.body,
-    readAt: row.read_at,
-    createdAt: row.created_at,
-    isOwn: true,
-  };
+  return mapMessageRow(row, senderId);
 }
 
 export async function markConversationMessagesRead(
@@ -1023,15 +1102,7 @@ export function subscribeToConversationMessages(
       (payload) => {
         const row = payload.new as MessageRow;
         if (!row?.id) return;
-        onMessage({
-          id: row.id,
-          conversationId: row.conversation_id,
-          senderId: row.sender_id,
-          body: row.body,
-          readAt: row.read_at,
-          createdAt: row.created_at,
-          isOwn: row.sender_id === userId,
-        });
+        onMessage(mapMessageRow(row, userId));
       },
     )
     .subscribe();

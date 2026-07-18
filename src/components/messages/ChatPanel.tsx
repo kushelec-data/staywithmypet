@@ -1,6 +1,7 @@
 "use client";
 
 import { BookingReviewBanner } from "@/components/messages/BookingReviewBanner";
+import { ChatMediaAttachButton } from "@/components/messages/ChatMediaAttachButton";
 import { STATUS_ALERT_ERROR_COMPACT_CLASS, STATUS_ALERT_WARNING_COMPACT_CLASS } from "@/lib/status-colors";
 import { MessageThread } from "@/components/messages/MessageThread";
 import { ReportUserModal } from "@/components/trust/ReportUserModal";
@@ -34,6 +35,13 @@ import {
   type ChatMessage,
   type ConversationSummary,
 } from "@/lib/messaging";
+import {
+  buildChatMediaStoragePath,
+  chatMessagePreviewText,
+  ChatMediaValidationError,
+  uploadChatMediaFile,
+  validateChatMediaFile,
+} from "@/lib/chat-media";
 import { blockUser, fetchBlockedUserIds, formatTrustSafetyError, isUserBlocked, unblockUser } from "@/lib/trust-safety";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
@@ -79,6 +87,7 @@ export function ChatPanel({
   const { t, locale } = useLanguage();
   const { profile } = useProfile();
   const m = t.messages;
+  const ui = t.messagesUi;
   const ts = t.trustSafety;
   const conversationId = conversation.id;
   const conversationDateLabel = formatConversationDateLabel(conversation, locale);
@@ -95,10 +104,12 @@ export function ChatPanel({
   const [toastMounted, setToastMounted] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prefersSmoothScrollRef = useRef(false);
 
   const canSend = canSendInConversation(conversation) && !blocked;
+  const uploading = uploadProgress !== null;
   const cancelledBookingGraceActive = isCancelledBookingChatGraceActive(conversation);
   const cancelledBookingGraceExpired = isCancelledBookingChatGraceExpired(conversation);
   const cancelledGraceEndLabel = formatCancelledBookingChatGraceEnd(
@@ -151,6 +162,7 @@ export function ChatPanel({
       setMessages([]);
       setDraft("");
       setEmojiOpen(false);
+      setUploadProgress(null);
       prefersSmoothScrollRef.current = false;
 
       try {
@@ -235,10 +247,41 @@ export function ChatPanel({
     }
   }
 
+  function messagePreview(msg: ChatMessage): string {
+    return chatMessagePreviewText({
+      body: msg.body,
+      mediaType: msg.mediaType,
+      photoLabel: ui.mediaPreviewPhoto,
+      videoLabel: ui.mediaPreviewVideo,
+    });
+  }
+
+  async function deliverMessage(msg: ChatMessage) {
+    setMessages((prev) => {
+      if (prev.some((item) => item.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
+    setDraft("");
+    setEmojiOpen(false);
+    onMessageSent(messagePreview(msg), msg.createdAt);
+    void (async () => {
+      try {
+        const { sendNewMessageEmailAction } = await import("@/app/actions/email-events");
+        await sendNewMessageEmailAction({
+          conversationId,
+          messageId: msg.id,
+          recipientUserId: conversation.otherPartyId,
+        });
+      } catch {
+        /* email is best-effort; in-app notification still created by DB trigger */
+      }
+    })();
+  }
+
   async function handleSend(e?: React.FormEvent) {
     e?.preventDefault();
     const text = draft.trim();
-    if (!text || sending || !canSend) return;
+    if (!text || sending || uploading || !canSend) return;
 
     setSending(true);
     setError(null);
@@ -250,25 +293,7 @@ export function ChatPanel({
         text,
         conversation.otherPartyId,
       );
-      setMessages((prev) => {
-        if (prev.some((item) => item.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-      setDraft("");
-      setEmojiOpen(false);
-      onMessageSent(msg.body, msg.createdAt);
-      void (async () => {
-        try {
-          const { sendNewMessageEmailAction } = await import("@/app/actions/email-events");
-          await sendNewMessageEmailAction({
-            conversationId,
-            messageId: msg.id,
-            recipientUserId: conversation.otherPartyId,
-          });
-        } catch {
-          /* email is best-effort; in-app notification still created by DB trigger */
-        }
-      })();
+      await deliverMessage(msg);
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
         setUpgradeOpen(true);
@@ -278,6 +303,53 @@ export function ChatPanel({
       }
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleMediaSelected(file: File) {
+    if (sending || uploading || !canSend) return;
+
+    setError(null);
+    setUploadProgress(0);
+
+    try {
+      const mediaType = validateChatMediaFile(file);
+      const storagePath = buildChatMediaStoragePath(conversationId, userId, file);
+
+      await uploadChatMediaFile(supabase, storagePath, file, setUploadProgress);
+
+      const msg = await sendMessage(
+        supabase,
+        conversationId,
+        userId,
+        draft.trim(),
+        conversation.otherPartyId,
+        {
+          storagePath,
+          mediaType,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        },
+      );
+      await deliverMessage(msg);
+    } catch (err) {
+      if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
+        setUpgradeOpen(true);
+        setError(null);
+      } else if (err instanceof ChatMediaValidationError) {
+        setError(
+          err.code === "file_too_large"
+            ? ui.fileTooLarge
+            : err.code === "unsupported_type"
+              ? ui.unsupportedFileType
+              : ui.uploadFailed,
+        );
+      } else {
+        setError(ui.uploadFailed);
+      }
+    } finally {
+      setUploadProgress(null);
     }
   }
 
@@ -427,6 +499,7 @@ export function ChatPanel({
           incomingInitial={
             conversation.otherPartyName.trim().charAt(0).toUpperCase() || "?"
           }
+          supabase={supabase}
         />
       </div>
 
@@ -437,6 +510,21 @@ export function ChatPanel({
         >
           {error}
         </p>
+      ) : null}
+
+      {uploading ? (
+        <div className="mx-3 mb-1 shrink-0" role="status" aria-live="polite">
+          <div className="flex items-center justify-between gap-2 text-xs text-[#2B2B2B]">
+            <span>{ui.uploading}</span>
+            <span>{uploadProgress ?? 0}%</span>
+          </div>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#E8E2D6]">
+            <div
+              className="h-full rounded-full bg-brand-teal transition-[width] duration-150"
+              style={{ width: `${uploadProgress ?? 0}%` }}
+            />
+          </div>
+        </div>
       ) : null}
 
       <form onSubmit={handleSend} className={`${MESSAGES_INPUT_BAR_CLASS} min-w-0`}>
@@ -455,12 +543,18 @@ export function ChatPanel({
           </div>
         ) : null}
         <div className="flex min-w-0 items-end gap-1 sm:gap-1.5">
+          <ChatMediaAttachButton
+            disabled={sending || uploading || !canSend}
+            onFileSelected={(file) => {
+              void handleMediaSelected(file);
+            }}
+          />
           <button
             type="button"
             onClick={() => setEmojiOpen((v) => !v)}
-            disabled={!canSend}
+            disabled={!canSend || uploading}
             className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base sm:h-10 sm:w-10 ${MESSAGES_META_TEXT_MUTED_CLASS} ${MESSAGES_SOFT_HOVER_CLASS} disabled:opacity-40`}
-            aria-label={t.messagesUi.insertEmoji}
+            aria-label={ui.insertEmoji}
           >
             😊
           </button>
@@ -473,7 +567,7 @@ export function ChatPanel({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={inputPlaceholder}
-            disabled={sending || !canSend}
+            disabled={sending || uploading || !canSend}
             className={MESSAGES_TEXTAREA_CLASS}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -484,7 +578,7 @@ export function ChatPanel({
           />
           <button
             type="submit"
-            disabled={sending || !canSend || !draft.trim()}
+            disabled={sending || uploading || !canSend || !draft.trim()}
             className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-brand-teal px-3 text-xs font-semibold text-white hover:bg-brand-teal-hover disabled:opacity-50 sm:h-10 sm:px-4"
           >
             {sending ? m.sending : m.send}

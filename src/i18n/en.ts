@@ -1434,6 +1434,16 @@ export const en = {
   messagesUi: {
     loadingMessages: "Loading messages…",
     insertEmoji: "Insert emoji",
+    attachPhotoOrVideo: "Attach photo or video",
+    takePhoto: "Take photo",
+    chooseVideo: "Choose video",
+    recordVideo: "Record video",
+    uploading: "Uploading…",
+    uploadFailed: "Upload failed",
+    fileTooLarge: "File too large",
+    unsupportedFileType: "Unsupported file type",
+    mediaPreviewPhoto: "[Photo]",
+    mediaPreviewVideo: "[Video]",
   },
   reviewsUi: {
     loadingReviews: "Loading reviews…",

@@ -7,6 +7,7 @@ import {
   messageBubbleRadius,
   type ChatMessage,
 } from "@/lib/messaging";
+import { ChatMessageMedia } from "@/components/messages/ChatMessageMedia";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   MESSAGES_AVATAR_RING_CLASS,
@@ -15,6 +16,7 @@ import {
   MESSAGES_META_TEXT_MUTED_CLASS,
   MESSAGES_RECEIVED_BUBBLE_CLASS,
 } from "@/lib/messages-ui";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type MessageThreadProps = {
   messages: ChatMessage[];
@@ -23,6 +25,7 @@ type MessageThreadProps = {
   emptyHint: string;
   incomingAvatarUrl?: string | null;
   incomingInitial?: string;
+  supabase: SupabaseClient;
 };
 
 function DateDivider({ label }: { label: string }) {
@@ -66,6 +69,7 @@ export function MessageThread({
   emptyHint,
   incomingAvatarUrl,
   incomingInitial = "?",
+  supabase,
 }: MessageThreadProps) {
   const { t } = useLanguage();
 
@@ -144,9 +148,22 @@ export function MessageThread({
                                 : MESSAGES_RECEIVED_BUBBLE_CLASS
                             }`}
                           >
-                            <p className="whitespace-pre-wrap break-words text-[0.8125rem] leading-snug">
-                              {message.body}
-                            </p>
+                            {message.storagePath && message.mediaType ? (
+                              <ChatMessageMedia
+                                message={message}
+                                supabase={supabase}
+                                isOwn={group.isOwn}
+                              />
+                            ) : null}
+                            {message.body.trim() ? (
+                              <p
+                                className={`whitespace-pre-wrap break-words text-[0.8125rem] leading-snug ${
+                                  message.storagePath && message.mediaType ? "mt-1.5" : ""
+                                }`}
+                              >
+                                {message.body}
+                              </p>
+                            ) : null}
                           </div>
                           {isLastInGroup ? (
                             <p
