@@ -38,7 +38,9 @@ import {
 import {
   buildChatMediaStoragePath,
   chatMessagePreviewText,
+  ChatMediaUploadError,
   ChatMediaValidationError,
+  ChatMessageSaveError,
   uploadChatMediaFile,
   validateChatMediaFile,
 } from "@/lib/chat-media";
@@ -343,10 +345,14 @@ export function ChatPanel({
             ? ui.fileTooLarge
             : err.code === "unsupported_type"
               ? ui.unsupportedFileType
-              : ui.uploadFailed,
+              : ui.mediaUploadFailed,
         );
+      } else if (err instanceof ChatMediaUploadError) {
+        setError(ui.mediaUploadFailed);
+      } else if (err instanceof ChatMessageSaveError) {
+        setError(ui.messageSaveFailed);
       } else {
-        setError(ui.uploadFailed);
+        setError(formatMessagingError(err));
       }
     } finally {
       setUploadProgress(null);

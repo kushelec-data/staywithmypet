@@ -1,9 +1,7 @@
--- Chat message photo/video attachments (private storage bucket + message metadata)
--- Storage path: conversations/{conversation_id}/{sender_id}/{uuid}-{sanitized_file_name}
+-- Run in Supabase Dashboard → SQL Editor if chat photo/video upload fails.
+-- Same content as migration 20260718180000_chat_media.sql
 
--- ---------------------------------------------------------------------------
--- Message media columns (storage_path = persisted object key; no signed URLs)
--- ---------------------------------------------------------------------------
+-- Storage path: conversations/{conversation_id}/{sender_id}/{uuid}-{sanitized_file_name}
 
 alter table public.messages
   add column if not exists storage_path text,
@@ -60,76 +58,6 @@ alter table public.messages
 create index if not exists messages_storage_path_idx
   on public.messages (storage_path)
   where storage_path is not null;
-
--- ---------------------------------------------------------------------------
--- Notification preview for media messages
--- ---------------------------------------------------------------------------
-
-create or replace function public.notify_message_received()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_parent uuid;
-  v_friend uuid;
-  v_recipient uuid;
-  v_preview text;
-begin
-  select c.pet_parent_id, c.pet_friend_id
-  into v_parent, v_friend
-  from public.conversations c
-  where c.id = new.conversation_id;
-
-  if new.sender_id = v_parent then
-    v_recipient := v_friend;
-  elsif new.sender_id = v_friend then
-    v_recipient := v_parent;
-  else
-    return new;
-  end if;
-
-  if v_recipient is null or v_recipient = new.sender_id then
-    return new;
-  end if;
-
-  if new.media_type = 'image' then
-    v_preview := '[Photo]';
-  elsif new.media_type = 'video' then
-    v_preview := '[Video]';
-  else
-    v_preview := left(trim(coalesce(new.body, '')), 120);
-  end if;
-
-  if v_preview = '' then
-    v_preview := 'You have a new message.';
-  end if;
-
-  insert into public.notifications (
-    user_id,
-    type,
-    title,
-    body,
-    related_conversation_id,
-    read_at
-  )
-  values (
-    v_recipient,
-    'new_message',
-    'New message',
-    v_preview,
-    new.conversation_id,
-    null
-  );
-
-  return new;
-end;
-$$;
-
--- ---------------------------------------------------------------------------
--- Private chat-media storage bucket
--- ---------------------------------------------------------------------------
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

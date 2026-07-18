@@ -29,7 +29,11 @@ import {
   MESSAGE_INBOX_PREVIEW_SELECT,
 } from "@/types/database";
 import { isMissingColumnError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
-import { chatMessagePreviewText, type ChatMediaType } from "@/lib/chat-media";
+import {
+  chatMessagePreviewText,
+  ChatMessageSaveError,
+  type ChatMediaType,
+} from "@/lib/chat-media";
 
 function asMessagingDbClient(supabase: SupabaseClient): SupabaseClient<Database> {
   return supabase as SupabaseClient<Database>;
@@ -1078,12 +1082,14 @@ export async function sendMessage(
     .single();
 
   if (error && media && isMissingColumnError(error)) {
-    throw new Error(
+    throw new ChatMessageSaveError(
       "Chat media is not available yet. Apply the latest Supabase migrations, then refresh.",
     );
   }
 
-  if (error) throw error;
+  if (error) {
+    throw new ChatMessageSaveError(error.message || "Message could not be saved.");
+  }
   const row = data as MessageRow;
 
   return mapMessageRow(row, senderId);

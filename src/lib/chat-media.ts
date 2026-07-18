@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { assertSupabasePublicEnv } from "@/lib/supabase/env";
+import type { StorageError } from "@supabase/storage-js";
 
 export const CHAT_MEDIA_BUCKET = "chat-media";
 
@@ -33,6 +33,28 @@ export class ChatMediaValidationError extends Error {
     super(message);
     this.name = "ChatMediaValidationError";
     this.code = code;
+  }
+}
+
+export class ChatMediaUploadError extends Error {
+  readonly name = "ChatMediaUploadError";
+  readonly statusCode: string | number | undefined;
+  readonly storageErrorName: string | undefined;
+
+  constructor(error: StorageError | Error) {
+    const storageError = error as StorageError;
+    const message = storageError.message || "Media upload failed.";
+    super(message);
+    this.statusCode = storageError.statusCode ?? (storageError as { status?: number }).status;
+    this.storageErrorName = storageError.name;
+  }
+}
+
+export class ChatMessageSaveError extends Error {
+  readonly name = "ChatMessageSaveError";
+
+  constructor(message: string) {
+    super(message || "Message could not be saved.");
   }
 }
 
@@ -86,13 +108,23 @@ function fileExtension(file: File): string {
   }
 }
 
+export function sanitizeChatMediaFileName(fileName: string): string {
+  const base = fileName.trim().replace(/[^a-zA-Z0-9._-]/g, "_");
+  const cleaned = base.replace(/_+/g, "_").replace(/^\.+/, "");
+  return cleaned.slice(0, 80) || "file";
+}
+
 export function buildChatMediaStoragePath(
   conversationId: string,
   senderId: string,
   file: File,
 ): string {
   const ext = fileExtension(file);
-  return `${conversationId}/${senderId}/${crypto.randomUUID()}.${ext}`;
+  const safeName = sanitizeChatMediaFileName(file.name);
+  const stem = safeName.includes(".")
+    ? safeName.slice(0, safeName.lastIndexOf("."))
+    : safeName;
+  return `conversations/${conversationId}/${senderId}/${crypto.randomUUID()}-${stem}.${ext}`;
 }
 
 export async function uploadChatMediaFile(
@@ -109,61 +141,26 @@ export async function uploadChatMediaFile(
 
   onProgress?.(0);
 
-  const { url, anonKey } = assertSupabasePublicEnv();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const accessToken = session?.access_token;
-  if (!accessToken) {
-    throw new Error("Not signed in.");
+  const { error } = await supabase.storage.from(CHAT_MEDIA_BUCKET).upload(storagePath, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type || undefined,
+  });
+
+  if (error) {
+    console.error("[chat-media] upload failed", {
+      message: error.message,
+      name: error.name,
+      statusCode: error.statusCode,
+      storagePath,
+      fileName: file.name,
+      mimeType: file.type,
+      fileSize: file.size,
+    });
+    throw new ChatMediaUploadError(error);
   }
 
-  const encodedPath = storagePath
-    .split("/")
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
-  const uploadUrl = `${url}/storage/v1/object/${CHAT_MEDIA_BUCKET}/${encodedPath}`;
-
-  await new Promise<void>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", uploadUrl);
-    xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
-    xhr.setRequestHeader("apikey", anonKey);
-    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-    xhr.setRequestHeader("x-upsert", "false");
-
-    xhr.upload.addEventListener("progress", (event) => {
-      if (!event.lengthComputable) return;
-      const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
-      onProgress?.(percent);
-    });
-
-    xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress?.(100);
-        resolve();
-        return;
-      }
-      let message = "Upload failed.";
-      try {
-        const payload = JSON.parse(xhr.responseText) as { message?: string; error?: string };
-        message = payload.message ?? payload.error ?? message;
-      } catch {
-        /* ignore parse errors */
-      }
-      reject(new Error(message));
-    });
-
-    xhr.addEventListener("error", () => {
-      reject(new Error("Upload failed."));
-    });
-
-    xhr.addEventListener("abort", () => {
-      reject(new Error("Upload failed."));
-    });
-
-    xhr.send(file);
-  });
+  onProgress?.(100);
 }
 
 export async function createChatMediaSignedUrl(
@@ -176,7 +173,12 @@ export async function createChatMediaSignedUrl(
     .createSignedUrl(storagePath, expiresInSeconds);
 
   if (error) {
-    console.error("[chat-media] signed url", error.message);
+    console.error("[chat-media] signed url", {
+      message: error.message,
+      name: error.name,
+      statusCode: error.statusCode,
+      storagePath,
+    });
     return null;
   }
 

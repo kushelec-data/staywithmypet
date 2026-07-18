@@ -5,7 +5,9 @@ import {
   ChatMediaValidationError,
   chatMediaTypeForMime,
   chatMessagePreviewText,
+  sanitizeChatMediaFileName,
   validateChatMediaFile,
+  buildChatMediaStoragePath,
 } from "@/lib/chat-media";
 
 function mockFile(type: string, size: number, name = "test.bin"): File {
@@ -67,5 +69,16 @@ describe("chatMessagePreviewText", () => {
   it("falls back to media labels", () => {
     expect(chatMessagePreviewText({ body: "", mediaType: "image" })).toBe("[Photo]");
     expect(chatMessagePreviewText({ body: "", mediaType: "video" })).toBe("[Video]");
+  });
+});
+
+describe("buildChatMediaStoragePath", () => {
+  it("uses conversations prefix and sanitized file name", () => {
+    const file = new File([new Uint8Array(8)], "my photo (1).jpg", { type: "image/jpeg" });
+    const path = buildChatMediaStoragePath("conv-1", "user-1", file);
+    expect(path.startsWith("conversations/conv-1/user-1/")).toBe(true);
+    expect(path.endsWith(".jpg")).toBe(true);
+    expect(path).toContain("my_photo_1_");
+    expect(sanitizeChatMediaFileName("my photo (1).jpg")).toBe("my_photo_1_.jpg");
   });
 });
