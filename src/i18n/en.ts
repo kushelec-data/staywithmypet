@@ -1452,6 +1452,12 @@ export const en = {
       "Plan cancellation is not available yet. Please contact support.",
   },
   testAccess: {
+    invitedSection: {
+      title: "Invited test user?",
+      description:
+        "If you received an invitation from StayWithMyPet, activate your 3-month membership free using a platform access code.",
+      activateButton: "Activate with access code",
+    },
     alreadyHaveAccessCode: "Already have an access code?",
     accessCodePanelTitle: "Platform access code",
     accessCodePanelDescription:

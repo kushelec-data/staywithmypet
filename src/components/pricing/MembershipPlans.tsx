@@ -285,6 +285,11 @@ function PlanCard({
             }
             className={`mt-5 w-full sm:mt-6 ${showComingSoon ? "cursor-not-allowed opacity-60" : isAccount ? "" : "sm:mt-8"}`}
             size={isAccount ? "sm" : "lg"}
+            data-testid={
+              canCheckout && enableCheckout && !useTestAccessFlow
+                ? "membership-stripe-checkout-button"
+                : undefined
+            }
             disabled={
               showComingSoon
                 ? true

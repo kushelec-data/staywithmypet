@@ -1462,6 +1462,12 @@ export const et = {
       "Paketi tühistamine pole veel saadaval. Palun võta ühendust toega.",
   },
   testAccess: {
+    invitedSection: {
+      title: "Kutsutud testkasutaja?",
+      description:
+        "Kui said StayWithMyPet kutse, aktiveeri oma 3-kuune liikmelisus tasuta platvormi ligipääsukoodiga.",
+      activateButton: "Aktiveeri ligipääsukoodiga",
+    },
     alreadyHaveAccessCode: "Kas sul on juba ligipääsukood?",
     accessCodePanelTitle: "Platvormi ligipääsukood",
     accessCodePanelDescription:
