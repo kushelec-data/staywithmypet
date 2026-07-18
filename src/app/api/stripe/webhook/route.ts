@@ -14,6 +14,7 @@ import {
   checkoutSessionEmail,
   membershipRoleFromMergedMetadata,
 } from "@/lib/stripe-webhook-resolve";
+import { claimStripeWebhookEvent } from "@/lib/stripe-webhook-idempotency";
 import { webhookFailureBody } from "@/lib/stripe-webhook-handler-error";
 import { MEMBERSHIP_TABLE } from "@/lib/membership-activate";
 import { maskId, redactEmail } from "@/lib/security/log-redact";
@@ -27,6 +28,7 @@ function checkoutMetadataFields(meta: Stripe.Metadata | null | undefined) {
     user_id: m.user_id ?? m.userId ?? null,
     role: m.role ?? null,
     membership_role: m.membership_role ?? null,
+    plan_key: m.plan_key ?? null,
     plan_id: m.plan_id ?? m.plan ?? m.planId ?? null,
     price_id: m.price_id ?? m.priceId ?? null,
   };
@@ -141,6 +143,17 @@ export async function POST(request: Request) {
     eventId: event.id,
   });
 
+  let shouldProcess = true;
+  try {
+    shouldProcess = await claimStripeWebhookEvent(event.id, event.type);
+  } catch (err) {
+    return webhookFailureResponse(err);
+  }
+
+  if (!shouldProcess) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -197,6 +210,7 @@ export async function POST(request: Request) {
         await handleSubscriptionEvent(subscription);
         break;
       }
+      case "invoice.paid":
       case "invoice.payment_succeeded":
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
@@ -204,10 +218,10 @@ export async function POST(request: Request) {
           eventType: event.type,
           invoiceId: invoice.id,
         });
-        if (event.type === "invoice.payment_succeeded") {
-          await handleInvoicePaymentSucceeded(invoice);
-        } else {
+        if (event.type === "invoice.payment_failed") {
           await handleInvoicePaymentFailed(invoice);
+        } else {
+          await handleInvoicePaymentSucceeded(invoice);
         }
         break;
       }

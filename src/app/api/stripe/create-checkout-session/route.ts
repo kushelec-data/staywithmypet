@@ -10,7 +10,7 @@ import {
   stripePriceIdSuffix,
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
-import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, type MembershipRole } from "@/lib/membership";
+import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, qualifiesAsActivePetFriendMembership, type MembershipRole } from "@/lib/membership";
 import { sanitizeReturnTo } from "@/lib/membership-return";
 import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
@@ -126,6 +126,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "User mismatch." }, { status: 403 });
   }
 
+  const { data: activeMembershipRow } = await supabase
+    .from("user_memberships")
+    .select("status, end_date")
+    .eq("user_id", sessionUserId)
+    .eq("role", role)
+    .maybeSingle();
+
+  if (qualifiesAsActivePetFriendMembership(activeMembershipRow)) {
+    return NextResponse.json(
+      { error: "You already have an active membership for this role." },
+      { status: 409 },
+    );
+  }
+
   const resolvedPriceId = resolveStripePriceId(trimmedPlanId);
   const priceError = stripeCheckoutPriceError(trimmedPlanId, resolvedPriceId);
   if (priceError) {
@@ -209,7 +223,6 @@ export async function POST(request: Request) {
   const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
     mode,
     line_items: [{ price: resolvedPriceId!, quantity: 1 }],
-    allow_promotion_codes: true,
     client_reference_id: sessionUserId,
     customer_email: user?.email ?? undefined,
     metadata: {

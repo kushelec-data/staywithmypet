@@ -36,6 +36,11 @@ export function parseMembershipRoleInput(value: unknown): MembershipRole | null 
   return roleFromStripeMetadata(typeof value === "string" ? value : undefined);
 }
 
+/** Canonical plan key stored in Stripe metadata (same as catalog plan_id). */
+export function membershipPlanKey(planId: string): string {
+  return normalizeCatalogPlanId(planId) ?? planId.trim();
+}
+
 /** Stripe Checkout metadata: UI role alias + canonical DB enum. */
 export function buildStripeCheckoutMetadata(input: {
   userId: string;
@@ -44,12 +49,14 @@ export function buildStripeCheckoutMetadata(input: {
   priceId: string;
   priceEnv: string;
 }): Stripe.Metadata {
+  const planKey = membershipPlanKey(input.planId);
   return {
     user_id: input.userId,
     role: input.role === "pet_parent" ? "parent" : "friend",
     membership_role: input.role,
-    plan_id: input.planId,
-    plan: input.planId,
+    plan_id: planKey,
+    plan_key: planKey,
+    plan: planKey,
     price_id: input.priceId,
     price_env: input.priceEnv,
   };
@@ -66,6 +73,7 @@ export function membershipRoleFromMergedMetadata(
 
 function planIdFromMergedMetadata(meta: Stripe.Metadata): string | undefined {
   const raw =
+    meta.plan_key?.trim() ||
     meta.plan_id?.trim() ||
     meta.plan?.trim() ||
     meta.planId?.trim();

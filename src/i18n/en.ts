@@ -1437,6 +1437,7 @@ export const en = {
     loadingReviews: "Loading reviews…",
   },
   membershipCheckout: {
+    payWithStripe: "Pay with Stripe",
     paymentSuccess: "Your membership is active. You can use paid features in this mode.",
     paymentPending:
       "Payment received — your membership will activate shortly. Refresh this page if it does not update.",
@@ -1451,8 +1452,16 @@ export const en = {
       "Plan cancellation is not available yet. Please contact support.",
   },
   testAccess: {
+    alreadyHaveAccessCode: "Already have an access code?",
+    continueWithAccessCode: "Continue with access code",
+    accessCodeSectionTitle: "Platform access code",
+    platformAccessNote:
+      "Enter a platform access code issued by StayWithMyPet. This is separate from Stripe payment and is not a discount code.",
+    closeAccessCode: "Close",
+    membershipBannerOfflineStripe:
+      "Stripe checkout is disabled in this environment. Activate membership with a platform access code below.",
     membershipBanner:
-      "Free test access for invited users. No card required — choose a plan, then enter your access code.",
+      "Platform access codes are available for invited users. Pay with Stripe or enter your access code below.",
     membershipIntro:
       "Choose a {role} plan below. You will enter a test access code on the next step — no payment required.",
     pageTitle: "Enter test access code",
@@ -1464,11 +1473,11 @@ export const en = {
       "Both Pet Parent and Pet Friend — {plan} (3 months free for each role)",
     freeAccessNote:
       "Your membership will be active for 3 months. No card or Stripe checkout is required.",
-    codeLabel: "Test access code",
-    codePlaceholder: "Enter your code",
-    codeHint: "Use the code shared with invited test users.",
-    invalidCode: "Invalid test access code. Check the code and try again.",
-    activateButton: "Activate free membership",
+    codeLabel: "Platform access code",
+    codePlaceholder: "Enter your access code",
+    codeHint: "Codes are validated on our servers only — never enter them in Stripe Checkout.",
+    invalidCode: "Invalid or unavailable access code. Check the code and try again.",
+    activateButton: "Activate membership with access code",
     activating: "Activating…",
     backToPlans: "Back to plans",
   },

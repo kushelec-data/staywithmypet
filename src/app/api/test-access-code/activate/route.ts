@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { upsertUserMembershipAsAdmin } from "@/lib/membership-activate";
-import { isMembershipPlanPurchasable, type MembershipRole } from "@/lib/membership";
-import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
+import {
+  isMembershipPlanPurchasable,
+  qualifiesAsActivePetFriendMembership,
+  type MembershipRole,
+} from "@/lib/membership";
 import { parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import {
-  TEST_MEMBERSHIP_MONTHS,
-  TEST_MEMBERSHIP_SOURCE,
-  addMonthsIso,
-  isValidTestAccessCode,
-  membershipRolesToActivate,
-  planIdForMembershipRole,
-} from "@/lib/test-access-code";
+  PLATFORM_ACCESS_CODE_SOURCE,
+  recordPlatformAccessCodeRedemption,
+  resolvePlanIdForPlatformCode,
+  validatePlatformAccessCode,
+} from "@/lib/platform-access-code";
+import { addMonthsIso, membershipRolesToActivate } from "@/lib/test-access-code";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeCatalogPlanId } from "@/lib/stripe-plans";
@@ -29,13 +31,6 @@ type ActivateBody = {
 };
 
 export async function POST(request: Request) {
-  if (isStripeCheckoutEnabled()) {
-    return NextResponse.json(
-      { error: "Test access codes are disabled while Stripe checkout is enabled." },
-      { status: 403 },
-    );
-  }
-
   let body: ActivateBody;
   try {
     body = (await request.json()) as ActivateBody;
@@ -44,10 +39,6 @@ export async function POST(request: Request) {
   }
 
   const code = body.code?.trim() ?? "";
-  if (!isValidTestAccessCode(code)) {
-    return NextResponse.json({ error: "Invalid test access code." }, { status: 401 });
-  }
-
   const selectedRole = parseMembershipRoleInput(body.role);
   const rawPlanId = (body.planId ?? body.plan_id)?.trim();
   if (!selectedRole || !rawPlanId) {
@@ -81,6 +72,31 @@ export async function POST(request: Request) {
     );
   }
 
+  const validation = await validatePlatformAccessCode({
+    code,
+    selectedRole,
+    planId,
+    userId,
+  });
+
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: validation.status });
+  }
+
+  const { data: existingMembership } = await supabase
+    .from("user_memberships")
+    .select("status, end_date")
+    .eq("user_id", userId)
+    .eq("role", selectedRole)
+    .maybeSingle();
+
+  if (qualifiesAsActivePetFriendMembership(existingMembership)) {
+    return NextResponse.json(
+      { error: "You already have an active membership for this role." },
+      { status: 409 },
+    );
+  }
+
   const ipAddress =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     request.headers.get("x-real-ip");
@@ -91,7 +107,7 @@ export async function POST(request: Request) {
     termsVersion: CURRENT_TERMS_VERSION,
     membershipRole: selectedRole,
     planId,
-    couponCode: code,
+    couponCode: validation.codeNormalized,
     ipAddress: ipAddress ?? null,
     userAgent: userAgent ?? null,
   });
@@ -125,12 +141,12 @@ export async function POST(request: Request) {
   const roles = membershipRolesToActivate(profileRole, selectedRole);
 
   const startDate = new Date();
-  const endDate = addMonthsIso(startDate, TEST_MEMBERSHIP_MONTHS);
+  const endDate = addMonthsIso(startDate, validation.membershipMonths);
   const activated: MembershipRole[] = [];
   const errors: string[] = [];
 
   for (const role of roles) {
-    const rolePlanId = planIdForMembershipRole(planId, role);
+    const rolePlanId = resolvePlanIdForPlatformCode(planId, role);
     const result = await upsertUserMembershipAsAdmin({
       userId,
       role,
@@ -139,7 +155,7 @@ export async function POST(request: Request) {
       startDate: startDate.toISOString(),
       endDate,
       autoRenew: false,
-      source: TEST_MEMBERSHIP_SOURCE,
+      source: PLATFORM_ACCESS_CODE_SOURCE,
       sendConfirmationEmail: role === roles[0],
     });
 
@@ -155,6 +171,15 @@ export async function POST(request: Request) {
       { error: errors[0] ?? "Could not activate membership." },
       { status: 500 },
     );
+  }
+
+  if (validation.codeId) {
+    await recordPlatformAccessCodeRedemption({
+      codeId: validation.codeId,
+      userId,
+      role: selectedRole,
+      planId,
+    });
   }
 
   return NextResponse.json({

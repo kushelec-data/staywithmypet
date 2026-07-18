@@ -19,7 +19,6 @@ import {
 } from "@/lib/account-ui";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
-import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { membershipRoleTitle, type MembershipRole } from "@/lib/membership";
 
 export function TestAccessCodePageClient() {
@@ -52,10 +51,6 @@ export function TestAccessCodePageClient() {
   }, [planId, role, t.pricing.petFriendPlans, t.pricing.petParentPlans]);
 
   useEffect(() => {
-    if (isStripeCheckoutEnabled()) {
-      router.replace("/membership");
-      return;
-    }
     if (authLoading) return;
     if (!user) {
       const next = `/test-access-code?${searchParams.toString()}`;
@@ -67,7 +62,7 @@ export function TestAccessCodePageClient() {
     }
   }, [authLoading, planId, router, searchParams, user]);
 
-  if (isStripeCheckoutEnabled() || authLoading || !user || !planId) {
+  if (authLoading || !user || !planId) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-16 text-center text-muted sm:px-6">
         {t.account.loading}

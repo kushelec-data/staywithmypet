@@ -39,8 +39,13 @@ type MembershipPlansProps = {
   planCheckoutErrors?: Record<string, string | null>;
   /** After checkout, return user to this path (e.g. pet booking page). */
   checkoutReturnTo?: string | null;
-  /** When true, plan selection redirects to /test-access-code instead of Stripe. */
+  /** Legacy test-access redirect flow (separate from inline access code panel). */
   useTestAccessFlow?: boolean;
+  /** Label for Stripe checkout CTA (account page). */
+  payWithStripeLabel?: string;
+  /** Secondary link to open platform access code form. */
+  onOpenAccessCode?: () => void;
+  accessCodeLinkLabel?: string;
   /** Active membership end date (shown on the current plan card). */
   activePlanEndDate?: string | null;
   activePlanEndDateLabel?: string;
@@ -333,6 +338,9 @@ export function MembershipPlans({
   planCheckoutErrors,
   checkoutReturnTo,
   useTestAccessFlow = false,
+  payWithStripeLabel,
+  onOpenAccessCode,
+  accessCodeLinkLabel,
   activePlanEndDate,
   activePlanEndDateLabel,
   cancelPlanLabel,
@@ -476,7 +484,13 @@ export function MembershipPlans({
             activePlanId={activePlanId}
             currentPlanLabel={currentPlanLabel}
             getStartedLabel={t.pricing.getStarted}
-            choosePlanLabel={t.pricing.choosePlan}
+            choosePlanLabel={
+              enableCheckout && !useTestAccessFlow && payWithStripeLabel
+                ? payWithStripeLabel
+                : useTestAccessFlow
+                  ? t.testAccess.continueWithAccessCode
+                  : t.pricing.choosePlan
+            }
             activePlanLabel={t.pricing.activePlan}
             currentPlanButtonLabel={t.pricing.currentPlan}
             redirectingLabel={t.pricing.redirecting}
@@ -499,6 +513,18 @@ export function MembershipPlans({
           />
         ))}
       </div>
+
+      {variant === "account" && onOpenAccessCode && accessCodeLinkLabel && enableCheckout ? (
+        <div className="mt-6 w-full min-w-0 text-center">
+          <button
+            type="button"
+            onClick={onOpenAccessCode}
+            className="text-sm font-semibold text-brand-teal underline-offset-2 hover:underline"
+          >
+            {accessCodeLinkLabel}
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

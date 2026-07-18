@@ -12,6 +12,8 @@ import {
   upsertUserMembershipAsAdmin,
   type MembershipPayloadAttempted,
 } from "@/lib/membership-activate";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { qualifiesAsActivePetFriendMembership } from "@/lib/membership";
 import type { MembershipRole, MembershipStatus } from "@/lib/membership";
 import type { SupabaseErrorDetail } from "@/lib/supabase-errors";
 import {
@@ -50,6 +52,8 @@ export type CheckoutActivationResult =
       supabaseError?: SupabaseErrorDetail | null;
       payloadAttempted?: MembershipPayloadAttempted | null;
     };
+
+export const STRIPE_CHECKOUT_SOURCE = "stripe_checkout";
 
 /**
  * Activate membership from a Stripe Checkout Session (webhook or confirm-membership).
@@ -97,6 +101,35 @@ export async function activateMembershipFromCheckoutSession(
     });
   }
   const planId = normalizeCatalogPlanId(resolvedPlanId) ?? resolvedPlanId;
+
+  const admin = createAdminClient();
+  if (admin) {
+    const { data: existingRow } = await admin
+      .from(MEMBERSHIP_TABLE)
+      .select("status, end_date, stripe_checkout_session_id")
+      .eq("user_id", userId)
+      .eq("role", role)
+      .maybeSingle();
+
+    if (
+      existingRow?.stripe_checkout_session_id === sessionId &&
+      qualifiesAsActivePetFriendMembership(existingRow)
+    ) {
+      console.log("[stripe] checkout session already activated (idempotent)", {
+        sessionId,
+        userId,
+        role,
+      });
+      return {
+        ok: true,
+        activated: true,
+        sessionId,
+        userId,
+        role,
+        planId,
+      };
+    }
+  }
 
   if (!userId?.trim()) {
     const error = `[stripe] checkout ${sessionId}: missing user_id after resolution`;
@@ -153,6 +186,7 @@ export async function activateMembershipFromCheckoutSession(
     stripeSubscriptionId: subscription?.id ?? null,
     stripePriceId: resolvedPriceId,
     stripeCheckoutSessionId: session.id,
+    source: STRIPE_CHECKOUT_SOURCE,
     sendConfirmationEmail: true,
   });
 

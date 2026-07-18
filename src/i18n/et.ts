@@ -1446,6 +1446,7 @@ export const et = {
     loadingReviews: "Laen arvustusi…",
   },
   membershipCheckout: {
+    payWithStripe: "Maksa Stripe'iga",
     paymentSuccess:
       "Sinu liikmelisus on aktiivne. Saad selles rollis kasutada tasulisi funktsioone.",
     paymentPending:
@@ -1461,8 +1462,16 @@ export const et = {
       "Paketi tühistamine pole veel saadaval. Palun võta ühendust toega.",
   },
   testAccess: {
+    alreadyHaveAccessCode: "Kas sul on juba ligipääsukood?",
+    continueWithAccessCode: "Jätka ligipääsukoodiga",
+    accessCodeSectionTitle: "Platvormi ligipääsukood",
+    platformAccessNote:
+      "Sisesta StayWithMyPet platvormi ligipääsukood. See on eraldi Stripe maksest ega ole sooduskood.",
+    closeAccessCode: "Sulge",
+    membershipBannerOfflineStripe:
+      "Stripe makse on selles keskkonnas välja lülitatud. Aktiveeri liikmelisus platvormi ligipääsukoodiga.",
     membershipBanner:
-      "Tasuta testligipääs kutsutud kasutajatele. Kaarti pole vaja — vali pakett ja sisesta ligipääsukood.",
+      "Platvormi ligipääsukoodid on saadaval kutsutud kasutajatele. Maksa Stripe'iga või sisesta ligipääsukood allpool.",
     membershipIntro:
       "Vali allpool {role} pakett. Järgmisel sammul sisestad testligipääsukoodi — makset pole vaja.",
     pageTitle: "Sisesta testligipääsukood",
@@ -1474,11 +1483,11 @@ export const et = {
       "Nii lemmiklooma vanem kui ka sõber — {plan} (3 kuud tasuta mõlema rolli jaoks)",
     freeAccessNote:
       "Sinu liikmelisus kehtib 3 kuud. Kaarti ega Stripe makset pole vaja.",
-    codeLabel: "Testligipääsukood",
-    codePlaceholder: "Sisesta kood",
-    codeHint: "Kasuta kutsutud testkasutajatele jagatud koodi.",
-    invalidCode: "Vale testligipääsukood. Kontrolli koodi ja proovi uuesti.",
-    activateButton: "Aktiveeri tasuta liikmelisus",
+    codeLabel: "Platvormi ligipääsukood",
+    codePlaceholder: "Sisesta ligipääsukood",
+    codeHint: "Koode kontrollitakse ainult meie serveris — ära sisesta neid Stripe maksesse.",
+    invalidCode: "Vigane või mitte saadaval ligipääsukood. Kontrolli koodi ja proovi uuesti.",
+    activateButton: "Aktiveeri liikmelisus ligipääsukoodiga",
     activating: "Aktiveerin…",
     backToPlans: "Tagasi pakettide juurde",
   },

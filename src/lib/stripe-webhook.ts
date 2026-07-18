@@ -172,6 +172,7 @@ async function syncFromSubscription(
 
   const rawPlanId =
     overrides?.planId?.trim() ||
+    subscription.metadata.plan_key?.trim() ||
     subscription.metadata.plan_id?.trim() ||
     subscription.metadata.plan?.trim() ||
     subscription.items.data[0]?.price.metadata?.plan_id?.trim() ||
@@ -229,6 +230,7 @@ async function syncFromSubscription(
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId,
     sendConfirmationEmail: status === "active" || status === "trialing",
+    source: "stripe_subscription",
   });
 
   await assertMembershipUpsert(result, `subscription ${subscription.id}`);
