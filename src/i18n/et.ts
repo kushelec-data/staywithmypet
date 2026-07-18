@@ -1443,6 +1443,16 @@ export const et = {
   messagesUi: {
     loadingMessages: "Laen sõnumeid…",
     insertEmoji: "Lisa emoji",
+    attachPhotoOrVideo: "Lisa foto või video",
+    takePhoto: "Tee foto",
+    chooseVideo: "Vali video",
+    recordVideo: "Salvesta video",
+    uploading: "Üleslaadimine…",
+    uploadFailed: "Üleslaadimine ebaõnnestus",
+    fileTooLarge: "Fail on liiga suur",
+    unsupportedFileType: "Toetamata failitüüp",
+    mediaPreviewPhoto: "[Foto]",
+    mediaPreviewVideo: "[Video]",
   },
   reviewsUi: {
     loadingReviews: "Laen arvustusi…",
