@@ -14,6 +14,7 @@ import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, qualifiesAsActive
 import { sanitizeReturnTo } from "@/lib/membership-return";
 import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
+import { getRequestOrigin } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
@@ -213,10 +214,7 @@ export async function POST(request: Request) {
     .eq("role", role)
     .maybeSingle();
 
-  const origin =
-    request.headers.get("origin")?.trim().replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ||
-    new URL(request.url).origin;
+  const origin = getRequestOrigin(request);
   const roleQuery = membershipRoleToPageQuery(role);
   const returnToQuery = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "";
 

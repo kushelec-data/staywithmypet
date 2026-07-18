@@ -29,11 +29,6 @@ export const STRIPE_ROLE_PRICE_ENV: Record<MembershipRole, string> = {
   pet_friend: "STRIPE_FRIEND_PRICE_ID",
 };
 
-export const STRIPE_CHECKOUT_SUCCESS_URL =
-  "https://staywithmypet-clean.vercel.app/profile?checkout=success";
-export const STRIPE_CHECKOUT_CANCEL_URL =
-  "https://staywithmypet-clean.vercel.app/pricing";
-
 /** @deprecated Checkout uses STRIPE_ROLE_PRICE_ENV; kept for webhook reverse-lookup of legacy prices. */
 export const STRIPE_PRICE_ENV_BY_PLAN: Record<CheckoutPlanId, string> = {
   "one-time-owner": "STRIPE_PRICE_PARENT_1M",
