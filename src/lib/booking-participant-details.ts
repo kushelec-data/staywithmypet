@@ -62,6 +62,16 @@ export type BookingParticipantDetails = {
   pet: PetCareDetails;
 };
 
+export type ParticipantDetailsLoadError =
+  | "not_found"
+  | "not_participant"
+  | "load_failed";
+
+export type ParticipantDetailsLoadResult = {
+  details: BookingParticipantDetails | null;
+  error: ParticipantDetailsLoadError | null;
+};
+
 export type RequestParticipantDetails = {
   viewerRole: ParticipantRole;
   otherParty: PublicParticipantInfo;
@@ -284,6 +294,44 @@ function mapPetCare(row: PetCareRow): PetCareDetails {
   };
 }
 
+function fallbackPetCare(petId: string): PetCareDetails {
+  return {
+    id: petId,
+    name: "Pet",
+    profileHref: publicPetHref(petId),
+    careInstructions: null,
+    requiresMedication: false,
+    feedingSchedule: null,
+  };
+}
+
+const EMPTY_RPC_CONTACT: RpcContact = {
+  phone_e164: null,
+  phone_display: null,
+  email: null,
+  address: null,
+  emergency_name: null,
+  emergency_phone_e164: null,
+  emergency_phone_display: null,
+  emergency_relationship: null,
+};
+
+export function emptyPrivateContactInfo(): PrivateContactInfo {
+  return {
+    phoneE164: null,
+    phoneDisplay: null,
+    email: null,
+    address: null,
+    mapsUrl: null,
+    emergencyContact: null,
+  };
+}
+
+function devLogContactLoad(message: string, meta: Record<string, unknown>) {
+  if (process.env.NODE_ENV !== "development") return;
+  console.info("[booking-participant-contact]", message, meta);
+}
+
 async function loadProfileContactRow(profileId: string): Promise<ProfileContactRow | null> {
   const admin = createAdminClient();
   if (!admin) return null;
@@ -312,6 +360,29 @@ async function loadPetCareRow(petId: string): Promise<PetCareRow | null> {
 
   if (error || !data) return null;
   return data as PetCareRow;
+}
+
+async function loadPetCareRowViaSupabase(
+  supabase: SupabaseClient,
+  petId: string,
+): Promise<PetCareRow | null> {
+  const { data, error } = await supabase
+    .from("pets")
+    .select("id, name, requires_medication, feeding_schedule, additional_notes")
+    .eq("id", petId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as PetCareRow;
+}
+
+async function resolvePetCareDetails(
+  supabase: SupabaseClient,
+  petId: string,
+): Promise<PetCareDetails> {
+  const petRow =
+    (await loadPetCareRowViaSupabase(supabase, petId)) ?? (await loadPetCareRow(petId));
+  return petRow ? mapPetCare(petRow) : fallbackPetCare(petId);
 }
 
 function resolveViewerRole(
@@ -407,15 +478,28 @@ async function loadBookingParticipantDetailsViaRpc(
   });
 
   if (error) {
+    devLogContactLoad("RPC error", {
+      bookingId,
+      code: isPostgrestError(error) ? error.code : undefined,
+      message: error.message,
+      missingRpc: isMissingRpcError(error),
+    });
     if (isMissingRpcError(error)) return null;
     throw error;
   }
 
+  devLogContactLoad("RPC success", {
+    bookingId,
+    contactAllowed:
+      data && typeof data === "object" && !Array.isArray(data)
+        ? (data as RpcParticipantPayload).contact_allowed
+        : undefined,
+  });
+
   const payload = parseRpcPayload(data);
   if (!payload) return null;
 
-  const petRow = await loadPetCareRow(petId);
-  if (!petRow) return null;
+  const pet = await resolvePetCareDetails(supabase, petId);
 
   const otherParty = mapPublicParticipant(
     {
@@ -430,8 +514,8 @@ async function loadBookingParticipantDetailsViaRpc(
     viewerRole: payload.viewer_role,
     otherParty,
     showPrivateContact: payload.contact_allowed,
-    contact: payload.contact_allowed && payload.contact
-      ? mapPrivateContactFromRpc(payload.contact)
+    contact: payload.contact_allowed
+      ? mapPrivateContactFromRpc(payload.contact ?? EMPTY_RPC_CONTACT)
       : null,
     petParentEmergency: payload.contact_allowed
       ? mapEmergencyFromRpc(payload.pet_parent_emergency)
@@ -441,7 +525,7 @@ async function loadBookingParticipantDetailsViaRpc(
         ? preferredVetClinicFromRpc(payload.preferred_vet ?? null)
         : null,
     sharePreferredVet: payload.share_preferred_vet !== false,
-    pet: mapPetCare(petRow),
+    pet,
   };
 }
 
@@ -468,13 +552,13 @@ async function loadBookingParticipantDetailsLegacy(
   const otherRole = otherPartyRole(viewerRole);
   const showPrivateContact = bookingAllowsPrivateContact(row.status);
 
-  const [otherProfile, petRow, petParentRow] = await Promise.all([
+  const [otherProfile, pet, petParentRow] = await Promise.all([
     loadProfileContactRow(otherId),
-    loadPetCareRow(row.pet_id),
+    resolvePetCareDetails(admin, row.pet_id),
     showPrivateContact ? loadPetParentVetRow(row.pet_parent_id) : Promise.resolve(null),
   ]);
 
-  if (!otherProfile || !petRow) return null;
+  if (!otherProfile) return null;
 
   let contact: PrivateContactInfo | null = null;
   if (showPrivateContact) {
@@ -494,18 +578,20 @@ async function loadBookingParticipantDetailsLegacy(
         ? preferredVetClinicFromProfileRow(petParentRow as never)
         : null,
     sharePreferredVet: petParentRow?.share_preferred_vet_during_booking !== false,
-    pet: mapPetCare(petRow),
+    pet,
   };
 }
 
 export async function loadBookingParticipantDetails(
   supabase: SupabaseClient,
   bookingId: string,
-): Promise<BookingParticipantDetails | null> {
+): Promise<ParticipantDetailsLoadResult> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) {
+    return { details: null, error: "not_participant" };
+  }
 
   const { data: booking, error } = await supabase
     .from("bookings")
@@ -513,23 +599,55 @@ export async function loadBookingParticipantDetails(
     .eq("id", bookingId)
     .maybeSingle();
 
-  if (error || !booking) return null;
+  if (error || !booking) {
+    devLogContactLoad("booking not found", { bookingId, message: error?.message });
+    return { details: null, error: "not_found" };
+  }
 
   const row = booking as Pick<
     BookingAccessRow,
     "id" | "pet_id" | "pet_parent_id" | "pet_friend_id" | "status"
   >;
   const viewerRole = resolveViewerRole(user.id, row.pet_parent_id, row.pet_friend_id);
-  if (!viewerRole) return null;
+  if (!viewerRole) {
+    devLogContactLoad("viewer not participant", {
+      bookingId,
+      userId: user.id,
+      petParentId: row.pet_parent_id,
+      petFriendId: row.pet_friend_id,
+    });
+    return { details: null, error: "not_participant" };
+  }
+
+  devLogContactLoad("loading participant contact", {
+    bookingId,
+    userId: user.id,
+    petParentId: row.pet_parent_id,
+    petFriendId: row.pet_friend_id,
+    bookingStatus: row.status,
+  });
 
   try {
     const viaRpc = await loadBookingParticipantDetailsViaRpc(supabase, bookingId, row.pet_id);
-    if (viaRpc) return viaRpc;
-  } catch {
-    /* fall through to legacy admin path when RPC fails unexpectedly */
+    if (viaRpc) return { details: viaRpc, error: null };
+  } catch (err) {
+    devLogContactLoad("RPC threw", {
+      bookingId,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    if (!createAdminClient()) {
+      return { details: null, error: "load_failed" };
+    }
   }
 
-  return loadBookingParticipantDetailsLegacy(user.id, bookingId);
+  const legacy = await loadBookingParticipantDetailsLegacy(user.id, bookingId);
+  if (legacy) return { details: legacy, error: null };
+
+  devLogContactLoad("all loaders failed", {
+    bookingId,
+    hasAdminClient: Boolean(createAdminClient()),
+  });
+  return { details: null, error: "load_failed" };
 }
 
 export async function loadRequestParticipantDetails(

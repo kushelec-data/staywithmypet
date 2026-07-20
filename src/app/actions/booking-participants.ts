@@ -3,15 +3,17 @@
 import {
   loadBookingParticipantDetails,
   loadRequestParticipantDetails,
-  type BookingParticipantDetails,
+  type ParticipantDetailsLoadResult,
   type RequestParticipantDetails,
 } from "@/lib/booking-participant-details";
 import { createClient } from "@/lib/supabase/server";
 
 export async function getBookingParticipantDetailsAction(
   bookingId: string,
-): Promise<BookingParticipantDetails | null> {
-  if (!bookingId?.trim()) return null;
+): Promise<ParticipantDetailsLoadResult> {
+  if (!bookingId?.trim()) {
+    return { details: null, error: "not_found" };
+  }
   const supabase = await createClient();
   return loadBookingParticipantDetails(supabase, bookingId.trim());
 }

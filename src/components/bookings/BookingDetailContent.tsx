@@ -15,7 +15,7 @@ import { BookingContactInformationCard } from "@/components/bookings/BookingCont
 import { BookingEmergencyVetInformationCard } from "@/components/bookings/BookingEmergencyVetInformationCard";
 import { BookingReviewsSection } from "@/components/bookings/BookingReviewsSection";
 import { getBookingParticipantDetailsAction } from "@/app/actions/booking-participants";
-import type { BookingParticipantDetails } from "@/lib/booking-participant-details";
+import type { BookingParticipantDetails, ParticipantDetailsLoadError } from "@/lib/booking-participant-details";
 import { AccountCard } from "@/components/account/AccountCard";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { ACCOUNT_LINK_CLASS } from "@/lib/account-ui";
@@ -60,6 +60,8 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   const [participantDetails, setParticipantDetails] = useState<BookingParticipantDetails | null>(
     null,
   );
+  const [participantLoadError, setParticipantLoadError] =
+    useState<ParticipantDetailsLoadError | null>(null);
   const [participantsLoading, setParticipantsLoading] = useState(false);
   const [bookingReviews, setBookingReviews] = useState<ReviewDisplay[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -136,17 +138,38 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   useEffect(() => {
     if (!booking?.id) {
       setParticipantDetails(null);
+      setParticipantLoadError(null);
       return;
     }
 
     let cancelled = false;
     setParticipantsLoading(true);
+    setParticipantLoadError(null);
     void getBookingParticipantDetailsAction(booking.id)
-      .then((data) => {
-        if (!cancelled) setParticipantDetails(data);
+      .then((result) => {
+        if (cancelled) return;
+        setParticipantDetails(result.details);
+        setParticipantLoadError(result.error);
+        if (process.env.NODE_ENV === "development") {
+          console.info("[booking-detail] participant contact load", {
+            bookingId: booking.id,
+            error: result.error,
+            showPrivateContact: result.details?.showPrivateContact ?? false,
+            hasContact: Boolean(result.details?.contact),
+          });
+        }
       })
-      .catch(() => {
-        if (!cancelled) setParticipantDetails(null);
+      .catch((err) => {
+        if (!cancelled) {
+          setParticipantDetails(null);
+          setParticipantLoadError("load_failed");
+          if (process.env.NODE_ENV === "development") {
+            console.error("[booking-detail] participant contact load failed", {
+              bookingId: booking.id,
+              message: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }
       })
       .finally(() => {
         if (!cancelled) setParticipantsLoading(false);
@@ -302,13 +325,21 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
 
           {participantDetails ? (
             <>
-              <BookingContactInformationCard details={participantDetails} />
+              {participantDetails.showPrivateContact ? (
+                <BookingContactInformationCard details={participantDetails} />
+              ) : null}
               <BookingEmergencyVetInformationCard details={participantDetails} />
               <BookingParticipantSection details={participantDetails} />
             </>
           ) : participantsLoading ? (
             <div className="mt-6 border-t border-black/5 pt-6">
               <p className="text-sm text-muted">{b.loading}</p>
+            </div>
+          ) : participantLoadError === "load_failed" ? (
+            <div className="mt-6 border-t border-black/5 pt-6">
+              <p className="text-sm text-brand-pink" role="alert">
+                {b.contactInfo.loadError}
+              </p>
             </div>
           ) : null}
 

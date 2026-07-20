@@ -7,6 +7,7 @@ import {
   buildPrivateContactFromProfileRow,
   buildPrivateContactFromRpcContact,
   buildPublicParticipantFromProfileRow,
+  emptyPrivateContactInfo,
   requestAllowsPrivateContact,
 } from "@/lib/booking-participant-details";
 
@@ -87,6 +88,31 @@ describe("participant contact mapping", () => {
     expect(contact.phoneDisplay).toBe("+372 5901 7916");
     expect(contact.email).toBe("user@example.com");
     expect(contact.emergencyContact?.relationship).toBe("Sister");
+  });
+
+  it("maps empty RPC contact to nullable fields for Not provided UI", () => {
+    const contact = buildPrivateContactFromRpcContact({
+      phone_e164: null,
+      phone_display: null,
+      email: null,
+      address: null,
+      emergency_name: null,
+      emergency_phone_e164: null,
+      emergency_phone_display: null,
+      emergency_relationship: null,
+    });
+
+    expect(contact.phoneDisplay).toBeNull();
+    expect(contact.email).toBeNull();
+    expect(contact.address).toBeNull();
+    expect(contact.emergencyContact).toBeNull();
+  });
+
+  it("exposes empty private contact helper", () => {
+    const contact = emptyPrivateContactInfo();
+    expect(contact.phoneDisplay).toBeNull();
+    expect(contact.email).toBeNull();
+    expect(contact.address).toBeNull();
   });
 });
 

@@ -431,6 +431,7 @@ export const en = {
       emergencyRelationship: "Relationship",
       emergencyPhone: "Phone",
       notProvided: "Not provided",
+      loadError: "Contact information could not be loaded.",
     },
     emergencyVetInfo: {
       title: "Emergency and Veterinary Information",

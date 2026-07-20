@@ -432,6 +432,7 @@ export const et = {
       emergencyRelationship: "Suhe",
       emergencyPhone: "Telefon",
       notProvided: "Puudub",
+      loadError: "Kontaktandmeid ei õnnestunud laadida.",
     },
     emergencyVetInfo: {
       title: "Hädaabi- ja veterinaarteenuse info",

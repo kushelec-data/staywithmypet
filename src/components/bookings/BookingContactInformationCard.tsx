@@ -2,12 +2,27 @@
 
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useLanguage } from "@/context/LanguageContext";
-import type { BookingParticipantDetails } from "@/lib/booking-participant-details";
+import {
+  type BookingParticipantDetails,
+  type PrivateContactInfo,
+} from "@/lib/booking-participant-details";
+import { googleMapsSearchUrl } from "@/lib/maps-url";
 import { formatPhoneForDisplay, telHrefFromPhone } from "@/lib/phone-format";
 
 type BookingContactInformationCardProps = {
   details: BookingParticipantDetails;
 };
+
+function fallbackContact(): PrivateContactInfo {
+  return {
+    phoneE164: null,
+    phoneDisplay: null,
+    email: null,
+    address: null,
+    mapsUrl: null,
+    emergencyContact: null,
+  };
+}
 
 function ContactField({
   icon,
@@ -42,21 +57,30 @@ function ContactField({
 export function BookingContactInformationCard({ details }: BookingContactInformationCardProps) {
   const { t } = useLanguage();
   const copy = t.bookings.contactInfo;
-  const { otherParty, showPrivateContact, contact } = details;
+  const { otherParty, showPrivateContact } = details;
 
-  if (!showPrivateContact || !contact) {
+  if (!showPrivateContact) {
     return null;
   }
 
+  const contact = details.contact ?? fallbackContact();
   const notProvided = copy.notProvided;
   const phoneDisplay =
     formatPhoneForDisplay(contact.phoneE164 ?? contact.phoneDisplay) ??
     contact.phoneDisplay ??
     null;
   const phoneHref = telHrefFromPhone(contact.phoneE164 ?? contact.phoneDisplay);
+  const addressDisplay = contact.address ?? notProvided;
+  const addressHref =
+    contact.mapsUrl ??
+    (contact.address
+      ? googleMapsSearchUrl({ formattedAddress: contact.address, address: contact.address })
+      : null);
 
   const mainSectionTitle =
     otherParty.role === "pet_parent" ? copy.ownerContact : copy.petFriendContact;
+
+  const emergency = contact.emergencyContact;
 
   return (
     <section className="mt-6 min-w-0 rounded-xl bg-cream/40 px-4 py-4 ring-1 ring-black/[0.04] sm:px-5">
@@ -97,7 +121,36 @@ export function BookingContactInformationCard({ details }: BookingContactInforma
           <ContactField
             icon="🏠"
             label={copy.address}
-            value={contact.address ?? notProvided}
+            value={addressDisplay}
+            href={addressHref}
+          />
+        </div>
+      </div>
+
+      <div className="mt-5 border-t border-black/5 pt-5">
+        <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">
+          {copy.emergencyContact}
+        </h4>
+        <div className="mt-3 grid min-w-0 gap-4 sm:grid-cols-2">
+          <ContactField
+            icon="👤"
+            label={copy.emergencyName}
+            value={emergency?.name ?? notProvided}
+          />
+          <ContactField
+            icon="🤝"
+            label={copy.emergencyRelationship}
+            value={emergency?.relationship ?? notProvided}
+          />
+          <ContactField
+            icon="📞"
+            label={copy.emergencyPhone}
+            value={
+              emergency?.phone
+                ? formatPhoneForDisplay(emergency.phone) ?? emergency.phone
+                : notProvided
+            }
+            href={emergency?.phone ? telHrefFromPhone(emergency.phone) : null}
           />
         </div>
       </div>
