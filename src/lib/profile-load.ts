@@ -18,7 +18,7 @@ export const PROFILE_SELECT =
 
 /** Optional trust/phone columns (RUN_THIS_trust_phase1.sql only — not in all databases). */
 const PROFILE_SELECT_TRUST =
-  "phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score";
+  "phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score, preferred_vet_clinic_name, preferred_vet_veterinarian_name, preferred_vet_phone, preferred_vet_emergency_phone, preferred_vet_email, preferred_vet_address, preferred_vet_city, preferred_vet_postal_code, preferred_vet_opening_hours, preferred_vet_notes, share_preferred_vet_during_booking";
 
 const PROFILE_SELECT_FALLBACKS = [
   "id, display_name, avatar_url, bio, location, address, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, is_public, rating_avg, rating_count, membership_status, details, created_at",
@@ -39,6 +39,17 @@ const PROFILE_WRITE_STRIP_KEYS = [
   "emergency_contact_phone_number",
   "emergency_contact_phone_e164",
   "trust_score",
+  "preferred_vet_clinic_name",
+  "preferred_vet_veterinarian_name",
+  "preferred_vet_phone",
+  "preferred_vet_emergency_phone",
+  "preferred_vet_email",
+  "preferred_vet_address",
+  "preferred_vet_city",
+  "preferred_vet_postal_code",
+  "preferred_vet_opening_hours",
+  "preferred_vet_notes",
+  "share_preferred_vet_during_booking",
   "formatted_address",
   "city",
   "country",

@@ -8,6 +8,12 @@ import { publicProfileHref } from "@/lib/profile-completeness";
 import { resolveRecipientEmail } from "@/lib/email-send";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPostgrestError } from "@/lib/supabase-errors";
+import {
+  preferredVetClinicFromProfileRow,
+  preferredVetClinicFromRpc,
+  type PreferredVetClinicInfo,
+  type RpcPreferredVetClinic,
+} from "@/lib/preferred-vet-clinic";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import type { BookingStatus } from "@/types/database";
 
@@ -50,6 +56,9 @@ export type BookingParticipantDetails = {
   otherParty: PublicParticipantInfo;
   showPrivateContact: boolean;
   contact: PrivateContactInfo | null;
+  petParentEmergency: EmergencyContactInfo | null;
+  preferredVet: PreferredVetClinicInfo | null;
+  sharePreferredVet: boolean;
   pet: PetCareDetails;
 };
 
@@ -123,11 +132,21 @@ type RpcContact = {
   emergency_relationship: string | null;
 };
 
+type RpcEmergency = {
+  name: string | null;
+  phone_e164: string | null;
+  phone_display: string | null;
+  relationship: string | null;
+};
+
 type RpcParticipantPayload = {
   viewer_role: ParticipantRole;
   other_party: RpcOtherParty;
   contact_allowed: boolean;
   contact: RpcContact | null;
+  pet_parent_emergency?: RpcEmergency | null;
+  preferred_vet?: RpcPreferredVetClinic | null;
+  share_preferred_vet?: boolean;
 };
 
 const PRIVATE_CONTACT_BOOKING_STATUSES: BookingStatus[] = ["upcoming", "active", "completed"];
@@ -317,6 +336,60 @@ function otherPartyId(
   return viewerRole === "pet_parent" ? petFriendId : petParentId;
 }
 
+function mapEmergencyFromRpc(raw: RpcEmergency | null | undefined): EmergencyContactInfo | null {
+  if (!raw) return null;
+  const name = str(raw.name);
+  const phone =
+    formatPhoneForDisplay(str(raw.phone_e164) ?? str(raw.phone_display)) ??
+    str(raw.phone_display) ??
+    str(raw.phone_e164);
+  const relationship = str(raw.relationship);
+  if (!name && !phone && !relationship) return null;
+  return {
+    name: name ?? "—",
+    phone: phone ?? "—",
+    relationship,
+  };
+}
+
+async function loadPetParentVetRow(petParentId: string): Promise<Record<string, unknown> | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+
+  const { data, error } = await admin
+    .from("profiles")
+    .select(
+      "emergency_contact_name, emergency_contact_phone_e164, emergency_contact_phone_number, emergency_contact_phone_country_code, details, preferred_vet_clinic_name, preferred_vet_veterinarian_name, preferred_vet_phone, preferred_vet_emergency_phone, preferred_vet_email, preferred_vet_address, preferred_vet_city, preferred_vet_postal_code, preferred_vet_opening_hours, preferred_vet_notes, share_preferred_vet_during_booking",
+    )
+    .eq("id", petParentId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as Record<string, unknown>;
+}
+
+function mapPetParentEmergencyFromRow(row: Record<string, unknown>): EmergencyContactInfo | null {
+  return mapEmergencyContact({
+    id: "",
+    display_name: null,
+    avatar_url: null,
+    phone: null,
+    phone_e164: null,
+    phone_number: null,
+    phone_country_code: null,
+    formatted_address: null,
+    address: null,
+    latitude: null,
+    longitude: null,
+    emergency_contact_name: (row.emergency_contact_name as string | null) ?? null,
+    emergency_contact_phone_e164: (row.emergency_contact_phone_e164 as string | null) ?? null,
+    emergency_contact_phone_number: (row.emergency_contact_phone_number as string | null) ?? null,
+    emergency_contact_phone_country_code:
+      (row.emergency_contact_phone_country_code as string | null) ?? null,
+    details: row.details,
+  });
+}
+
 function parseRpcPayload(raw: unknown): RpcParticipantPayload | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const payload = raw as RpcParticipantPayload;
@@ -360,6 +433,14 @@ async function loadBookingParticipantDetailsViaRpc(
     contact: payload.contact_allowed && payload.contact
       ? mapPrivateContactFromRpc(payload.contact)
       : null,
+    petParentEmergency: payload.contact_allowed
+      ? mapEmergencyFromRpc(payload.pet_parent_emergency)
+      : null,
+    preferredVet:
+      payload.contact_allowed && payload.share_preferred_vet !== false
+        ? preferredVetClinicFromRpc(payload.preferred_vet ?? null)
+        : null,
+    sharePreferredVet: payload.share_preferred_vet !== false,
     pet: mapPetCare(petRow),
   };
 }
@@ -387,9 +468,10 @@ async function loadBookingParticipantDetailsLegacy(
   const otherRole = otherPartyRole(viewerRole);
   const showPrivateContact = bookingAllowsPrivateContact(row.status);
 
-  const [otherProfile, petRow] = await Promise.all([
+  const [otherProfile, petRow, petParentRow] = await Promise.all([
     loadProfileContactRow(otherId),
     loadPetCareRow(row.pet_id),
+    showPrivateContact ? loadPetParentVetRow(row.pet_parent_id) : Promise.resolve(null),
   ]);
 
   if (!otherProfile || !petRow) return null;
@@ -405,6 +487,13 @@ async function loadBookingParticipantDetailsLegacy(
     otherParty: mapPublicParticipant(otherProfile, otherRole),
     showPrivateContact,
     contact,
+    petParentEmergency:
+      showPrivateContact && petParentRow ? mapPetParentEmergencyFromRow(petParentRow) : null,
+    preferredVet:
+      showPrivateContact && petParentRow
+        ? preferredVetClinicFromProfileRow(petParentRow as never)
+        : null,
+    sharePreferredVet: petParentRow?.share_preferred_vet_during_booking !== false,
     pet: mapPetCare(petRow),
   };
 }

@@ -17,6 +17,12 @@ import {
   emptyTrustSafetyFormValues,
   type TrustSafetyFormValues,
 } from "@/components/profile/TrustSafetyFormSection";
+import {
+  PreferredVetClinicFormSection,
+  emptyPreferredVetClinicFormValues,
+  type PreferredVetClinicFormValues,
+} from "@/components/profile/PreferredVetClinicFormSection";
+import { preferredVetFormFromProfileRow } from "@/lib/preferred-vet-clinic";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -133,6 +139,7 @@ function applyBasicFromProfile(
 function applyTrustFromProfile(
   profile: ProfileRow,
   setTrustSafety: (v: TrustSafetyFormValues) => void,
+  setPreferredVet: (v: PreferredVetClinicFormValues) => void,
 ) {
   const emergency = parseEmergencyContactFromProfile(profile);
   const mainE164 = profile.phone_e164?.trim() || profile.phone?.trim() || "";
@@ -147,6 +154,7 @@ function applyTrustFromProfile(
     emergencyRelationship:
       emergency?.relationship ?? profile.details?.emergency_contact_relationship ?? "",
   });
+  setPreferredVet(preferredVetFormFromProfileRow(profile));
 }
 
 export function ProfileEditForm() {
@@ -173,6 +181,9 @@ export function ProfileEditForm() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [trustSafety, setTrustSafety] = useState<TrustSafetyFormValues>(emptyTrustSafetyFormValues);
+  const [preferredVet, setPreferredVet] = useState<PreferredVetClinicFormValues>(
+    emptyPreferredVetClinicFormValues(),
+  );
   const [petFriendForm, setPetFriendForm] = useState<PetFriendProfileFormInput>(
     emptyPetFriendProfileForm,
   );
@@ -394,7 +405,7 @@ export function ProfileEditForm() {
           },
           setAvatarUrl,
         });
-        applyTrustFromProfile(profile, setTrustSafety);
+        applyTrustFromProfile(profile, setTrustSafety, setPreferredVet);
         setPetFriendForm(
           petFriendFormFromDetailsRaw(
             profile.details,
@@ -515,7 +526,7 @@ export function ProfileEditForm() {
       setBio,
       setAvatarUrl,
     });
-    applyTrustFromProfile(saved, setTrustSafety);
+    applyTrustFromProfile(saved, setTrustSafety, setPreferredVet);
     setPetFriendForm(
       petFriendFormFromDetailsRaw(
         saved.details,
@@ -647,6 +658,8 @@ export function ProfileEditForm() {
                 relationship: ecRelationship,
               }
             : null,
+          preferredVet:
+            profile?.role === "pet_parent" || profile?.role === "both" ? preferredVet : null,
         },
         { user, existingDisplayName: profile?.display_name },
       );
@@ -890,14 +903,24 @@ export function ProfileEditForm() {
       );
     } else if (stepId === "trust") {
       content = (
-        <TrustSafetyFormSection
-          values={trustSafety}
-          emailVerified={Boolean(user?.email_confirmed_at)}
-          phoneVerified={Boolean(profile?.phone_verified)}
-          onChange={setTrustSafety}
-          disabled={!trustEnabled || saving.trust || anySaving}
-          embedded
-        />
+        <>
+          <TrustSafetyFormSection
+            values={trustSafety}
+            emailVerified={Boolean(user?.email_confirmed_at)}
+            phoneVerified={Boolean(profile?.phone_verified)}
+            onChange={setTrustSafety}
+            disabled={!trustEnabled || saving.trust || anySaving}
+            embedded
+          />
+          {role === "pet_parent" || role === "both" ? (
+            <PreferredVetClinicFormSection
+              values={preferredVet}
+              onChange={setPreferredVet}
+              disabled={!trustEnabled || saving.trust || anySaving}
+              embedded
+            />
+          ) : null}
+        </>
       );
     } else if (stepId === "petFriend") {
       content = (
