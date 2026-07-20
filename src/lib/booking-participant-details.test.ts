@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 import {
   bookingAllowsPrivateContact,
   buildPrivateContactFromProfileRow,
+  buildPrivateContactFromRpcContact,
   buildPublicParticipantFromProfileRow,
   requestAllowsPrivateContact,
 } from "@/lib/booking-participant-details";
@@ -50,6 +51,7 @@ describe("participant contact mapping", () => {
     emergency_contact_phone_e164: "+37255556666",
     emergency_contact_phone_number: null,
     emergency_contact_phone_country_code: null,
+    details: { emergency_contact_relationship: "Partner" },
   };
 
   it("maps public participant without private fields", () => {
@@ -59,24 +61,41 @@ describe("participant contact mapping", () => {
     expect(publicInfo.role).toBe("pet_friend");
   });
 
-  it("maps private contact with phone, email, address, and maps link", () => {
+  it("maps private contact with phone, email, address, emergency relationship, and maps link", () => {
     const contact = buildPrivateContactFromProfileRow(profileRow, "gerly@example.com");
     expect(contact.phoneE164).toBe("+37255555555");
+    expect(contact.phoneDisplay).toBe("+372 5555 5555");
     expect(contact.email).toBe("gerly@example.com");
     expect(contact.address).toBe("Tallinn, Estonia");
     expect(contact.mapsUrl).toContain("59.437");
     expect(contact.emergencyContact?.name).toBe("Emergency Person");
+    expect(contact.emergencyContact?.relationship).toBe("Partner");
+  });
+
+  it("maps RPC contact payload", () => {
+    const contact = buildPrivateContactFromRpcContact({
+      phone_e164: "+37259017916",
+      phone_display: "+37259017916",
+      email: "user@example.com",
+      address: "Tallinn, Estonia",
+      emergency_name: "Jane Doe",
+      emergency_phone_e164: "+37255556666",
+      emergency_phone_display: "+37255556666",
+      emergency_relationship: "Sister",
+    });
+
+    expect(contact.phoneDisplay).toBe("+372 5901 7916");
+    expect(contact.email).toBe("user@example.com");
+    expect(contact.emergencyContact?.relationship).toBe("Sister");
   });
 });
 
-describe("mobile participant actions", () => {
-  it("uses tel, mailto, and maps href patterns for contact buttons", () => {
-    const phone = "+37255555555";
+describe("contact links", () => {
+  it("uses tel and mailto href patterns", () => {
+    const phone = "+37259017916";
     const email = "gerly@example.com";
-    const mapsUrl = "https://www.google.com/maps/search/?api=1&query=59.437,24.7536";
 
-    expect(`tel:${phone}`).toBe("tel:+37255555555");
+    expect(`tel:${phone}`).toBe("tel:+37259017916");
     expect(`mailto:${email}`).toBe("mailto:gerly@example.com");
-    expect(mapsUrl.startsWith("https://www.google.com/maps/")).toBe(true);
   });
 });

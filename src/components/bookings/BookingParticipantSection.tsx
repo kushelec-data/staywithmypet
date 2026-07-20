@@ -28,7 +28,7 @@ function ContactRow({ label, value }: { label: string; value: string }) {
 export function BookingParticipantSection({ details }: BookingParticipantSectionProps) {
   const { t } = useLanguage();
   const copy = t.bookings.participants;
-  const { otherParty, showPrivateContact, contact, pet } = details;
+  const { otherParty, showPrivateContact, pet } = details;
 
   const sectionTitle =
     otherParty.role === "pet_friend" ? copy.petFriendDetails : copy.petParentDetails;
@@ -38,12 +38,6 @@ export function BookingParticipantSection({ details }: BookingParticipantSection
 
   const roleLabel =
     otherParty.role === "pet_friend" ? t.roles.petFriend.label : t.roles.petParent.label;
-
-  const telHref = contact?.phoneE164
-    ? `tel:${contact.phoneE164.replace(/\s/g, "")}`
-    : contact?.phoneDisplay
-      ? `tel:${contact.phoneDisplay.replace(/\s/g, "")}`
-      : null;
 
   return (
     <div className="mt-6 space-y-5 border-t border-black/5 pt-6">
@@ -75,60 +69,9 @@ export function BookingParticipantSection({ details }: BookingParticipantSection
           </div>
         </div>
 
-        {showPrivateContact && contact ? (
-          <div className="mt-4 grid min-w-0 gap-4 border-t border-black/5 pt-4 sm:grid-cols-2">
-            {contact.phoneDisplay ? (
-              <ContactRow label={copy.phoneNumber} value={contact.phoneDisplay} />
-            ) : null}
-            {contact.email ? <ContactRow label={copy.email} value={contact.email} /> : null}
-            {contact.address ? <ContactRow label={copy.fullAddress} value={contact.address} /> : null}
-            {contact.emergencyContact ? (
-              <div className="min-w-0 sm:col-span-2">
-                <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted">
-                  {copy.emergencyContact}
-                </p>
-                <p className="mt-0.5 break-words text-sm font-medium text-foreground">
-                  {contact.emergencyContact.name}
-                  {contact.emergencyContact.phone !== "—"
-                    ? ` · ${contact.emergencyContact.phone}`
-                    : ""}
-                </p>
-              </div>
-            ) : null}
-
-            <div className="flex min-w-0 flex-col gap-2 sm:col-span-2 sm:flex-row sm:flex-wrap">
-              {telHref ? (
-                <Button href={telHref} variant="primary" size="sm" className={ACTION_BUTTON_CLASS}>
-                  {copy.call}
-                </Button>
-              ) : null}
-              {contact.email ? (
-                <Button
-                  href={`mailto:${contact.email}`}
-                  variant="outline"
-                  size="sm"
-                  className={ACTION_BUTTON_CLASS}
-                >
-                  {copy.email}
-                </Button>
-              ) : null}
-              {contact.mapsUrl ? (
-                <Button
-                  href={contact.mapsUrl}
-                  variant="outline"
-                  size="sm"
-                  className={ACTION_BUTTON_CLASS}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {copy.openInMaps}
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        ) : (
+        {!showPrivateContact ? (
           <p className="mt-4 border-t border-black/5 pt-4 text-sm text-muted">{copy.availableAfterConfirmation}</p>
-        )}
+        ) : null}
       </section>
 
       {pet ? (

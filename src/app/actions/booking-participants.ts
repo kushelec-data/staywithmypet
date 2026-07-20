@@ -8,20 +8,12 @@ import {
 } from "@/lib/booking-participant-details";
 import { createClient } from "@/lib/supabase/server";
 
-async function requireUserId(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user?.id ?? null;
-}
-
 export async function getBookingParticipantDetailsAction(
   bookingId: string,
 ): Promise<BookingParticipantDetails | null> {
-  const userId = await requireUserId();
-  if (!userId || !bookingId?.trim()) return null;
-  return loadBookingParticipantDetails(userId, bookingId.trim());
+  if (!bookingId?.trim()) return null;
+  const supabase = await createClient();
+  return loadBookingParticipantDetails(supabase, bookingId.trim());
 }
 
 export async function getRequestParticipantDetailsAction(
@@ -30,4 +22,12 @@ export async function getRequestParticipantDetailsAction(
   const userId = await requireUserId();
   if (!userId || !requestId?.trim()) return null;
   return loadRequestParticipantDetails(userId, requestId.trim());
+}
+
+async function requireUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
 }
