@@ -39,15 +39,6 @@ function ContactField({
   );
 }
 
-function PlainField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p className="mt-0.5 break-words text-sm font-medium text-foreground">{value}</p>
-    </div>
-  );
-}
-
 export function BookingContactInformationCard({ details }: BookingContactInformationCardProps) {
   const { t } = useLanguage();
   const copy = t.bookings.contactInfo;
@@ -63,14 +54,6 @@ export function BookingContactInformationCard({ details }: BookingContactInforma
     contact.phoneDisplay ??
     null;
   const phoneHref = telHrefFromPhone(contact.phoneE164 ?? contact.phoneDisplay);
-
-  const emergency = contact.emergencyContact;
-  const emergencyPhoneDisplay =
-    emergency?.phone && emergency.phone !== "—"
-      ? formatPhoneForDisplay(emergency.phone) ?? emergency.phone
-      : null;
-  const emergencyPhoneHref =
-    emergency?.phone && emergency.phone !== "—" ? telHrefFromPhone(emergency.phone) : null;
 
   const mainSectionTitle =
     otherParty.role === "pet_parent" ? copy.ownerContact : copy.petFriendContact;
@@ -115,28 +98,6 @@ export function BookingContactInformationCard({ details }: BookingContactInforma
             icon="🏠"
             label={copy.address}
             value={contact.address ?? notProvided}
-          />
-        </div>
-      </div>
-
-      <div className="mt-5 border-t border-black/5 pt-5">
-        <h4 className="text-xs font-bold uppercase tracking-wide text-foreground">
-          {copy.emergencyContact}
-        </h4>
-        <div className="mt-3 grid min-w-0 gap-4 sm:grid-cols-2">
-          <PlainField
-            label={copy.emergencyName}
-            value={emergency?.name && emergency.name !== "—" ? emergency.name : notProvided}
-          />
-          <PlainField
-            label={copy.emergencyRelationship}
-            value={emergency?.relationship ?? notProvided}
-          />
-          <ContactField
-            icon="📞"
-            label={copy.emergencyPhone}
-            value={emergencyPhoneDisplay ?? notProvided}
-            href={emergencyPhoneHref}
           />
         </div>
       </div>

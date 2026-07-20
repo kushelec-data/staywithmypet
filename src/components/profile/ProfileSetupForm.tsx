@@ -16,6 +16,11 @@ import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar
 import { PetFriendProfileFormSections } from "@/components/profile/PetFriendProfileFormSections";
 import { ProfileCollapsibleSection } from "@/components/profile/ProfileCollapsibleSection";
 import {
+  PreferredVetClinicFormSection,
+  emptyPreferredVetClinicFormValues,
+  type PreferredVetClinicFormValues,
+} from "@/components/profile/PreferredVetClinicFormSection";
+import {
   TrustSafetyFormSection,
   type TrustSafetyFormValues,
   emptyTrustSafetyFormValues,
@@ -25,6 +30,7 @@ import {
   DEFAULT_PHONE_DIAL_CODE,
 } from "@/lib/phone-eu";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
+import { preferredVetFormFromProfileRow } from "@/lib/preferred-vet-clinic";
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { normalizeFullName } from "@/lib/name-format";
 import {
@@ -99,6 +105,7 @@ function applyProfileToForm(
     setLanguagesOther: (v: string) => void;
     setBio: (v: string) => void;
     setTrustSafety: (v: TrustSafetyFormValues) => void;
+    setPreferredVet: (v: PreferredVetClinicFormValues) => void;
     setAvatarUrl: (v: string | null) => void;
   },
 ) {
@@ -124,6 +131,7 @@ function applyProfileToForm(
     emergencyRelationship:
       emergency?.relationship ?? profile.details?.emergency_contact_relationship ?? "",
   });
+  setters.setPreferredVet(preferredVetFormFromProfileRow(profile));
 }
 
 export function ProfileSetupForm({
@@ -171,6 +179,9 @@ export function ProfileSetupForm({
   const [languagesOther, setLanguagesOther] = useState("");
   const [bio, setBio] = useState("");
   const [trustSafety, setTrustSafety] = useState<TrustSafetyFormValues>(emptyTrustSafetyFormValues);
+  const [preferredVet, setPreferredVet] = useState<PreferredVetClinicFormValues>(
+    emptyPreferredVetClinicFormValues(),
+  );
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [petFriendForm, setPetFriendForm] = useState<PetFriendProfileFormInput>(
     emptyPetFriendProfileForm,
@@ -243,6 +254,7 @@ export function ProfileSetupForm({
       setLanguagesOther,
       setBio,
       setTrustSafety,
+      setPreferredVet,
       setAvatarUrl,
     }),
     [],
@@ -263,6 +275,7 @@ export function ProfileSetupForm({
   }
 
   const showFriendProfileSections = role === "pet_friend" || role === "both";
+  const showParentProfileSections = role === "pet_parent" || role === "both";
   const bioWordCount = useMemo(() => getWordCount(bio), [bio]);
   const bioValid = isBioWordCountValid(bioWordCount);
   const bioPlaceholder = useMemo(
@@ -450,6 +463,7 @@ export function ProfileSetupForm({
             relationship: ecRelationship,
           }
         : null,
+      preferredVet: showParentProfileSections ? preferredVet : null,
       availabilitySelectedDates,
       petFriend: showFriendProfileSections
         ? {
@@ -680,6 +694,14 @@ export function ProfileSetupForm({
           onChange={setTrustSafety}
           disabled={saving}
         />
+
+        {showParentProfileSections ? (
+          <PreferredVetClinicFormSection
+            values={preferredVet}
+            onChange={setPreferredVet}
+            disabled={saving}
+          />
+        ) : null}
 
         {showFriendProfileSections ? (
           <PetFriendProfileFormSections

@@ -37,6 +37,17 @@ export type ProfileRow = {
   emergency_contact_phone_country_code: string | null;
   emergency_contact_phone_number: string | null;
   emergency_contact_phone_e164: string | null;
+  preferred_vet_clinic_name?: string | null;
+  preferred_vet_veterinarian_name?: string | null;
+  preferred_vet_phone?: string | null;
+  preferred_vet_emergency_phone?: string | null;
+  preferred_vet_email?: string | null;
+  preferred_vet_address?: string | null;
+  preferred_vet_city?: string | null;
+  preferred_vet_postal_code?: string | null;
+  preferred_vet_opening_hours?: string | null;
+  preferred_vet_notes?: string | null;
+  share_preferred_vet_during_booking?: boolean | null;
   trust_score: number;
   is_public: boolean;
   rating_avg: number;

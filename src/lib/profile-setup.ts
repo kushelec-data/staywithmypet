@@ -43,6 +43,10 @@ import {
   normalizeDialCode,
   normalizeNationalDigits,
 } from "@/lib/phone-eu";
+import {
+  preferredVetClinicDbFieldsFromForm,
+  type PreferredVetClinicFormValues,
+} from "@/lib/preferred-vet-clinic";
 import { calculateTrustScore } from "@/lib/trust-score";
 
 export type ProfileRole = "pet_parent" | "pet_friend" | "both";
@@ -62,7 +66,7 @@ export type ProfileSetupInput = {
     national: string;
     relationship?: string | null;
   } | null;
-  /** YYYY-MM-DD → `profiles.details.availability.selected_dates`. */
+  preferredVet?: PreferredVetClinicFormValues | null;
   availabilitySelectedDates: string[];
   petFriend?: PetFriendProfileFormInput | null;
 };
@@ -398,6 +402,7 @@ export async function saveUserProfile(
     trust_score: trustScore,
     details: detailsMerged,
     updated_at: now,
+    ...(input.preferredVet ? preferredVetClinicDbFieldsFromForm(input.preferredVet) : {}),
   };
 
   applyLocationFieldsToRow(row, input.location, {
@@ -429,6 +434,7 @@ export type TrustSafetySectionInput = {
     national: string;
     relationship?: string | null;
   } | null;
+  preferredVet?: PreferredVetClinicFormValues | null;
 };
 
 type ProfileTrustLoadRow = {
@@ -733,6 +739,7 @@ export async function saveTrustSafetyProfileSection(
     trust_score: trustScore,
     details: detailsMerged,
     updated_at: now,
+    ...(input.preferredVet ? preferredVetClinicDbFieldsFromForm(input.preferredVet) : {}),
   };
 
   const saved = await persistProfilePartial(supabase, userId, row, "trust section save");
