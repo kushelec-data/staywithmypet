@@ -30,7 +30,6 @@ create index if not exists platform_access_code_redemptions_user_idx
 alter table public.platform_access_codes enable row level security;
 alter table public.platform_access_code_redemptions enable row level security;
 
--- Default launch code (3-month test access). Adjust or deactivate in production admin.
 insert into public.platform_access_codes (
   code_normalized,
   membership_role,

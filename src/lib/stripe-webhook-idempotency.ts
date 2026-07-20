@@ -6,8 +6,8 @@ import { isMissingRelationError } from "@/lib/supabase-errors";
 const TABLE = "stripe_webhook_events";
 
 /**
- * Returns true when this event should be processed (first delivery).
- * Returns false when already processed (safe to ack without re-running handlers).
+ * Claim a Stripe event id before handling. Returns false when already processed.
+ * When the idempotency table is missing, returns true (process without dedup).
  */
 export async function claimStripeWebhookEvent(
   eventId: string,
@@ -24,10 +24,12 @@ export async function claimStripeWebhookEvent(
     event_type: eventType,
   });
 
-  if (!error) return true;
+  if (!error) {
+    return true;
+  }
 
   if (error.code === "23505") {
-    console.log("[stripe] webhook duplicate event skipped", { eventId, eventType });
+    console.log("[stripe] webhook event already processed", { eventId, eventType });
     return false;
   }
 
@@ -39,8 +41,8 @@ export async function claimStripeWebhookEvent(
   console.error("[stripe] webhook idempotency claim failed", {
     eventId,
     eventType,
-    message: error.message,
     code: error.code,
+    message: error.message,
   });
-  throw error;
+  throw new Error(`Webhook idempotency claim failed: ${error.message}`);
 }

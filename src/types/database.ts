@@ -129,6 +129,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      conversations: {
+        Row: {
+          id: string;
+          request_id: string;
+          pet_parent_id: string | null;
+          pet_friend_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          request_id: string;
+          pet_parent_id?: string | null;
+          pet_friend_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          pet_parent_id?: string | null;
+          pet_friend_id?: string | null;
+        };
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+          read_at: string | null;
+          created_at: string;
+          storage_path: string | null;
+          media_type: string | null;
+          file_name: string | null;
+          file_size: number | null;
+          mime_type: string | null;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          body?: string;
+          read_at?: string | null;
+          created_at?: string;
+          storage_path?: string | null;
+          media_type?: string | null;
+          file_name?: string | null;
+          file_size?: number | null;
+          mime_type?: string | null;
+        };
+        Update: {
+          body?: string;
+          read_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -157,6 +211,20 @@ export type RequestInsert = Database["public"]["Tables"]["requests"]["Insert"];
 export type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
 
 export type ReviewRow = Database["public"]["Tables"]["reviews"]["Row"];
+
+export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+
+export type MessageInboxPreviewRow = Pick<
+  MessageRow,
+  "conversation_id" | "body" | "created_at" | "media_type"
+>;
+
+/** Latest message fields used for conversation inbox previews. */
+export const MESSAGE_INBOX_PREVIEW_SELECT =
+  "conversation_id, body, created_at, media_type" as const;
+
+export const MESSAGE_INBOX_PREVIEW_LEGACY_SELECT =
+  "conversation_id, body, created_at" as const;
 
 /** Columns loaded for request list/detail UI. */
 export const REQUEST_SELECT =

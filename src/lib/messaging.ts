@@ -18,9 +18,26 @@ import {
 import { formatBookingDatesForRow, type DateFormatLocale } from "@/lib/date-format";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { formatRequestDateLabel, requestStatusBadgeClasses, requestStatusLabel, type RequestStatus, type RequestStatusCopy } from "@/lib/requests";
-import type { BookingStatus } from "@/types/database";
-import { isMissingColumnError, isPostgrestError } from "@/lib/supabase-errors";
-import { logSupabaseError } from "@/lib/supabase-errors";
+import type {
+  BookingStatus,
+  Database,
+  MessageInboxPreviewRow,
+  MessageRow as DbMessageRow,
+} from "@/types/database";
+import {
+  MESSAGE_INBOX_PREVIEW_LEGACY_SELECT,
+  MESSAGE_INBOX_PREVIEW_SELECT,
+} from "@/types/database";
+import { isMissingColumnError, isPostgrestError, logSupabaseError } from "@/lib/supabase-errors";
+import {
+  chatMessagePreviewText,
+  ChatMessageSaveError,
+  type ChatMediaType,
+} from "@/lib/chat-media";
+
+function asMessagingDbClient(supabase: SupabaseClient): SupabaseClient<Database> {
+  return supabase as SupabaseClient<Database>;
+}
 
 export type ChatMessage = {
   id: string;
@@ -30,6 +47,19 @@ export type ChatMessage = {
   readAt: string | null;
   createdAt: string;
   isOwn: boolean;
+  storagePath: string | null;
+  mediaType: ChatMediaType | null;
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
+};
+
+export type SendMessageMedia = {
+  storagePath: string;
+  mediaType: ChatMediaType;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
 };
 
 /** Grace period after a booking is cancelled before chat becomes read-only. */
@@ -357,14 +387,35 @@ type RequestRow = {
   pet_friend_id: string;
 };
 
-type MessageRow = {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  body: string;
-  read_at: string | null;
-  created_at: string;
-};
+type MessageRow = DbMessageRow;
+
+const MESSAGE_THREAD_SELECT =
+  "id, conversation_id, sender_id, body, read_at, created_at, storage_path, media_type, file_name, file_size, mime_type" as const;
+
+const MESSAGE_THREAD_LEGACY_SELECT =
+  "id, conversation_id, sender_id, body, read_at, created_at" as const;
+
+function mapMessageRow(row: MessageRow, userId: string): ChatMessage {
+  const mediaType =
+    row.media_type === "image" || row.media_type === "video"
+      ? row.media_type
+      : null;
+
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    senderId: row.sender_id,
+    body: row.body ?? "",
+    readAt: row.read_at,
+    createdAt: row.created_at,
+    isOwn: row.sender_id === userId,
+    storagePath: row.storage_path ?? null,
+    mediaType,
+    fileName: row.file_name ?? null,
+    fileSize: row.file_size ?? null,
+    mimeType: row.mime_type ?? null,
+  };
+}
 
 const CONVERSATION_SELECT =
   "id, request_id, pet_parent_id, pet_friend_id, created_at";
@@ -408,6 +459,45 @@ export function formatMessagingError(error: unknown): string {
   }
   if (error instanceof Error && error.message.trim()) return error.message;
   return "Could not load messages.";
+}
+
+async function fetchRecentInboxMessages(
+  supabase: SupabaseClient,
+  conversationIds: string[],
+): Promise<MessageInboxPreviewRow[]> {
+  if (!conversationIds.length) return [];
+
+  const db = asMessagingDbClient(supabase);
+  const withMedia = await db
+    .from("messages")
+    .select(MESSAGE_INBOX_PREVIEW_SELECT)
+    .in("conversation_id", conversationIds)
+    .order("created_at", { ascending: false });
+
+  if (!withMedia.error) {
+    return withMedia.data ?? [];
+  }
+
+  if (!isMissingColumnError(withMedia.error)) {
+    throw withMedia.error;
+  }
+
+  const legacy = await db
+    .from("messages")
+    .select(MESSAGE_INBOX_PREVIEW_LEGACY_SELECT)
+    .in("conversation_id", conversationIds)
+    .order("created_at", { ascending: false });
+
+  if (legacy.error) {
+    throw legacy.error;
+  }
+
+  return (legacy.data ?? []).map((row) => ({
+    conversation_id: row.conversation_id,
+    body: row.body,
+    created_at: row.created_at,
+    media_type: null,
+  }));
 }
 
 async function fetchRequestForConversation(
@@ -667,18 +757,18 @@ export async function fetchConversations(
   const conversationIds = eligibleConversations.map((c) => c.id);
   const lastByConversation = new Map<string, { body: string; created_at: string }>();
 
-  const { data: recentMessages, error: msgError } = await supabase
-    .from("messages")
-    .select("conversation_id, body, created_at")
-    .in("conversation_id", conversationIds)
-    .order("created_at", { ascending: false });
+  const recentMessages = await fetchRecentInboxMessages(supabase, conversationIds);
 
-  if (msgError) throw msgError;
-
-  for (const m of recentMessages ?? []) {
+  for (const m of recentMessages) {
     if (!lastByConversation.has(m.conversation_id)) {
       lastByConversation.set(m.conversation_id, {
-        body: m.body,
+        body: chatMessagePreviewText({
+          body: m.body,
+          mediaType:
+            m.media_type === "image" || m.media_type === "video"
+              ? m.media_type
+              : null,
+        }),
         created_at: m.created_at,
       });
     }
@@ -827,23 +917,44 @@ export async function fetchMessages(
   conversationId: string,
   userId: string,
 ): Promise<ChatMessage[]> {
-  const { data, error } = await supabase
+  const db = asMessagingDbClient(supabase);
+  const full = await db
     .from("messages")
-    .select("id, conversation_id, sender_id, body, read_at, created_at")
+    .select(MESSAGE_THREAD_SELECT)
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
-  if (error) throw error;
+  if (!full.error) {
+    return (full.data ?? []).map((row) => mapMessageRow(row, userId));
+  }
 
-  return (data ?? []).map((row: MessageRow) => ({
-    id: row.id,
-    conversationId: row.conversation_id,
-    senderId: row.sender_id,
-    body: row.body,
-    readAt: row.read_at,
-    createdAt: row.created_at,
-    isOwn: row.sender_id === userId,
-  }));
+  if (!isMissingColumnError(full.error)) {
+    throw full.error;
+  }
+
+  const legacy = await db
+    .from("messages")
+    .select(MESSAGE_THREAD_LEGACY_SELECT)
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+
+  if (legacy.error) {
+    throw legacy.error;
+  }
+
+  return (legacy.data ?? []).map((row) =>
+    mapMessageRow(
+      {
+        ...row,
+        storage_path: null,
+        media_type: null,
+        file_name: null,
+        file_size: null,
+        mime_type: null,
+      },
+      userId,
+    ),
+  );
 }
 
 export async function sendMessage(
@@ -852,6 +963,7 @@ export async function sendMessage(
   senderId: string,
   body: string,
   otherPartyId?: string,
+  media?: SendMessageMedia | null,
 ): Promise<ChatMessage> {
   const { assertRateLimitShared, requireAuthUserId } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
@@ -861,7 +973,9 @@ export async function sendMessage(
   await assertRateLimitShared("message_send", sessionUserId);
 
   const trimmed = body.trim();
-  if (!trimmed) throw new Error("Message cannot be empty.");
+  if (!trimmed && !media?.storagePath) {
+    throw new Error("Message cannot be empty.");
+  }
 
   const { data: conversationRow, error: conversationError } = await supabase
     .from("conversations")
@@ -947,28 +1061,38 @@ export async function sendMessage(
     await assertActiveMembership(supabase, senderId, mode);
   }
 
-  const { data, error } = await supabase
+  const insertPayload: Record<string, unknown> = {
+    conversation_id: conversationId,
+    sender_id: senderId,
+    body: trimmed,
+  };
+
+  if (media) {
+    insertPayload.storage_path = media.storagePath;
+    insertPayload.media_type = media.mediaType;
+    insertPayload.file_name = media.fileName;
+    insertPayload.file_size = media.fileSize;
+    insertPayload.mime_type = media.mimeType;
+  }
+
+  let { data, error } = await supabase
     .from("messages")
-    .insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      body: trimmed,
-    })
-    .select("id, conversation_id, sender_id, body, read_at, created_at")
+    .insert(insertPayload)
+    .select(MESSAGE_THREAD_SELECT)
     .single();
 
-  if (error) throw error;
+  if (error && media && isMissingColumnError(error)) {
+    throw new ChatMessageSaveError(
+      "Chat media is not available yet. Apply the latest Supabase migrations, then refresh.",
+    );
+  }
+
+  if (error) {
+    throw new ChatMessageSaveError(error.message || "Message could not be saved.");
+  }
   const row = data as MessageRow;
 
-  return {
-    id: row.id,
-    conversationId: row.conversation_id,
-    senderId: row.sender_id,
-    body: row.body,
-    readAt: row.read_at,
-    createdAt: row.created_at,
-    isOwn: true,
-  };
+  return mapMessageRow(row, senderId);
 }
 
 export async function markConversationMessagesRead(
@@ -1023,15 +1147,7 @@ export function subscribeToConversationMessages(
       (payload) => {
         const row = payload.new as MessageRow;
         if (!row?.id) return;
-        onMessage({
-          id: row.id,
-          conversationId: row.conversation_id,
-          senderId: row.sender_id,
-          body: row.body,
-          readAt: row.read_at,
-          createdAt: row.created_at,
-          isOwn: row.sender_id === userId,
-        });
+        onMessage(mapMessageRow(row, userId));
       },
     )
     .subscribe();

@@ -12,8 +12,7 @@ import {
   ACCOUNT_CARD_PADDING_COMPACT,
   ACCOUNT_FIELD_LABEL_CLASS,
 } from "@/lib/account-ui";
-import type { MembershipRole } from "@/lib/membership";
-import { membershipRoleTitle } from "@/lib/membership";
+import { membershipRoleTitle, type MembershipRole } from "@/lib/membership";
 
 type AccessCodePanelProps = {
   open: boolean;
@@ -80,31 +79,40 @@ export function AccessCodePanel({
   }
 
   return (
-    <div className={`mt-6 ${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT} w-full min-w-0`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className={ACCOUNT_FIELD_LABEL_CLASS}>{copy.accessCodeSectionTitle}</p>
-          <p className="mt-1 text-sm text-foreground">
-            {copy.singleRoleSummary
+    <div
+      className={`mb-6 ${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}
+      role="region"
+      aria-label={copy.accessCodePanelTitle}
+    >
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-heading text-base font-semibold text-foreground">
+            {copy.accessCodePanelTitle}
+          </h3>
+          <p className={`mt-1 ${ACCOUNT_BODY_TEXT}`}>
+            {copy.accessCodePanelDescription
               .replace("{role}", membershipRoleTitle(role))
               .replace("{plan}", planLabel)}
           </p>
-          <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{copy.platformAccessNote}</p>
         </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 text-sm text-muted underline-offset-2 hover:underline"
+        >
           {copy.closeAccessCode}
-        </Button>
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-4 w-full min-w-0">
+      <form onSubmit={handleSubmit}>
         <TermsReviewBanner className="mb-4" />
         <MembershipPlanTermsInfo planId={planId} className="mb-4" />
 
-        <label htmlFor="platform-access-code" className={ACCOUNT_FIELD_LABEL_CLASS}>
+        <label htmlFor="membership-access-code" className={ACCOUNT_FIELD_LABEL_CLASS}>
           {copy.codeLabel}
         </label>
         <input
-          id="platform-access-code"
+          id="membership-access-code"
           name="code"
           type="text"
           autoComplete="off"
@@ -112,14 +120,14 @@ export function AccessCodePanel({
           value={code}
           onChange={(event) => setCode(event.target.value)}
           placeholder={copy.codePlaceholder}
-          className="mt-2 w-full min-w-0 rounded-xl border border-black/10 bg-white px-4 py-3 text-foreground outline-none ring-brand-teal/30 focus:ring-2"
+          className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-foreground outline-none ring-brand-teal/30 focus:ring-2"
           required
         />
         <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{copy.codeHint}</p>
 
         <TermsAcceptanceCheckbox
           variant="membership"
-          id={`platform-access-terms-${planId}`}
+          id="inline-membership-terms"
           checked={termsAccepted}
           onCheckedChange={setTermsAccepted}
           disabled={submitting}
@@ -132,15 +140,19 @@ export function AccessCodePanel({
           </p>
         ) : null}
 
-        <Button
-          type="submit"
-          variant="secondary"
-          size="md"
-          className="mt-6 w-full min-w-0 sm:w-auto"
-          disabled={submitting || !code.trim() || !termsAccepted}
-        >
-          {submitting ? copy.activating : copy.activateButton}
-        </Button>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Button
+            type="submit"
+            variant="secondary"
+            size="md"
+            disabled={submitting || !code.trim() || !termsAccepted}
+          >
+            {submitting ? copy.activating : copy.activateButton}
+          </Button>
+          <Button type="button" variant="secondary" size="md" onClick={onClose}>
+            {copy.backToPlans}
+          </Button>
+        </div>
       </form>
     </div>
   );

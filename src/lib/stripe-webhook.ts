@@ -212,6 +212,7 @@ async function syncFromSubscription(
     userId,
     role,
     planId,
+    planKey: subscription.metadata.plan_key ?? null,
     status: subscription.status,
   });
 
@@ -229,8 +230,8 @@ async function syncFromSubscription(
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId,
-    sendConfirmationEmail: status === "active" || status === "trialing",
     source: "stripe_subscription",
+    sendConfirmationEmail: status === "active" || status === "trialing",
   });
 
   await assertMembershipUpsert(result, `subscription ${subscription.id}`);

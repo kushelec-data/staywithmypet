@@ -1,4 +1,4 @@
-import { getSiteOrigin } from "@/lib/site-url";
+import { getAuthRedirectOrigin as resolveAuthRedirectOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase";
 
 export async function signOut() {
@@ -9,7 +9,7 @@ export async function signOut() {
 
 /** Base URL for auth redirects (OAuth callback, password reset landing). */
 export function getAuthRedirectOrigin(): string {
-  return getSiteOrigin();
+  return resolveAuthRedirectOrigin();
 }
 
 export function getAuthCallbackUrl(nextPath: string) {

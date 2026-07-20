@@ -39,6 +39,10 @@ export async function POST(request: Request) {
   }
 
   const code = body.code?.trim() ?? "";
+  if (!code) {
+    return NextResponse.json({ error: "Access code is required." }, { status: 400 });
+  }
+
   const selectedRole = parseMembershipRoleInput(body.role);
   const rawPlanId = (body.planId ?? body.plan_id)?.trim();
   if (!selectedRole || !rawPlanId) {

@@ -31,6 +31,7 @@ import {
   ACCOUNT_PAGE_HEADER_EYEBROW,
   ACCOUNT_PAGE_TITLE,
 } from "@/lib/account-ui";
+import { installClickBlockerDiagnostic } from "@/lib/dev/click-blocker-diagnostic";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -95,6 +96,8 @@ export function DashboardShell({
       router.replace("/login");
     }
   }, [authLoading, user, router]);
+
+  useEffect(() => installClickBlockerDiagnostic(), []);
 
   useEffect(() => {
     if (authLoading || profileLoading || !user || !profile) return;

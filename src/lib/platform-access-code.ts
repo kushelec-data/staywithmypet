@@ -1,7 +1,7 @@
 import "server-only";
 
 import { billingIntervalFromPlanId, normalizeCatalogPlanId } from "@/lib/stripe-plans";
-import { MEMBERSHIP_PLAN_CATALOG, type MembershipRole } from "@/lib/membership";
+import { type MembershipRole } from "@/lib/membership";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingRelationError } from "@/lib/supabase-errors";
 import {
@@ -34,17 +34,34 @@ type PlatformCodeRow = {
   is_active: boolean;
 };
 
-function normalizeCodeInput(code: string): string {
+function normalizeCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
-function planKeyMatches(planKey: string, planId: string): boolean {
-  const normalized = normalizeCatalogPlanId(planId) ?? planId;
-  if (planKey === normalized) return true;
-  const interval = billingIntervalFromPlanId(normalized);
-  if (interval && planKey === interval.replace("_", "-")) return true;
-  if (planKey === "3-month" && interval === "3_months") return true;
-  return planKey === "3_months" && interval === "3_months";
+function planKeyFromPlanId(planId: string): string {
+  const interval = billingIntervalFromPlanId(planId);
+  switch (interval) {
+    case "3_months":
+      return "3-month";
+    case "12_months":
+      return "12-month";
+    case "one_time":
+      return "one-time";
+    default:
+      return planId;
+  }
+}
+
+function planKeyMatches(codePlanKey: string, selectedPlanId: string): boolean {
+  const normalized = normalizeCatalogPlanId(selectedPlanId) ?? selectedPlanId.trim();
+  const selectedKey = planKeyFromPlanId(normalized);
+  const codeKey = codePlanKey.trim().toLowerCase();
+  return (
+    codeKey === selectedKey.toLowerCase() ||
+    codeKey === normalized.toLowerCase() ||
+    selectedKey.toLowerCase().includes(codeKey) ||
+    codeKey.includes(selectedKey.toLowerCase())
+  );
 }
 
 function fallbackHardcodedCode(
@@ -56,7 +73,11 @@ function fallbackHardcodedCode(
     return { ok: false, error: "Invalid access code.", status: 401 };
   }
   if (!planKeyMatches("3-month", planId)) {
-    return { ok: false, error: "This access code does not apply to the selected plan.", status: 403 };
+    return {
+      ok: false,
+      error: "This access code does not apply to the selected plan.",
+      status: 403,
+    };
   }
   return {
     ok: true,
@@ -73,7 +94,7 @@ export async function validatePlatformAccessCode(input: {
   planId: string;
   userId: string;
 }): Promise<PlatformAccessCodeValidation> {
-  const codeNormalized = normalizeCodeInput(input.code);
+  const codeNormalized = normalizeCode(input.code);
   if (!codeNormalized) {
     return { ok: false, error: "Access code is required.", status: 401 };
   }
@@ -136,31 +157,40 @@ export async function validatePlatformAccessCode(input: {
   }
 
   if (row.one_per_user) {
-    const { count, error: redemptionError } = await admin
+    const { data: prior, error: redemptionError } = await admin
       .from("platform_access_code_redemptions")
-      .select("id", { count: "exact", head: true })
+      .select("id")
       .eq("code_id", row.id)
-      .eq("user_id", input.userId);
+      .eq("user_id", input.userId)
+      .maybeSingle();
 
     if (redemptionError && !isMissingRelationError(redemptionError)) {
       return { ok: false, error: "Could not validate access code.", status: 500 };
     }
 
-    if ((count ?? 0) > 0) {
+    if (prior) {
       return { ok: false, error: "You have already used this access code.", status: 409 };
     }
   }
 
-  const months =
-    row.plan_key === "3-month" || row.plan_key === "3_months" ? TEST_MEMBERSHIP_MONTHS : 3;
+  const interval = billingIntervalFromPlanId(input.planId);
+  const membershipMonths =
+    interval === "12_months" ? 12 : interval === "one_time" ? 1 : TEST_MEMBERSHIP_MONTHS;
 
   return {
     ok: true,
     codeId: row.id,
     planKey: row.plan_key,
-    membershipMonths: months,
+    membershipMonths,
     codeNormalized,
   };
+}
+
+export function resolvePlanIdForPlatformCode(
+  selectedPlanId: string,
+  targetRole: MembershipRole,
+): string {
+  return planIdForMembershipRole(selectedPlanId, targetRole);
 }
 
 export async function recordPlatformAccessCodeRedemption(input: {
@@ -172,17 +202,16 @@ export async function recordPlatformAccessCodeRedemption(input: {
   const admin = createAdminClient();
   if (!admin) return;
 
-  const rolePlanId = planIdForMembershipRole(input.planId, input.role);
-
-  const { error: redemptionError } = await admin.from("platform_access_code_redemptions").insert({
+  const { error: insertError } = await admin.from("platform_access_code_redemptions").insert({
     code_id: input.codeId,
     user_id: input.userId,
     membership_role: input.role,
-    plan_id: rolePlanId,
+    plan_id: input.planId,
   });
 
-  if (redemptionError && redemptionError.code !== "23505") {
-    console.error("[platform-access-code] redemption insert failed", redemptionError.message);
+  if (insertError && !isMissingRelationError(insertError)) {
+    console.error("[platform-access-code] redemption insert failed", insertError.message);
+    return;
   }
 
   const { data: row } = await admin
@@ -194,20 +223,7 @@ export async function recordPlatformAccessCodeRedemption(input: {
   if (row) {
     await admin
       .from("platform_access_codes")
-      .update({
-        redemption_count: (row.redemption_count ?? 0) + 1,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ redemption_count: (row.redemption_count ?? 0) + 1 })
       .eq("id", input.codeId);
   }
-}
-
-export function resolvePlanIdForPlatformCode(
-  planId: string,
-  role: MembershipRole,
-): string {
-  const normalized = normalizeCatalogPlanId(planId) ?? planId;
-  const exists = MEMBERSHIP_PLAN_CATALOG[role].some((p) => p.id === normalized);
-  if (exists) return normalized;
-  return planIdForMembershipRole(planId, role);
 }

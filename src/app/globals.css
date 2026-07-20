@@ -1201,3 +1201,8 @@ select.input-field {
     transform: none;
   }
 }
+
+/* Google Places autocomplete dropdown — must not block page clicks when hidden. */
+.pac-container[style*="display: none"] {
+  pointer-events: none !important;
+}

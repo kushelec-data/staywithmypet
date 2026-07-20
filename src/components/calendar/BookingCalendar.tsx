@@ -162,6 +162,8 @@ export function BookingCalendar({
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  useEffect(() => () => setActiveBooking(null), []);
+
   const first = new Date(year, month, 1);
   const lead = mondayIndex(first);
   const daysInMonth = new Date(year, month + 1, 0).getDate();

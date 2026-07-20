@@ -2,8 +2,11 @@ import "server-only";
 
 import type Stripe from "stripe";
 import {
+  billingIntervalFromPlanId,
+  durationMonthsForPlanId,
   normalizeCatalogPlanId,
   planIdFromStripePriceId,
+  stripePlanTypeForPlanId,
 } from "@/lib/stripe-plans";
 import type { MembershipRole } from "@/lib/membership";
 import { getStripe } from "@/lib/stripe";
@@ -36,12 +39,22 @@ export function parseMembershipRoleInput(value: unknown): MembershipRole | null 
   return roleFromStripeMetadata(typeof value === "string" ? value : undefined);
 }
 
-/** Canonical plan key stored in Stripe metadata (same as catalog plan_id). */
+/** Stripe Checkout metadata: UI role alias + canonical DB enum + plan_key. */
 export function membershipPlanKey(planId: string): string {
-  return normalizeCatalogPlanId(planId) ?? planId.trim();
+  const normalized = normalizeCatalogPlanId(planId) ?? planId.trim();
+  const interval = billingIntervalFromPlanId(normalized);
+  switch (interval) {
+    case "3_months":
+      return "3-month";
+    case "12_months":
+      return "12-month";
+    case "one_time":
+      return "one-time";
+    default:
+      return normalized;
+  }
 }
 
-/** Stripe Checkout metadata: UI role alias + canonical DB enum. */
 export function buildStripeCheckoutMetadata(input: {
   userId: string;
   role: MembershipRole;
@@ -49,14 +62,19 @@ export function buildStripeCheckoutMetadata(input: {
   priceId: string;
   priceEnv: string;
 }): Stripe.Metadata {
-  const planKey = membershipPlanKey(input.planId);
+  const normalizedPlanId = normalizeCatalogPlanId(input.planId) ?? input.planId.trim();
+  const planKey = membershipPlanKey(normalizedPlanId);
+  const planType = stripePlanTypeForPlanId(normalizedPlanId);
+  const durationMonths = durationMonthsForPlanId(normalizedPlanId);
   return {
     user_id: input.userId,
     role: input.role === "pet_parent" ? "parent" : "friend",
     membership_role: input.role,
-    plan_id: planKey,
+    plan_id: normalizedPlanId,
     plan_key: planKey,
-    plan: planKey,
+    plan: normalizedPlanId,
+    ...(planType ? { plan_type: planType } : {}),
+    ...(durationMonths ? { duration_months: durationMonths } : {}),
     price_id: input.priceId,
     price_env: input.priceEnv,
   };
@@ -73,7 +91,6 @@ export function membershipRoleFromMergedMetadata(
 
 function planIdFromMergedMetadata(meta: Stripe.Metadata): string | undefined {
   const raw =
-    meta.plan_key?.trim() ||
     meta.plan_id?.trim() ||
     meta.plan?.trim() ||
     meta.planId?.trim();

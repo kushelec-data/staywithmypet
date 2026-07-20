@@ -57,6 +57,13 @@ function fetchPlaceDetails(placeId: string): Promise<PlaceResult | null> {
   });
 }
 
+function hideGooglePacContainers() {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll<HTMLElement>(".pac-container").forEach((container) => {
+    container.style.display = "none";
+  });
+}
+
 async function resolvePlaceFromAutocomplete(raw: PlaceResult): Promise<GooglePlaceSelectPayload | null> {
   let place: PlaceResult = raw;
   if (!isPlaceSelectionComplete(place) && place.place_id) {
@@ -135,6 +142,7 @@ export function GooglePlacesInput({
 
     return () => {
       cancelled = true;
+      hideGooglePacContainers();
       const ac = acRef.current;
       acRef.current = null;
       if (ac && window.google?.maps?.event?.clearInstanceListeners) {
@@ -172,6 +180,7 @@ export function GooglePlacesInput({
       }}
       onBlur={(e) => {
         focusedRef.current = false;
+        hideGooglePacContainers();
         if (forceGoogleSelection && useGoogle && !confirmedRef.current) {
           setDraft(value);
           onChangeRef.current(value);

@@ -10,14 +10,16 @@ import {
   stripePriceIdSuffix,
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
-import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, qualifiesAsActivePetFriendMembership, type MembershipRole } from "@/lib/membership";
+import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, qualifiesAsActivePetFriendMembership, qualifiesAsActivePetParentMembership, type MembershipRole } from "@/lib/membership";
 import { sanitizeReturnTo } from "@/lib/membership-return";
 import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
+import { getRequestOrigin } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
 import { maskId } from "@/lib/security/log-redact";
+import { envStringFingerprint, envVarForPlanId } from "@/lib/stripe-runtime-debug";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import Stripe from "stripe";
@@ -33,6 +35,22 @@ type CheckoutBody = {
 
 function planExistsForRole(role: MembershipRole, planId: string): boolean {
   return MEMBERSHIP_PLAN_CATALOG[role].some((p) => p.id === planId);
+}
+
+function checkoutErrorResponse(
+  planId: string,
+  message: string,
+  status: number,
+): NextResponse {
+  const priceEnv = stripePriceEnvVarForPlanId(planId);
+  return NextResponse.json(
+    {
+      error: message,
+      planId,
+      priceEnv: priceEnv ?? null,
+    },
+    { status },
+  );
 }
 
 function checkoutErrorFromStripe(
@@ -103,7 +121,7 @@ export async function POST(request: Request) {
 
   const configError = stripeCheckoutConfigError(trimmedPlanId);
   if (configError) {
-    return NextResponse.json({ error: configError }, { status: 503 });
+    return checkoutErrorResponse(trimmedPlanId, configError, 503);
   }
 
   const supabase = await createClient();
@@ -133,7 +151,11 @@ export async function POST(request: Request) {
     .eq("role", role)
     .maybeSingle();
 
-  if (qualifiesAsActivePetFriendMembership(activeMembershipRow)) {
+  if (
+    (role === "pet_parent"
+      ? qualifiesAsActivePetParentMembership
+      : qualifiesAsActivePetFriendMembership)(activeMembershipRow)
+  ) {
     return NextResponse.json(
       { error: "You already have an active membership for this role." },
       { status: 409 },
@@ -143,7 +165,7 @@ export async function POST(request: Request) {
   const resolvedPriceId = resolveStripePriceId(trimmedPlanId);
   const priceError = stripeCheckoutPriceError(trimmedPlanId, resolvedPriceId);
   if (priceError) {
-    return NextResponse.json({ error: priceError }, { status: 503 });
+    return checkoutErrorResponse(trimmedPlanId, priceError, 503);
   }
 
   const {
@@ -157,6 +179,24 @@ export async function POST(request: Request) {
   const stripe = getStripe();
 
   const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId) ?? "STRIPE_*_PRICE_ID";
+  const resolvedPriceFingerprint = envStringFingerprint(resolvedEnvVar);
+
+  console.log("[stripe] checkout plan env resolution", {
+    clickedPlanId: trimmedPlanId,
+    envVarUsed: resolvedEnvVar,
+    envVarFromPlanId: envVarForPlanId(trimmedPlanId),
+    priceFingerprint: {
+      exists: resolvedPriceFingerprint.exists,
+      first10: resolvedPriceFingerprint.first10,
+      last6: resolvedPriceFingerprint.last6,
+      length: resolvedPriceFingerprint.length,
+      hadOuterWhitespace: resolvedPriceFingerprint.hadOuterWhitespace,
+      rawLength: resolvedPriceFingerprint.rawLength,
+    },
+    stripeMode: mode,
+    role,
+  });
+
   const checkoutMetadata = buildStripeCheckoutMetadata({
     userId: sessionUserId,
     role,
@@ -197,13 +237,19 @@ export async function POST(request: Request) {
   );
   if (priceTypeError) {
     console.error("[stripe] checkout price validation failed", {
-      selectedPlan: trimmedPlanId,
+      clickedPlanId: trimmedPlanId,
+      envVarUsed: resolvedEnvVar,
+      priceFingerprint: {
+        first10: resolvedPriceFingerprint.first10,
+        last6: resolvedPriceFingerprint.last6,
+        length: resolvedPriceFingerprint.length,
+        hadOuterWhitespace: resolvedPriceFingerprint.hadOuterWhitespace,
+      },
       role,
       stripeMode: mode,
-      resolvedEnvVar,
       priceSuffix,
     });
-    return NextResponse.json({ error: priceTypeError }, { status: 400 });
+    return checkoutErrorResponse(trimmedPlanId, priceTypeError, 400);
   }
 
   const { data: existingMembership } = await supabase
@@ -213,10 +259,7 @@ export async function POST(request: Request) {
     .eq("role", role)
     .maybeSingle();
 
-  const origin =
-    request.headers.get("origin")?.trim().replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ||
-    new URL(request.url).origin;
+  const origin = getRequestOrigin(request);
   const roleQuery = membershipRoleToPageQuery(role);
   const returnToQuery = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : "";
 
@@ -271,6 +314,6 @@ export async function POST(request: Request) {
     });
     const error = checkoutErrorFromStripe(err, trimmedPlanId, mode);
     const status = err instanceof Stripe.errors.StripeInvalidRequestError ? 400 : 500;
-    return NextResponse.json({ error }, { status });
+    return checkoutErrorResponse(trimmedPlanId, error, status);
   }
 }

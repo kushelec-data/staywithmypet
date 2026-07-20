@@ -11,6 +11,7 @@ import {
   type PhotoObjectPosition,
 } from "@/lib/photo-position";
 import { useLanguage } from "@/context/LanguageContext";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export type ExistingPetPhotoItem = {
@@ -120,9 +121,11 @@ export function PetPhotoUpload({
   existingPhotoBusy = false,
 }: PetPhotoUploadProps) {
   const { t } = useLanguage();
+  const pathname = usePathname();
   const copy = t.account.petsPage;
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<File[]>([]);
+  const cropPathnameRef = useRef<string | null>(null);
   const [localPreviews, setLocalPreviews] = useState<string[]>([]);
   const [pickError, setPickError] = useState<string | null>(null);
   const [cropSession, setCropSession] = useState<CropSession>(null);
@@ -146,6 +149,34 @@ export function PetPhotoUpload({
     Boolean(settingPrimaryId);
   const canDeleteExisting = totalCount > 1;
   const canDeleteLocal = totalCount > 1;
+
+  function dismissCropSession() {
+    pendingImagesRef.current = [];
+    setCropSession(null);
+    cropPathnameRef.current = null;
+  }
+
+  useEffect(() => {
+    if (cropSession) {
+      if (!cropPathnameRef.current) cropPathnameRef.current = pathname;
+    } else {
+      cropPathnameRef.current = null;
+    }
+  }, [cropSession, pathname]);
+
+  useEffect(() => {
+    if (!cropSession || !cropPathnameRef.current) return;
+    if (pathname !== cropPathnameRef.current) {
+      dismissCropSession();
+    }
+  }, [pathname, cropSession]);
+
+  useEffect(() => {
+    return () => {
+      pendingImagesRef.current = [];
+      cropPathnameRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!localModeEnabled) {
@@ -587,12 +618,7 @@ export function PetPhotoUpload({
         saving={cropSaving || existingPhotoBusy}
         onClose={() => {
           if (cropSaving || existingPhotoBusy) return;
-          if (cropSession?.replaceExistingId || typeof cropSession?.replaceIndex === "number") {
-            setCropSession(null);
-            return;
-          }
-          pendingImagesRef.current = [];
-          setCropSession(null);
+          dismissCropSession();
         }}
         onSave={saveCroppedPhoto}
       />

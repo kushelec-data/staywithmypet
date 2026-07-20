@@ -11,6 +11,8 @@ import { UserSafetyActions } from "@/components/trust/UserSafetyActions";
 import { VetClinicNearbySection } from "@/components/vet/VetClinicNearbySection";
 import { useProfile } from "@/context/ProfileContext";
 import { BookingParticipantSection } from "@/components/bookings/BookingParticipantSection";
+import { BookingContactInformationCard } from "@/components/bookings/BookingContactInformationCard";
+import { BookingEmergencyVetInformationCard } from "@/components/bookings/BookingEmergencyVetInformationCard";
 import { BookingReviewsSection } from "@/components/bookings/BookingReviewsSection";
 import { getBookingParticipantDetailsAction } from "@/app/actions/booking-participants";
 import type { BookingParticipantDetails } from "@/lib/booking-participant-details";
@@ -299,7 +301,11 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
           ) : null}
 
           {participantDetails ? (
-            <BookingParticipantSection details={participantDetails} />
+            <>
+              <BookingContactInformationCard details={participantDetails} />
+              <BookingEmergencyVetInformationCard details={participantDetails} />
+              <BookingParticipantSection details={participantDetails} />
+            </>
           ) : participantsLoading ? (
             <div className="mt-6 border-t border-black/5 pt-6">
               <p className="text-sm text-muted">{b.loading}</p>

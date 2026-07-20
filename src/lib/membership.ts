@@ -88,11 +88,18 @@ export const PLAN_BILLING_INTERVAL: Record<string, MembershipPlanDefinition["bil
 };
 
 /** Plans open for purchase on membership pages (others show Coming Soon). */
-export const PURCHASABLE_MEMBERSHIP_PLAN_IDS = ["3-month-owner", "3-month-friend"] as const;
+export const PURCHASABLE_MEMBERSHIP_PLAN_IDS = [
+  "one-time-owner",
+  "3-month-owner",
+  "1-year-owner",
+  "one-time-friend",
+  "3-month-friend",
+  "1-year-friend",
+] as const;
 
 export function isMembershipPlanPurchasable(planId: string): boolean {
   const id = planId.trim().toLowerCase();
-  return id === "3-month-owner" || id === "3-month-friend";
+  return (PURCHASABLE_MEMBERSHIP_PLAN_IDS as readonly string[]).includes(id);
 }
 
 /**
