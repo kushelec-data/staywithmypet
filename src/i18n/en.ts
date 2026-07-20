@@ -2016,6 +2016,18 @@ export const en = {
     successMessage: "Your message has been sent. We'll get back to you soon.",
     errorMessage:
       "Could not send your message. Please email us directly at info@staywithmypet.ee.",
+    newsletter: {
+      heading: "I want to join the StayWithMyPet newsletter",
+      description:
+        "Receive updates about new features, pet care tips, trusted Pet Friends, promotions, and important StayWithMyPet news. You can unsubscribe at any time.",
+      emailLabel: "Email",
+      emailPlaceholder: "you@example.com",
+      subscribe: "Subscribe",
+      successMessage: "Thank you! You've successfully subscribed to our newsletter.",
+      requiredEmail: "Please enter your email address.",
+      invalidEmail: "Please enter a valid email address.",
+      errorMessage: "Something went wrong. Please try again in a moment.",
+    },
   },
   vetClinics: {
     badge: "Pet safety",

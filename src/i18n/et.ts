@@ -2020,6 +2020,18 @@ export const et = {
     successMessage: "Sinu sõnum on saadetud. Võtame sinuga peagi ühendust.",
     errorMessage:
       "Sõnumi saatmine ebaõnnestus. Palun kirjuta meile otse aadressil info@staywithmypet.ee.",
+    newsletter: {
+      heading: "Soovin liituda StayWithMyPet uudiskirjaga",
+      description:
+        "Saad uuendusi uute funktsioonide, lemmikloomahoolduse nõuannete, usaldusväärsete lemmikloomasõprade, kampaaniate ja oluliste StayWithMyPet uudiste kohta. Saad igal ajal tellimuse tühistada.",
+      emailLabel: "E-post",
+      emailPlaceholder: "sina@näide.ee",
+      subscribe: "Liitu",
+      successMessage: "Aitäh! Oled edukalt liitunud StayWithMyPet uudiskirjaga.",
+      requiredEmail: "Palun sisesta oma e-posti aadress.",
+      invalidEmail: "Palun sisesta kehtiv e-posti aadress.",
+      errorMessage: "Midagi läks valesti. Palun proovi hetke pärast uuesti.",
+    },
   },
   vetClinics: {
     badge: "Lemmiku turvalisus",

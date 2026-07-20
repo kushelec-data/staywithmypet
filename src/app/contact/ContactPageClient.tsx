@@ -2,6 +2,7 @@
 
 import { STATUS_ALERT_ERROR_CLASS, STATUS_ALERT_SUCCESS_CLASS } from "@/lib/status-colors";
 import { submitContactFormAction } from "@/app/actions/contact";
+import { NewsletterSignupCard } from "@/components/contact/NewsletterSignupCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
@@ -155,6 +156,8 @@ export function ContactPageClient() {
           </Button>
         </form>
       </section>
+
+      <NewsletterSignupCard />
     </>
   );
 }
