@@ -46,6 +46,7 @@ describe("participant contact mapping", () => {
     phone_country_code: null,
     formatted_address: "Tallinn, Estonia",
     address: null,
+    location: null,
     latitude: 59.437,
     longitude: 24.7536,
     emergency_contact_name: "Emergency Person",

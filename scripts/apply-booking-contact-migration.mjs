@@ -66,9 +66,10 @@ async function main() {
     const client = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
     try {
       await client.connect();
+      await applySql(client, "supabase/migrations/20260608100000_profile_google_location.sql");
       await applySql(client, "supabase/migrations/20260720100000_booking_contact_sharing.sql");
       await applySql(client, "supabase/migrations/20260720120000_preferred_vet_clinic.sql");
-      console.log("Booking contact migrations applied successfully.");
+      console.log("Profile location + booking contact migrations applied successfully.");
       return;
     } catch (err) {
       lastError = err;

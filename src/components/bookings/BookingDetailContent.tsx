@@ -62,6 +62,7 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
   );
   const [participantLoadError, setParticipantLoadError] =
     useState<ParticipantDetailsLoadError | null>(null);
+  const [participantDevMessage, setParticipantDevMessage] = useState<string | null>(null);
   const [participantsLoading, setParticipantsLoading] = useState(false);
   const [bookingReviews, setBookingReviews] = useState<ReviewDisplay[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -139,21 +140,25 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
     if (!booking?.id) {
       setParticipantDetails(null);
       setParticipantLoadError(null);
-      return;
+      setParticipantDevMessage(null);
+    return;
     }
 
     let cancelled = false;
     setParticipantsLoading(true);
     setParticipantLoadError(null);
+    setParticipantDevMessage(null);
     void getBookingParticipantDetailsAction(booking.id)
       .then((result) => {
         if (cancelled) return;
         setParticipantDetails(result.details);
         setParticipantLoadError(result.error);
+        setParticipantDevMessage(result.devMessage ?? null);
         if (process.env.NODE_ENV === "development") {
           console.info("[booking-detail] participant contact load", {
             bookingId: booking.id,
             error: result.error,
+            devMessage: result.devMessage,
             showPrivateContact: result.details?.showPrivateContact ?? false,
             hasContact: Boolean(result.details?.contact),
           });
@@ -163,10 +168,12 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
         if (!cancelled) {
           setParticipantDetails(null);
           setParticipantLoadError("load_failed");
+          const message = err instanceof Error ? err.stack ?? err.message : String(err);
+          setParticipantDevMessage(message);
           if (process.env.NODE_ENV === "development") {
             console.error("[booking-detail] participant contact load failed", {
               bookingId: booking.id,
-              message: err instanceof Error ? err.message : String(err),
+              message,
             });
           }
         }
@@ -338,7 +345,9 @@ export function BookingDetailContent({ bookingId }: BookingDetailContentProps) {
           ) : participantLoadError === "load_failed" ? (
             <div className="mt-6 border-t border-black/5 pt-6">
               <p className="text-sm text-brand-pink" role="alert">
-                {b.contactInfo.loadError}
+                {process.env.NODE_ENV === "development" && participantDevMessage
+                  ? participantDevMessage
+                  : b.contactInfo.loadError}
               </p>
             </div>
           ) : null}
