@@ -11,6 +11,8 @@ export type SubscribeNewsletterResult =
       error: "validation" | "rate_limit" | "server";
       validationField?: "required" | "invalid";
       message?: string;
+      /** Exact backend failure — surfaced in development UI/logging. */
+      devMessage?: string;
     };
 
 function isValidEmail(value: string): boolean {
@@ -49,7 +51,11 @@ export async function subscribeNewsletterAction(email: string): Promise<Subscrib
 
   const admin = createAdminClient();
   if (!admin) {
-    return { ok: false, error: "server" };
+    const devMessage = "Admin client unavailable — SUPABASE_SERVICE_ROLE_KEY missing";
+    if (process.env.NODE_ENV === "development") {
+      console.error("[newsletter]", devMessage);
+    }
+    return { ok: false, error: "server", devMessage };
   }
 
   const now = new Date().toISOString();
@@ -62,11 +68,17 @@ export async function subscribeNewsletterAction(email: string): Promise<Subscrib
     if (error.code === "23505") {
       return { ok: true };
     }
+    const devMessage = [error.code, error.message, error.details, error.hint]
+      .filter(Boolean)
+      .join(" — ");
     console.error("[newsletter] subscribe failed", {
+      email: normalized,
       code: error.code,
       message: error.message,
+      details: error.details,
+      hint: error.hint,
     });
-    return { ok: false, error: "server" };
+    return { ok: false, error: "server", devMessage };
   }
 
   return { ok: true };

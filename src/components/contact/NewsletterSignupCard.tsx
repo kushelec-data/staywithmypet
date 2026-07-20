@@ -53,8 +53,20 @@ export function NewsletterSignupCard() {
         return;
       }
 
+      if (process.env.NODE_ENV === "development" && result.devMessage) {
+        setError(result.devMessage);
+        console.error("[newsletter-signup]", result.devMessage);
+        return;
+      }
+
       setError(n.errorMessage);
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.stack ?? err.message : String(err);
+      if (process.env.NODE_ENV === "development") {
+        setError(message);
+        console.error("[newsletter-signup] action threw", message);
+        return;
+      }
       setError(n.errorMessage);
     } finally {
       setSubmitting(false);
