@@ -326,7 +326,14 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
         if (!cancelled) {
           setAllPets([]);
           setProfiles([]);
-          setLoadError(err instanceof Error ? err.message : t.search.loadResultsError);
+          if (process.env.NODE_ENV === "development") {
+            console.error("[find-pets] marketplace load failed", err);
+          }
+          const message =
+            err instanceof Error && err.message.trim()
+              ? err.message
+              : t.search.loadResultsError;
+          setLoadError(message);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -382,10 +389,14 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
   const mapLabels = isPets ? t.findPets : t.findCare;
 
   const resultCount = isPets ? displayPets.length : displayProfiles.length;
-  const resultsText = (isPets ? t.findPets.results : t.findCare.results).replace(
-    "{count}",
-    String(resultCount),
-  );
+  const resultsText = loadError
+    ? process.env.NODE_ENV === "development"
+      ? loadError
+      : t.search.loadResultsError
+    : (isPets ? t.findPets.results : t.findCare.results).replace(
+        "{count}",
+        String(resultCount),
+      );
 
   const applyCareTypesFromUrl = useCallback((types: string[]) => {
     setFriendFilters((prev) => ({ ...prev, careTypesOffered: types }));

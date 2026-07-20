@@ -15,6 +15,7 @@ import { parseCoord } from "@/lib/parse-coord";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
 import { isPetMarketplaceMinimumEligible } from "@/lib/profile-marketplace-eligibility";
 import { formatSupabaseError } from "@/lib/profile-load";
+import { isMissingColumnError, logSupabaseError } from "@/lib/supabase-errors";
 import {
   petMatchesActivity,
   petMatchesAvailability,
@@ -107,23 +108,31 @@ const PUBLIC_PET_SELECT_WITHOUT_OTHER = PUBLIC_PET_SELECT.replace("other_breed, 
 
 const PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC = PUBLIC_PET_SELECT.replace("is_public, ", "");
 
-const PUBLIC_PET_SELECT_LEGACY = PUBLIC_PET_SELECT.replace(
-  PUBLIC_PET_PHOTO_SELECT,
-  PUBLIC_PET_PHOTO_SELECT_LEGACY,
+const PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC_NO_OTHER = PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC.replace(
+  "other_breed, ",
+  "",
 );
 
-const PUBLIC_PET_SELECT_LEGACY_WITHOUT_IS_PUBLIC = PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC.replace(
-  PUBLIC_PET_PHOTO_SELECT,
-  PUBLIC_PET_PHOTO_SELECT_LEGACY,
+function withLegacyPetPhotos(select: string): string {
+  return select.replace(PUBLIC_PET_PHOTO_SELECT, PUBLIC_PET_PHOTO_SELECT_LEGACY);
+}
+
+/** Legacy photo embed — must not include other_breed until that migration is applied. */
+const PUBLIC_PET_SELECT_LEGACY = withLegacyPetPhotos(PUBLIC_PET_SELECT_WITHOUT_OTHER);
+
+const PUBLIC_PET_SELECT_LEGACY_WITHOUT_IS_PUBLIC = withLegacyPetPhotos(
+  PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC_NO_OTHER,
 );
 
 const PUBLIC_PET_SELECT_TIERS = [
   PUBLIC_PET_SELECT,
   PUBLIC_PET_SELECT_WITHOUT_OTHER,
-  PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC,
-  PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC.replace("other_breed, ", ""),
   PUBLIC_PET_SELECT_LEGACY,
+  PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC,
+  PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC_NO_OTHER,
   PUBLIC_PET_SELECT_LEGACY_WITHOUT_IS_PUBLIC,
+  withLegacyPetPhotos(PUBLIC_PET_SELECT),
+  withLegacyPetPhotos(PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC),
 ] as const;
 
 function selectIncludesIsPublic(select: string): boolean {
@@ -371,16 +380,58 @@ async function queryPublicPets(supabase: SupabaseClient) {
 
     const result = await query;
 
-    if (!result.error) return result;
-
-    if (!/column/i.test(result.error.message)) {
+    if (!result.error) {
+      if (process.env.NODE_ENV === "development" && lastError) {
+        console.info("[find-pets] public pet query succeeded after fallback", {
+          recoveredFrom: lastError.code,
+          message: lastError.message,
+        });
+      }
       return result;
+    }
+
+    const columnMissing =
+      isMissingColumnError(result.error) || /column/i.test(result.error.message);
+
+    if (!columnMissing) {
+      logSupabaseError("find-pets query failed (non-column error)", result.error);
+      return result;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[find-pets] public pet query tier failed", {
+        code: result.error.code,
+        message: result.error.message,
+        details: result.error.details,
+        hint: result.error.hint,
+      });
     }
 
     lastError = result.error;
   }
 
+  if (lastError) {
+    logSupabaseError("find-pets query exhausted all tiers", lastError);
+  }
+
   return { data: null, error: lastError };
+}
+
+export class PublicPetSearchQueryError extends Error {
+  readonly code: string | null;
+  readonly details: string | null;
+  readonly hint: string | null;
+
+  constructor(error: PostgrestError) {
+    const parts = [error.message, error.details, error.hint, error.code ? `Code: ${error.code}` : null]
+      .filter(Boolean)
+      .join(" — ");
+    super(parts || "Find Pets query failed");
+    this.name = "PublicPetSearchQueryError";
+    this.code = error.code ?? null;
+    this.details = error.details ?? null;
+    this.hint = error.hint ?? null;
+  }
 }
 
 export type FetchPublicSearchPetsOptions = {
@@ -393,7 +444,9 @@ export async function fetchPublicSearchPets(
   options: FetchPublicSearchPetsOptions = {},
 ): Promise<PublicSearchPet[]> {
   const result = await queryPublicPets(supabase);
-  if (result.error) throw new Error(formatSupabaseError(result.error));
+  if (result.error) {
+    throw new PublicPetSearchQueryError(result.error);
+  }
 
   const mapped = (result.data ?? [])
     .map((row) => mapRowToPublicSearchPet(row as unknown as PetIntroRow))
