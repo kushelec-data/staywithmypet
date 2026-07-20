@@ -6,6 +6,7 @@ import type { EmailRecipientRole, EmailTemplateContext } from "@/lib/emails/type
 import { resolveRecipientEmail } from "@/lib/email-send";
 import type { BookingCompletionPath } from "@/lib/booking-completion";
 import { speciesDisplayLabel, type PetSpecies } from "@/lib/pet-data";
+import { resolvePetBreedDisplay } from "@/lib/pet-breeds";
 import { profileDisplayName } from "@/lib/profile-display";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -108,13 +109,18 @@ async function loadPet(petId: string): Promise<{ name: string; typeLabel: string
 
   const { data } = await admin
     .from("pets")
-    .select("name, species, breed")
+    .select("name, species, breed, other_breed")
     .eq("id", petId)
     .maybeSingle();
 
   const name = (data?.name as string | null)?.trim() || "your pet";
   const species = normalizeSpecies((data?.species as string | null) ?? null);
-  const typeLabel = speciesDisplayLabel(species, (data?.breed as string | null) ?? null).toLowerCase();
+  const displayBreed = resolvePetBreedDisplay(
+    species,
+    (data?.breed as string | null) ?? null,
+    (data?.other_breed as string | null) ?? null,
+  );
+  const typeLabel = speciesDisplayLabel(species, displayBreed).toLowerCase();
   return { name, typeLabel };
 }
 

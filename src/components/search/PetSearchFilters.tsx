@@ -14,6 +14,7 @@ import {
 } from "@/components/search/filter-icons";
 import { useLanguage } from "@/context/LanguageContext";
 import { filterableBreedsForSpecies } from "@/lib/pet-breeds";
+import { translateProfileLabel } from "@/lib/profile-translations";
 import {
   petSearchActivityOptions,
   petSearchCareLocationOptions,
@@ -111,8 +112,8 @@ export function PetSearchFilters({
     for (const sp of speciesWithBreeds) {
       for (const b of filterableBreedsForSpecies(sp)) breeds.add(b);
     }
-    return [...breeds].map((b) => ({ value: b, label: b }));
-  }, [filters.species]);
+    return [...breeds].map((b) => ({ value: b, label: translateProfileLabel(b, locale) }));
+  }, [filters.species, locale]);
 
   const showBreedFilter = breedOptions.length > 0;
 

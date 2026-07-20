@@ -5,6 +5,7 @@ import type { EmailTemplateContext } from "@/lib/emails/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { profileDisplayName } from "@/lib/profile-display";
 import { speciesDisplayLabel, type PetSpecies } from "@/lib/pet-data";
+import { resolvePetBreedDisplay } from "@/lib/pet-breeds";
 
 function normalizeSpecies(raw: string | null): PetSpecies {
   if (raw === "dog" || raw === "cat" || raw === "rabbit" || raw === "bird" || raw === "other") {
@@ -47,7 +48,7 @@ export async function hydrateScheduledEmailContext(
 
   const { data: pet } = await admin
     .from("pets")
-    .select("name, species, breed")
+    .select("name, species, breed, other_breed")
     .eq("id", booking.pet_id)
     .maybeSingle();
 
@@ -58,7 +59,12 @@ export async function hydrateScheduledEmailContext(
     .maybeSingle();
 
   const species = normalizeSpecies((pet?.species as string | null) ?? null);
-  const typeLabel = speciesDisplayLabel(species, (pet?.breed as string | null) ?? null).toLowerCase();
+  const displayBreed = resolvePetBreedDisplay(
+    species,
+    (pet?.breed as string | null) ?? null,
+    (pet?.other_breed as string | null) ?? null,
+  );
+  const typeLabel = speciesDisplayLabel(species, displayBreed).toLowerCase();
 
   const role =
     row.event_type === "review_reminder_friend" ||

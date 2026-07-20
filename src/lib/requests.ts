@@ -1,3 +1,4 @@
+import { resolvePetBreedDisplay } from "@/lib/pet-breeds";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { statusBadgeClass } from "@/lib/status-colors";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -236,14 +237,22 @@ export function localizeRequestMessage(
 }
 
 type ProfileJoin = { id: string; display_name: string };
-type PetJoin = { id: string; name: string; species?: string | null; breed?: string | null };
+type PetJoin = {
+  id: string;
+  name: string;
+  species?: string | null;
+  breed?: string | null;
+  other_breed?: string | null;
+};
 
 function formatPetSpeciesLabel(
   species: string | null | undefined,
   breed: string | null | undefined,
+  otherBreed?: string | null | undefined,
 ): string | null {
   if (!species?.trim()) return null;
-  const label = speciesDisplayLabel(species.trim(), breed?.trim() ?? null);
+  const displayBreed = resolvePetBreedDisplay(species.trim(), breed, otherBreed);
+  const label = speciesDisplayLabel(species.trim(), displayBreed);
   if (!label) return null;
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -350,7 +359,7 @@ function namesFromEmbeddedRow(row: RequestRowWithRelations): {
         : null;
 
   const petSpeciesLabel = row.pet_id
-    ? formatPetSpeciesLabel(petRow?.species, petRow?.breed)
+    ? formatPetSpeciesLabel(petRow?.species, petRow?.breed, petRow?.other_breed)
     : null;
 
   return { senderName, receiverName, petName, petSpeciesLabel };
@@ -398,7 +407,7 @@ async function loadPetMetaById(
 
   const { data, error } = await supabase
     .from("pets")
-    .select("id, name, species, breed")
+    .select("id, name, species, breed, other_breed")
     .in("id", petIds);
   if (error) throw error;
 
@@ -410,6 +419,7 @@ async function loadPetMetaById(
       speciesLabel: formatPetSpeciesLabel(
         row.species as string | null,
         row.breed as string | null,
+        row.other_breed as string | null,
       ),
     });
   }

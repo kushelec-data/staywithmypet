@@ -47,7 +47,12 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
     str(record, "species_form") ||
     (typeof record.species === "string" ? record.species : "other");
   const storedBreed = str(record, "breed");
-  const { breedSelection, breedOther } = breedFormStateFromStored(speciesForm, storedBreed);
+  const storedOtherBreed = str(record, "other_breed") || null;
+  const { breedSelection, breedOther } = breedFormStateFromStored(
+    speciesForm,
+    storedBreed,
+    storedOtherBreed,
+  );
 
   return {
     name: str(record, "name"),

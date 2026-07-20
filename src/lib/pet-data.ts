@@ -4,7 +4,7 @@ import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/
 import { applyMarketplaceVisibility } from "@/lib/profile-marketplace-visibility";
 import { IMAGES, placeholderPetImage } from "@/lib/images";
 import { formatSupabaseError } from "@/lib/profile-load";
-import { resolveBreedForSave } from "@/lib/pet-breeds";
+import { resolveBreedFieldsForSave, resolvePetBreedDisplay } from "@/lib/pet-breeds";
 import { normalizePetDobToIso } from "@/lib/pet-date-of-birth";
 import {
   pickPrimaryPhotoUrl,
@@ -158,11 +158,17 @@ function buildPetProfileFields(input: PetProfileFormInput) {
     ...extraTags,
   ].filter(Boolean);
 
+  const breedFields = resolveBreedFieldsForSave(
+    input.speciesForm,
+    input.breedSelection,
+    input.breedOther,
+  );
+
   return {
     name: input.name.trim(),
     species: input.species,
-    breed:
-      resolveBreedForSave(input.speciesForm, input.breedSelection, input.breedOther) || null,
+    breed: breedFields.breed,
+    other_breed: breedFields.other_breed,
     age_label: ageLabel,
     date_of_birth: dobIso || null,
     gender: input.gender || null,
@@ -364,7 +370,7 @@ export async function fetchUserPets(
   ownerId: string,
 ): Promise<UserPetRow[]> {
   const extendedSelect =
-    "id, name, species, breed, age_label, location, address, size_label, temperament, care_needs, availability, availability_dates, is_active, pet_photos ( public_url, is_primary, sort_order )";
+    "id, name, species, breed, other_breed, age_label, location, address, size_label, temperament, care_needs, availability, availability_dates, is_active, pet_photos ( public_url, is_primary, sort_order )";
   const baseSelect =
     "id, name, species, breed, age_label, location, is_active, pet_photos ( public_url, is_primary, sort_order )";
 
@@ -393,7 +399,11 @@ export async function fetchUserPets(
       id: row.id,
       name: row.name,
       species: row.species as PetSpecies,
-      breed: row.breed,
+      breed: resolvePetBreedDisplay(
+        row.species as string,
+        row.breed as string | null,
+        "other_breed" in row ? (row.other_breed as string | null) : null,
+      ),
       age_label: row.age_label,
       location: row.location,
       size_label: "size_label" in row ? (row.size_label as string | null) : null,
@@ -421,6 +431,7 @@ type PetDbRow = {
   name: string;
   species: string;
   breed: string | null;
+  other_breed?: string | null;
   age_label: string | null;
   location: string | null;
   availability?: string | null;
@@ -460,7 +471,7 @@ export function mapDbPetToCard(pet: PetDbRow, index: number): Pet {
     id: pet.id,
     name: pet.name,
     species,
-    breed: pet.breed ?? "—",
+    breed: resolvePetBreedDisplay(pet.species, pet.breed, pet.other_breed) ?? "—",
     age: pet.age_label ?? "—",
     location: pet.location ?? "—",
     availabilitySummary,

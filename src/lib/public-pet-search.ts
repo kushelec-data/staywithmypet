@@ -100,8 +100,10 @@ const PUBLIC_PET_PHOTO_SELECT =
 const PUBLIC_PET_PHOTO_SELECT_LEGACY = "pet_photos ( public_url, is_primary, sort_order )";
 
 const PUBLIC_PET_SELECT =
-  "id, name, species, breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, " +
+  "id, name, species, breed, other_breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, " +
   `${PUBLIC_PET_PHOTO_SELECT}, profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )`;
+
+const PUBLIC_PET_SELECT_WITHOUT_OTHER = PUBLIC_PET_SELECT.replace("other_breed, ", "");
 
 const PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC = PUBLIC_PET_SELECT.replace("is_public, ", "");
 
@@ -117,7 +119,9 @@ const PUBLIC_PET_SELECT_LEGACY_WITHOUT_IS_PUBLIC = PUBLIC_PET_SELECT_WITHOUT_IS_
 
 const PUBLIC_PET_SELECT_TIERS = [
   PUBLIC_PET_SELECT,
+  PUBLIC_PET_SELECT_WITHOUT_OTHER,
   PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC,
+  PUBLIC_PET_SELECT_WITHOUT_IS_PUBLIC.replace("other_breed, ", ""),
   PUBLIC_PET_SELECT_LEGACY,
   PUBLIC_PET_SELECT_LEGACY_WITHOUT_IS_PUBLIC,
 ] as const;
@@ -296,6 +300,8 @@ function mapRowToPublicSearchPet(
     mapPosition: resolvePublicMapPosition(row, owner, petId, intro.locationArea),
     speciesForm: strFrom(details.species_form),
     breed: intro.breed,
+    storedBreed: strFrom(row.breed),
+    otherBreed: strFrom(row.other_breed),
     energyLevel: strFrom(row.energy_level) ?? strFrom(details.energy_level),
     temperamentTags: pickTemperament(row, details),
     requiresMedication: pickMedicationFlag(row.requires_medication, details, "requires_medication"),

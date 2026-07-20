@@ -44,6 +44,7 @@ import { PetBreedSelect } from "@/components/pets/PetBreedSelect";
 import {
   breedsForSpeciesForm,
   isBreedOtherValue,
+  validateOtherBreedText,
 } from "@/lib/pet-breeds";
 import {
   fetchPetPhotosForOwner,
@@ -441,10 +442,23 @@ export function NewPetForm({ petId }: NewPetFormProps) {
         setError(petsCopy.errorSelectBreed);
         return null;
       }
-      if (isBreedOtherValue(payload.breedSelection) && !payload.breedOther.trim()) {
-        setBreedFieldError(petsCopy.errorEnterBreed);
-        setError(petsCopy.errorEnterBreed);
-        return null;
+      if (isBreedOtherValue(payload.breedSelection)) {
+        const otherIssue = validateOtherBreedText(payload.breedOther);
+        if (otherIssue === "required") {
+          setBreedFieldError(petsCopy.errorBreedRequired);
+          setError(petsCopy.errorBreedRequired);
+          return null;
+        }
+        if (otherIssue === "too_short") {
+          setBreedFieldError(petsCopy.errorBreedTooShort);
+          setError(petsCopy.errorBreedTooShort);
+          return null;
+        }
+        if (otherIssue === "too_long") {
+          setBreedFieldError(petsCopy.errorBreedTooLong);
+          setError(petsCopy.errorBreedTooLong);
+          return null;
+        }
       }
     }
     setBreedFieldError(null);

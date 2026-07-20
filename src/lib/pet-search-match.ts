@@ -1,4 +1,4 @@
-import { isStandardBreedForSpecies } from "@/lib/pet-breeds";
+import { isStandardBreedForSpecies, resolvePetBreedDisplay } from "@/lib/pet-breeds";
 import { careTypeFilterMatchVariants } from "@/lib/care-type-options";
 import { petSearchTemperamentOptions } from "@/lib/pet-search-filter-config";
 import { matchesSearchAvailabilityDates } from "@/lib/search-availability-match";
@@ -7,7 +7,10 @@ import { normalizePetWeightStorageValue } from "@/lib/pet-weight";
 export type PetSearchFilterable = {
   species: string;
   speciesForm: string | null;
+  /** Display breed for cards — use storedBreed/otherBreed for filter matching. */
   breed: string | null;
+  storedBreed?: string | null;
+  otherBreed?: string | null;
   sizeLabel: string | null;
   energyLevel: string | null;
   temperamentTags: string[];
@@ -35,11 +38,13 @@ export function petMatchesSpeciesKeys(pet: PetSearchFilterable, selected: string
 
 export function petMatchesBreeds(pet: PetSearchFilterable, breeds: string[]): boolean {
   if (!breeds.length) return true;
-  const petBreed = norm(pet.breed ?? "");
+  const speciesKey = pet.speciesForm ?? pet.species;
+  const storedBreed = pet.storedBreed ?? pet.breed;
+  const displayBreed = resolvePetBreedDisplay(speciesKey, storedBreed, pet.otherBreed);
+  const petBreed = norm(displayBreed ?? "");
   if (!petBreed) return false;
 
-  const speciesKey = pet.speciesForm ?? pet.species;
-  if (!isStandardBreedForSpecies(speciesKey, pet.breed)) {
+  if (!isStandardBreedForSpecies(speciesKey, storedBreed, pet.otherBreed)) {
     return false;
   }
 

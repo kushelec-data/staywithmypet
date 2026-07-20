@@ -5,6 +5,7 @@ import { pickCareTypesFromRow, normalizeCareTypes } from "@/lib/pet-care-type";
 import { formatNearbyLocation } from "@/lib/location-public";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { speciesDisplayLabel, speciesEmoji, type PetSpecies } from "@/lib/pet-data";
+import { resolvePetBreedDisplay } from "@/lib/pet-breeds";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatListWithOtherDisplay } from "@/lib/other-option";
 import { pickPrimaryPhotoUrl, pickPrimaryPhotoPosition, photoPositionsByUrl, sortPetPhotoUrls } from "@/lib/pet-photos";
@@ -22,13 +23,13 @@ const PET_PHOTO_SELECT_LEGACY = "pet_photos ( public_url, is_primary, sort_order
 
 /** Full select for pet intro cards (uses pets.care_type). */
 export const PET_INTRO_SELECT =
-  `id, name, species, breed, age_label, date_of_birth, size_label, location, temperament, energy_level, requires_medication, feeding_schedule, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT}`;
+  `id, name, species, breed, other_breed, age_label, date_of_birth, size_label, location, temperament, energy_level, requires_medication, feeding_schedule, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT}`;
 
 const PET_INTRO_SELECT_CORE =
-  `id, name, species, breed, age_label, size_label, location, temperament, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT}`;
+  `id, name, species, breed, other_breed, age_label, size_label, location, temperament, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT}`;
 
 const PET_INTRO_SELECT_MINIMAL =
-  `id, name, species, breed, location, is_active, details, ${PET_PHOTO_SELECT}`;
+  `id, name, species, breed, other_breed, location, is_active, details, ${PET_PHOTO_SELECT}`;
 
 const PET_INTRO_SELECT_LEGACY =
   `id, name, species, breed, age_label, date_of_birth, size_label, location, temperament, energy_level, requires_medication, feeding_schedule, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, care_type, availability, availability_dates, is_active, details, ${PET_PHOTO_SELECT_LEGACY}`;
@@ -39,10 +40,17 @@ const PET_INTRO_SELECT_CORE_LEGACY =
 const PET_INTRO_SELECT_MINIMAL_LEGACY =
   `id, name, species, breed, location, is_active, details, ${PET_PHOTO_SELECT_LEGACY}`;
 
+const PET_INTRO_SELECT_WITHOUT_OTHER = PET_INTRO_SELECT.replace("other_breed, ", "");
+const PET_INTRO_SELECT_CORE_WITHOUT_OTHER = PET_INTRO_SELECT_CORE.replace("other_breed, ", "");
+const PET_INTRO_SELECT_MINIMAL_WITHOUT_OTHER = PET_INTRO_SELECT_MINIMAL.replace("other_breed, ", "");
+
 const PET_INTRO_SELECT_TIERS = [
   PET_INTRO_SELECT,
   PET_INTRO_SELECT_CORE,
   PET_INTRO_SELECT_MINIMAL,
+  PET_INTRO_SELECT_WITHOUT_OTHER,
+  PET_INTRO_SELECT_CORE_WITHOUT_OTHER,
+  PET_INTRO_SELECT_MINIMAL_WITHOUT_OTHER,
   PET_INTRO_SELECT_LEGACY,
   PET_INTRO_SELECT_CORE_LEGACY,
   PET_INTRO_SELECT_MINIMAL_LEGACY,
@@ -176,6 +184,12 @@ function petHasPersonalityInput(row: PetIntroRow): boolean {
   );
 }
 
+function resolveRowBreedDisplay(row: PetIntroRow, species: PetSpecies): string | null {
+  const details = detailsOf(row.details);
+  const speciesForm = strFrom(details.species_form) ?? species;
+  return resolvePetBreedDisplay(speciesForm, strFrom(row.breed), strFrom(row.other_breed));
+}
+
 /** Compact facts for overview cards (max 3 lines). */
 export function buildCompactPetLines(
   row: PetIntroRow,
@@ -189,8 +203,8 @@ export function buildCompactPetLines(
   },
 ): string[] {
   const details = detailsOf(row.details);
-  const breed = strFrom(row.breed);
   const species = normalizeSpecies(row.species);
+  const breed = resolveRowBreedDisplay(row, species);
   const typeLabel = breed && species !== "other" ? breed : speciesDisplayLabel(species, breed);
   const weightShort = options.weightShort;
   const ageDisplay = options.ageDisplay;
@@ -229,7 +243,7 @@ export function buildPetCareSummary(row: PetIntroRow): string {
   const details = detailsOf(row.details);
   const name = strFrom(row.name) ?? "This pet";
 
-  const breed = strFrom(row.breed);
+  const breed = resolveRowBreedDisplay(row, normalizeSpecies(row.species));
   const species = normalizeSpecies(row.species);
   const speciesLabel = speciesDisplayLabel(species, breed);
   const displayType = breed && species !== "other" ? breed : speciesLabel;
@@ -309,7 +323,7 @@ export function mapRowToPetIntro(
 ): PetIntroDisplay {
   const details = detailsOf(row.details);
   const species = normalizeSpecies(row.species);
-  const breed = strFrom(row.breed);
+  const breed = resolveRowBreedDisplay(row, species);
   const dates = normalizeAvailabilityDates(
     row.availability_dates ?? details.availability_dates,
   );

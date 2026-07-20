@@ -8,6 +8,7 @@ import {
   areRequestCareDatesPast,
 } from "@/lib/request-validation";
 import { speciesDisplayLabel, type PetSpecies } from "@/lib/pet-data";
+import { resolvePetBreedDisplay } from "@/lib/pet-breeds";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { profileDisplayName } from "@/lib/profile-display";
 import type { ProfileRole } from "@/lib/profile-setup";
@@ -42,6 +43,7 @@ type PetEmailRow = {
   name: string | null;
   species: string | null;
   breed: string | null;
+  other_breed?: string | null;
 };
 
 function roleForUserOnRequest(row: RequestEmailRow, userId: string): EmailRecipientRole {
@@ -106,14 +108,15 @@ async function loadPet(petId: string | null): Promise<{ name: string; typeLabel:
 
   const { data } = await admin
     .from("pets")
-    .select("name, species, breed")
+    .select("name, species, breed, other_breed")
     .eq("id", petId)
     .maybeSingle();
 
   const row = data as PetEmailRow | null;
   const name = row?.name?.trim() || "your pet";
   const species = normalizeSpecies(row?.species ?? null);
-  const typeLabel = speciesDisplayLabel(species, row?.breed ?? null).toLowerCase();
+  const displayBreed = resolvePetBreedDisplay(species, row?.breed ?? null, row?.other_breed ?? null);
+  const typeLabel = speciesDisplayLabel(species, displayBreed).toLowerCase();
   return { name, typeLabel };
 }
 
