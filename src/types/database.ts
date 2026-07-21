@@ -186,6 +186,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      accept_care_request: {
+        Args: { p_request_id: string };
+        Returns: string | null;
+      };
       cancel_booking: {
         Args: { p_booking_id: string; p_reason?: string | null };
         Returns: undefined;

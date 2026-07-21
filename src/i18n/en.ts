@@ -260,6 +260,19 @@ export const en = {
     petFriendMembershipRequired:
       "An active Pet Friend membership is required to send a care request.",
     viewMembershipPlans: "View membership plans",
+    incomingMembershipUpsell: {
+      petFriendTitle: "{petName} would like you to look after them!",
+      petFriendBody:
+        "{petName}'s owner has sent you a care request. Activate your Pet Friend membership to accept the request, start chatting and arrange the booking.",
+      petFriendButton: "Activate Pet Friend Membership",
+      petParentTitle: "Great news — someone would like to care for {petName}!",
+      petParentBody:
+        "Activate your Pet Parent membership to accept the request, start chatting and arrange the booking.",
+      petParentButton: "Activate Pet Parent Membership",
+      fallbackTitle: "You have received a new care request",
+      fallbackBody:
+        "Activate the required membership to accept the request, start chatting and arrange the booking.",
+    },
     termsSchemaMissing:
       "Terms acceptance is not configured yet. Please contact support or try again later.",
     sendRequest: "Send request",

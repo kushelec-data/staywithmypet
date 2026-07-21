@@ -262,6 +262,19 @@ export const et = {
     petFriendMembershipRequired:
       "Hoolduspäringu saatmiseks on vajalik aktiivne loomasõbra liikmesus.",
     viewMembershipPlans: "Vaata liikmesuse plaane",
+    incomingMembershipUpsell: {
+      petFriendTitle: "{petName} soovib, et sa tema eest hoolitseksid!",
+      petFriendBody:
+        "{petName} omanik saatis sulle hoiusoovi. Aktiveeri Pet Friend liikmesus, et soov vastu võtta, vestlust alustada ja hoid kokku leppida.",
+      petFriendButton: "Aktiveeri Pet Friend liikmesus",
+      petParentTitle: "Hea uudis – keegi soovib {petName} eest hoolitseda!",
+      petParentBody:
+        "Aktiveeri Pet Parent liikmesus, et soov vastu võtta, vestlust alustada ja hoid kokku leppida.",
+      petParentButton: "Aktiveeri Pet Parent liikmesus",
+      fallbackTitle: "Sulle saadeti uus hoiusoov",
+      fallbackBody:
+        "Aktiveeri vajalik liikmesus, et soov vastu võtta, vestlust alustada ja hoid kokku leppida.",
+    },
     termsSchemaMissing:
       "Kasutustingimuste nõusolek pole veel seadistatud. Võta ühendust toe või proovi hiljem uuesti.",
     sendRequest: "Saada päring",

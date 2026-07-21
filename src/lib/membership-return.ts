@@ -13,6 +13,7 @@ export function sanitizeReturnTo(value: string | null | undefined): string | nul
 export type MembershipPageQuery = {
   role?: MembershipRole | null;
   returnTo?: string | null;
+  source?: string | null;
   success?: boolean;
   cancelled?: boolean;
   sessionId?: string | null;
@@ -26,6 +27,9 @@ export function buildMembershipPagePath(query: MembershipPageQuery = {}): string
   const returnTo = sanitizeReturnTo(query.returnTo ?? null);
   if (returnTo) {
     params.set("returnTo", returnTo);
+  }
+  if (query.source?.trim()) {
+    params.set("source", query.source.trim());
   }
   if (query.success) {
     params.set("success", "true");

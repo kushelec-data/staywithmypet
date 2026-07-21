@@ -1,10 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatNearbyLocation } from "@/lib/location-public";
-import {
-  excludeMarketplaceSelf,
-  filterProfilesWithActivePetFriendMembership,
-} from "@/lib/marketplace-membership";
+import { excludeMarketplaceSelf } from "@/lib/marketplace-membership";
 import {
   isPetFriendMarketplaceMinimumEligible,
   isDiscoverableOnFindCare,
@@ -188,7 +185,7 @@ export function mapPetFriendSearchRow(row: PetFriendSearchRow): SearchProfile {
   };
 }
 
-/** Public Pet Friend listings for Pet Parents on /find-care (active pet_friend membership required). */
+/** Public Pet Friend listings for Pet Parents on /find-care. */
 export type FetchPetFriendSearchProfilesOptions = {
   excludeUserId?: string | null;
 };
@@ -208,8 +205,7 @@ export async function fetchPetFriendSearchProfiles(
 
     if (!error) {
       const mapped = mapPetFriendSearchRows((data ?? []) as unknown as PetFriendSearchRow[]);
-      const withoutSelf = excludeMarketplaceSelf(mapped, options.excludeUserId);
-      return filterProfilesWithActivePetFriendMembership(supabase, withoutSelf);
+      return excludeMarketplaceSelf(mapped, options.excludeUserId);
     }
 
     if (!isMissingColumnError(error) || i === selects.length - 1) {

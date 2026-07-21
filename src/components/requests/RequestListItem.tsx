@@ -6,8 +6,14 @@ import { BookingTermsNotice } from "@/components/legal/BookingTermsNotice";
 import { RequestCardActions } from "@/components/requests/RequestCardActions";
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
 import { useLanguage } from "@/context/LanguageContext";
+import { useProfile } from "@/context/ProfileContext";
 import { bookingTermsContextForRole } from "@/lib/terms-acceptance";
+import {
+  buildIncomingRequestUpsellCopy,
+  receiverNeedsMembershipToAccept,
+} from "@/lib/incoming-request-membership";
 import type { MembershipRole } from "@/lib/membership";
+import { emptyMembershipsByRole } from "@/lib/membership";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { CareRequest } from "@/lib/requests";
 import {
@@ -102,6 +108,7 @@ export function RequestListItem({
   onCancel,
 }: RequestListItemProps) {
   const { t, locale } = useLanguage();
+  const { profile, loading: profileLoading } = useProfile();
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsAlreadyAccepted, setTermsAlreadyAccepted] = useState(false);
   const [termsCheckLoading, setTermsCheckLoading] = useState(false);
@@ -152,6 +159,19 @@ export function RequestListItem({
 
   const canAccept =
     termsAlreadyAccepted || (termsAccepted && !termsCheckLoading);
+
+  const memberships = profile?.memberships ?? emptyMembershipsByRole();
+  const needsMembershipToAccept =
+    showAcceptTerms &&
+    !profileLoading &&
+    receiverNeedsMembershipToAccept(memberships, receiverRole);
+  const membershipUpsell =
+    needsMembershipToAccept && receiverRole
+      ? buildIncomingRequestUpsellCopy(t.requests.incomingMembershipUpsell, receiverRole, {
+          petName: request.petName,
+          senderName: request.senderName,
+        })
+      : null;
 
   const dateLabel = formatBookingDatesForRow(
     {
@@ -247,6 +267,8 @@ export function RequestListItem({
               termsCheckLoading={termsCheckLoading}
               canAccept={canAccept}
               receiverRole={receiverRole}
+              needsMembershipToAccept={needsMembershipToAccept}
+              membershipUpsell={membershipUpsell}
               onTermsAcceptedChange={setTermsAccepted}
               onAccept={onAccept}
               onDecline={onDecline}

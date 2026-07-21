@@ -4,6 +4,7 @@ import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheck
 import { TermsReviewBanner } from "@/components/legal/TermsReviewBanner";
 import { Button } from "@/components/ui/Button";
 import type { Dictionary } from "@/i18n/translations";
+import type { IncomingRequestUpsellCopy } from "@/lib/incoming-request-membership";
 import type { MembershipRole } from "@/lib/membership";
 import type { CareRequest } from "@/lib/requests";
 
@@ -21,6 +22,8 @@ type RequestCardActionsProps = {
   termsCheckLoading: boolean;
   canAccept: boolean;
   receiverRole: MembershipRole | null;
+  needsMembershipToAccept?: boolean;
+  membershipUpsell?: IncomingRequestUpsellCopy | null;
   onTermsAcceptedChange: (accepted: boolean) => void;
   onAccept?: (id: string, termsAccepted: boolean, receiverRole: MembershipRole) => void;
   onDecline?: (id: string) => void;
@@ -59,6 +62,8 @@ export function RequestCardActions({
   termsCheckLoading,
   canAccept,
   receiverRole,
+  needsMembershipToAccept = false,
+  membershipUpsell = null,
   onTermsAcceptedChange,
   onAccept,
   onDecline,
@@ -107,20 +112,39 @@ export function RequestCardActions({
         </Button>
       ) : null}
 
+      {showIncomingRespond && needsMembershipToAccept && membershipUpsell ? (
+        <div
+          className="w-full min-w-0 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:basis-full"
+          role="status"
+        >
+          <p className="font-heading font-semibold text-foreground">{membershipUpsell.title}</p>
+          <p className="mt-1 text-muted">{membershipUpsell.body}</p>
+          <Button
+            href={membershipUpsell.membershipHref}
+            size="sm"
+            className="mt-3 w-full sm:w-auto"
+          >
+            {membershipUpsell.buttonLabel}
+          </Button>
+        </div>
+      ) : null}
+
       {showIncomingRespond ? (
         <>
-          <Button
-            type="button"
-            size="sm"
-            disabled={acting || !canAccept || !receiverRole}
-            className={ACTION_BUTTON_CLASS}
-            onClick={() =>
-              receiverRole &&
-              onAccept?.(request.id, termsAccepted || termsAlreadyAccepted, receiverRole)
-            }
-          >
-            {copy.accept}
-          </Button>
+          {!needsMembershipToAccept ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={acting || !canAccept || !receiverRole}
+              className={ACTION_BUTTON_CLASS}
+              onClick={() =>
+                receiverRole &&
+                onAccept?.(request.id, termsAccepted || termsAlreadyAccepted, receiverRole)
+              }
+            >
+              {copy.accept}
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
