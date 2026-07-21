@@ -4,8 +4,23 @@ import { publicPetHref } from "@/lib/public-pet";
 /** Last-resort production origin for server-rendered emails when env is unset. */
 const FALLBACK_PRODUCTION_ORIGIN = "https://www.staywithmypet.ee";
 
+function stripWrappingQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
 function normalizeOrigin(origin: string): string {
-  return origin.trim().replace(/\/$/, "");
+  let normalized = stripWrappingQuotes(origin).replace(/\/$/, "");
+  while (/^https?:\/\/https?:\/\//i.test(normalized)) {
+    normalized = normalized.replace(/^https?:\/\//i, "");
+  }
+  return normalized;
 }
 
 /** Browser origin when running in the client (Preview, Production, or local). */

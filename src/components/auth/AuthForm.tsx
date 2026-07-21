@@ -11,7 +11,7 @@ import { completeAuthSession } from "@/lib/auth-flow";
 import { formatAuthError, isEmailNotConfirmedError } from "@/lib/auth-messages";
 import { normalizeFullName } from "@/lib/name-format";
 import { DASHBOARD_PATH, resolveLoginReturnPath, resolvePostLoginPath } from "@/lib/auth-routing";
-import { getAuthCallbackUrl, getAuthConfirmUrl } from "@/lib/auth";
+import { buildOAuthReturnCookie, getAuthCallbackUrl, getAuthConfirmUrl, getOAuthCallbackUrl } from "@/lib/auth";
 import {
   buildSignupDebugSnapshot,
   isSignupDebugEnabled,
@@ -321,14 +321,11 @@ export function AuthForm({ mode }: AuthFormProps) {
       if (isSignup) {
         document.cookie = `${SIGNUP_TERMS_COOKIE}=${CURRENT_TERMS_VERSION}; path=/; max-age=600; SameSite=Lax`;
       }
+      document.cookie = buildOAuthReturnCookie(oauthReturn);
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: getAuthCallbackUrl(oauthReturn),
-          queryParams: {
-            prompt: "select_account consent",
-            access_type: "offline",
-          },
+          redirectTo: getOAuthCallbackUrl(),
         },
       });
 

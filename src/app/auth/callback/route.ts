@@ -1,4 +1,5 @@
-import { resolvePostLoginPath } from "@/lib/auth-routing";
+import { OAUTH_RETURN_COOKIE } from "@/lib/auth";
+import { resolveLoginReturnPath, resolvePostLoginPath } from "@/lib/auth-routing";
 import {
   ensureOAuthProfile,
   logAuthCallback,
@@ -23,7 +24,14 @@ function redirectTo(origin: string, path: string): NextResponse {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const requestedNext = searchParams.get("next");
+  const cookieStore = await cookies();
+  const oauthReturnCookie = cookieStore.get(OAUTH_RETURN_COOKIE)?.value;
+  const requestedNext =
+    searchParams.get("next") ??
+    (oauthReturnCookie ? resolveLoginReturnPath(decodeURIComponent(oauthReturnCookie)) : null);
+  if (oauthReturnCookie) {
+    cookieStore.delete(OAUTH_RETURN_COOKIE);
+  }
   const oauthError = searchParams.get("error");
   const oauthErrorDescription = searchParams.get("error_description");
 
@@ -67,7 +75,6 @@ export async function GET(request: Request) {
 
   logAuthCallback("user present", { userId: user.id });
 
-  const cookieStore = await cookies();
   const signupTermsCookie = cookieStore.get(SIGNUP_TERMS_COOKIE)?.value;
   if (signupTermsCookie === CURRENT_TERMS_VERSION) {
     await recordTermsAcceptance(supabase, user.id, { context: "signup" });
