@@ -857,24 +857,18 @@ export async function respondToRequest(
     throw new Error(REQUEST_EXPIRED_ERROR);
   }
 
-  const { error } = await supabase
-    .from("requests")
-    .update({
-      status: decision,
-      responded_at: new Date().toISOString(),
-    })
-    .eq("id", requestId)
-    .eq("receiver_id", userId)
-    .eq("status", "pending");
-
-  if (error) {
-    if (isBookingOverlapError(error)) {
-      throw new Error("These dates overlap with an existing booking for this pet.");
-    }
-    throw error;
-  }
-
   if (decision !== "accepted") {
+    const { error } = await supabase
+      .from("requests")
+      .update({
+        status: decision,
+        responded_at: new Date().toISOString(),
+      })
+      .eq("id", requestId)
+      .eq("receiver_id", userId)
+      .eq("status", "pending");
+
+    if (error) throw error;
     return { conversationId: null };
   }
 
@@ -891,14 +885,29 @@ export async function respondToRequest(
   const { assertActiveMembershipForRole } = await import("@/lib/membership-access");
   await assertActiveMembershipForRole(supabase, userId, receiverRole);
 
-  const conversationId = await ensureConversationForRequest(supabase, requestId);
-  if (!conversationId) {
+  const { data: conversationId, error: acceptError } = await supabase.rpc("accept_care_request", {
+    p_request_id: requestId,
+  });
+
+  if (acceptError) {
+    if (isBookingOverlapError(acceptError)) {
+      throw new Error("These dates overlap with an existing booking for this pet.");
+    }
+    throw acceptError;
+  }
+
+  const resolvedConversationId =
+    typeof conversationId === "string" && conversationId.trim()
+      ? conversationId.trim()
+      : (await ensureConversationForRequest(supabase, requestId)) ?? null;
+
+  if (!resolvedConversationId) {
     throw new Error("Request was accepted but the chat could not be started. Refresh and open Messages.");
   }
 
   await seedRequestMessageIfAbsent(supabase, requestId);
 
-  return { conversationId };
+  return { conversationId: resolvedConversationId };
 }
 
 export async function cancelRequest(

@@ -90,8 +90,8 @@ describe("pet listing visibility", () => {
   });
 });
 
-describe("Find Pets marketplace membership", () => {
-  it("uses pet_parent-only owner filter", async () => {
+describe("marketplace membership helpers remain available", () => {
+  it("exports pet parent membership filter helper for other callers", async () => {
     const { filterPetsWhoseOwnerHasActivePetParentMembership } = await import(
       "@/lib/marketplace-membership"
     );

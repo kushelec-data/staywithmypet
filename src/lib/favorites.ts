@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  filterPetsWhoseOwnerHasActivePetParentMembership,
-  filterProfilesWithActivePetFriendMembership,
-} from "@/lib/marketplace-membership";
 import { mapDbPetToCard } from "@/lib/pet-data";
 import type { Pet } from "@/lib/pets";
 import { mapPetFriendSearchRow, type SearchProfile } from "@/lib/search-profiles";
 import type { ProfileRole } from "@/lib/profile-setup";
+import {
+  filterVisibleSavedFriends,
+  filterVisibleSavedPets,
+  type SavedFriendRowInput,
+  type SavedPetRowInput,
+} from "@/lib/saved-items-filter";
 import { isMissingRelationError, isPostgrestError } from "@/lib/supabase-errors";
 
 export type FavoriteTarget =
@@ -107,7 +109,7 @@ export async function fetchSavedItems(
       ? supabase
           .from("pets")
           .select(
-            "id, owner_id, name, species, breed, age_label, location, price_per_night_cents, tags, rating_avg, rating_count, pet_photos ( public_url, is_primary, sort_order ), profiles ( display_name )",
+            "id, owner_id, name, species, breed, age_label, location, price_per_night_cents, tags, rating_avg, rating_count, is_public, is_active, pet_photos ( public_url, is_primary, sort_order ), profiles!pets_owner_id_fkey ( display_name, is_public )",
           )
           .in("id", petIdList)
       : Promise.resolve({ data: [], error: null }),
@@ -115,7 +117,7 @@ export async function fetchSavedItems(
       ? supabase
           .from("profiles")
           .select(
-            "id, display_name, location, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages",
+            "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, is_public",
           )
           .in("id", friendIdList)
       : Promise.resolve({ data: [], error: null }),
@@ -128,23 +130,37 @@ export async function fetchSavedItems(
     mapDbPetToCard(row as Parameters<typeof mapDbPetToCard>[0], index),
   );
 
-  const petsWithOwners = (petsResult.data ?? []).map((row, index) => ({
-    pet: petRows[index]!,
-    ownerId: String((row as { owner_id?: string }).owner_id ?? ""),
-  }));
+  const savedPetInputs: SavedPetRowInput[] = (petsResult.data ?? []).map((row, index) => {
+    const typed = row as {
+      is_public?: boolean | null;
+      is_active?: boolean | null;
+      species?: string | null;
+      profiles?: { is_public?: boolean | null } | { is_public?: boolean | null }[] | null;
+    };
+    const ownerJoin = typed.profiles;
+    const ownerProfile = Array.isArray(ownerJoin) ? ownerJoin[0] : ownerJoin;
+    return {
+      pet: petRows[index]!,
+      isPublic: typed.is_public ?? null,
+      isActive: typed.is_active ?? null,
+      species: typed.species ?? null,
+      ownerIsPublic: ownerProfile?.is_public ?? null,
+    };
+  });
 
-  const membershipFilteredPets = await filterPetsWhoseOwnerHasActivePetParentMembership(
-    supabase,
-    petsWithOwners,
-  );
+  const pets = filterVisibleSavedPets(savedPetInputs);
 
-  const pets = membershipFilteredPets.map((entry) => entry.pet);
-
-  const friends: SearchProfile[] = (friendsResult.data ?? []).map((row) =>
-    mapPetFriendSearchRow({
+  const savedFriendInputs: SavedFriendRowInput[] = (friendsResult.data ?? []).map((row) => ({
+    profile: mapPetFriendSearchRow({
       id: row.id,
       display_name: row.display_name?.trim() ?? "Member",
       location: row.location,
+      public_location: row.public_location,
+      city: row.city,
+      country: row.country,
+      google_place_id: row.google_place_id,
+      latitude: row.latitude,
+      longitude: row.longitude,
       bio: row.bio,
       avatar_url: row.avatar_url,
       role: row.role as ProfileRole,
@@ -155,14 +171,22 @@ export async function fetchSavedItems(
       languages: row.languages,
       details: undefined,
     }),
-  );
+    display_name: row.display_name?.trim() ?? "Member",
+    bio: row.bio,
+    location: row.location,
+    public_location: row.public_location,
+    city: row.city,
+    country: row.country,
+    google_place_id: row.google_place_id,
+    latitude: typeof row.latitude === "number" ? row.latitude : null,
+    longitude: typeof row.longitude === "number" ? row.longitude : null,
+    is_public: row.is_public,
+    role: row.role as ProfileRole,
+  }));
 
-  const membershipFilteredFriends = await filterProfilesWithActivePetFriendMembership(
-    supabase,
-    friends,
-  );
+  const friends = filterVisibleSavedFriends(savedFriendInputs);
 
-  return { pets, friends: membershipFilteredFriends };
+  return { pets, friends };
 }
 
 /** Count Pet Friends who saved this pet; null if favorites table unavailable or denied. */

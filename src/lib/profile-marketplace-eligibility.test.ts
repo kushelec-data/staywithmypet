@@ -107,5 +107,4 @@ describe("isPetParentProfileMarketplaceMinimumEligible", () => {
   });
 });
 
-// Membership filtering is enforced in marketplace-membership.ts (not duplicated here).
-// Inactive pet_friend membership remains hidden via filterProfilesWithActivePetFriendMembership.
+// Membership is not required for marketplace search visibility (see marketplace-search-visibility.test.ts).
