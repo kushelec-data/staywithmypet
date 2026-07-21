@@ -10,7 +10,6 @@ import {
   Play,
   RotateCcw,
   Star,
-  User,
 } from "lucide-react";
 import { AppImage } from "@/components/ui/AppImage";
 import { IMAGES } from "@/lib/images";

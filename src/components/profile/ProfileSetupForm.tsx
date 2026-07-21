@@ -44,7 +44,6 @@ import { availabilityUxForProfile } from "@/lib/availability-ux";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import {
   BIO_WORD_MAX,
-  BIO_WORD_MIN,
   getWordCount,
   isBioWordCountValid,
   normalizeBioForSave,
@@ -56,13 +55,9 @@ import {
   EMPTY_PROFILE_LOCATION_FORM,
   profileLocationFromRow,
   profileLocationToSaveInput,
-  validateProfileLocationForSave,
   type ProfileLocationFormState,
 } from "@/lib/profile-location";
-import {
-  languagesOtherFromDetails,
-  profileLanguagesOtherMissing,
-} from "@/lib/profile-languages";
+import { languagesOtherFromDetails } from "@/lib/profile-languages";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { useLanguage } from "@/context/LanguageContext";
 import { FormDraftStatus } from "@/components/forms/FormDraftStatus";
@@ -139,9 +134,8 @@ export function ProfileSetupForm({
   hideRolePicker = false,
 }: ProfileSetupFormProps) {
   const router = useRouter();
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const setup = t.account.profileSetup;
-  const pe = t.profileEdit.basic;
   const onboardingRole = t.onboarding.role;
   const resolvedSubmitLabel = submitLabel ?? setup.submitLabel;
   const roleOptions = useMemo(

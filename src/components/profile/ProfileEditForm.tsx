@@ -36,7 +36,6 @@ import {
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { normalizeFullName } from "@/lib/name-format";
 import { useRouter } from "next/navigation";
-import { translateProfileLabel } from "@/lib/profile-translations";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
   isProfileEditSectionComplete,
@@ -154,7 +153,7 @@ function applyTrustFromProfile(
 
 export function ProfileEditForm() {
   const { user } = useAuth();
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const pe = t.profileEdit;
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
