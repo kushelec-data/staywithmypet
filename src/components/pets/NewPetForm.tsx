@@ -149,40 +149,28 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const yesLabel = translateProfileLabel("Yes", locale);
   const noLabel = translateProfileLabel("No", locale);
 
-  const localizedAnimalTypes = useMemo(
-    () => toProfileLabeledChipOptions(petAnimalTypes, locale),
-    [locale],
-  );
-  const localizedGenderOptions = useMemo(
-    () => toProfileStringChipOptions(petGenderOptions, locale),
-    [locale],
-  );
-  const localizedSizeOptions = useMemo(
-    () => toProfileLabeledChipOptions(petSizeOptions, locale),
-    [locale],
-  );
-  const localizedEnergyOptions = useMemo(
-    () => toProfileStringChipOptions(petEnergyOptions, locale),
-    [locale],
-  );
-  const localizedTemperamentOptions = useMemo(
-    () => toProfileStringChipOptions(petTemperamentOptions, locale),
-    [locale],
-  );
-  const localizedWalkOptions = useMemo(
-    () => toProfileStringChipOptions(petWalkNeedsOptions, locale),
-    [locale],
-  );
-  const localizedFriendReqOptions = useMemo(
-    () => toProfileStringChipOptions(petFriendRequirementOptions, locale),
-    [locale],
-  );
-  const localizedCareTypeOptions = useMemo(
-    () => toProfileStringChipOptions(petCareTypeOptions, locale),
-    [locale],
-  );
-  const localizedCareLocationOptions = useMemo(
-    () => toProfileStringChipOptions(petCareLocationOptions, locale),
+  const {
+    animalTypes: localizedAnimalTypes,
+    genderOptions: localizedGenderOptions,
+    sizeOptions: localizedSizeOptions,
+    energyOptions: localizedEnergyOptions,
+    temperamentOptions: localizedTemperamentOptions,
+    walkOptions: localizedWalkOptions,
+    friendReqOptions: localizedFriendReqOptions,
+    careTypeOptions: localizedCareTypeOptions,
+    careLocationOptions: localizedCareLocationOptions,
+  } = useMemo(
+    () => ({
+      animalTypes: toProfileLabeledChipOptions(petAnimalTypes, locale),
+      genderOptions: toProfileStringChipOptions(petGenderOptions, locale),
+      sizeOptions: toProfileLabeledChipOptions(petSizeOptions, locale),
+      energyOptions: toProfileStringChipOptions(petEnergyOptions, locale),
+      temperamentOptions: toProfileStringChipOptions(petTemperamentOptions, locale),
+      walkOptions: toProfileStringChipOptions(petWalkNeedsOptions, locale),
+      friendReqOptions: toProfileStringChipOptions(petFriendRequirementOptions, locale),
+      careTypeOptions: toProfileStringChipOptions(petCareTypeOptions, locale),
+      careLocationOptions: toProfileStringChipOptions(petCareLocationOptions, locale),
+    }),
     [locale],
   );
 
@@ -344,53 +332,49 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     await refreshExistingPhotos();
   }
 
+  async function runExistingPhotoAction(
+    action: (ctx: { userId: string; petId: string }) => Promise<void>,
+    errorMessage: string,
+  ) {
+    if (!user?.id || !petId) return;
+    const ctx = { userId: user.id, petId };
+    setExistingPhotoBusy(true);
+    setError(null);
+    try {
+      await action(ctx);
+      await refreshExistingPhotos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : errorMessage);
+      throw err;
+    } finally {
+      setExistingPhotoBusy(false);
+    }
+  }
+
   async function handleReplaceExistingPhoto(
     photoId: string,
     file: File,
     position?: PhotoObjectPosition,
   ) {
-    if (!user?.id || !petId) return;
-    setExistingPhotoBusy(true);
-    setError(null);
-    try {
-      await replacePetPhotoImage(supabase, user.id, petId, photoId, file, position);
-      await refreshExistingPhotos();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.account.petsPage.updatePhotoError);
-      throw err;
-    } finally {
-      setExistingPhotoBusy(false);
-    }
+    await runExistingPhotoAction(
+      ({ userId, petId }) =>
+        replacePetPhotoImage(supabase, userId, petId, photoId, file, position),
+      t.account.petsPage.updatePhotoError,
+    );
   }
 
   async function handleSetPrimaryExistingPhoto(photoId: string) {
-    if (!user?.id || !petId) return;
-    setExistingPhotoBusy(true);
-    setError(null);
-    try {
-      await setPrimaryPetPhotoForOwner(supabase, user.id, petId, photoId);
-      await refreshExistingPhotos();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.account.petsPage.setMainPhotoError);
-      throw err;
-    } finally {
-      setExistingPhotoBusy(false);
-    }
+    await runExistingPhotoAction(
+      ({ userId, petId }) => setPrimaryPetPhotoForOwner(supabase, userId, petId, photoId),
+      t.account.petsPage.setMainPhotoError,
+    );
   }
 
   async function handleRemoveExistingPhoto(photoId: string) {
-    if (!user?.id || !petId) return;
-    setExistingPhotoBusy(true);
-    setError(null);
-    try {
-      await deletePetPhotoForOwner(supabase, user.id, petId, photoId);
-      await refreshExistingPhotos();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.account.petsPage.deletePhotoError);
-      throw err;
-    } finally {
-      setExistingPhotoBusy(false);
-    }
+    await runExistingPhotoAction(
+      ({ userId, petId }) => deletePetPhotoForOwner(supabase, userId, petId, photoId),
+      t.account.petsPage.deletePhotoError,
+    );
   }
 
   function patch<K extends keyof PetProfileFormInput>(key: K, value: PetProfileFormInput[K]) {
