@@ -54,11 +54,18 @@ import {
 } from "@/lib/request-list-filters";
 import type { Dictionary } from "@/i18n/translations";
 import {
+  loadRequestSenderProfilesById,
+  mapProfileRowToRequestSenderPreview,
+  type RequestSenderPreview,
+} from "@/lib/request-sender-preview";
+import {
   REQUEST_SELECT,
   REQUEST_SELECT_WITH_RELATIONS,
   type RequestInsert,
   type RequestRow,
 } from "@/types/database";
+
+export type { RequestSenderPreview } from "@/lib/request-sender-preview";
 
 export type { RequestStatus } from "@/types/database";
 
@@ -92,6 +99,8 @@ export type CareRequest = {
   canCancel: boolean;
   /** Pending request whose last care date is before today (UI-only; DB status stays pending). */
   isExpired: boolean;
+  /** Public sender profile snapshot for incoming request trust UI. */
+  senderPreview: RequestSenderPreview | null;
 };
 
 export type CreateCareRequestInput = {
@@ -236,7 +245,19 @@ export function localizeRequestMessage(
   return normalized;
 }
 
-type ProfileJoin = { id: string; display_name: string };
+type ProfileJoin = {
+  id: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
+  public_location?: string | null;
+  city?: string | null;
+  country?: string | null;
+  google_place_id?: string | null;
+  rating_avg?: number | string | null;
+  rating_count?: number | null;
+  stay_count?: number | null;
+};
 type PetJoin = {
   id: string;
   name: string;
@@ -293,6 +314,7 @@ function mapRequestRow(
     receiverName: string;
     petName: string | null;
     petSpeciesLabel: string | null;
+    senderPreview: RequestSenderPreview | null;
   },
 ): CareRequest {
   const { senderId, receiverId } = resolveEffectiveSenderReceiver(row);
@@ -335,6 +357,7 @@ function mapRequestRow(
     canRespond: receiverId === userId && row.status === "pending" && !expired,
     canCancel: senderId === userId && row.status === "pending" && !expired,
     isExpired: expired,
+    senderPreview: names.senderPreview,
   };
 }
 
@@ -343,6 +366,7 @@ function namesFromEmbeddedRow(row: RequestRowWithRelations): {
   receiverName: string;
   petName: string | null;
   petSpeciesLabel: string | null;
+  senderPreview: RequestSenderPreview | null;
 } {
   const senderProfile = pickSupabaseJoin(row.sender);
   const receiverProfile = pickSupabaseJoin(row.receiver);
@@ -350,6 +374,7 @@ function namesFromEmbeddedRow(row: RequestRowWithRelations): {
 
   const senderName = profileDisplayName(senderProfile) ?? MISSING_PARTICIPANT_LABEL;
   const receiverName = profileDisplayName(receiverProfile) ?? MISSING_PARTICIPANT_LABEL;
+  const senderPreview = mapProfileRowToRequestSenderPreview(senderProfile);
 
   const petName =
     row.pet_id && petRow?.name?.trim()
@@ -362,7 +387,7 @@ function namesFromEmbeddedRow(row: RequestRowWithRelations): {
     ? formatPetSpeciesLabel(petRow?.species, petRow?.breed, petRow?.other_breed)
     : null;
 
-  return { senderName, receiverName, petName, petSpeciesLabel };
+  return { senderName, receiverName, petName, petSpeciesLabel, senderPreview };
 }
 
 function mapRequestsFromEmbedded(
@@ -445,19 +470,23 @@ async function enrichRequests(
 
   const petIds = [...new Set(rows.map((r) => r.pet_id).filter((id): id is string => Boolean(id)))];
   const profileIds = collectParticipantProfileIds(rows);
+  const senderIds = [...new Set(rows.map((r) => r.sender_id).filter((id): id is string => Boolean(id)))];
 
-  const [petMeta, profileNames] = await Promise.all([
+  const [petMeta, profileNames, senderPreviews] = await Promise.all([
     loadPetMetaById(supabase, petIds),
     loadProfileNamesById(supabase, profileIds),
+    loadRequestSenderProfilesById(supabase, senderIds),
   ]);
 
   return rows.map((row) => {
     const pet = row.pet_id ? petMeta.get(row.pet_id) : null;
+    const { senderId } = resolveEffectiveSenderReceiver(row);
     return mapRequestRow(row, userId, direction, {
       senderName: participantName(profileNames, row.sender_id),
       receiverName: participantName(profileNames, row.receiver_id),
       petName: pet?.name ?? (row.pet_id ? "Pet" : null),
       petSpeciesLabel: pet?.speciesLabel ?? null,
+      senderPreview: senderId ? senderPreviews.get(senderId) ?? null : null,
     });
   });
 }

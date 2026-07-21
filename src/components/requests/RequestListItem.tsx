@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ConfirmedBookingGuidanceNote } from "@/components/bookings/ConfirmedBookingGuidanceNote";
 import { BookingTermsNotice } from "@/components/legal/BookingTermsNotice";
+import { IncomingRequestSenderPreview } from "@/components/requests/IncomingRequestSenderPreview";
 import { RequestCardActions } from "@/components/requests/RequestCardActions";
 import { RequestMessagePreview } from "@/components/requests/RequestMessagePreview";
 import { useLanguage } from "@/context/LanguageContext";
@@ -185,6 +186,7 @@ export function RequestListItem({
     request.petName && request.petSpeciesLabel
       ? `${request.petName} · ${request.petSpeciesLabel}`
       : request.petName;
+  const showIncomingSenderPreview = direction === "incoming" && Boolean(request.senderPreview);
   const title = petTitle
     ? t.requests.careForPet.replace("{name}", petTitle)
     : t.requests.requestWith.replace("{name}", request.otherPartyName);
@@ -206,19 +208,41 @@ export function RequestListItem({
         <div className="flex min-w-0 w-full flex-col gap-4 p-5 sm:gap-5 sm:p-6">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h3 className={ACCOUNT_LIST_ITEM_TITLE}>{title}</h3>
-              <p className="mt-1 text-xs text-muted">
-                {t.requests.sentOn} {request.createdAtLabel}
-              </p>
+              {!showIncomingSenderPreview ? (
+                <>
+                  <h3 className={ACCOUNT_LIST_ITEM_TITLE}>{title}</h3>
+                  <p className="mt-1 text-xs text-muted">
+                    {t.requests.sentOn} {request.createdAtLabel}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-muted">
+                  {t.requests.sentOn} {request.createdAtLabel}
+                </p>
+              )}
             </div>
             <span className={requestStatusBadgeClasses(displayStatus)}>
               {requestStatusLabel(displayStatus, t.requests)}
             </span>
           </header>
 
+          {showIncomingSenderPreview && request.senderPreview ? (
+            <IncomingRequestSenderPreview
+              sender={request.senderPreview}
+              petName={request.petName}
+              copy={t.requests.incomingSender}
+              reviewsCopy={t.reviews}
+              trustStatsBookings={t.trustSafety.trustStatsBookings}
+            />
+          ) : null}
+
           <div className="grid gap-3 border-t border-[#E5E2D8] pt-4 sm:grid-cols-2 sm:gap-x-6">
-            <MetaRow icon={<UserIcon />} label={t.requests.from} value={request.senderName} />
-            <MetaRow icon={<UserIcon />} label={t.requests.to} value={request.receiverName} />
+            {!showIncomingSenderPreview ? (
+              <>
+                <MetaRow icon={<UserIcon />} label={t.requests.from} value={request.senderName} />
+                <MetaRow icon={<UserIcon />} label={t.requests.to} value={request.receiverName} />
+              </>
+            ) : null}
             <MetaRow icon={<CalendarIcon />} label={t.requests.datesLabel} value={dateLabel} />
             {request.careType ? (
               <MetaRow icon={<PetIcon />} label={t.requests.careTypeLabel} value={request.careType} />

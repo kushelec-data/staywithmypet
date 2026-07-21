@@ -273,6 +273,13 @@ export const en = {
       fallbackBody:
         "Activate the required membership to accept the request, start chatting and arrange the booking.",
     },
+    incomingSender: {
+      sectionTitle: "New care request",
+      headlineWithPet: "{senderName} has sent you a request to care for {petName}.",
+      headlineGeneric: "{senderName} has sent you a care request.",
+      viewPublicProfile: "View public profile",
+      viewSenderProfile: "View {name}'s public profile",
+    },
     termsSchemaMissing:
       "Terms acceptance is not configured yet. Please contact support or try again later.",
     sendRequest: "Send request",

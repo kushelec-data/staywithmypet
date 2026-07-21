@@ -19,27 +19,13 @@ export function PublicMemberCareCard({ profile }: PublicMemberCareCardProps) {
   const pl = (en: string) => translateProfileLabel(en, locale);
 
   const groups = carePreferenceDisplayGroups(profile.details);
-  const chipItems = useMemo(
-    () =>
-      [
-        ...groups.petTypes.slice(0, 3),
-        ...groups.experience.slice(0, 2),
-        ...groups.careTypes.slice(0, 3),
-        ...groups.petSizes.slice(0, 2),
-      ]
-        .filter(Boolean)
-        .map((item) => pl(item)),
-    [groups, locale],
+  const petTypeChips = useMemo(
+    () => groups.petTypes.filter(Boolean).map((item) => pl(item)),
+    [groups.petTypes, locale],
   );
 
   const detailGroups: PublicDetailGroup[] = useMemo(() => {
     const out: PublicDetailGroup[] = [];
-    if (groups.petTypes.length) {
-      out.push({
-        label: pl("Pet types"),
-        items: groups.petTypes.map((item) => pl(item)),
-      });
-    }
     if (groups.careTypes.length) {
       out.push({
         label: pl("Care offered"),
@@ -52,17 +38,26 @@ export function PublicMemberCareCard({ profile }: PublicMemberCareCardProps) {
         items: groups.experience.map((item) => pl(item)),
       });
     }
+    if (groups.petSizes.length) {
+      out.push({
+        label: pl("Preferred pet size"),
+        items: groups.petSizes.map((item) => pl(item)),
+      });
+    }
     return out;
   }, [groups, locale]);
 
-  if (!chipItems.length && !detailGroups.length) return null;
+  if (!petTypeChips.length && !detailGroups.length) return null;
 
   return (
     <section className={PUBLIC_CARD}>
       <h2 className={PUBLIC_SECTION_TITLE}>{pl("Care preferences")}</h2>
-      {chipItems.length ? (
+      {petTypeChips.length ? (
         <div className="mt-3">
-          <PublicProfileChips chips={chipItems.slice(0, 8)} />
+          <h3 className="text-sm font-semibold text-foreground">{pl("Pet types")}</h3>
+          <div className="mt-1.5">
+            <PublicProfileChips chips={petTypeChips} />
+          </div>
         </div>
       ) : null}
       {detailGroups.length ? (

@@ -275,6 +275,13 @@ export const et = {
       fallbackBody:
         "Aktiveeri vajalik liikmesus, et soov vastu võtta, vestlust alustada ja hoid kokku leppida.",
     },
+    incomingSender: {
+      sectionTitle: "Uus hoiusoov",
+      headlineWithPet: "{senderName} saatis sulle hoiupäringu lemmikule {petName}.",
+      headlineGeneric: "{senderName} saatis sulle hoiupäringu.",
+      viewPublicProfile: "Vaata avalikku profiili",
+      viewSenderProfile: "Vaata kasutaja {name} avalikku profiili",
+    },
     termsSchemaMissing:
       "Kasutustingimuste nõusolek pole veel seadistatud. Võta ühendust toe või proovi hiljem uuesti.",
     sendRequest: "Saada päring",
