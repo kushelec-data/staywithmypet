@@ -248,14 +248,7 @@ export function ProfileSetupForm({
     [],
   );
 
-  function handleAvatarUpdated(updated: ProfileRow) {
-    setAvatarUrl(updated.avatar_url?.trim() || null);
-    setProfileRow(updated);
-    void refreshProfile({ background: true });
-    notifyDashboardRefresh();
-  }
-
-  function handleProfileGalleryUpdated(updated: ProfileRow) {
+  function handleProfileUpdated(updated: ProfileRow) {
     setAvatarUrl(updated.avatar_url?.trim() || null);
     setProfileRow(updated);
     void refreshProfile({ background: true });
@@ -529,14 +522,14 @@ export function ProfileSetupForm({
               email={user.email}
               avatarUrl={avatarUrl}
               profileDetails={profile?.details}
-              onAvatarUpdated={handleAvatarUpdated}
+              onAvatarUpdated={handleProfileUpdated}
               disabled={saving}
             />
             <ProfileGalleryUpload
               userId={user.id}
               profile={profile}
               avatarUrl={avatarUrl}
-              onProfileUpdated={handleProfileGalleryUpdated}
+              onProfileUpdated={handleProfileUpdated}
               disabled={saving}
             />
             <FormFieldError message={fieldErrors.profile_photo} />
