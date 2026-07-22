@@ -10,13 +10,13 @@ import {
   Play,
   RotateCcw,
   Star,
-  User,
 } from "lucide-react";
 import { AppImage } from "@/components/ui/AppImage";
 import { IMAGES } from "@/lib/images";
 
 const SCENE_DURATION_MS = 4500;
 const TICK_MS = 50;
+const WEEKDAY_INITIALS = ["M", "T", "W", "T", "F", "S", "S"];
 
 type ExplainerVariant = "pet-parent" | "pet-friend";
 
@@ -388,7 +388,6 @@ function CareRequestOverlay({
   isActive: boolean;
   animate: boolean;
 }) {
-  const weekdays = ["M", "T", "W", "T", "F", "S", "S"];
   const days = Array.from({ length: 28 }, (_, i) => i + 1);
   const selected = new Set([12, 13, 14]);
 
@@ -404,7 +403,7 @@ function CareRequestOverlay({
           <span className="text-xs font-semibold">March 2026</span>
         </div>
         <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-medium text-muted">
-          {weekdays.map((d) => (
+          {WEEKDAY_INITIALS.map((d) => (
             <span key={d}>{d}</span>
           ))}
           {days.map((d) => (
@@ -509,7 +508,6 @@ function BookingOverlay({
   isActive: boolean;
   animate: boolean;
 }) {
-  const weekdays = ["M", "T", "W", "T", "F", "S", "S"];
   const confirmed = new Set([12, 13, 14, 15]);
 
   return (
@@ -542,7 +540,7 @@ function BookingOverlay({
           </span>
         </div>
         <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px]">
-          {weekdays.map((d) => (
+          {WEEKDAY_INITIALS.map((d) => (
             <span key={d} className="font-medium text-muted">
               {d}
             </span>

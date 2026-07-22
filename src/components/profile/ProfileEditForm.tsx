@@ -27,12 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { availabilityUxForProfile } from "@/lib/availability-ux";
-import {
-  bioWordStatus,
-  getWordCount,
-  isBioWordCountValid,
-  normalizeBioForSave,
-} from "@/lib/bio-words";
+import { normalizeBioForSave } from "@/lib/bio-words";
 import { ProfileLanguagesSelector } from "@/components/profile/ProfileLanguagesSelector";
 import { bioPlaceholderForRole } from "@/lib/profile-bio-placeholder";
 import {
@@ -41,7 +36,6 @@ import {
 import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { normalizeFullName } from "@/lib/name-format";
 import { useRouter } from "next/navigation";
-import { translateProfileLabel } from "@/lib/profile-translations";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
   isProfileEditSectionComplete,
@@ -159,7 +153,7 @@ function applyTrustFromProfile(
 
 export function ProfileEditForm() {
   const { user } = useAuth();
-  const { t, locale } = useLanguage();
+  const { t } = useLanguage();
   const pe = t.profileEdit;
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
@@ -276,8 +270,6 @@ export function ProfileEditForm() {
     onRestore: applyProfileEditDraft,
   });
 
-  const bioWordCount = useMemo(() => getWordCount(bio), [bio]);
-
   useEffect(() => {
     if (!user?.id || activeMode !== "pet_parent") {
       setPetIntros([]);
@@ -363,22 +355,8 @@ export function ProfileEditForm() {
     [editing, activeStepId],
   );
 
-  function logBio(message: string, detail?: Record<string, unknown>): void {
-    if (detail) {
-      console.info(`[bio] ${message}`, detail);
-    } else {
-      console.info(`[bio] ${message}`);
-    }
-  }
-
   function handleBioChange(next: string) {
     bioUserEditedRef.current = true;
-    const count = getWordCount(next);
-    const valid = isBioWordCountValid(count);
-    const status = bioWordStatus(count);
-    logBio("current value", { length: next.length, text: next });
-    logBio("word count", { count });
-    logBio("validation result", { valid, status });
     setBio(next);
   }
 
@@ -476,14 +454,7 @@ export function ProfileEditForm() {
     }
   }, [activeStepIndex, visibleSteps.length]);
 
-  function handleAvatarUpdated(updated: ProfileRow) {
-    setAvatarUrl(updated.avatar_url?.trim() || null);
-    setProfileRow(updated);
-    void refreshProfile({ background: true });
-    notifyDashboardRefresh();
-  }
-
-  function handleProfileGalleryUpdated(updated: ProfileRow) {
+  function handleProfileUpdated(updated: ProfileRow) {
     setAvatarUrl(updated.avatar_url?.trim() || null);
     setProfileRow(updated);
     void refreshProfile({ background: true });
@@ -583,7 +554,6 @@ export function ProfileEditForm() {
 
     setLocationFieldError(null);
     const bioPayload = normalizeBioForSave(bio);
-    logBio("save payload", { bio: bioPayload, wordCount: bioWordCount });
 
     const locationForSave = resolveProfileLocationForSave(
       profileLocation,
@@ -610,13 +580,8 @@ export function ProfileEditForm() {
           preserveRole: profile?.role_chosen_at ? profile.role : undefined,
         },
       );
-      logBio("save result", { ok: true, bio: saved.bio, wordCount: getWordCount(saved.bio ?? "") });
       await afterSectionSave("basic", saved);
     } catch (err) {
-      logBio("save result", {
-        ok: false,
-        message: err instanceof Error ? err.message : String(err),
-      });
       const message = err instanceof Error ? err.message : t.profileEdit.saveProfileError;
       setErrors((prev) => ({ ...prev, basic: message }));
     } finally {
@@ -814,7 +779,7 @@ export function ProfileEditForm() {
                 email={user.email}
                 avatarUrl={avatarUrl}
                 profileDetails={profile?.details}
-                onAvatarUpdated={handleAvatarUpdated}
+                onAvatarUpdated={handleProfileUpdated}
                 editable={basicEnabled}
                 disabled={saving.basic}
               />
@@ -822,7 +787,7 @@ export function ProfileEditForm() {
                 userId={user.id}
                 profile={profile}
                 avatarUrl={avatarUrl}
-                onProfileUpdated={handleProfileGalleryUpdated}
+                onProfileUpdated={handleProfileUpdated}
                 editable={basicEnabled}
                 disabled={saving.basic}
               />

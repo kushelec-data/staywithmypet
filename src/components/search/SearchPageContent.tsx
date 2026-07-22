@@ -133,10 +133,6 @@ function SearchMapTopBar({
 const SEARCH_RESULTS_GRID_CLASS =
   "grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3 sm:gap-4";
 
-function resultsGridClass(extra = ""): string {
-  return `${SEARCH_RESULTS_GRID_CLASS} ${extra}`;
-}
-
 function SearchResultsGrid({
   loading,
   isPets,
@@ -155,7 +151,7 @@ function SearchResultsGrid({
   onOpenAvailability: (item: SearchAvailabilityItem) => void;
 }) {
   return (
-    <div className={`${resultsGridClass()} ${className}`}>
+    <div className={`${SEARCH_RESULTS_GRID_CLASS} ${className}`}>
       {loading ? (
         <p className="col-span-full text-sm text-muted">
           {isPets ? t.search.loadingPets : t.search.loadingProfiles}
