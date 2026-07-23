@@ -5,8 +5,10 @@ import {
   isProfileOwnedByUser,
 } from "@/lib/profile-session-guard";
 import {
+  ActiveModeSwitchError,
+  canSwitchActiveMode,
   initialActiveModeForRole,
-  roleAfterModeSwitch,
+  resolveActiveMode,
   type ProfileActiveMode,
 } from "@/lib/profile-mode";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
@@ -158,12 +160,23 @@ export async function saveUserActiveMode(
   context: ProfileSaveContext,
 ): Promise<ProfileRow> {
   const displayName = resolveProfileDisplayName(context.user, currentProfile.display_name);
+  const currentMode = resolveActiveMode(currentProfile.role, currentProfile.active_mode);
+
+  if (currentMode === targetMode) {
+    throw new ActiveModeSwitchError("already_active", "This dashboard mode is already active.");
+  }
+
+  if (!canSwitchActiveMode(currentProfile.role, targetMode)) {
+    throw new ActiveModeSwitchError(
+      "unsupported_mode",
+      "Complete setup for the other role before switching dashboard mode.",
+    );
+  }
+
   const now = new Date().toISOString();
-  const newRole = roleAfterModeSwitch(currentProfile.role, targetMode);
 
   const payload = {
     display_name: displayName,
-    role: newRole,
     active_mode: targetMode,
     updated_at: now,
   };

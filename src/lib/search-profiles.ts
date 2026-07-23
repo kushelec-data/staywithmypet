@@ -2,10 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
 import { formatNearbyLocation } from "@/lib/location-public";
 import { excludeMarketplaceSelf } from "@/lib/marketplace-membership";
-import {
-  isPetFriendMarketplaceMinimumEligible,
-  isDiscoverableOnFindCare,
-} from "@/lib/profile-marketplace-eligibility";
+import { isDiscoverableOnFindCare } from "@/lib/profile-marketplace-eligibility";
+import { isPetFriendFindCareListingEligible } from "@/lib/profile-required-fields";
 import { resolveProfilePublicLocation } from "@/lib/profile-location";
 import { blurCoordinates } from "@/lib/map-privacy";
 import { parseCoord } from "@/lib/parse-coord";
@@ -13,6 +11,7 @@ import type { SearchMapMarker } from "@/lib/search-map-markers";
 import type { PetFriendSearchFilterable } from "@/lib/pet-friend-search-match";
 import { buildPetFriendPreferenceChips } from "@/lib/pet-friend-card-chips";
 import { resolveAvatarPosition, type PhotoObjectPosition } from "@/lib/photo-position";
+import type { ProfileDetails } from "@/lib/profile-details";
 import {
   parseProfileDetails,
   resolvedAvailability,
@@ -42,23 +41,10 @@ export type SearchProfile = PetFriendSearchFilterable & {
 /** @deprecated use fetchPetFriendSearchProfiles */
 export type SearchProfileTab = "pet_parent" | "pet_friend";
 
-function isListableProfile(row: {
-  display_name: string;
-  bio: string | null;
-  location: string | null;
-  public_location?: string | null;
-  city?: string | null;
-  country?: string | null;
-  google_place_id?: string | null;
-  latitude?: unknown;
-  longitude?: unknown;
-  is_public?: boolean | null;
-  role: ProfileRole;
-}): boolean {
+function isListableProfile(row: PetFriendSearchRow & { is_public?: boolean | null }): boolean {
   if (!isDiscoverableOnFindCare(row)) return false;
-  return isPetFriendMarketplaceMinimumEligible({
+  return isPetFriendFindCareListingEligible({
     display_name: row.display_name,
-    bio: row.bio,
     location: row.location,
     public_location: row.public_location ?? null,
     city: row.city ?? null,
@@ -66,8 +52,9 @@ function isListableProfile(row: {
     google_place_id: row.google_place_id ?? null,
     latitude: row.latitude as number | null,
     longitude: row.longitude as number | null,
-    is_public: true,
+    is_public: row.is_public ?? true,
     role: row.role,
+    details: row.details as ProfileDetails | Record<string, unknown> | null | undefined,
   });
 }
 

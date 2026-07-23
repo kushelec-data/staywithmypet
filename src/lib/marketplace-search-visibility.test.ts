@@ -95,4 +95,13 @@ describe("marketplace search visibility without membership", () => {
       }),
     ).toBe(false);
   });
+
+  it("find care search uses friend profile completeness gate", () => {
+    const file = readFileSync(
+      join(process.cwd(), "src/lib/search-profiles.ts"),
+      "utf8",
+    );
+    expect(file).toContain("isPetFriendFindCareListingEligible");
+    expect(file).not.toMatch(/isListableProfile[\s\S]*isPetFriendMarketplaceMinimumEligible/);
+  });
 });

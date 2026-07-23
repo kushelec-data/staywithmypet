@@ -4,10 +4,12 @@ import type { PetIntroDisplay } from "@/lib/pet-intro";
 import {
   parseProfileDetails,
   profileCalendarSelectedDates,
+  resolvedLivingSituation,
   resolvedPetCarePreferences,
   type PetCarePreferences,
   type ProfileDetails,
 } from "@/lib/profile-details";
+import { isDiscoverableOnFindCare } from "@/lib/profile-marketplace-eligibility";
 import { hasSavedProfileLocation, validateProfileLocationForSave, type ProfileLocationFormState } from "@/lib/profile-location";
 import { profileLanguagesOtherMissing } from "@/lib/profile-languages";
 import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
@@ -242,6 +244,48 @@ function friendFormChecks(form: PetFriendProfileFormInput) {
       willing_puppies_kittens: form.willingPuppiesKittens,
     }),
   };
+}
+
+export type PetFriendFindCareListingInput = Pick<
+  ProfileRow,
+  | "display_name"
+  | "location"
+  | "public_location"
+  | "city"
+  | "country"
+  | "google_place_id"
+  | "latitude"
+  | "longitude"
+  | "role"
+> & {
+  is_public?: boolean | null;
+  details?: ProfileDetails | Record<string, unknown> | null;
+};
+
+/** Find Care listing gate — Pet Friend profile sections complete (membership not required). */
+export function isPetFriendFindCareListingEligible(
+  profile: PetFriendFindCareListingInput,
+): boolean {
+  if (profile.is_public === false) return false;
+  if (!isDiscoverableOnFindCare(profile)) return false;
+  if (!profile.display_name?.trim()) return false;
+  if (!hasSavedProfileLocation(profile)) return false;
+
+  const details = parseProfileDetails(profile.details);
+  const friendChecks = friendDetailsChecks(details);
+  const living = resolvedLivingSituation(details);
+  const hasLivingSituation = Boolean(living.living_type?.trim());
+
+  return (
+    friendChecks.experience &&
+    friendChecks.petTypes &&
+    friendChecks.petSizes &&
+    friendChecks.careServices &&
+    friendChecks.availability &&
+    friendChecks.serviceArea &&
+    friendChecks.careToggles &&
+    hasLivingSituation
+  );
 }
 
 function isFieldDone(

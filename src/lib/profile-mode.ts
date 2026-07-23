@@ -11,6 +11,23 @@ export type SidebarModeAction = {
   targetMode: ProfileActiveMode;
 };
 
+/** Dashboard sidebar control — mode switch (dual role) or enable-other-role CTA. */
+export type SidebarModeControl =
+  | { kind: "switch"; label: string; targetMode: ProfileActiveMode }
+  | { kind: "enable"; label: string; href: string; targetMode: ProfileActiveMode };
+
+export type ActiveModeSwitchErrorCode = "unsupported_mode" | "already_active";
+
+export class ActiveModeSwitchError extends Error {
+  readonly code: ActiveModeSwitchErrorCode;
+
+  constructor(code: ActiveModeSwitchErrorCode, message: string) {
+    super(message);
+    this.name = "ActiveModeSwitchError";
+    this.code = code;
+  }
+}
+
 export function isProfileActiveMode(value: string | null | undefined): value is ProfileActiveMode {
   return value === "pet_parent" || value === "pet_friend";
 }
@@ -23,32 +40,73 @@ export function resolveActiveMode(
   role: ProfileRole | undefined,
   activeMode: string | null | undefined,
 ): ProfileActiveMode {
-  if (isProfileActiveMode(activeMode)) return activeMode;
-  return initialActiveModeForRole(role ?? "pet_friend");
+  const fallback = initialActiveModeForRole(role ?? "pet_friend");
+  const mode = isProfileActiveMode(activeMode) ? activeMode : fallback;
+  if (role === "pet_parent" && mode === "pet_friend") return "pet_parent";
+  if (role === "pet_friend" && mode === "pet_parent") return "pet_friend";
+  return mode;
 }
 
-/** Single opposite-mode switch shown in the account sidebar. */
+/** Whether the profile role allows switching dashboard UI to the target mode. */
+export function canSwitchActiveMode(role: ProfileRole, targetMode: ProfileActiveMode): boolean {
+  if (role === "both") return true;
+  return role === targetMode;
+}
+
+/** Single opposite-mode switch shown in the account sidebar (dual-role users only). */
 export function sidebarModeActionForProfile(
   profile: ProfileRow | null,
   accountT?: Dictionary["account"],
 ): SidebarModeAction | null {
+  const control = sidebarModeControlForProfile(profile, accountT);
+  if (!control || control.kind !== "switch") return null;
+  return {
+    id: control.targetMode,
+    label: control.label,
+    targetMode: control.targetMode,
+  };
+}
+
+/** Sidebar mode switch or explicit enable-other-role CTA. */
+export function sidebarModeControlForProfile(
+  profile: ProfileRow | null,
+  accountT?: Dictionary["account"],
+): SidebarModeControl | null {
   if (!profile) return null;
 
   const mode = resolveActiveMode(profile.role, profile.active_mode);
 
-  if (mode === "pet_parent") {
+  if (profile.role === "both") {
+    const targetMode: ProfileActiveMode = mode === "pet_parent" ? "pet_friend" : "pet_parent";
     return {
-      id: "pet_friend",
-      label: accountT?.switchToPetFriend ?? "Switch to Pet Friend",
+      kind: "switch",
+      label:
+        targetMode === "pet_friend"
+          ? (accountT?.switchToPetFriend ?? "Switch to Pet Friend")
+          : (accountT?.switchToPetParent ?? "Switch to Pet Parent"),
+      targetMode,
+    };
+  }
+
+  if (profile.role === "pet_parent") {
+    return {
+      kind: "enable",
+      label: accountT?.createPetFriendProfile ?? "Create Pet Friend profile",
+      href: "/profile/setup",
       targetMode: "pet_friend",
     };
   }
 
-  return {
-    id: "pet_parent",
-    label: accountT?.switchToPetParent ?? "Switch to Pet Parent",
-    targetMode: "pet_parent",
-  };
+  if (profile.role === "pet_friend") {
+    return {
+      kind: "enable",
+      label: accountT?.createPetParentProfile ?? "Create Pet Parent profile",
+      href: "/profile/setup",
+      targetMode: "pet_parent",
+    };
+  }
+
+  return null;
 }
 
 /** @deprecated use sidebarModeActionForProfile */
@@ -118,12 +176,13 @@ export function formatProfileRoleBadge(role: ProfileRole, roles?: Dictionary["ro
   }
 }
 
+/**
+ * @deprecated Dashboard mode switches must not mutate profiles.role.
+ * Role expansion belongs in explicit onboarding/profile setup only.
+ */
 export function roleAfterModeSwitch(
   currentRole: ProfileRole,
-  targetMode: ProfileActiveMode,
+  _targetMode: ProfileActiveMode,
 ): ProfileRole {
-  if (currentRole === "both") return "both";
-  if (targetMode === "pet_friend" && currentRole === "pet_parent") return "both";
-  if (targetMode === "pet_parent" && currentRole === "pet_friend") return "both";
   return currentRole;
 }

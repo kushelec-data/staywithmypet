@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReadonlyURLSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { AccountSidebarNavLink } from "@/components/account/AccountSidebarNavLink";
 import type { AccountSidebarSection } from "@/lib/account-nav";
@@ -14,6 +15,7 @@ import {
   ACCOUNT_COLORS,
   ACCOUNT_NAV_INACTIVE_CLASS,
 } from "@/lib/account-ui";
+import type { SidebarModeControl } from "@/lib/profile-mode";
 import {
   ACCOUNT_SIDEBAR_ICON_CLASS,
   ACCOUNT_SIDEBAR_MODE_SWITCH_ICON,
@@ -30,7 +32,7 @@ type AccountSidebarProps = {
   pathname: string;
   searchParams: ReadonlyURLSearchParams;
   t: Dictionary;
-  modeAction: { label: string; targetMode: "pet_parent" | "pet_friend" } | null;
+  modeControl: SidebarModeControl | null;
   switchingMode: string | null;
   modeError: string | null;
   loggingOut: boolean;
@@ -53,7 +55,7 @@ export function AccountSidebar({
   pathname,
   searchParams,
   t,
-  modeAction,
+  modeControl,
   switchingMode,
   modeError,
   loggingOut,
@@ -121,24 +123,38 @@ export function AccountSidebar({
       </nav>
 
       <div className="mt-4 border-t border-[#E5E2D8] pt-3">
-        {modeAction ? (
+        {modeControl ? (
           <>
             <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted">
               {accountT.switchMode}
             </p>
-            <button
-              type="button"
-              disabled={switchingMode !== null}
-              onClick={() => onModeSwitch(modeAction.targetMode)}
-              className={`${ACCOUNT_NAV_INACTIVE_CLASS} mt-1 flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
-            >
-              <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
-                className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
-                strokeWidth={1.75}
-                aria-hidden
-              />
-              {switchingMode === modeAction.targetMode ? accountT.switching : modeAction.label}
-            </button>
+            {modeControl.kind === "switch" ? (
+              <button
+                type="button"
+                disabled={switchingMode !== null}
+                onClick={() => onModeSwitch(modeControl.targetMode)}
+                className={`${ACCOUNT_NAV_INACTIVE_CLASS} mt-1 flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
+                  className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+                {switchingMode === modeControl.targetMode ? accountT.switching : modeControl.label}
+              </button>
+            ) : (
+              <Link
+                href={modeControl.href}
+                className={`${ACCOUNT_NAV_INACTIVE_CLASS} mt-1 flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium`}
+              >
+                <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
+                  className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+                {modeControl.label}
+              </Link>
+            )}
             {modeError ? (
               <p className="mt-1.5 px-3 text-xs text-brand-pink" role="alert">
                 {modeError}
@@ -151,7 +167,7 @@ export function AccountSidebar({
           type="button"
           variant="outline"
           size="sm"
-          className={`w-full ${modeAction ? "mt-2" : ""}`}
+          className={`w-full ${modeControl ? "mt-2" : ""}`}
           disabled={loggingOut}
           onClick={onLogout}
         >

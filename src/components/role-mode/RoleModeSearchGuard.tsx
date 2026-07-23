@@ -41,7 +41,7 @@ export function RoleModeSearchGuard({ page, children }: RoleModeSearchGuardProps
     setSwitching(true);
     setError(null);
     try {
-      await performActiveModeSwitch({
+      const result = await performActiveModeSwitch({
         supabase,
         user,
         profile,
@@ -49,6 +49,14 @@ export function RoleModeSearchGuard({ page, children }: RoleModeSearchGuardProps
         setProfileRow,
         refreshProfile,
       });
+      if (!result.ok) {
+        setError(
+          result.code === "unsupported_mode"
+            ? t.account.completeSetupBeforeSwitchingRoles
+            : result.message,
+        );
+        return;
+      }
       router.push(DASHBOARD_PATH);
       router.refresh();
     } catch (err) {

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import { headerNavForActiveMode, sidebarSectionsForActiveMode } from "@/lib/account-nav";
-import { resolveActiveMode, sidebarModeActionForProfile } from "@/lib/profile-mode";
+import { resolveActiveMode, sidebarModeControlForProfile } from "@/lib/profile-mode";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
 import { performActiveModeSwitch } from "@/lib/switch-active-mode";
 import { createClient } from "@/lib/supabase";
@@ -85,7 +85,7 @@ export function DashboardShell({
     : null;
   const sidebarSections = sidebarSectionsForActiveMode(resolvedActiveMode);
   const headerNav = headerNavForActiveMode(resolvedActiveMode);
-  const modeAction = sidebarModeActionForProfile(profile, t.account);
+  const modeControl = sidebarModeControlForProfile(profile, t.account);
   const [loggingOut, setLoggingOut] = useState(false);
   const [switchingMode, setSwitchingMode] = useState<string | null>(null);
   const [modeError, setModeError] = useState<string | null>(null);
@@ -153,7 +153,7 @@ export function DashboardShell({
     setSwitchingMode(targetMode);
     setModeError(null);
     try {
-      await performActiveModeSwitch({
+      const result = await performActiveModeSwitch({
         supabase,
         user,
         profile,
@@ -161,6 +161,14 @@ export function DashboardShell({
         setProfileRow,
         refreshProfile,
       });
+      if (!result.ok) {
+        const message =
+          result.code === "unsupported_mode"
+            ? t.account.completeSetupBeforeSwitchingRoles
+            : result.message;
+        setModeError(message);
+        return;
+      }
       if (isMembershipRoute) {
         router.refresh();
       } else {
@@ -212,7 +220,7 @@ export function DashboardShell({
           pathname={pathname}
           searchParams={searchParams}
           t={t}
-          modeAction={modeAction}
+          modeControl={modeControl}
           switchingMode={switchingMode}
           modeError={modeError}
           loggingOut={loggingOut}
