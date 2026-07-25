@@ -77,6 +77,12 @@ const PLAN_PRICES: Record<string, string> = {
   "1-year-friend": "€119",
 };
 
+/** Trusted catalog price for emails and UI (falls back to null when unknown). */
+export function membershipPlanPrice(planId: string): string | null {
+  const id = planId.trim();
+  return PLAN_PRICES[id] ?? null;
+}
+
 /** Catalog plan_id → billing interval (used by stripe-plans checkout). */
 export const PLAN_BILLING_INTERVAL: Record<string, MembershipPlanDefinition["billing_interval"]> = {
   "one-time-owner": "one_time",
