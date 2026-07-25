@@ -14,12 +14,16 @@ import {
 } from "@/lib/membership-activate";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMembershipActive, type MembershipRole, type MembershipStatus } from "@/lib/membership";
-import type { SupabaseErrorDetail } from "@/lib/supabase-errors";
+import { isMissingColumnError, type SupabaseErrorDetail } from "@/lib/supabase-errors";
 import {
   isWebhookHandlerError,
   WebhookHandlerError,
 } from "@/lib/stripe-webhook-handler-error";
 import { getStripe } from "@/lib/stripe";
+import {
+  evaluateCheckoutActivationConflict,
+  MEMBERSHIP_ACTIVATION_CONFLICT_CODE,
+} from "@/lib/membership-checkout-conflict";
 import { resolveCheckoutActivationContext } from "@/lib/stripe-webhook-resolve";
 
 function periodEndIso(subscription: Stripe.Subscription): string | null {
@@ -43,6 +47,16 @@ export function checkoutSessionIsPaid(session: Stripe.Checkout.Session): boolean
 export type CheckoutActivationResult =
   | { ok: true; activated: true; sessionId: string; userId: string; role: string; planId: string }
   | { ok: true; activated: false; sessionId: string; reason: "payment_pending" }
+  | {
+      ok: true;
+      activated: false;
+      sessionId: string;
+      reason: "membership_conflict";
+      code: typeof MEMBERSHIP_ACTIVATION_CONFLICT_CODE;
+      userId: string;
+      role: string;
+      planId: string;
+    }
   | {
       ok: false;
       error: string;
@@ -101,16 +115,48 @@ export async function activateMembershipFromCheckoutSession(
 
   const admin = createAdminClient();
   if (admin) {
-    const { data: existingRow } = await admin
+    let existingRow: Record<string, unknown> | null = null;
+    const fullSelect =
+      "status, end_date, plan_id, stripe_subscription_id, stripe_checkout_session_id";
+    const { data: fullRow, error: fullError } = await admin
       .from(MEMBERSHIP_TABLE)
-      .select("status, end_date, stripe_checkout_session_id")
+      .select(fullSelect)
       .eq("user_id", userId)
       .eq("role", role)
       .maybeSingle();
 
+    if (!fullError) {
+      existingRow = fullRow as Record<string, unknown> | null;
+    } else if (isMissingColumnError(fullError)) {
+      const { data: coreRow } = await admin
+        .from(MEMBERSHIP_TABLE)
+        .select("status, end_date, plan_id")
+        .eq("user_id", userId)
+        .eq("role", role)
+        .maybeSingle();
+      existingRow = coreRow as Record<string, unknown> | null;
+    }
+
+    const existingForConflict = existingRow
+      ? {
+          status: String(existingRow.status),
+          end_date:
+            existingRow.end_date == null ? null : String(existingRow.end_date),
+          plan_id: existingRow.plan_id == null ? null : String(existingRow.plan_id),
+          stripe_subscription_id:
+            typeof existingRow.stripe_subscription_id === "string"
+              ? existingRow.stripe_subscription_id
+              : null,
+          stripe_checkout_session_id:
+            typeof existingRow.stripe_checkout_session_id === "string"
+              ? existingRow.stripe_checkout_session_id
+              : null,
+        }
+      : null;
+
     if (
-      existingRow?.stripe_checkout_session_id === sessionId &&
-      isMembershipActive(existingRow as Parameters<typeof isMembershipActive>[0])
+      existingForConflict?.stripe_checkout_session_id === sessionId &&
+      isMembershipActive(existingForConflict as Parameters<typeof isMembershipActive>[0])
     ) {
       console.log("[stripe] checkout session already activated (idempotent)", {
         sessionId,
@@ -121,6 +167,36 @@ export async function activateMembershipFromCheckoutSession(
         ok: true,
         activated: true,
         sessionId,
+        userId,
+        role,
+        planId,
+      };
+    }
+
+    const activationConflict = evaluateCheckoutActivationConflict({
+      sessionMode: session.mode,
+      sessionId,
+      incomingPlanId: planId,
+      existing: existingForConflict,
+    });
+
+    if (activationConflict.conflict) {
+      console.warn("[stripe] checkout activation conflict — membership not overwritten", {
+        sessionId,
+        userId,
+        role,
+        sessionMode: session.mode,
+        incomingPlanId: planId,
+        existingPlanId: activationConflict.existingPlanId,
+        code: activationConflict.code,
+        message: activationConflict.message,
+      });
+      return {
+        ok: true,
+        activated: false,
+        sessionId,
+        reason: "membership_conflict",
+        code: activationConflict.code,
         userId,
         role,
         planId,

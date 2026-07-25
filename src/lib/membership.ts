@@ -102,6 +102,9 @@ export function isMembershipPlanPurchasable(planId: string): boolean {
   return (PURCHASABLE_MEMBERSHIP_PLAN_IDS as readonly string[]).includes(id);
 }
 
+/** Typed API error when checkout is blocked by an existing active role membership. */
+export const ACTIVE_MEMBERSHIP_CHECKOUT_CONFLICT_CODE = "ACTIVE_MEMBERSHIP_CONFLICT" as const;
+
 /**
  * Client-safe placeholder; server resolves ids via `resolveStripePriceId` in stripe-plans.ts
  * (STRIPE_PARENT_PRICE_ID / STRIPE_FRIEND_PRICE_ID by role).

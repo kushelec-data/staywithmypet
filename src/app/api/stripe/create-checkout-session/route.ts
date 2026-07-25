@@ -10,7 +10,11 @@ import {
   stripePriceIdSuffix,
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
-import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, qualifiesAsActivePetFriendMembership, qualifiesAsActivePetParentMembership, type MembershipRole } from "@/lib/membership";
+import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, type MembershipRole } from "@/lib/membership";
+import {
+  ACTIVE_MEMBERSHIP_CHECKOUT_CONFLICT_CODE,
+  evaluateMembershipCheckoutConflict,
+} from "@/lib/membership-checkout-conflict";
 import { sanitizeReturnTo } from "@/lib/membership-return";
 import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
@@ -32,6 +36,20 @@ type CheckoutBody = {
   userId?: string;
   returnTo?: string;
 };
+
+function checkoutConflictResponse(
+  planId: string,
+  message: string,
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: message,
+      code: ACTIVE_MEMBERSHIP_CHECKOUT_CONFLICT_CODE,
+      planId,
+    },
+    { status: 409 },
+  );
+}
 
 function planExistsForRole(role: MembershipRole, planId: string): boolean {
   return MEMBERSHIP_PLAN_CATALOG[role].some((p) => p.id === planId);
@@ -144,22 +162,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "User mismatch." }, { status: 403 });
   }
 
-  const { data: activeMembershipRow } = await supabase
+  const { data: existingMembershipRow } = await supabase
     .from("user_memberships")
-    .select("status, end_date")
+    .select("status, end_date, plan_id")
     .eq("user_id", sessionUserId)
     .eq("role", role)
     .maybeSingle();
 
-  if (
-    (role === "pet_parent"
-      ? qualifiesAsActivePetParentMembership
-      : qualifiesAsActivePetFriendMembership)(activeMembershipRow)
-  ) {
-    return NextResponse.json(
-      { error: "You already have an active membership for this role." },
-      { status: 409 },
-    );
+  const checkoutConflict = evaluateMembershipCheckoutConflict(
+    existingMembershipRow,
+    role,
+    trimmedPlanId,
+  );
+  if (checkoutConflict.blocked) {
+    return checkoutConflictResponse(trimmedPlanId, checkoutConflict.message);
   }
 
   const resolvedPriceId = resolveStripePriceId(trimmedPlanId);

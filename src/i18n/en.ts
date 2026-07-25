@@ -1551,6 +1551,8 @@ export const en = {
     cancelPlan: "Cancel plan",
     cancelUnavailable:
       "Plan cancellation is not available yet. Please contact support.",
+    activeMembershipConflict:
+      "You already have an active membership for this role. Manage or cancel it before purchasing another plan.",
   },
   testAccess: {
     invitedSection: {

@@ -5,7 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/Button";
 import { ACCOUNT_CARD_CLASS } from "@/lib/account-ui";
 import { MEMBERSHIP_PATH } from "@/lib/auth-routing";
-import { formatMembershipDate, isMembershipPlanPurchasable } from "@/lib/membership";
+import { formatMembershipDate, isMembershipPlanPurchasable, ACTIVE_MEMBERSHIP_CHECKOUT_CONFLICT_CODE } from "@/lib/membership";
 import type { MembershipPlanDefinition, MembershipRole } from "@/lib/membership";
 import {
   checkoutRuntimeErrorForPlan,
@@ -479,11 +479,16 @@ export function MembershipPlans({
       const data = (await res.json()) as {
         url?: string;
         error?: string;
+        code?: string;
         planId?: string;
         priceEnv?: string | null;
       };
       if (!res.ok) {
-        throw new Error(data.error ?? t.pricing.checkoutError);
+        const message =
+          data.code === ACTIVE_MEMBERSHIP_CHECKOUT_CONFLICT_CODE
+            ? t.membershipCheckout.activeMembershipConflict
+            : (data.error ?? t.pricing.checkoutError);
+        throw new Error(message);
       }
       if (!data.url) {
         throw new Error(data.error ?? t.pricing.checkoutMissingUrl);

@@ -1561,6 +1561,8 @@ export const et = {
     cancelPlan: "Tühista pakett",
     cancelUnavailable:
       "Paketi tühistamine pole veel saadaval. Palun võta ühendust toega.",
+    activeMembershipConflict:
+      "Sul on juba aktiivne liikmelisus selles rollis. Halda või tühista see enne uue paketi ostmist.",
   },
   testAccess: {
     invitedSection: {

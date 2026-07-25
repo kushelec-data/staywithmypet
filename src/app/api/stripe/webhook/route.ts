@@ -188,6 +188,12 @@ export async function POST(request: Request) {
             upsertLog.planId = activationResult.planId;
           } else {
             upsertLog.reason = activationResult.reason;
+            if (activationResult.reason === "membership_conflict") {
+              upsertLog.code = activationResult.code;
+              upsertLog.userId = activationResult.userId;
+              upsertLog.role = activationResult.role;
+              upsertLog.planId = activationResult.planId;
+            }
           }
           console.log("[stripe] checkout.session.completed upsert result", upsertLog);
         }
@@ -205,20 +211,25 @@ export async function POST(request: Request) {
         break;
       }
       case "invoice.payment_succeeded":
-      case "invoice.paid":
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
         console.log("[stripe] webhook received", {
           eventType: event.type,
           invoiceId: invoice.id,
         });
-        if (event.type === "invoice.payment_succeeded" || event.type === "invoice.paid") {
+        if (event.type === "invoice.payment_succeeded") {
           await handleInvoicePaymentSucceeded(invoice);
         } else {
           await handleInvoicePaymentFailed(invoice);
         }
         break;
       }
+      case "invoice.paid":
+        console.log("[stripe] webhook ignored invoice.paid (sync via invoice.payment_succeeded)", {
+          eventType: event.type,
+          eventId: event.id,
+        });
+        break;
       default:
         console.log("[stripe] webhook ignored unhandled event", { eventType: event.type });
         break;

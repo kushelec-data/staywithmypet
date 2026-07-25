@@ -231,7 +231,7 @@ async function syncFromSubscription(
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId,
     source: "stripe_subscription",
-    sendConfirmationEmail: status === "active" || status === "trialing",
+    sendConfirmationEmail: false,
   });
 
   await assertMembershipUpsert(result, `subscription ${subscription.id}`);
@@ -254,10 +254,20 @@ export async function handleCheckoutSessionCompleted(
   }
 
   if (!result.activated) {
-    console.log("[stripe] checkout completed; activation deferred until paid", {
-      sessionId: session.id,
-      paymentStatus: session.payment_status,
-    });
+    if (result.reason === "membership_conflict") {
+      console.log("[stripe] checkout completed; activation skipped (membership conflict)", {
+        sessionId: session.id,
+        userId: result.userId,
+        role: result.role,
+        planId: result.planId,
+        code: result.code,
+      });
+    } else {
+      console.log("[stripe] checkout completed; activation deferred until paid", {
+        sessionId: session.id,
+        paymentStatus: session.payment_status,
+      });
+    }
   }
 
   return result;
@@ -278,6 +288,13 @@ export async function handleCheckoutAsyncPaymentSucceeded(
   }
 
   if (!result.activated) {
+    if (result.reason === "membership_conflict") {
+      console.log("[stripe] async checkout activation skipped (membership conflict)", {
+        sessionId: session.id,
+        code: result.code,
+      });
+      return;
+    }
     throw new WebhookHandlerError(
       `[stripe] async checkout ${session.id}: payment still not paid (${session.payment_status})`,
       { step: "checkout_payment_pending", sessionId: session.id },
