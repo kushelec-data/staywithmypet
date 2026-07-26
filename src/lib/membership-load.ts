@@ -7,6 +7,7 @@ import {
   type UserMembershipsByRole,
 } from "@/lib/membership";
 import {
+  isMissingColumnError,
   isMissingRelationError,
   isPostgrestError,
   logSupabaseError,
@@ -14,7 +15,7 @@ import {
 
 /** Columns present in production after 20260602100000_user_memberships.sql (no Stripe columns). */
 export const MEMBERSHIP_CORE_SELECT =
-  "id, user_id, role, plan_id, status, start_date, end_date, auto_renew";
+  "id, user_id, role, plan_id, status, start_date, end_date, auto_renew, linked_booking_id, consumed_at, cancellation_restart_used";
 
 function mapMembershipRow(data: Record<string, unknown>): UserMembership {
   return {
@@ -27,6 +28,10 @@ function mapMembershipRow(data: Record<string, unknown>): UserMembership {
     start_date: String(data.start_date),
     end_date: data.end_date == null ? null : String(data.end_date),
     auto_renew: Boolean(data.auto_renew),
+    linked_booking_id:
+      data.linked_booking_id == null ? null : String(data.linked_booking_id),
+    consumed_at: data.consumed_at == null ? null : String(data.consumed_at),
+    cancellation_restart_used: Boolean(data.cancellation_restart_used),
     stripe_customer_id: null,
     stripe_subscription_id: null,
     stripe_price_id: null,
@@ -46,6 +51,24 @@ export async function fetchUserMembershipRows(
   if (error) {
     if (isMissingRelationError(error)) {
       return [];
+    }
+    if (isMissingColumnError(error, "linked_booking_id")) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("user_memberships")
+        .select("id, user_id, role, plan_id, status, start_date, end_date, auto_renew")
+        .eq("user_id", userId);
+      if (fallbackError) {
+        logSupabaseError("fetchUserMembershipRows", fallbackError);
+        throw fallbackError;
+      }
+      return (fallbackData ?? []).map((row) =>
+        mapMembershipRow({
+          ...(row as Record<string, unknown>),
+          linked_booking_id: null,
+          consumed_at: null,
+          cancellation_restart_used: false,
+        }),
+      );
     }
     logSupabaseError("fetchUserMembershipRows", error);
     throw error;

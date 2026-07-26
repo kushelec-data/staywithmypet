@@ -26,6 +26,14 @@ vi.mock("@/lib/membership-access", async () => {
   };
 });
 
+vi.mock("@/lib/one-time-membership-assert", () => ({
+  assertOneTimeCanStartArrangementForBookingParticipants: vi.fn(async () => undefined),
+}));
+
+vi.mock("@/app/actions/one-time-membership", () => ({
+  linkOneTimeMembershipsForRequestAction: vi.fn(async () => undefined),
+}));
+
 import { respondToRequest } from "@/lib/requests";
 
 type MockState = {

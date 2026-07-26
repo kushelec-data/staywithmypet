@@ -21,6 +21,7 @@ import {
   type SupabaseErrorDetail,
 } from "@/lib/supabase-errors";
 import { normalizeCatalogPlanId } from "@/lib/stripe-plans";
+import { isOneTimePlanId } from "@/lib/one-time-membership";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 
@@ -50,6 +51,9 @@ function mapProductionMembershipRow(data: Record<string, unknown>): UserMembersh
     start_date: startRaw ? String(startRaw) : new Date().toISOString(),
     end_date: endRaw == null ? null : String(endRaw),
     auto_renew: Boolean(data.auto_renew ?? false),
+    linked_booking_id: null,
+    consumed_at: null,
+    cancellation_restart_used: false,
     stripe_customer_id: null,
     stripe_subscription_id: null,
     stripe_price_id: null,
@@ -97,6 +101,9 @@ export type UpsertMembershipInput = {
   stripeCheckoutSessionId?: string | null;
   /** Provenance: e.g. test_code, stripe_checkout. Optional column — stripped if migration not applied. */
   source?: string | null;
+  linkedBookingId?: string | null;
+  consumedAt?: string | null;
+  cancellationRestartUsed?: boolean;
   /** When false, skip confirmation email (e.g. interim webhook updates). */
   sendConfirmationEmail?: boolean;
 };
@@ -140,6 +147,9 @@ const MEMBERSHIP_OPTIONAL_STRIP_COLUMNS = [
   "stripe_subscription_id",
   "stripe_price_id",
   "stripe_checkout_session_id",
+  "linked_booking_id",
+  "consumed_at",
+  "cancellation_restart_used",
 ] as const;
 
 /** DB enum public.membership_status (20260602100000 + 20260603100000). */
@@ -271,6 +281,20 @@ function buildMembershipUpsertPayload(input: UpsertMembershipInput): {
   }
   if (input.source !== undefined) {
     payload.source = input.source;
+  }
+
+  if (isOneTimePlanId(catalogPlanId)) {
+    payload.linked_booking_id = input.linkedBookingId ?? null;
+    payload.consumed_at = input.consumedAt ?? null;
+    payload.cancellation_restart_used = input.cancellationRestartUsed ?? false;
+  } else if (
+    input.linkedBookingId !== undefined ||
+    input.consumedAt !== undefined ||
+    input.cancellationRestartUsed !== undefined
+  ) {
+    payload.linked_booking_id = input.linkedBookingId ?? null;
+    payload.consumed_at = input.consumedAt ?? null;
+    payload.cancellation_restart_used = input.cancellationRestartUsed ?? false;
   }
 
   return {

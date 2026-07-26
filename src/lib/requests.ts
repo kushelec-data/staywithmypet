@@ -914,6 +914,15 @@ export async function respondToRequest(
   const { assertActiveMembershipForRole } = await import("@/lib/membership-access");
   await assertActiveMembershipForRole(supabase, userId, receiverRole);
 
+  const { assertOneTimeCanStartArrangementForBookingParticipants } = await import(
+    "@/lib/one-time-membership-assert"
+  );
+  await assertOneTimeCanStartArrangementForBookingParticipants(
+    pendingRow.pet_parent_id,
+    pendingRow.pet_friend_id,
+    supabase,
+  );
+
   const { data: conversationId, error: acceptError } = await supabase.rpc("accept_care_request", {
     p_request_id: requestId,
   });
@@ -936,6 +945,18 @@ export async function respondToRequest(
 
   await seedRequestMessageIfAbsent(supabase, requestId);
 
+  try {
+    const { linkOneTimeMembershipsForRequestAction } = await import(
+      "@/app/actions/one-time-membership"
+    );
+    await linkOneTimeMembershipsForRequestAction(requestId);
+  } catch (err) {
+    console.warn("[one-time-membership] link after accept failed", {
+      requestId,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   return { conversationId: resolvedConversationId };
 }
 
@@ -944,9 +965,10 @@ export async function cancelRequest(
   userId: string,
   requestId: string,
 ): Promise<void> {
+  const cancelledAt = new Date().toISOString();
   const { error } = await supabase
     .from("requests")
-    .update({ status: "cancelled" })
+    .update({ status: "cancelled", cancelled_at: cancelledAt })
     .eq("id", requestId)
     .eq("sender_id", userId)
     .eq("status", "pending");

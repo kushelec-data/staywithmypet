@@ -24,6 +24,9 @@ const activePetFriend: UserMembership = {
   stripe_subscription_id: null,
   stripe_price_id: null,
   stripe_checkout_session_id: null,
+  linked_booking_id: null,
+  consumed_at: null,
+  cancellation_restart_used: false,
 };
 
 const upsellCopy = {
@@ -117,6 +120,9 @@ const baseMembership = (overrides: Partial<UserMembership>): UserMembership => (
   stripe_subscription_id: null,
   stripe_price_id: null,
   stripe_checkout_session_id: null,
+  linked_booking_id: null,
+  consumed_at: null,
+  cancellation_restart_used: false,
   ...overrides,
 });
 

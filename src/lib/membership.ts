@@ -1,4 +1,8 @@
 import type { ProfileActiveMode } from "@/lib/profile-mode";
+import {
+  isOneTimeMembershipConsumed,
+  isOneTimePlanId,
+} from "@/lib/one-time-membership";
 
 export type MembershipRole = "pet_parent" | "pet_friend";
 
@@ -20,6 +24,9 @@ export type UserMembership = {
   start_date: string;
   end_date: string | null;
   auto_renew: boolean;
+  linked_booking_id: string | null;
+  consumed_at: string | null;
+  cancellation_restart_used: boolean;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
@@ -169,6 +176,9 @@ export function isMembershipActive(
 ): boolean {
   if (!membership) return false;
   if (membership.status !== "active") return false;
+  if (isOneTimePlanId(membership.plan_id) && isOneTimeMembershipConsumed(membership)) {
+    return false;
+  }
   const end = parseMembershipEnd(membership);
   if (!end) return true;
   return membershipEndOnOrAfterToday(end, now);

@@ -1,0 +1,575 @@
+warning: in the working copy of 'src/components/notifications/NotificationsBell.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/components/messages/ChatPanel.tsx b/src/components/messages/ChatPanel.tsx[m
+[1mindex 5bc4e88..a2acb00 100644[m
+[1m--- a/src/components/messages/ChatPanel.tsx[m
+[1m+++ b/src/components/messages/ChatPanel.tsx[m
+[36m@@ -31,6 +31,7 @@[m [mimport {[m
+   markConversationFullyRead,[m
+   resolveConversationStatusDisplay,[m
+   sendMessage,[m
+[32m+[m[32m  sendMessagePrecheckFromConversation,[m
+   subscribeToConversationMessages,[m
+   type ChatMessage,[m
+   type ConversationSummary,[m
+[36m@@ -109,6 +110,8 @@[m [mexport function ChatPanel({[m
+   const [uploadProgress, setUploadProgress] = useState<number | null>(null);[m
+   const scrollContainerRef = useRef<HTMLDivElement>(null);[m
+   const prefersSmoothScrollRef = useRef(false);[m
+[32m+[m[32m  const conversationRef = useRef(conversation);[m
+[32m+[m[32m  conversationRef.current = conversation;[m
+ [m
+   const canSend = canSendInConversation(conversation) && !blocked;[m
+   const uploading = uploadProgress !== null;[m
+[36m@@ -126,6 +129,15 @@[m [mexport function ChatPanel({[m
+   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;[m
+   const displayName = conversation.petName ?? conversation.threadTitle;[m
+   const thumbInitial = displayName.trim().charAt(0).toUpperCase() || "?";[m
+[32m+[m[32m  const messagePrecheck = useMemo([m
+[32m+[m[32m    () => sendMessagePrecheckFromConversation(conversation),[m
+[32m+[m[32m    [[m
+[32m+[m[32m      conversation.requestId,[m
+[32m+[m[32m      conversation.requestStatus,[m
+[32m+[m[32m      conversation.bookingStatus,[m
+[32m+[m[32m      conversation.bookingCancelledAt,[m
+[32m+[m[32m    ],[m
+[32m+[m[32m  );[m
+   const statusDisplay = resolveConversationStatusDisplay(conversation, t.requests, {[m
+     statusUpcoming: t.bookings.statusUpcoming,[m
+     statusActive: t.bookings.statusActive,[m
+[36m@@ -202,7 +214,7 @@[m [mexport function ChatPanel({[m
+         return [...prev, message];[m
+       });[m
+       if (!message.isOwn) {[m
+[31m-        void markConversationFullyRead(supabase, conversation, userId).then(() => {[m
+[32m+[m[32m        void markConversationFullyRead(supabase, conversationRef.current, userId).then(() => {[m
+           onConversationRead?.();[m
+         });[m
+       }[m
+[36m@@ -211,7 +223,7 @@[m [mexport function ChatPanel({[m
+     return () => {[m
+       void supabase.removeChannel(channel);[m
+     };[m
+[31m-  }, [conversation, conversationId, supabase, userId, onConversationRead]);[m
+[32m+[m[32m  }, [conversationId, supabase, userId, onConversationRead]);[m
+ [m
+   useEffect(() => {[m
+     if (loading) return;[m
+[36m@@ -294,6 +306,8 @@[m [mexport function ChatPanel({[m
+         userId,[m
+         text,[m
+         conversation.otherPartyId,[m
+[32m+[m[32m        undefined,[m
+[32m+[m[32m        messagePrecheck,[m
+       );[m
+       await deliverMessage(msg);[m
+     } catch (err) {[m
+[36m@@ -333,6 +347,7 @@[m [mexport function ChatPanel({[m
+           fileSize: file.size,[m
+           mimeType: file.type,[m
+         },[m
+[32m+[m[32m        messagePrecheck,[m
+       );[m
+       await deliverMessage(msg);[m
+     } catch (err) {[m
+[1mdiff --git a/src/components/notifications/NotificationsBell.tsx b/src/components/notifications/NotificationsBell.tsx[m
+[1mindex a7cff4c..3cee78d 100644[m
+[1m--- a/src/components/notifications/NotificationsBell.tsx[m
+[1m+++ b/src/components/notifications/NotificationsBell.tsx[m
+[36m@@ -24,7 +24,6 @@[m [mimport {[m
+   type NotificationActionKind,[m
+   type NotificationCategory,[m
+ } from "@/lib/notifications";[m
+[31m-import { CONVERSATION_READ_EVENT } from "@/lib/messaging";[m
+ import { createClient } from "@/lib/supabase";[m
+ import { useRouter, usePathname } from "next/navigation";[m
+ import { useCallback, useEffect, useMemo, useRef, useState } from "react";[m
+[36m@@ -139,6 +138,9 @@[m [mfunction NotificationRow({[m
+   );[m
+ }[m
+ [m
+[32m+[m[32m/** Coalesce rapid refresh signals (realtime + mark-read) into one network round-trip. */[m
+[32m+[m[32mconst NOTIFICATION_REFRESH_DEBOUNCE_MS = 100;[m
+[32m+[m
+ export function NotificationsBell() {[m
+   const router = useRouter();[m
+   const pathname = usePathname();[m
+[36m@@ -179,6 +181,18 @@[m [mexport function NotificationsBell() {[m
+   const refreshRef = useRef(refresh);[m
+   refreshRef.current = refresh;[m
+ [m
+[32m+[m[32m  const refreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);[m
+[32m+[m
+[32m+[m[32m  const scheduleRefresh = useCallback(() => {[m
+[32m+[m[32m    if (refreshDebounceRef.current) {[m
+[32m+[m[32m      clearTimeout(refreshDebounceRef.current);[m
+[32m+[m[32m    }[m
+[32m+[m[32m    refreshDebounceRef.current = setTimeout(() => {[m
+[32m+[m[32m      refreshDebounceRef.current = null;[m
+[32m+[m[32m      void refreshRef.current();[m
+[32m+[m[32m    }, NOTIFICATION_REFRESH_DEBOUNCE_MS);[m
+[32m+[m[32m  }, []);[m
+[32m+[m
+   useEffect(() => {[m
+     if (!userId) return;[m
+     const uid = userId;[m
+[36m@@ -210,21 +224,23 @@[m [mexport function NotificationsBell() {[m
+     if (!userId) return;[m
+ [m
+     const unsubscribe = subscribeToNotifications(supabase, userId, () => {[m
+[31m-      void refreshRef.current();[m
+[32m+[m[32m      scheduleRefresh();[m
+     });[m
+ [m
+     const onRefresh = () => {[m
+[31m-      void refreshRef.current();[m
+[32m+[m[32m      scheduleRefresh();[m
+     };[m
+[31m-    window.addEventListener(CONVERSATION_READ_EVENT, onRefresh);[m
+     window.addEventListener(NOTIFICATIONS_REFRESH_EVENT, onRefresh);[m
+ [m
+     return () => {[m
+       unsubscribe();[m
+[31m-      window.removeEventListener(CONVERSATION_READ_EVENT, onRefresh);[m
+       window.removeEventListener(NOTIFICATIONS_REFRESH_EVENT, onRefresh);[m
+[32m+[m[32m      if (refreshDebounceRef.current) {[m
+[32m+[m[32m        clearTimeout(refreshDebounceRef.current);[m
+[32m+[m[32m        refreshDebounceRef.current = null;[m
+[32m+[m[32m      }[m
+     };[m
+[31m-  }, [userId, supabase]);[m
+[32m+[m[32m  }, [userId, supabase, scheduleRefresh]);[m
+ [m
+   useEffect(() => {[m
+     if (!open) return;[m
+[1mdiff --git a/src/lib/messaging.ts b/src/lib/messaging.ts[m
+[1mindex 671a32e..e23dd6c 100644[m
+[1m--- a/src/lib/messaging.ts[m
+[1m+++ b/src/lib/messaging.ts[m
+[36m@@ -34,6 +34,10 @@[m [mimport {[m
+   ChatMessageSaveError,[m
+   type ChatMediaType,[m
+ } from "@/lib/chat-media";[m
+[32m+[m[32mimport { assertActiveMembership } from "@/lib/membership-access";[m
+[32m+[m[32mimport { resolveActiveMode } from "@/lib/profile-mode";[m
+[32m+[m[32mimport { assertRateLimitShared, requireAuthUserId } from "@/lib/security";[m
+[32m+[m[32mimport { BLOCKED_USER_MESSAGE, isUserBlocked } from "@/lib/trust-safety";[m
+ [m
+ function asMessagingDbClient(supabase: SupabaseClient): SupabaseClient<Database> {[m
+   return supabase as SupabaseClient<Database>;[m
+[36m@@ -62,6 +66,14 @@[m [mexport type SendMessageMedia = {[m
+   mimeType: string;[m
+ };[m
+ [m
+[32m+[m[32m/** Caller-supplied request/booking state to skip redundant pre-insert lookups. */[m
+[32m+[m[32mexport type SendMessagePrecheck = {[m
+[32m+[m[32m  requestId: string;[m
+[32m+[m[32m  requestStatus: RequestStatus;[m
+[32m+[m[32m  bookingStatus: BookingStatus | null;[m
+[32m+[m[32m  bookingCancelledAt: string | null;[m
+[32m+[m[32m};[m
+[32m+[m
+ /** Grace period after a booking is cancelled before chat becomes read-only. */[m
+ export const CANCELLED_BOOKING_CHAT_GRACE_MS = 96 * 60 * 60 * 1000;[m
+ [m
+[36m@@ -100,6 +112,20 @@[m [mexport type ConversationSummary = {[m
+   conversationIds: string[];[m
+ };[m
+ [m
+[32m+[m[32mexport function sendMessagePrecheckFromConversation([m
+[32m+[m[32m  conversation: Pick<[m
+[32m+[m[32m    ConversationSummary,[m
+[32m+[m[32m    "requestId" | "requestStatus" | "bookingStatus" | "bookingCancelledAt"[m
+[32m+[m[32m  >,[m
+[32m+[m[32m): SendMessagePrecheck {[m
+[32m+[m[32m  return {[m
+[32m+[m[32m    requestId: conversation.requestId,[m
+[32m+[m[32m    requestStatus: conversation.requestStatus,[m
+[32m+[m[32m    bookingStatus: conversation.bookingStatus,[m
+[32m+[m[32m    bookingCancelledAt: conversation.bookingCancelledAt,[m
+[32m+[m[32m  };[m
+[32m+[m[32m}[m
+[32m+[m
+ export type ConversationStatusDisplay = {[m
+   label: string;[m
+   badgeClasses: string;[m
+[36m@@ -678,14 +704,16 @@[m [mexport async function syncAcceptedRequestConversations([m
+     throw error;[m
+   }[m
+ [m
+[31m-  for (const row of requests ?? []) {[m
+[31m-    try {[m
+[31m-      await ensureConversationForRequest(supabase, row.id);[m
+[31m-      await seedRequestMessageIfAbsent(supabase, row.id);[m
+[31m-    } catch (err) {[m
+[31m-      logSupabaseError(`sync conversation ${row.id}`, err as PostgrestError);[m
+[31m-    }[m
+[31m-  }[m
+[32m+[m[32m  await Promise.all([m
+[32m+[m[32m    (requests ?? []).map(async (row) => {[m
+[32m+[m[32m      try {[m
+[32m+[m[32m        await ensureConversationForRequest(supabase, row.id);[m
+[32m+[m[32m        await seedRequestMessageIfAbsent(supabase, row.id);[m
+[32m+[m[32m      } catch (err) {[m
+[32m+[m[32m        logSupabaseError(`sync conversation ${row.id}`, err as PostgrestError);[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }),[m
+[32m+[m[32m  );[m
+ }[m
+ [m
+ async function fetchConversationRows(supabase: SupabaseClient): Promise<ConversationRow[]> {[m
+[36m@@ -755,10 +783,60 @@[m [mexport async function fetchConversations([m
+   if (!eligibleConversations.length) return [];[m
+ [m
+   const conversationIds = eligibleConversations.map((c) => c.id);[m
+[31m-  const lastByConversation = new Map<string, { body: string; created_at: string }>();[m
+ [m
+[31m-  const recentMessages = await fetchRecentInboxMessages(supabase, conversationIds);[m
+[32m+[m[32m  const otherPartyByConversation = new Map<string, string>();[m
+[32m+[m[32m  for (const row of eligibleConversations) {[m
+[32m+[m[32m    const req = requestsById.get(row.request_id);[m
+[32m+[m[32m    if (!req) continue;[m
+[32m+[m
+[32m+[m[32m    const parentId = row.pet_parent_id ?? req.pet_parent_id;[m
+[32m+[m[32m    const friendId = row.pet_friend_id ?? req.pet_friend_id;[m
+[32m+[m[32m    const otherId = parentId === userId ? friendId : parentId;[m
+[32m+[m[32m    if (!otherId) continue;[m
+[32m+[m[32m    otherPartyByConversation.set(row.id, otherId);[m
+[32m+[m[32m  }[m
+ [m
+[32m+[m[32m  const petIds = [[m
+[32m+[m[32m    ...new Set([m
+[32m+[m[32m      eligibleConversations[m
+[32m+[m[32m        .map((c) => requestsById.get(c.request_id)?.pet_id)[m
+[32m+[m[32m        .filter((id): id is string => Boolean(id)),[m
+[32m+[m[32m    ),[m
+[32m+[m[32m  ];[m
+[32m+[m[32m  const profileIds = [...new Set(otherPartyByConversation.values())];[m
+[32m+[m
+[32m+[m[32m  type PetRow = { id: string; name: string; pet_photos?: PetPhotoJoin[] | null };[m
+[32m+[m
+[32m+[m[32m  const [recentMessages, petsResult, bookingResult, unreadResult, profilesResult] =[m
+[32m+[m[32m    await Promise.all([[m
+[32m+[m[32m      fetchRecentInboxMessages(supabase, conversationIds),[m
+[32m+[m[32m      petIds.length[m
+[32m+[m[32m        ? supabase[m
+[32m+[m[32m            .from("pets")[m
+[32m+[m[32m            .select("id, name, pet_photos ( public_url, is_primary, sort_order )")[m
+[32m+[m[32m            .in("id", petIds)[m
+[32m+[m[32m        : Promise.resolve({ data: [] as PetRow[], error: null }),[m
+[32m+[m[32m      supabase[m
+[32m+[m[32m        .from("bookings")[m
+[32m+[m[32m        .select("id, request_id, status, cancelled_at, start_date, end_date")[m
+[32m+[m[32m        .in("request_id", requestIds),[m
+[32m+[m[32m      supabase[m
+[32m+[m[32m        .from("messages")[m
+[32m+[m[32m        .select("conversation_id")[m
+[32m+[m[32m        .in("conversation_id", conversationIds)[m
+[32m+[m[32m        .is("read_at", null)[m
+[32m+[m[32m        .neq("sender_id", userId),[m
+[32m+[m[32m      profileIds.length[m
+[32m+[m[32m        ? supabase.from("profiles").select("id, display_name, avatar_url").in("id", profileIds)[m
+[32m+[m[32m        : Promise.resolve({ data: [] as { id: string; display_name: string | null; avatar_url: string | null }[], error: null }),[m
+[32m+[m[32m    ]);[m
+[32m+[m
+[32m+[m[32m  if (petsResult.error) throw petsResult.error;[m
+[32m+[m[32m  if (bookingResult.error) throw bookingResult.error;[m
+[32m+[m[32m  if (unreadResult.error) throw unreadResult.error;[m
+[32m+[m[32m  if (profilesResult.error) throw profilesResult.error;[m
+[32m+[m
+[32m+[m[32m  const lastByConversation = new Map<string, { body: string; created_at: string }>();[m
+   for (const m of recentMessages) {[m
+     if (!lastByConversation.has(m.conversation_id)) {[m
+       lastByConversation.set(m.conversation_id, {[m
+[36m@@ -774,28 +852,11 @@[m [mexport async function fetchConversations([m
+     }[m
+   }[m
+ [m
+[31m-  const petIds = [[m
+[31m-    ...new Set([m
+[31m-      eligibleConversations[m
+[31m-        .map((c) => requestsById.get(c.request_id)?.pet_id)[m
+[31m-        .filter((id): id is string => Boolean(id)),[m
+[31m-    ),[m
+[31m-  ];[m
+[31m-[m
+[31m-  type PetRow = { id: string; name: string; pet_photos?: PetPhotoJoin[] | null };[m
+   const petNames = new Map<string, string>();[m
+   const petPhotos = new Map<string, string | null>();[m
+[31m-[m
+[31m-  if (petIds.length) {[m
+[31m-    const { data: pets } = await supabase[m
+[31m-      .from("pets")[m
+[31m-      .select("id, name, pet_photos ( public_url, is_primary, sort_order )")[m
+[31m-      .in("id", petIds);[m
+[31m-[m
+[31m-    for (const p of (pets ?? []) as PetRow[]) {[m
+[31m-      petNames.set(p.id, (p.name as string)?.trim() || "Pet");[m
+[31m-      petPhotos.set(p.id, pickPrimaryPhotoUrl(p.pet_photos ?? []));[m
+[31m-    }[m
+[32m+[m[32m  for (const p of (petsResult.data ?? []) as PetRow[]) {[m
+[32m+[m[32m    petNames.set(p.id, (p.name as string)?.trim() || "Pet");[m
+[32m+[m[32m    petPhotos.set(p.id, pickPrimaryPhotoUrl(p.pet_photos ?? []));[m
+   }[m
+ [m
+   const bookingByRequest = new Map<[m
+[36m@@ -808,12 +869,7 @@[m [mexport async function fetchConversations([m
+       endDate: string;[m
+     }[m
+   >();[m
+[31m-  const { data: bookingRows } = await supabase[m
+[31m-    .from("bookings")[m
+[31m-    .select("id, request_id, status, cancelled_at, start_date, end_date")[m
+[31m-    .in("request_id", requestIds);[m
+[31m-[m
+[31m-  for (const b of bookingRows ?? []) {[m
+[32m+[m[32m  for (const b of bookingResult.data ?? []) {[m
+     bookingByRequest.set(b.request_id as string, {[m
+       id: b.id as string,[m
+       status: b.status as BookingStatus,[m
+[36m@@ -824,36 +880,33 @@[m [mexport async function fetchConversations([m
+   }[m
+ [m
+   const unreadByConversation = new Map<string, number>();[m
+[31m-  const { data: unreadRows } = await supabase[m
+[31m-    .from("messages")[m
+[31m-    .select("conversation_id")[m
+[31m-    .in("conversation_id", conversationIds)[m
+[31m-    .is("read_at", null)[m
+[31m-    .neq("sender_id", userId);[m
+[31m-[m
+[31m-  for (const row of unreadRows ?? []) {[m
+[32m+[m[32m  for (const row of unreadResult.data ?? []) {[m
+     const cid = row.conversation_id as string;[m
+     unreadByConversation.set(cid, (unreadByConversation.get(cid) ?? 0) + 1);[m
+   }[m
+ [m
+[31m-  const otherPartyByConversation = new Map<string, string>();[m
+[32m+[m[32m  const profileNames = new Map([m
+[32m+[m[32m    (profilesResult.data ?? []).map((p) => [p.id, (p.display_name as string)?.trim() || "Member"]),[m
+[32m+[m[32m  );[m
+[32m+[m[32m  const profileAvatars = new Map([m
+[32m+[m[32m    (profilesResult.data ?? []).map((p) => [p.id, (p.avatar_url as string)?.trim() || null]),[m
+[32m+[m[32m  );[m
+[32m+[m
+   const summaries: ConversationSummary[] = [];[m
+ [m
+   for (const row of eligibleConversations) {[m
+     const req = requestsById.get(row.request_id);[m
+     if (!req) continue;[m
+ [m
+[31m-    const parentId = row.pet_parent_id ?? req.pet_parent_id;[m
+[31m-    const friendId = row.pet_friend_id ?? req.pet_friend_id;[m
+[31m-    const otherId = parentId === userId ? friendId : parentId;[m
+[32m+[m[32m    const otherId = otherPartyByConversation.get(row.id);[m
+     if (!otherId) continue;[m
+[31m-    otherPartyByConversation.set(row.id, otherId);[m
+ [m
+     const last = lastByConversation.get(row.id);[m
+     const sortAt = last?.created_at ?? row.created_at;[m
+     const petName = req.pet_id ? (petNames.get(req.pet_id) ?? null) : null;[m
+     const booking = bookingByRequest.get(row.request_id);[m
+     const bookingRequestedDates = normalizeAvailabilityDates(req.requested_dates ?? []);[m
+[32m+[m[32m    const otherPartyName = profileNames.get(otherId) ?? "Member";[m
+ [m
+     summaries.push({[m
+       id: row.id,[m
+[36m@@ -861,11 +914,11 @@[m [mexport async function fetchConversations([m
+       bookingId: booking?.id ?? null,[m
+       petId: req.pet_id,[m
+       petName,[m
+[31m-      threadTitle: conversationThreadTitle(petName, "Conversation"),[m
+[32m+[m[32m      threadTitle: conversationThreadTitle(petName, otherPartyName),[m
+       petPhotoUrl: req.pet_id ? (petPhotos.get(req.pet_id) ?? null) : null,[m
+       otherPartyId: otherId,[m
+[31m-      otherPartyName: "Member",[m
+[31m-      otherPartyAvatarUrl: null,[m
+[32m+[m[32m      otherPartyName,[m
+[32m+[m[32m      otherPartyAvatarUrl: profileAvatars.get(otherId) ?? null,[m
+       requestStatus: req.status,[m
+       bookingStatus: booking?.status ?? null,[m
+       bookingStartDate: booking?.startDate ?? null,[m
+[36m@@ -885,30 +938,6 @@[m [mexport async function fetchConversations([m
+     });[m
+   }[m
+ [m
+[31m-  const profileIds = [...new Set(otherPartyByConversation.values())];[m
+[31m-  if (profileIds.length) {[m
+[31m-    const { data: profiles } = await supabase[m
+[31m-      .from("profiles")[m
+[31m-      .select("id, display_name, avatar_url")[m
+[31m-      .in("id", profileIds);[m
+[31m-[m
+[31m-    const names = new Map([m
+[31m-      (profiles ?? []).map((p) => [p.id, (p.display_name as string)?.trim() || "Member"]),[m
+[31m-    );[m
+[31m-    const avatars = new Map([m
+[31m-      (profiles ?? []).map((p) => [p.id, (p.avatar_url as string)?.trim() || null]),[m
+[31m-    );[m
+[31m-[m
+[31m-    for (const summary of summaries) {[m
+[31m-      const otherId = otherPartyByConversation.get(summary.id);[m
+[31m-      if (otherId) {[m
+[31m-        summary.otherPartyName = names.get(otherId) ?? "Member";[m
+[31m-        summary.otherPartyAvatarUrl = avatars.get(otherId) ?? null;[m
+[31m-        summary.threadTitle = conversationThreadTitle(summary.petName, summary.otherPartyName);[m
+[31m-      }[m
+[31m-    }[m
+[31m-  }[m
+[31m-[m
+   return prepareInboxConversations(summaries);[m
+ }[m
+ [m
+[36m@@ -964,8 +993,8 @@[m [mexport async function sendMessage([m
+   body: string,[m
+   otherPartyId?: string,[m
+   media?: SendMessageMedia | null,[m
+[32m+[m[32m  precheck?: SendMessagePrecheck | null,[m
+ ): Promise<ChatMessage> {[m
+[31m-  const { assertRateLimitShared, requireAuthUserId } = await import("@/lib/security");[m
+   const sessionUserId = await requireAuthUserId(supabase);[m
+   if (senderId !== sessionUserId) {[m
+     throw new Error("You cannot send messages as another user.");[m
+[36m@@ -977,38 +1006,52 @@[m [mexport async function sendMessage([m
+     throw new Error("Message cannot be empty.");[m
+   }[m
+ [m
+[31m-  const { data: conversationRow, error: conversationError } = await supabase[m
+[31m-    .from("conversations")[m
+[31m-    .select("request_id")[m
+[31m-    .eq("id", conversationId)[m
+[31m-    .maybeSingle();[m
+[32m+[m[32m  let requestId: string;[m
+[32m+[m[32m  let requestStatus: RequestStatus;[m
+[32m+[m[32m  let bookingStatus: BookingStatus | null;[m
+[32m+[m[32m  let bookingCancelledAt: string | null;[m
+ [m
+[31m-  if (conversationError) throw conversationError;[m
+[31m-  if (!conversationRow?.request_id) {[m
+[31m-    throw new Error("Conversation not found.");[m
+[31m-  }[m
+[32m+[m[32m  if (precheck?.requestId) {[m
+[32m+[m[32m    requestId = precheck.requestId;[m
+[32m+[m[32m    requestStatus = precheck.requestStatus;[m
+[32m+[m[32m    bookingStatus = precheck.bookingStatus;[m
+[32m+[m[32m    bookingCancelledAt = precheck.bookingCancelledAt;[m
+[32m+[m[32m  } else {[m
+[32m+[m[32m    const { data: conversationRow, error: conversationError } = await supabase[m
+[32m+[m[32m      .from("conversations")[m
+[32m+[m[32m      .select("request_id")[m
+[32m+[m[32m      .eq("id", conversationId)[m
+[32m+[m[32m      .maybeSingle();[m
+ [m
+[31m-  const { data: requestRow, error: requestError } = await supabase[m
+[31m-    .from("requests")[m
+[31m-    .select("status")[m
+[31m-    .eq("id", conversationRow.request_id)[m
+[31m-    .maybeSingle();[m
+[32m+[m[32m    if (conversationError) throw conversationError;[m
+[32m+[m[32m    if (!conversationRow?.request_id) {[m
+[32m+[m[32m      throw new Error("Conversation not found.");[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    requestId = conversationRow.request_id as string;[m
+[32m+[m
+[32m+[m[32m    const [requestResult, bookingResult] = await Promise.all([[m
+[32m+[m[32m      supabase.from("requests").select("status").eq("id", requestId).maybeSingle(),[m
+[32m+[m[32m      supabase[m
+[32m+[m[32m        .from("bookings")[m
+[32m+[m[32m        .select("status, cancelled_at")[m
+[32m+[m[32m        .eq("request_id", requestId)[m
+[32m+[m[32m        .maybeSingle(),[m
+[32m+[m[32m    ]);[m
+[32m+[m
+[32m+[m[32m    if (requestResult.error) throw requestResult.error;[m
+[32m+[m[32m    requestStatus = (requestResult.data?.status as RequestStatus | undefined) ?? "pending";[m
+[32m+[m[32m    bookingStatus = (bookingResult.data?.status as BookingStatus | undefined) ?? null;[m
+[32m+[m[32m    bookingCancelledAt = (bookingResult.data?.cancelled_at as string | null) ?? null;[m
+[32m+[m[32m  }[m
+ [m
+[31m-  if (requestError) throw requestError;[m
+[31m-  const requestStatus = (requestRow?.status as RequestStatus | undefined) ?? "pending";[m
+   if (requestStatus === "declined") {[m
+     throw new Error("Messaging is closed for this booking.");[m
+   }[m
+ [m
+[31m-  const { data: bookingRow } = await supabase[m
+[31m-    .from("bookings")[m
+[31m-    .select("status, cancelled_at")[m
+[31m-    .eq("request_id", conversationRow.request_id)[m
+[31m-    .maybeSingle();[m
+[31m-[m
+   const sendCheck: ConversationSummary = {[m
+     id: conversationId,[m
+[31m-    requestId: conversationRow.request_id,[m
+[32m+[m[32m    requestId,[m
+     bookingId: null,[m
+     petId: null,[m
+     petName: null,[m
+[36m@@ -1018,11 +1061,11 @@[m [mexport async function sendMessage([m
+     otherPartyName: "",[m
+     otherPartyAvatarUrl: null,[m
+     requestStatus,[m
+[31m-    bookingStatus: (bookingRow?.status as BookingStatus | undefined) ?? null,[m
+[32m+[m[32m    bookingStatus,[m
+     bookingStartDate: null,[m
+     bookingEndDate: null,[m
+     bookingRequestedDates: [],[m
+[31m-    bookingCancelledAt: (bookingRow?.cancelled_at as string | null) ?? null,[m
+[32m+[m[32m    bookingCancelledAt,[m
+     requestDateFrom: null,[m
+     requestDateTo: null,[m
+     dateLabel: "",[m
+[36m@@ -1039,24 +1082,21 @@[m [mexport async function sendMessage([m
+     throw new Error("Messaging period has ended for this cancelled booking.");[m
+   }[m
+ [m
+[31m-  if (otherPartyId) {[m
+[31m-    const { isUserBlocked, BLOCKED_USER_MESSAGE } = await import("@/lib/trust-safety");[m
+[31m-    if (await isUserBlocked(supabase, senderId, otherPartyId)) {[m
+[31m-      throw new Error(BLOCKED_USER_MESSAGE);[m
+[31m-    }[m
+[32m+[m[32m  const [blockedEitherWay, senderProfile] = await Promise.all([[m
+[32m+[m[32m    otherPartyId[m
+[32m+[m[32m      ? isUserBlocked(supabase, senderId, otherPartyId)[m
+[32m+[m[32m      : Promise.resolve(false),[m
+[32m+[m[32m    supabase.from("profiles").select("role, active_mode").eq("id", senderId).maybeSingle(),[m
+[32m+[m[32m  ]);[m
+[32m+[m
+[32m+[m[32m  if (blockedEitherWay) {[m
+[32m+[m[32m    throw new Error(BLOCKED_USER_MESSAGE);[m
+   }[m
+ [m
+[31m-  const { data: senderProfile } = await supabase[m
+[31m-    .from("profiles")[m
+[31m-    .select("role, active_mode")[m
+[31m-    .eq("id", senderId)[m
+[31m-    .maybeSingle();[m
+[31m-  if (senderProfile) {[m
+[31m-    const { resolveActiveMode } = await import("@/lib/profile-mode");[m
+[31m-    const { assertActiveMembership } = await import("@/lib/membership-access");[m
+[32m+[m[32m  if (senderProfile.data) {[m
+     const mode = resolveActiveMode([m
+[31m-      (senderProfile.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",[m
+[31m-      senderProfile.active_mode as string | null,[m
+[32m+[m[32m      (senderProfile.data.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",[m
+[32m+[m[32m      senderProfile.data.active_mode as string | null,[m
+     );[m
+     await assertActiveMembership(supabase, senderId, mode);[m
+   }[m
+[36m@@ -1120,12 +1160,10 @@[m [mexport async function markConversationFullyRead([m
+   const ids = conversationIdsFor(conversation);[m
+   const { markNotificationsReadForConversations } = await import("@/lib/notifications");[m
+ [m
+[31m-  await Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId)));[m
+[31m-  await markNotificationsReadForConversations(supabase, ids, userId);[m
+[31m-[m
+[31m-  if (typeof window !== "undefined") {[m
+[31m-    window.dispatchEvent(new CustomEvent(CONVERSATION_READ_EVENT));[m
+[31m-  }[m
+[32m+[m[32m  await Promise.all([[m
+[32m+[m[32m    Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId))),[m
+[32m+[m[32m    markNotificationsReadForConversations(supabase, ids, userId),[m
+[32m+[m[32m  ]);[m
+ }[m
+ [m
+ export function subscribeToConversationMessages([m

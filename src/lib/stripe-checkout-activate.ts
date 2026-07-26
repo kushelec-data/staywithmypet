@@ -25,6 +25,7 @@ import {
   MEMBERSHIP_ACTIVATION_CONFLICT_CODE,
 } from "@/lib/membership-checkout-conflict";
 import { resolveCheckoutActivationContext } from "@/lib/stripe-webhook-resolve";
+import { isOneTimePlanId } from "@/lib/one-time-membership";
 
 function periodEndIso(subscription: Stripe.Subscription): string | null {
   const end = subscription.items?.data?.[0]?.current_period_end;
@@ -261,6 +262,13 @@ export async function activateMembershipFromCheckoutSession(
     stripeCheckoutSessionId: session.id,
     source: "stripe_checkout",
     sendConfirmationEmail: true,
+    ...(isOneTimePlanId(planId)
+      ? {
+          linkedBookingId: null,
+          consumedAt: null,
+          cancellationRestartUsed: false,
+        }
+      : {}),
   });
 
   if (!result.ok) {

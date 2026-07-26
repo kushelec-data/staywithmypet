@@ -16,6 +16,7 @@ import { addMonthsIso, membershipRolesToActivate } from "@/lib/test-access-code"
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeCatalogPlanId } from "@/lib/stripe-plans";
+import { computeOneTimeInitialEndDate, isOneTimePlanId } from "@/lib/one-time-membership";
 import {
   CURRENT_TERMS_VERSION,
   hasAcceptedTermsVersion,
@@ -145,7 +146,9 @@ export async function POST(request: Request) {
   const roles = membershipRolesToActivate(profileRole, selectedRole);
 
   const startDate = new Date();
-  const endDate = addMonthsIso(startDate, validation.membershipMonths);
+  const endDate = isOneTimePlanId(planId)
+    ? computeOneTimeInitialEndDate(startDate)
+    : addMonthsIso(startDate, validation.membershipMonths);
   const activated: MembershipRole[] = [];
   const errors: string[] = [];
 
@@ -159,6 +162,9 @@ export async function POST(request: Request) {
       startDate: startDate.toISOString(),
       endDate,
       autoRenew: false,
+      linkedBookingId: null,
+      consumedAt: null,
+      cancellationRestartUsed: false,
       source: PLATFORM_ACCESS_CODE_SOURCE,
       sendConfirmationEmail: role === roles[0],
     });

@@ -63,6 +63,9 @@ function makeMembership(
     stripe_subscription_id: autoRenew ? "sub_test" : null,
     stripe_price_id: "price_test",
     stripe_checkout_session_id: `cs_${planId}`,
+    linked_booking_id: null,
+    consumed_at: null,
+    cancellation_restart_used: false,
     ...overrides,
   };
 }
