@@ -29,10 +29,6 @@ export const metadata: Metadata = {
   },
   description:
     "Connect Pet Parents and Pet Friends for walks, visits, and home-based companionship — trusted, flexible, and built on real care.",
-  icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
-  },
 };
 
 export default function RootLayout({
