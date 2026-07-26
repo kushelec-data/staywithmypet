@@ -178,6 +178,19 @@ export async function submitCareRequestAction(
     ...membershipResult,
   });
 
+  const { assertOneTimeCanStartArrangement } = await import(
+    "@/lib/one-time-membership-assert"
+  );
+  try {
+    await assertOneTimeCanStartArrangement(userId, input.senderRole, supabase);
+  } catch (err) {
+    return {
+      success: false,
+      code: "MEMBERSHIP_REQUIRED",
+      message: err instanceof Error ? err.message : membershipRequiredMessage(input.senderRole),
+    };
+  }
+
   if (!hasActiveMembershipForRole(memberships, input.senderRole)) {
     return {
       success: false,

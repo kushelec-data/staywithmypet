@@ -1389,10 +1389,12 @@ export const en = {
         name: "One Time",
         price: "€18",
         features: [
-          "Unlock messaging for one care arrangement",
-          "Make one booking of any length",
+          "Valid for one care arrangement",
+          "Book within 7 days of purchase",
+          "Unlock messaging for your confirmed care arrangement",
+          "No refund if unused within 7 days",
+          "If the care arrangement is cancelled, access is restored for one month",
           "Leave and receive reviews after care",
-          "Ideal for occasional or first-time use",
         ],
       },
       {
@@ -1429,10 +1431,12 @@ export const en = {
         name: "One Time",
         price: "€12",
         features: [
-          "Unlock messaging to meet your first pet",
-          "Set up one meetup, however long it suits you",
-          "Leave and receive a review after your first meetup",
-          "Perfect if you want to test it out before committing further",
+          "Valid for one care arrangement",
+          "Book within 7 days of purchase",
+          "Unlock messaging for your confirmed care arrangement",
+          "No refund if unused within 7 days",
+          "If the care arrangement is cancelled, access is restored for one month",
+          "Leave and receive reviews after care",
         ],
       },
       {
@@ -2320,7 +2324,13 @@ export const en = {
       ariaLabel: "Membership plan details",
       oneTime: {
         title: "One Time",
-        bullets: ["Valid for one booking only.", "Does not renew automatically."],
+        bullets: [
+          "Valid for one care arrangement.",
+          "Book within 7 days of purchase.",
+          "No refund if unused.",
+          "If the care arrangement is cancelled, access is restored for one month.",
+          "Does not renew automatically.",
+        ],
       },
       threeMonth: {
         title: "3 Month",

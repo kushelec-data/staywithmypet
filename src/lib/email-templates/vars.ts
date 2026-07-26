@@ -2,6 +2,10 @@ import { formatDate } from "@/lib/date-format";
 import { emailCtx, emailDateRange } from "@/lib/emails/context";
 import { absoluteUrl } from "@/lib/emails/layout";
 import type { EmailLocale } from "@/lib/email-templates/locale";
+import {
+  membershipAutoRenewDisplay,
+  membershipRoleDisplayName,
+} from "@/lib/membership-email-content";
 import type { EmailTemplateContext } from "@/lib/emails/types";
 
 export type EmailTemplateVars = {
@@ -13,6 +17,8 @@ export type EmailTemplateVars = {
   otherPartyName: string;
   dateRange: string;
   packageName: string;
+  membershipPrice: string;
+  membershipRoleLabel: string;
   startDate: string;
   endDate: string;
   autoRenew: string;
@@ -52,8 +58,16 @@ export function buildEmailTemplateVars(ctx: EmailTemplateContext): EmailTemplate
     : "/messages";
 
   const packageName = ctx.packageName?.trim() || "Your plan";
+  const membershipPrice = ctx.membershipPrice?.trim() || "";
+  const membershipRoleLabel =
+    ctx.membershipRoleLabel?.trim() ||
+    (ctx.recipientRole ? membershipRoleDisplayName(ctx.recipientRole, locale) : "");
   const startDate = formatEmailDate(ctx.dateFrom, locale);
   const endDate = formatEmailDate(ctx.membershipEndDate ?? ctx.dateTo, locale);
+  const autoRenew =
+    ctx.autoRenew === undefined
+      ? ""
+      : membershipAutoRenewDisplay(Boolean(ctx.autoRenew), locale);
 
   return {
     name,
@@ -64,9 +78,11 @@ export function buildEmailTemplateVars(ctx: EmailTemplateContext): EmailTemplate
     otherPartyName: other,
     dateRange: dates,
     packageName,
+    membershipPrice,
+    membershipRoleLabel,
     startDate,
     endDate,
-    autoRenew: ctx.autoRenew ? (locale === "et" ? "Jah" : "Yes") : locale === "et" ? "Ei" : "No",
+    autoRenew,
     viewRequestUrl: absoluteUrl("/requests?direction=outgoing"),
     viewIncomingRequestUrl: absoluteUrl("/requests?direction=incoming"),
     viewBookingUrl: absoluteUrl(bookingPath),

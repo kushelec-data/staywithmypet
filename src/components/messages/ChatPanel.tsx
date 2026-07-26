@@ -31,6 +31,7 @@ import {
   markConversationFullyRead,
   resolveConversationStatusDisplay,
   sendMessage,
+  sendMessagePrecheckFromConversation,
   subscribeToConversationMessages,
   type ChatMessage,
   type ConversationSummary,
@@ -108,7 +109,10 @@ export function ChatPanel({
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const prefersSmoothScrollRef = useRef(false);
+  const conversationRef = useRef(conversation);
+  conversationRef.current = conversation;
 
   const canSend = canSendInConversation(conversation) && !blocked;
   const uploading = uploadProgress !== null;
@@ -126,6 +130,15 @@ export function ChatPanel({
   const thumbUrl = conversation.petPhotoUrl ?? conversation.otherPartyAvatarUrl;
   const displayName = conversation.petName ?? conversation.threadTitle;
   const thumbInitial = displayName.trim().charAt(0).toUpperCase() || "?";
+  const messagePrecheck = useMemo(
+    () => sendMessagePrecheckFromConversation(conversation),
+    [
+      conversation.requestId,
+      conversation.requestStatus,
+      conversation.bookingStatus,
+      conversation.bookingCancelledAt,
+    ],
+  );
   const statusDisplay = resolveConversationStatusDisplay(conversation, t.requests, {
     statusUpcoming: t.bookings.statusUpcoming,
     statusActive: t.bookings.statusActive,
@@ -137,6 +150,12 @@ export function ChatPanel({
     const container = scrollContainerRef.current;
     if (!container) return;
     container.scrollTo({ top: container.scrollHeight, behavior });
+  }, []);
+
+  const focusMessageInput = useCallback(() => {
+    requestAnimationFrame(() => {
+      messageInputRef.current?.focus();
+    });
   }, []);
 
   useEffect(() => {
@@ -202,7 +221,7 @@ export function ChatPanel({
         return [...prev, message];
       });
       if (!message.isOwn) {
-        void markConversationFullyRead(supabase, conversation, userId).then(() => {
+        void markConversationFullyRead(supabase, conversationRef.current, userId).then(() => {
           onConversationRead?.();
         });
       }
@@ -211,7 +230,7 @@ export function ChatPanel({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [conversation, conversationId, supabase, userId, onConversationRead]);
+  }, [conversationId, supabase, userId, onConversationRead]);
 
   useEffect(() => {
     if (loading) return;
@@ -287,6 +306,7 @@ export function ChatPanel({
 
     setSending(true);
     setError(null);
+    let sent = false;
     try {
       const msg = await sendMessage(
         supabase,
@@ -294,8 +314,11 @@ export function ChatPanel({
         userId,
         text,
         conversation.otherPartyId,
+        undefined,
+        messagePrecheck,
       );
       await deliverMessage(msg);
+      sent = true;
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
         setUpgradeOpen(true);
@@ -305,6 +328,9 @@ export function ChatPanel({
       }
     } finally {
       setSending(false);
+      if (sent) {
+        focusMessageInput();
+      }
     }
   }
 
@@ -333,8 +359,10 @@ export function ChatPanel({
           fileSize: file.size,
           mimeType: file.type,
         },
+        messagePrecheck,
       );
       await deliverMessage(msg);
+      focusMessageInput();
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
         setUpgradeOpen(true);
@@ -568,6 +596,7 @@ export function ChatPanel({
             {m.typeMessage}
           </label>
           <AutoResizeTextarea
+            ref={messageInputRef}
             id={`message_body_${conversationId}`}
             minRows={1}
             value={draft}

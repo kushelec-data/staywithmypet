@@ -9,6 +9,7 @@ import {
   type MembershipPlanDefinition,
   type MembershipRole,
 } from "@/lib/membership";
+import { computeOneTimeInitialEndDate } from "@/lib/one-time-membership";
 
 export type { CheckoutPlanDebugMeta };
 
@@ -299,11 +300,10 @@ export function computeMembershipEndDate(
   billingInterval: MembershipPlanDefinition["billing_interval"],
   start: Date,
 ): string | null {
-  const end = new Date(start);
   if (billingInterval === "one_time") {
-    end.setMonth(end.getMonth() + 1);
-    return end.toISOString();
+    return computeOneTimeInitialEndDate(start);
   }
+  const end = new Date(start);
   if (billingInterval === "3_months") {
     end.setMonth(end.getMonth() + 3);
   } else if (billingInterval === "12_months") {

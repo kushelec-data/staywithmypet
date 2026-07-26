@@ -3,7 +3,6 @@
 import { PetIntroCard } from "@/components/pets/PetIntroCard";
 import { DashboardAccountSummaryCard } from "@/components/dashboard/DashboardAccountSummaryCard";
 import { DashboardContactCard } from "@/components/dashboard/DashboardContactCard";
-import { DashboardVetClinicsCard } from "@/components/dashboard/DashboardVetClinicsCard";
 import { DashboardProfileCompletenessCard } from "@/components/dashboard/DashboardProfileCompletenessCard";
 import { DashboardTrustCard } from "@/components/dashboard/DashboardTrustCard";
 import {
@@ -26,7 +25,6 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import type { Dictionary } from "@/i18n/translations";
 import { availabilityUxForProfile } from "@/lib/availability-ux";
-import { DashboardAvailabilityMiniCalendar } from "@/components/dashboard/DashboardAvailabilityMiniCalendar";
 import { AvailabilityDateChips } from "@/components/ui/AvailabilityDateChips";
 import { hasCarePreferences, profileCalendarSelectedDates } from "@/lib/profile-details";
 import {
@@ -37,9 +35,26 @@ import {
 import { ProfileSummaryCard } from "@/components/profile/summary/ProfileSummaryCard";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { DASHBOARD_CALLOUT_CLASS, DASHBOARD_LINK_CLASS } from "@/lib/dashboard-theme";
+
+const DashboardAvailabilityMiniCalendar = dynamic(
+  () =>
+    import("@/components/dashboard/DashboardAvailabilityMiniCalendar").then((mod) => ({
+      default: mod.DashboardAvailabilityMiniCalendar,
+    })),
+  { ssr: false },
+);
+
+const DashboardVetClinicsCard = dynamic(
+  () =>
+    import("@/components/dashboard/DashboardVetClinicsCard").then((mod) => ({
+      default: mod.DashboardVetClinicsCard,
+    })),
+  { ssr: false },
+);
 
 function ProfileCompleteEmailEffect({ percent }: { percent: number }) {
   const notifiedRef = useRef(false);
@@ -128,9 +143,8 @@ export function DashboardPageContent() {
   const livingSummary = buildLivingSituationSummary(details, { locale });
   const availabilitySummary = buildAvailabilitySummary(details, { locale });
 
-  const reviewsCount = snapshot.reviewsCount || profile.rating_count;
-  const reviewsAvg =
-    snapshot.reviewsCount > 0 ? snapshot.reviewsAvg : profile.rating_avg;
+  const reviewsCount = profile.rating_count;
+  const reviewsAvg = profile.rating_avg;
 
   const completeness = computeProfileCompleteness(profile, {
     petsCount: snapshot.petsOwned,
@@ -236,7 +250,7 @@ export function DashboardPageContent() {
         profile={profile}
         emailVerified={emailVerified}
         snapshot={{
-          reviewsCount: snapshot.reviewsCount,
+          reviewsCount: profile.rating_count,
           completedBookingsCount: snapshot.completedBookingsCount,
         }}
       />

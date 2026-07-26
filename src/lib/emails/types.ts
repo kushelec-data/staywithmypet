@@ -38,6 +38,10 @@ export type EmailTemplateContext = {
   receiverName?: string;
   bookingId?: string;
   packageName?: string;
+  /** Formatted price line for membership activation emails. */
+  membershipPrice?: string;
+  /** Localized membership role label (Pet Parent / Pet Friend). */
+  membershipRoleLabel?: string;
   renewalDate?: string | null;
   membershipEndDate?: string | null;
   autoRenew?: boolean;

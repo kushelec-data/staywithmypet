@@ -34,6 +34,10 @@ import {
   ChatMessageSaveError,
   type ChatMediaType,
 } from "@/lib/chat-media";
+import { assertActiveMembership } from "@/lib/membership-access";
+import { resolveActiveMode } from "@/lib/profile-mode";
+import { assertRateLimitShared, requireAuthUserId } from "@/lib/security";
+import { BLOCKED_USER_MESSAGE, isUserBlocked } from "@/lib/trust-safety";
 
 function asMessagingDbClient(supabase: SupabaseClient): SupabaseClient<Database> {
   return supabase as SupabaseClient<Database>;
@@ -60,6 +64,14 @@ export type SendMessageMedia = {
   fileName: string;
   fileSize: number;
   mimeType: string;
+};
+
+/** Caller-supplied request/booking state to skip redundant pre-insert lookups. */
+export type SendMessagePrecheck = {
+  requestId: string;
+  requestStatus: RequestStatus;
+  bookingStatus: BookingStatus | null;
+  bookingCancelledAt: string | null;
 };
 
 /** Grace period after a booking is cancelled before chat becomes read-only. */
@@ -99,6 +111,20 @@ export type ConversationSummary = {
   /** Conversation row ids represented in inbox (merged threads include all source ids). */
   conversationIds: string[];
 };
+
+export function sendMessagePrecheckFromConversation(
+  conversation: Pick<
+    ConversationSummary,
+    "requestId" | "requestStatus" | "bookingStatus" | "bookingCancelledAt"
+  >,
+): SendMessagePrecheck {
+  return {
+    requestId: conversation.requestId,
+    requestStatus: conversation.requestStatus,
+    bookingStatus: conversation.bookingStatus,
+    bookingCancelledAt: conversation.bookingCancelledAt,
+  };
+}
 
 export type ConversationStatusDisplay = {
   label: string;
@@ -662,7 +688,7 @@ export async function seedRequestMessageIfAbsent(
   }
 }
 
-/** Ensure conversations exist for all accepted requests the user is part of. */
+/** Ensure conversations exist for messaging-eligible requests that do not yet have a thread. */
 export async function syncAcceptedRequestConversations(
   supabase: SupabaseClient,
   userId: string,
@@ -678,14 +704,38 @@ export async function syncAcceptedRequestConversations(
     throw error;
   }
 
-  for (const row of requests ?? []) {
-    try {
-      await ensureConversationForRequest(supabase, row.id);
-      await seedRequestMessageIfAbsent(supabase, row.id);
-    } catch (err) {
-      logSupabaseError(`sync conversation ${row.id}`, err as PostgrestError);
-    }
+  const requestRows = requests ?? [];
+  if (!requestRows.length) return;
+
+  const requestIds = requestRows.map((row) => row.id as string);
+
+  const { data: existingConversations, error: conversationsError } = await supabase
+    .from("conversations")
+    .select("request_id")
+    .in("request_id", requestIds);
+
+  if (conversationsError) {
+    if (isMissingRelationError(conversationsError)) return;
+    throw conversationsError;
   }
+
+  const existingRequestIds = new Set(
+    (existingConversations ?? []).map((row) => row.request_id as string),
+  );
+
+  const missingRequestIds = requestIds.filter((id) => !existingRequestIds.has(id));
+  if (!missingRequestIds.length) return;
+
+  await Promise.all(
+    missingRequestIds.map(async (requestId) => {
+      try {
+        await ensureConversationForRequest(supabase, requestId);
+        await seedRequestMessageIfAbsent(supabase, requestId);
+      } catch (err) {
+        logSupabaseError(`sync conversation ${requestId}`, err as PostgrestError);
+      }
+    }),
+  );
 }
 
 async function fetchConversationRows(supabase: SupabaseClient): Promise<ConversationRow[]> {
@@ -755,10 +805,63 @@ export async function fetchConversations(
   if (!eligibleConversations.length) return [];
 
   const conversationIds = eligibleConversations.map((c) => c.id);
+
+  const otherPartyByConversation = new Map<string, string>();
+  for (const row of eligibleConversations) {
+    const req = requestsById.get(row.request_id);
+    if (!req) continue;
+
+    const parentId = row.pet_parent_id ?? req.pet_parent_id;
+    const friendId = row.pet_friend_id ?? req.pet_friend_id;
+    const otherId = parentId === userId ? friendId : parentId;
+    if (!otherId) continue;
+    otherPartyByConversation.set(row.id, otherId);
+  }
+
+  const petIds = [
+    ...new Set(
+      eligibleConversations
+        .map((c) => requestsById.get(c.request_id)?.pet_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const profileIds = [...new Set(otherPartyByConversation.values())];
+
+  type PetRow = { id: string; name: string; pet_photos?: PetPhotoJoin[] | null };
+
+  const [recentMessages, petsResult, bookingResult, unreadResult, profilesResult] =
+    await Promise.all([
+      fetchRecentInboxMessages(supabase, conversationIds),
+      petIds.length
+        ? supabase
+            .from("pets")
+            .select("id, name, pet_photos ( public_url, is_primary, sort_order )")
+            .in("id", petIds)
+        : Promise.resolve({ data: [] as PetRow[], error: null }),
+      supabase
+        .from("bookings")
+        .select("id, request_id, status, cancelled_at, start_date, end_date")
+        .in("request_id", requestIds),
+      supabase
+        .from("messages")
+        .select("conversation_id")
+        .in("conversation_id", conversationIds)
+        .is("read_at", null)
+        .neq("sender_id", userId),
+      profileIds.length
+        ? supabase.from("profiles").select("id, display_name, avatar_url").in("id", profileIds)
+        : Promise.resolve({
+            data: [] as { id: string; display_name: string | null; avatar_url: string | null }[],
+            error: null,
+          }),
+    ]);
+
+  if (petsResult.error) throw petsResult.error;
+  if (bookingResult.error) throw bookingResult.error;
+  if (unreadResult.error) throw unreadResult.error;
+  if (profilesResult.error) throw profilesResult.error;
+
   const lastByConversation = new Map<string, { body: string; created_at: string }>();
-
-  const recentMessages = await fetchRecentInboxMessages(supabase, conversationIds);
-
   for (const m of recentMessages) {
     if (!lastByConversation.has(m.conversation_id)) {
       lastByConversation.set(m.conversation_id, {
@@ -774,28 +877,11 @@ export async function fetchConversations(
     }
   }
 
-  const petIds = [
-    ...new Set(
-      eligibleConversations
-        .map((c) => requestsById.get(c.request_id)?.pet_id)
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
-
-  type PetRow = { id: string; name: string; pet_photos?: PetPhotoJoin[] | null };
   const petNames = new Map<string, string>();
   const petPhotos = new Map<string, string | null>();
-
-  if (petIds.length) {
-    const { data: pets } = await supabase
-      .from("pets")
-      .select("id, name, pet_photos ( public_url, is_primary, sort_order )")
-      .in("id", petIds);
-
-    for (const p of (pets ?? []) as PetRow[]) {
-      petNames.set(p.id, (p.name as string)?.trim() || "Pet");
-      petPhotos.set(p.id, pickPrimaryPhotoUrl(p.pet_photos ?? []));
-    }
+  for (const p of (petsResult.data ?? []) as PetRow[]) {
+    petNames.set(p.id, (p.name as string)?.trim() || "Pet");
+    petPhotos.set(p.id, pickPrimaryPhotoUrl(p.pet_photos ?? []));
   }
 
   const bookingByRequest = new Map<
@@ -808,12 +894,7 @@ export async function fetchConversations(
       endDate: string;
     }
   >();
-  const { data: bookingRows } = await supabase
-    .from("bookings")
-    .select("id, request_id, status, cancelled_at, start_date, end_date")
-    .in("request_id", requestIds);
-
-  for (const b of bookingRows ?? []) {
+  for (const b of bookingResult.data ?? []) {
     bookingByRequest.set(b.request_id as string, {
       id: b.id as string,
       status: b.status as BookingStatus,
@@ -824,36 +905,33 @@ export async function fetchConversations(
   }
 
   const unreadByConversation = new Map<string, number>();
-  const { data: unreadRows } = await supabase
-    .from("messages")
-    .select("conversation_id")
-    .in("conversation_id", conversationIds)
-    .is("read_at", null)
-    .neq("sender_id", userId);
-
-  for (const row of unreadRows ?? []) {
+  for (const row of unreadResult.data ?? []) {
     const cid = row.conversation_id as string;
     unreadByConversation.set(cid, (unreadByConversation.get(cid) ?? 0) + 1);
   }
 
-  const otherPartyByConversation = new Map<string, string>();
+  const profileNames = new Map(
+    (profilesResult.data ?? []).map((p) => [p.id, (p.display_name as string)?.trim() || "Member"]),
+  );
+  const profileAvatars = new Map(
+    (profilesResult.data ?? []).map((p) => [p.id, (p.avatar_url as string)?.trim() || null]),
+  );
+
   const summaries: ConversationSummary[] = [];
 
   for (const row of eligibleConversations) {
     const req = requestsById.get(row.request_id);
     if (!req) continue;
 
-    const parentId = row.pet_parent_id ?? req.pet_parent_id;
-    const friendId = row.pet_friend_id ?? req.pet_friend_id;
-    const otherId = parentId === userId ? friendId : parentId;
+    const otherId = otherPartyByConversation.get(row.id);
     if (!otherId) continue;
-    otherPartyByConversation.set(row.id, otherId);
 
     const last = lastByConversation.get(row.id);
     const sortAt = last?.created_at ?? row.created_at;
     const petName = req.pet_id ? (petNames.get(req.pet_id) ?? null) : null;
     const booking = bookingByRequest.get(row.request_id);
     const bookingRequestedDates = normalizeAvailabilityDates(req.requested_dates ?? []);
+    const otherPartyName = profileNames.get(otherId) ?? "Member";
 
     summaries.push({
       id: row.id,
@@ -861,11 +939,11 @@ export async function fetchConversations(
       bookingId: booking?.id ?? null,
       petId: req.pet_id,
       petName,
-      threadTitle: conversationThreadTitle(petName, "Conversation"),
+      threadTitle: conversationThreadTitle(petName, otherPartyName),
       petPhotoUrl: req.pet_id ? (petPhotos.get(req.pet_id) ?? null) : null,
       otherPartyId: otherId,
-      otherPartyName: "Member",
-      otherPartyAvatarUrl: null,
+      otherPartyName,
+      otherPartyAvatarUrl: profileAvatars.get(otherId) ?? null,
       requestStatus: req.status,
       bookingStatus: booking?.status ?? null,
       bookingStartDate: booking?.startDate ?? null,
@@ -883,30 +961,6 @@ export async function fetchConversations(
       sortAt,
       conversationIds: [row.id],
     });
-  }
-
-  const profileIds = [...new Set(otherPartyByConversation.values())];
-  if (profileIds.length) {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url")
-      .in("id", profileIds);
-
-    const names = new Map(
-      (profiles ?? []).map((p) => [p.id, (p.display_name as string)?.trim() || "Member"]),
-    );
-    const avatars = new Map(
-      (profiles ?? []).map((p) => [p.id, (p.avatar_url as string)?.trim() || null]),
-    );
-
-    for (const summary of summaries) {
-      const otherId = otherPartyByConversation.get(summary.id);
-      if (otherId) {
-        summary.otherPartyName = names.get(otherId) ?? "Member";
-        summary.otherPartyAvatarUrl = avatars.get(otherId) ?? null;
-        summary.threadTitle = conversationThreadTitle(summary.petName, summary.otherPartyName);
-      }
-    }
   }
 
   return prepareInboxConversations(summaries);
@@ -964,8 +1018,8 @@ export async function sendMessage(
   body: string,
   otherPartyId?: string,
   media?: SendMessageMedia | null,
+  precheck?: SendMessagePrecheck | null,
 ): Promise<ChatMessage> {
-  const { assertRateLimitShared, requireAuthUserId } = await import("@/lib/security");
   const sessionUserId = await requireAuthUserId(supabase);
   if (senderId !== sessionUserId) {
     throw new Error("You cannot send messages as another user.");
@@ -977,38 +1031,52 @@ export async function sendMessage(
     throw new Error("Message cannot be empty.");
   }
 
-  const { data: conversationRow, error: conversationError } = await supabase
-    .from("conversations")
-    .select("request_id")
-    .eq("id", conversationId)
-    .maybeSingle();
+  let requestId: string;
+  let requestStatus: RequestStatus;
+  let bookingStatus: BookingStatus | null;
+  let bookingCancelledAt: string | null;
 
-  if (conversationError) throw conversationError;
-  if (!conversationRow?.request_id) {
-    throw new Error("Conversation not found.");
+  if (precheck?.requestId) {
+    requestId = precheck.requestId;
+    requestStatus = precheck.requestStatus;
+    bookingStatus = precheck.bookingStatus;
+    bookingCancelledAt = precheck.bookingCancelledAt;
+  } else {
+    const { data: conversationRow, error: conversationError } = await supabase
+      .from("conversations")
+      .select("request_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (conversationError) throw conversationError;
+    if (!conversationRow?.request_id) {
+      throw new Error("Conversation not found.");
+    }
+
+    requestId = conversationRow.request_id as string;
+
+    const [requestResult, bookingResult] = await Promise.all([
+      supabase.from("requests").select("status").eq("id", requestId).maybeSingle(),
+      supabase
+        .from("bookings")
+        .select("status, cancelled_at")
+        .eq("request_id", requestId)
+        .maybeSingle(),
+    ]);
+
+    if (requestResult.error) throw requestResult.error;
+    requestStatus = (requestResult.data?.status as RequestStatus | undefined) ?? "pending";
+    bookingStatus = (bookingResult.data?.status as BookingStatus | undefined) ?? null;
+    bookingCancelledAt = (bookingResult.data?.cancelled_at as string | null) ?? null;
   }
 
-  const { data: requestRow, error: requestError } = await supabase
-    .from("requests")
-    .select("status")
-    .eq("id", conversationRow.request_id)
-    .maybeSingle();
-
-  if (requestError) throw requestError;
-  const requestStatus = (requestRow?.status as RequestStatus | undefined) ?? "pending";
   if (requestStatus === "declined") {
     throw new Error("Messaging is closed for this booking.");
   }
 
-  const { data: bookingRow } = await supabase
-    .from("bookings")
-    .select("status, cancelled_at")
-    .eq("request_id", conversationRow.request_id)
-    .maybeSingle();
-
   const sendCheck: ConversationSummary = {
     id: conversationId,
-    requestId: conversationRow.request_id,
+    requestId,
     bookingId: null,
     petId: null,
     petName: null,
@@ -1018,11 +1086,11 @@ export async function sendMessage(
     otherPartyName: "",
     otherPartyAvatarUrl: null,
     requestStatus,
-    bookingStatus: (bookingRow?.status as BookingStatus | undefined) ?? null,
+    bookingStatus,
     bookingStartDate: null,
     bookingEndDate: null,
     bookingRequestedDates: [],
-    bookingCancelledAt: (bookingRow?.cancelled_at as string | null) ?? null,
+    bookingCancelledAt,
     requestDateFrom: null,
     requestDateTo: null,
     dateLabel: "",
@@ -1039,24 +1107,21 @@ export async function sendMessage(
     throw new Error("Messaging period has ended for this cancelled booking.");
   }
 
-  if (otherPartyId) {
-    const { isUserBlocked, BLOCKED_USER_MESSAGE } = await import("@/lib/trust-safety");
-    if (await isUserBlocked(supabase, senderId, otherPartyId)) {
-      throw new Error(BLOCKED_USER_MESSAGE);
-    }
+  const [blockedEitherWay, senderProfile] = await Promise.all([
+    otherPartyId
+      ? isUserBlocked(supabase, senderId, otherPartyId)
+      : Promise.resolve(false),
+    supabase.from("profiles").select("role, active_mode").eq("id", senderId).maybeSingle(),
+  ]);
+
+  if (blockedEitherWay) {
+    throw new Error(BLOCKED_USER_MESSAGE);
   }
 
-  const { data: senderProfile } = await supabase
-    .from("profiles")
-    .select("role, active_mode")
-    .eq("id", senderId)
-    .maybeSingle();
-  if (senderProfile) {
-    const { resolveActiveMode } = await import("@/lib/profile-mode");
-    const { assertActiveMembership } = await import("@/lib/membership-access");
+  if (senderProfile.data) {
     const mode = resolveActiveMode(
-      (senderProfile.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",
-      senderProfile.active_mode as string | null,
+      (senderProfile.data.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",
+      senderProfile.data.active_mode as string | null,
     );
     await assertActiveMembership(supabase, senderId, mode);
   }
@@ -1120,12 +1185,10 @@ export async function markConversationFullyRead(
   const ids = conversationIdsFor(conversation);
   const { markNotificationsReadForConversations } = await import("@/lib/notifications");
 
-  await Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId)));
-  await markNotificationsReadForConversations(supabase, ids, userId);
-
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(CONVERSATION_READ_EVENT));
-  }
+  await Promise.all([
+    Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId))),
+    markNotificationsReadForConversations(supabase, ids, userId),
+  ]);
 }
 
 export function subscribeToConversationMessages(

@@ -137,14 +137,15 @@ describe("Stripe checkout metadata", () => {
 describe("Membership activation duration by plan", () => {
   const start = new Date("2026-01-15T12:00:00.000Z");
 
-  it("One Time webhook entitlement uses one-time billing interval (not subscription)", () => {
+  it("One Time webhook entitlement uses 7-day billing interval (not subscription)", () => {
     expect(stripePlanTypeForPlanId("one-time-friend")).toBe("one_time");
     expect(billingIntervalFromPlanId("one-time-friend")).toBe("one_time");
     expect(stripeCheckoutModeForPlanId("one-time-friend")).toBe("payment");
     const end = computeMembershipEndDate("one_time", start);
     expect(end).not.toBeNull();
     const endDate = new Date(end!);
-    expect(endDate.getUTCMonth()).toBe(1);
+    expect(endDate.getUTCDate()).toBe(22);
+    expect(endDate.getUTCMonth()).toBe(0);
   });
 
   it("3 Month activates for 3 months", () => {

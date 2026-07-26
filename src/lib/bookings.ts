@@ -299,6 +299,17 @@ async function runAutoCompleteWithReviewEmails(supabase: SupabaseClient): Promis
   const newlyCompleted = await autoCompleteDueBookings(supabase);
   if (!newlyCompleted.length) return;
 
+  try {
+    const { handleOneTimeBookingsCompletedAction } = await import(
+      "@/app/actions/one-time-membership"
+    );
+    await handleOneTimeBookingsCompletedAction(newlyCompleted);
+  } catch (err) {
+    console.warn("[one-time-membership] auto-complete hook failed", {
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   const { triggerAutoCompletedReviewEmailsAction } = await import(
     "@/app/actions/booking-review-emails"
   );
@@ -386,6 +397,18 @@ export async function cancelBooking(
     p_reason: reason?.trim() || null,
   });
   if (error) throw error;
+
+  try {
+    const { handleOneTimeBookingCancelledAction } = await import(
+      "@/app/actions/one-time-membership"
+    );
+    await handleOneTimeBookingCancelledAction(bookingId);
+  } catch (err) {
+    console.warn("[one-time-membership] cancel hook failed", {
+      bookingId,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 export async function completeBooking(
@@ -394,6 +417,18 @@ export async function completeBooking(
 ): Promise<void> {
   const { error } = await supabase.rpc("complete_booking", { p_booking_id: bookingId });
   if (error) throw error;
+
+  try {
+    const { handleOneTimeBookingCompletedAction } = await import(
+      "@/app/actions/one-time-membership"
+    );
+    await handleOneTimeBookingCompletedAction(bookingId);
+  } catch (err) {
+    console.warn("[one-time-membership] complete hook failed", {
+      bookingId,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 /**

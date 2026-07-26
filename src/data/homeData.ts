@@ -98,10 +98,12 @@ export const pricingContent = {
       name: "One Time",
       price: "€18",
       features: [
-        "Unlock messaging for one care arrangement",
-        "Make one booking of any length",
+        "Valid for one care arrangement",
+        "Book within 7 days of purchase",
+        "Unlock messaging for your confirmed care arrangement",
+        "No refund if unused within 7 days",
+        "If the care arrangement is cancelled, access is restored for one month",
         "Leave and receive reviews after care",
-        "Ideal for occasional or first-time use",
       ],
     },
     {
@@ -137,10 +139,12 @@ export const pricingContent = {
       name: "One Time",
       price: "€12",
       features: [
-        "Unlock messaging for one care arrangement",
-        "Make one booking of any length",
+        "Valid for one care arrangement",
+        "Book within 7 days of purchase",
+        "Unlock messaging for your confirmed care arrangement",
+        "No refund if unused within 7 days",
+        "If the care arrangement is cancelled, access is restored for one month",
         "Leave and receive reviews after care",
-        "Ideal for occasional or first-time use",
       ],
     },
     {

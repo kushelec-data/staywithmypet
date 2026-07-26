@@ -1398,10 +1398,12 @@ export const et = {
         name: "Üks hoiukord",
         price: "€18",
         features: [
-          "Suhtle ühe hoiukokkuleppe raames",
-          "Üks hoiukokkulepe vabalt valitud pikkusega",
+          "Kehtib ühe hoiukokkuleppe jaoks",
+          "Broneeri 7 päeva jooksul pärast ostu",
+          "Avab suhtluse kinnitatud hoiukokkuleppe raames",
+          "Kasutamata jätmisel tagasimakset ei tehta",
+          "Hoiukokkuleppe tühistamisel taastatakse juurdepääs üheks kuuks",
           "Jäta ja saa pärast hoiuperioodi tagasisidet",
-          "Sobib hästi esimeseks hoiukorraks või aeg-ajalt kasutamiseks",
         ],
       },
       {
@@ -1438,10 +1440,12 @@ export const et = {
         name: "Üks hoiukord",
         price: "€12",
         features: [
-          "Avab suhtluse esimese loomaga tutvumiseks",
-          "Korralda üks kohtumine, nii lühike või pikk kui soovid",
+          "Kehtib ühe hoiukokkuleppe jaoks",
+          "Broneeri 7 päeva jooksul pärast ostu",
+          "Avab suhtluse kinnitatud hoiukokkuleppe raames",
+          "Kasutamata jätmisel tagasimakset ei tehta",
+          "Hoiukokkuleppe tühistamisel taastatakse juurdepääs üheks kuuks",
           "Jäta ja saa tagasisidet pärast esimest kohtumist",
-          "Sobib ideaalselt, kui tahad esmalt järgi proovida",
         ],
       },
       {
@@ -2325,7 +2329,10 @@ export const et = {
       oneTime: {
         title: "Ühekordne",
         bullets: [
-          "Kehtib ainult ühe broneeringu jaoks.",
+          "Kehtib ühe hoiukokkuleppe jaoks.",
+          "Broneeri 7 päeva jooksul pärast ostu.",
+          "Kasutamata jätmisel tagasimakset ei tehta.",
+          "Hoiukokkuleppe tühistamisel taastatakse juurdepääs üheks kuuks.",
           "Ei pikene automaatselt.",
         ],
       },

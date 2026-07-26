@@ -9,6 +9,7 @@ import { parseProfileDetails } from "@/lib/profile-details";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils";
+import { appDevSpan } from "@/lib/app-dev-perf";
 import { toFriendlyClientMessage } from "@/lib/security/errors";
 import { isMissingColumnError, supabaseErrorDetail } from "@/lib/supabase-errors";
 
@@ -297,9 +298,20 @@ export async function fetchUserProfile(
           );
         }
       }
-      const enriched = await enrichProfileDbRowWithTrustColumns(supabase, userId, row);
-      const mapped = mapProfileRow(enriched);
-      return attachMemberships(supabase, mapped);
+      const enriched = await appDevSpan(
+        "profile-load.enrichment+memberships",
+        2,
+        async () => {
+          const [enrichedRow, memberships] = await Promise.all([
+            enrichProfileDbRowWithTrustColumns(supabase, userId, row),
+            resolveUserMemberships(supabase, userId),
+          ]);
+          const mapped = mapProfileRow(enrichedRow);
+          return applyMembershipsToProfile(mapped, memberships);
+        },
+        { parallel: true },
+      );
+      return enriched;
     }
 
     if (!isMissingColumnError(error)) {

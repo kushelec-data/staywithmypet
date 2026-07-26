@@ -290,6 +290,7 @@ export async function POST(request: Request) {
     },
     success_url: `${origin}/membership?success=true&session_id={CHECKOUT_SESSION_ID}&role=${roleQuery}${returnToQuery}`,
     cancel_url: `${origin}/membership?cancelled=true&role=${roleQuery}${returnToQuery}`,
+    allow_promotion_codes: true,
   };
 
   const existingCustomerId = existingMembership?.stripe_customer_id?.trim();

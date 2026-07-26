@@ -57,8 +57,16 @@ export function buildEmailTemplate(
 export function defaultUniqueKey(
   eventType: EmailEventType,
   userId: string,
-  options?: { requestId?: string; bookingId?: string; conversationId?: string; messageId?: string },
+  options?: {
+    requestId?: string;
+    bookingId?: string;
+    conversationId?: string;
+    messageId?: string;
+    uniqueKey?: string;
+  },
 ): string {
+  if (options?.uniqueKey?.trim()) return options.uniqueKey.trim();
+
   switch (eventType) {
     case "welcome_pet_parent":
       return `welcome_pet_parent_${userId}`;

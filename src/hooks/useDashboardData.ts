@@ -14,26 +14,14 @@ const PROFILE_LOAD_TIMEOUT_MS = 8_000;
 
 const emptySnapshot: DashboardSnapshot = {
   petsOwned: 0,
-  petPhotosCount: 0,
   favoritesCount: 0,
   careRequestsActive: 0,
   careRequestsIncoming: 0,
   careRequestsAwaitingReply: 0,
-  reviewsCount: 0,
-  reviewsAvg: 0,
   completedBookingsCount: 0,
-  membership: "Demo",
-  latestPets: [],
   petIntros: [],
   pendingReviewBooking: null,
 };
-
-function ratingOpts(profile: ProfileRow | null) {
-  return {
-    rating_avg: profile?.rating_avg,
-    rating_count: profile?.rating_count,
-  };
-}
 
 export function useDashboardData() {
   const { user, loading: authLoading } = useAuth();
@@ -65,12 +53,7 @@ export function useDashboardData() {
       const activeMode = profile
         ? resolveActiveMode(profile.role, profile.active_mode)
         : "pet_parent";
-      const data = await fetchDashboardSnapshot(
-        supabase,
-        userId,
-        ratingOpts(profile),
-        activeMode,
-      );
+      const data = await fetchDashboardSnapshot(supabase, userId, activeMode);
       setSnapshot(data);
     } finally {
       statsLoadedForRef.current = statsCacheKey(userId, profileRef.current);

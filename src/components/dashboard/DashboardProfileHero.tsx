@@ -1,9 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { ProfileVerificationBadges } from "@/components/trust/ProfileVerificationBadges";
 import { ProfileRatingSummary } from "@/components/reviews/ProfileRatingSummary";
 import { heroTrustBadgesFromProfileRow } from "@/lib/public-profile";
-import { ReviewsListModal } from "@/components/reviews/ReviewsListModal";
 import { Button } from "@/components/ui/Button";
 import { formatActiveMode, resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRow } from "@/lib/profile-utils";
@@ -16,6 +16,14 @@ import {
 } from "@/lib/dashboard-theme";
 import { Copy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+const ReviewsListModal = dynamic(
+  () =>
+    import("@/components/reviews/ReviewsListModal").then((mod) => ({
+      default: mod.ReviewsListModal,
+    })),
+  { ssr: false },
+);
 
 type DashboardProfileHeroProps = {
   profile: ProfileRow;
@@ -124,12 +132,14 @@ export function DashboardProfileHero({
         </p>
       ) : null}
 
-      <ReviewsListModal
-        open={reviewsOpen}
-        profileId={profile.id}
-        displayName={displayName}
-        onClose={() => setReviewsOpen(false)}
-      />
+      {reviewsOpen ? (
+        <ReviewsListModal
+          open={reviewsOpen}
+          profileId={profile.id}
+          displayName={displayName}
+          onClose={() => setReviewsOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }

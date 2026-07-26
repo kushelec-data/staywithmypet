@@ -1,44 +1,30 @@
 import "server-only";
 
-import { queueEmailEvent, type EmailTemplateContext } from "@/lib/email-send";
 import {
-  MEMBERSHIP_PLAN_CATALOG,
-  membershipPlanLabel,
-  resolvePlanName,
-  type MembershipRole,
-  type UserMembership,
-} from "@/lib/membership";
+  sendTransactionalEmail,
+  type EmailTemplateContext,
+} from "@/lib/email-send";
+import {
+  membershipActivationEmailUniqueKey,
+  membershipEmailContext as buildMembershipEmailContext,
+} from "@/lib/membership-email-content";
+import type { UserMembership } from "@/lib/membership";
 
-function planPriceFromCatalog(role: MembershipRole, planId: string): string {
-  const prices: Record<string, string> = {
-    "one-time-owner": "€18",
-    "3-month-owner": "€79",
-    "1-year-owner": "€249",
-    "one-time-friend": "€12",
-    "3-month-friend": "€49",
-    "1-year-friend": "€119",
-  };
-  return prices[planId] ?? "—";
-}
+export { membershipEmailContext } from "@/lib/membership-email-content";
 
-export function membershipEmailContext(
+function logMembershipActivationEmailFailure(
   membership: UserMembership,
-  recipientName?: string,
-): EmailTemplateContext {
-  const planName =
-    membershipPlanLabel(membership) ?? resolvePlanName(membership.role, membership.plan_id);
-  const catalog = MEMBERSHIP_PLAN_CATALOG[membership.role];
-  const billingPeriod =
-    catalog.find((p) => p.id === membership.plan_id)?.billingPeriod ?? "period";
-
-  return {
-    recipientName,
-    packageName: `${planName} (${planPriceFromCatalog(membership.role, membership.plan_id)} per ${billingPeriod})`,
-    dateFrom: membership.start_date,
-    membershipEndDate: membership.end_date,
-    renewalDate: membership.auto_renew ? membership.end_date : null,
-    autoRenew: Boolean(membership.auto_renew),
-  };
+  userId: string,
+  uniqueKey: string,
+  reason: string,
+): void {
+  console.error("[membership-email] activation send failed", {
+    plan_id: membership.plan_id,
+    user_id: userId,
+    membership_role: membership.role,
+    email_event_key: uniqueKey,
+    reason,
+  });
 }
 
 export function triggerMembershipConfirmationEmail(
@@ -46,12 +32,32 @@ export function triggerMembershipConfirmationEmail(
   membership: UserMembership,
   recipientName?: string,
 ): void {
-  queueEmailEvent({
+  const uniqueKey = membershipActivationEmailUniqueKey(membership);
+  const context: EmailTemplateContext = buildMembershipEmailContext(membership, recipientName);
+
+  void sendTransactionalEmail({
     eventType: "membership_activated",
     userId,
-    requestId: membership.id,
-    context: membershipEmailContext(membership, recipientName),
-  });
+    uniqueKey,
+    requestId: membership.stripe_checkout_session_id ?? membership.id,
+    context,
+  })
+    .then((result) => {
+      if (result.sent) return;
+      if (result.skipped && result.reason === "duplicate") return;
+      if (result.skipped && result.reason === "no_api_key") return;
+
+      const reason = result.reason ?? "unknown";
+      logMembershipActivationEmailFailure(membership, userId, uniqueKey, reason);
+    })
+    .catch((err) => {
+      logMembershipActivationEmailFailure(
+        membership,
+        userId,
+        uniqueKey,
+        err instanceof Error ? err.message : String(err),
+      );
+    });
 }
 
 export function triggerMembershipExpiryReminderEmail(
@@ -59,11 +65,18 @@ export function triggerMembershipExpiryReminderEmail(
   membership: UserMembership,
   recipientName?: string,
 ): void {
-  queueEmailEvent({
+  void sendTransactionalEmail({
     eventType: "membership_expiry_reminder",
     userId,
     requestId: membership.id,
-    context: membershipEmailContext(membership, recipientName),
+    context: buildMembershipEmailContext(membership, recipientName),
+  }).catch((err) => {
+    console.error("[membership-email] expiry reminder queue failed", {
+      plan_id: membership.plan_id,
+      user_id: userId,
+      membership_role: membership.role,
+      message: err instanceof Error ? err.message : String(err),
+    });
   });
 }
 
@@ -72,10 +85,17 @@ export function triggerMembershipRenewalReminderEmail(
   membership: UserMembership,
   recipientName?: string,
 ): void {
-  queueEmailEvent({
+  void sendTransactionalEmail({
     eventType: "membership_renewal_reminder",
     userId,
     requestId: membership.id,
-    context: membershipEmailContext(membership, recipientName),
+    context: buildMembershipEmailContext(membership, recipientName),
+  }).catch((err) => {
+    console.error("[membership-email] renewal reminder queue failed", {
+      plan_id: membership.plan_id,
+      user_id: userId,
+      membership_role: membership.role,
+      message: err instanceof Error ? err.message : String(err),
+    });
   });
 }
