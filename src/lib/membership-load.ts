@@ -1,4 +1,4 @@
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   emptyMembershipsByRole,
   filterActiveMembershipsByRole,
@@ -7,31 +7,14 @@ import {
   type UserMembershipsByRole,
 } from "@/lib/membership";
 import {
-  isMissingColumnError,
   isMissingRelationError,
   isPostgrestError,
   logSupabaseError,
 } from "@/lib/supabase-errors";
 
-const MEMBERSHIP_CORE_SELECT =
+/** Columns present in production after 20260602100000_user_memberships.sql (no Stripe columns). */
+export const MEMBERSHIP_CORE_SELECT =
   "id, user_id, role, plan_id, status, start_date, end_date, auto_renew";
-
-/** Optional Stripe columns — omitted when migrations/env are behind (never plan_name / checkout session). */
-const MEMBERSHIP_OPTIONAL_SELECT = [
-  "stripe_customer_id",
-  "stripe_subscription_id",
-  "stripe_price_id",
-] as const;
-
-const MEMBERSHIP_SELECT = [MEMBERSHIP_CORE_SELECT, ...MEMBERSHIP_OPTIONAL_SELECT].join(", ");
-
-function selectWithoutColumns(removed: readonly string[]): string {
-  let select = MEMBERSHIP_SELECT;
-  for (const col of removed) {
-    select = select.replace(`, ${col}`, "");
-  }
-  return select;
-}
 
 function mapMembershipRow(data: Record<string, unknown>): UserMembership {
   return {
@@ -44,15 +27,10 @@ function mapMembershipRow(data: Record<string, unknown>): UserMembership {
     start_date: String(data.start_date),
     end_date: data.end_date == null ? null : String(data.end_date),
     auto_renew: Boolean(data.auto_renew),
-    stripe_customer_id:
-      data.stripe_customer_id == null ? null : String(data.stripe_customer_id),
-    stripe_subscription_id:
-      data.stripe_subscription_id == null ? null : String(data.stripe_subscription_id),
-    stripe_price_id: data.stripe_price_id == null ? null : String(data.stripe_price_id),
-    stripe_checkout_session_id:
-      data.stripe_checkout_session_id == null || data.stripe_checkout_session_id === undefined
-        ? null
-        : String(data.stripe_checkout_session_id),
+    stripe_customer_id: null,
+    stripe_subscription_id: null,
+    stripe_price_id: null,
+    stripe_checkout_session_id: null,
   };
 }
 
@@ -60,29 +38,10 @@ export async function fetchUserMembershipRows(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserMembership[]> {
-  const stripped: string[] = [];
-  let select = MEMBERSHIP_SELECT;
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("user_memberships")
-    .select(select)
+    .select(MEMBERSHIP_CORE_SELECT)
     .eq("user_id", userId);
-
-  while (error && isMissingColumnError(error)) {
-    const missing =
-      MEMBERSHIP_OPTIONAL_SELECT.find(
-        (col) =>
-          !stripped.includes(col) && select.includes(col) && isMissingColumnError(error!, col),
-      ) ??
-      MEMBERSHIP_OPTIONAL_SELECT.find((col) => !stripped.includes(col) && select.includes(col));
-    if (!missing) break;
-    stripped.push(missing);
-    console.warn(`[membership] retrying load without column ${missing}`);
-    select = selectWithoutColumns(stripped);
-    ({ data, error } = await supabase
-      .from("user_memberships")
-      .select(select)
-      .eq("user_id", userId));
-  }
 
   if (error) {
     if (isMissingRelationError(error)) {
