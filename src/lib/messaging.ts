@@ -38,11 +38,6 @@ import { assertActiveMembership } from "@/lib/membership-access";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { assertRateLimitShared, requireAuthUserId } from "@/lib/security";
 import { BLOCKED_USER_MESSAGE, isUserBlocked } from "@/lib/trust-safety";
-import {
-  messagingDevLogPhase,
-  messagingDevSpan,
-  messagingDevTrackRequest,
-} from "@/lib/messaging-dev-perf";
 
 function asMessagingDbClient(supabase: SupabaseClient): SupabaseClient<Database> {
   return supabase as SupabaseClient<Database>;
@@ -499,7 +494,6 @@ async function fetchRecentInboxMessages(
   if (!conversationIds.length) return [];
 
   const db = asMessagingDbClient(supabase);
-  messagingDevTrackRequest();
   const withMedia = await db
     .from("messages")
     .select(MESSAGE_INBOX_PREVIEW_SELECT)
@@ -514,7 +508,6 @@ async function fetchRecentInboxMessages(
     throw withMedia.error;
   }
 
-  messagingDevTrackRequest();
   const legacy = await db
     .from("messages")
     .select(MESSAGE_INBOX_PREVIEW_LEGACY_SELECT)
@@ -540,7 +533,6 @@ async function fetchRequestForConversation(
   const tiers = [REQUEST_SELECT_EXTENDED, REQUEST_SELECT_BASE, REQUEST_SELECT_MINIMAL];
 
   for (const select of tiers) {
-    messagingDevTrackRequest();
     const { data, error } = await supabase
       .from("requests")
       .select(select)
@@ -580,7 +572,6 @@ export async function ensureConversationForRequest(
   if (!request) return null;
   if (!REQUEST_CONVERSATION_STATUSES.includes(request.status)) return null;
 
-  messagingDevTrackRequest();
   const { data: rpcData, error: rpcError } = await supabase.rpc(
     "ensure_conversation_for_request",
     { p_request_id: requestId },
@@ -593,7 +584,6 @@ export async function ensureConversationForRequest(
     logSupabaseError("ensure_conversation_for_request", rpcError);
   }
 
-  messagingDevTrackRequest();
   const { data: existing, error: existingError } = await supabase
     .from("conversations")
     .select("id")
@@ -604,7 +594,6 @@ export async function ensureConversationForRequest(
     return existing.id as string;
   }
 
-  messagingDevTrackRequest();
   const { data: inserted, error: insertError } = await supabase
     .from("conversations")
     .upsert(
@@ -643,7 +632,6 @@ export async function seedRequestMessageIfAbsent(
   supabase: SupabaseClient,
   requestId: string,
 ): Promise<void> {
-  messagingDevTrackRequest();
   const { data: requestRow, error: requestError } = await supabase
     .from("requests")
     .select("message, sender_id, status")
@@ -666,7 +654,6 @@ export async function seedRequestMessageIfAbsent(
   const conversationId = await ensureConversationForRequest(supabase, requestId);
   if (!conversationId) return;
 
-  messagingDevTrackRequest();
   const { count: messageCount, error: countError } = await supabase
     .from("messages")
     .select("id", { count: "exact", head: true })
@@ -678,7 +665,6 @@ export async function seedRequestMessageIfAbsent(
   }
 
   if ((messageCount ?? 0) > 0) {
-    messagingDevTrackRequest();
     const { data: duplicate } = await supabase
       .from("messages")
       .select("id")
@@ -691,7 +677,6 @@ export async function seedRequestMessageIfAbsent(
     return;
   }
 
-  messagingDevTrackRequest();
   const { error: insertError } = await supabase.from("messages").insert({
     conversation_id: conversationId,
     sender_id: senderId,
@@ -708,57 +693,52 @@ export async function syncAcceptedRequestConversations(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
-  return messagingDevSpan("syncAcceptedRequestConversations", async (track) => {
-    track();
-    const { data: requests, error } = await supabase
-      .from("requests")
-      .select("id")
-      .in("status", REQUEST_CONVERSATION_STATUSES)
-      .or(`pet_parent_id.eq.${userId},pet_friend_id.eq.${userId}`);
+  const { data: requests, error } = await supabase
+    .from("requests")
+    .select("id")
+    .in("status", REQUEST_CONVERSATION_STATUSES)
+    .or(`pet_parent_id.eq.${userId},pet_friend_id.eq.${userId}`);
 
-    if (error) {
-      if (isMissingRelationError(error)) return;
-      throw error;
-    }
+  if (error) {
+    if (isMissingRelationError(error)) return;
+    throw error;
+  }
 
-    const requestRows = requests ?? [];
-    if (!requestRows.length) return;
+  const requestRows = requests ?? [];
+  if (!requestRows.length) return;
 
-    const requestIds = requestRows.map((row) => row.id as string);
+  const requestIds = requestRows.map((row) => row.id as string);
 
-    track();
-    const { data: existingConversations, error: conversationsError } = await supabase
-      .from("conversations")
-      .select("request_id")
-      .in("request_id", requestIds);
+  const { data: existingConversations, error: conversationsError } = await supabase
+    .from("conversations")
+    .select("request_id")
+    .in("request_id", requestIds);
 
-    if (conversationsError) {
-      if (isMissingRelationError(conversationsError)) return;
-      throw conversationsError;
-    }
+  if (conversationsError) {
+    if (isMissingRelationError(conversationsError)) return;
+    throw conversationsError;
+  }
 
-    const existingRequestIds = new Set(
-      (existingConversations ?? []).map((row) => row.request_id as string),
-    );
+  const existingRequestIds = new Set(
+    (existingConversations ?? []).map((row) => row.request_id as string),
+  );
 
-    const missingRequestIds = requestIds.filter((id) => !existingRequestIds.has(id));
-    if (!missingRequestIds.length) return;
+  const missingRequestIds = requestIds.filter((id) => !existingRequestIds.has(id));
+  if (!missingRequestIds.length) return;
 
-    await Promise.all(
-      missingRequestIds.map(async (requestId) => {
-        try {
-          await ensureConversationForRequest(supabase, requestId);
-          await seedRequestMessageIfAbsent(supabase, requestId);
-        } catch (err) {
-          logSupabaseError(`sync conversation ${requestId}`, err as PostgrestError);
-        }
-      }),
-    );
-  }, { userId, skippedExisting: true });
+  await Promise.all(
+    missingRequestIds.map(async (requestId) => {
+      try {
+        await ensureConversationForRequest(supabase, requestId);
+        await seedRequestMessageIfAbsent(supabase, requestId);
+      } catch (err) {
+        logSupabaseError(`sync conversation ${requestId}`, err as PostgrestError);
+      }
+    }),
+  );
 }
 
 async function fetchConversationRows(supabase: SupabaseClient): Promise<ConversationRow[]> {
-  messagingDevTrackRequest();
   const { data, error } = await supabase
     .from("conversations")
     .select(CONVERSATION_SELECT)
@@ -774,7 +754,6 @@ async function fetchRequestsByIds(
 ): Promise<Map<string, RequestRow>> {
   if (!requestIds.length) return new Map();
 
-  messagingDevTrackRequest();
   const extended = await supabase
     .from("requests")
     .select(REQUEST_SELECT_EXTENDED)
@@ -785,7 +764,6 @@ async function fetchRequestsByIds(
   if (!extended.error) {
     rows = (extended.data ?? []) as RequestRow[];
   } else if (isMissingColumnError(extended.error)) {
-    messagingDevTrackRequest();
     const base = await supabase
       .from("requests")
       .select(REQUEST_SELECT_BASE)
@@ -809,22 +787,13 @@ export async function fetchConversations(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ConversationSummary[]> {
-  return messagingDevSpan("fetchConversations", async () => {
-    await syncAcceptedRequestConversations(supabase, userId);
+  await syncAcceptedRequestConversations(supabase, userId);
 
-    const conversationsStartedAt = performance.now();
-    const convRows = await fetchConversationRows(supabase);
-    messagingDevLogPhase("fetchConversations.conversations", performance.now() - conversationsStartedAt, 1, {
-      rowCount: convRows.length,
-    });
-    if (!convRows.length) return [];
+  const convRows = await fetchConversationRows(supabase);
+  if (!convRows.length) return [];
 
-    const requestIds = [...new Set(convRows.map((c) => c.request_id))];
-    const requestsStartedAt = performance.now();
-    const requestsById = await fetchRequestsByIds(supabase, requestIds);
-    messagingDevLogPhase("fetchConversations.requests", performance.now() - requestsStartedAt, 1, {
-      requestCount: requestIds.length,
-    });
+  const requestIds = [...new Set(convRows.map((c) => c.request_id))];
+  const requestsById = await fetchRequestsByIds(supabase, requestIds);
 
   const eligibleConversations = convRows.filter((c) => {
     const req = requestsById.get(c.request_id);
@@ -860,60 +829,32 @@ export async function fetchConversations(
 
   type PetRow = { id: string; name: string; pet_photos?: PetPhotoJoin[] | null };
 
-  const enrichmentStartedAt = performance.now();
-
   const [recentMessages, petsResult, bookingResult, unreadResult, profilesResult] =
     await Promise.all([
-      messagingDevSpan(
-        "fetchConversations.enrichment.recentMessages",
-        async () => fetchRecentInboxMessages(supabase, conversationIds),
-        { conversationCount: conversationIds.length },
-      ),
+      fetchRecentInboxMessages(supabase, conversationIds),
       petIds.length
-        ? messagingDevSpan("fetchConversations.enrichment.pets", async (enrichmentTrack) => {
-            enrichmentTrack();
-            return supabase
-              .from("pets")
-              .select("id, name, pet_photos ( public_url, is_primary, sort_order )")
-              .in("id", petIds);
-          }, { petCount: petIds.length })
+        ? supabase
+            .from("pets")
+            .select("id, name, pet_photos ( public_url, is_primary, sort_order )")
+            .in("id", petIds)
         : Promise.resolve({ data: [] as PetRow[], error: null }),
-      messagingDevSpan("fetchConversations.enrichment.bookings", async (enrichmentTrack) => {
-        enrichmentTrack();
-        return supabase
-          .from("bookings")
-          .select("id, request_id, status, cancelled_at, start_date, end_date")
-          .in("request_id", requestIds);
-      }, { requestCount: requestIds.length }),
-      messagingDevSpan("fetchConversations.enrichment.unread", async (enrichmentTrack) => {
-        enrichmentTrack();
-        return supabase
-          .from("messages")
-          .select("conversation_id")
-          .in("conversation_id", conversationIds)
-          .is("read_at", null)
-          .neq("sender_id", userId);
-      }, { conversationCount: conversationIds.length }),
+      supabase
+        .from("bookings")
+        .select("id, request_id, status, cancelled_at, start_date, end_date")
+        .in("request_id", requestIds),
+      supabase
+        .from("messages")
+        .select("conversation_id")
+        .in("conversation_id", conversationIds)
+        .is("read_at", null)
+        .neq("sender_id", userId),
       profileIds.length
-        ? messagingDevSpan("fetchConversations.enrichment.profiles", async (enrichmentTrack) => {
-            enrichmentTrack();
-            return supabase
-              .from("profiles")
-              .select("id, display_name, avatar_url")
-              .in("id", profileIds);
-          }, { profileCount: profileIds.length })
+        ? supabase.from("profiles").select("id, display_name, avatar_url").in("id", profileIds)
         : Promise.resolve({
             data: [] as { id: string; display_name: string | null; avatar_url: string | null }[],
             error: null,
           }),
     ]);
-
-  messagingDevLogPhase(
-    "fetchConversations.enrichment.batch",
-    performance.now() - enrichmentStartedAt,
-    5,
-    { parallelQueries: 5 },
-  );
 
   if (petsResult.error) throw petsResult.error;
   if (bookingResult.error) throw bookingResult.error;
@@ -1023,7 +964,6 @@ export async function fetchConversations(
   }
 
   return prepareInboxConversations(summaries);
-  }, { userId });
 }
 
 export async function fetchMessages(
@@ -1031,48 +971,44 @@ export async function fetchMessages(
   conversationId: string,
   userId: string,
 ): Promise<ChatMessage[]> {
-  return messagingDevSpan("fetchMessages", async () => {
-    const db = asMessagingDbClient(supabase);
-    messagingDevTrackRequest();
-    const full = await db
-      .from("messages")
-      .select(MESSAGE_THREAD_SELECT)
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
+  const db = asMessagingDbClient(supabase);
+  const full = await db
+    .from("messages")
+    .select(MESSAGE_THREAD_SELECT)
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
 
-    if (!full.error) {
-      return (full.data ?? []).map((row) => mapMessageRow(row, userId));
-    }
+  if (!full.error) {
+    return (full.data ?? []).map((row) => mapMessageRow(row, userId));
+  }
 
-    if (!isMissingColumnError(full.error)) {
-      throw full.error;
-    }
+  if (!isMissingColumnError(full.error)) {
+    throw full.error;
+  }
 
-    messagingDevTrackRequest();
-    const legacy = await db
-      .from("messages")
-      .select(MESSAGE_THREAD_LEGACY_SELECT)
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
+  const legacy = await db
+    .from("messages")
+    .select(MESSAGE_THREAD_LEGACY_SELECT)
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
 
-    if (legacy.error) {
-      throw legacy.error;
-    }
+  if (legacy.error) {
+    throw legacy.error;
+  }
 
-    return (legacy.data ?? []).map((row) =>
-      mapMessageRow(
-        {
-          ...row,
-          storage_path: null,
-          media_type: null,
-          file_name: null,
-          file_size: null,
-          mime_type: null,
-        },
-        userId,
-      ),
-    );
-  }, { conversationId });
+  return (legacy.data ?? []).map((row) =>
+    mapMessageRow(
+      {
+        ...row,
+        storage_path: null,
+        media_type: null,
+        file_name: null,
+        file_size: null,
+        mime_type: null,
+      },
+      userId,
+    ),
+  );
 }
 
 export async function sendMessage(
@@ -1084,173 +1020,144 @@ export async function sendMessage(
   media?: SendMessageMedia | null,
   precheck?: SendMessagePrecheck | null,
 ): Promise<ChatMessage> {
-  return messagingDevSpan(
-    "sendMessage",
-    async () => {
-      const authStartedAt = performance.now();
-      messagingDevTrackRequest();
-      const sessionUserId = await requireAuthUserId(supabase);
-      messagingDevLogPhase("sendMessage.auth", performance.now() - authStartedAt, 1);
+  const sessionUserId = await requireAuthUserId(supabase);
+  if (senderId !== sessionUserId) {
+    throw new Error("You cannot send messages as another user.");
+  }
+  await assertRateLimitShared("message_send", sessionUserId);
 
-      if (senderId !== sessionUserId) {
-        throw new Error("You cannot send messages as another user.");
-      }
-      await assertRateLimitShared("message_send", sessionUserId);
+  const trimmed = body.trim();
+  if (!trimmed && !media?.storagePath) {
+    throw new Error("Message cannot be empty.");
+  }
 
-      const trimmed = body.trim();
-      if (!trimmed && !media?.storagePath) {
-        throw new Error("Message cannot be empty.");
-      }
+  let requestId: string;
+  let requestStatus: RequestStatus;
+  let bookingStatus: BookingStatus | null;
+  let bookingCancelledAt: string | null;
 
-      let requestId: string;
-      let requestStatus: RequestStatus;
-      let bookingStatus: BookingStatus | null;
-      let bookingCancelledAt: string | null;
+  if (precheck?.requestId) {
+    requestId = precheck.requestId;
+    requestStatus = precheck.requestStatus;
+    bookingStatus = precheck.bookingStatus;
+    bookingCancelledAt = precheck.bookingCancelledAt;
+  } else {
+    const { data: conversationRow, error: conversationError } = await supabase
+      .from("conversations")
+      .select("request_id")
+      .eq("id", conversationId)
+      .maybeSingle();
 
-      if (precheck?.requestId) {
-        requestId = precheck.requestId;
-        requestStatus = precheck.requestStatus;
-        bookingStatus = precheck.bookingStatus;
-        bookingCancelledAt = precheck.bookingCancelledAt;
-      } else {
-        const lookupStartedAt = performance.now();
-        messagingDevTrackRequest();
-        const { data: conversationRow, error: conversationError } = await supabase
-          .from("conversations")
-          .select("request_id")
-          .eq("id", conversationId)
-          .maybeSingle();
+    if (conversationError) throw conversationError;
+    if (!conversationRow?.request_id) {
+      throw new Error("Conversation not found.");
+    }
 
-        if (conversationError) throw conversationError;
-        if (!conversationRow?.request_id) {
-          throw new Error("Conversation not found.");
-        }
+    requestId = conversationRow.request_id as string;
 
-        requestId = conversationRow.request_id as string;
+    const [requestResult, bookingResult] = await Promise.all([
+      supabase.from("requests").select("status").eq("id", requestId).maybeSingle(),
+      supabase
+        .from("bookings")
+        .select("status, cancelled_at")
+        .eq("request_id", requestId)
+        .maybeSingle(),
+    ]);
 
-        messagingDevTrackRequest();
-        messagingDevTrackRequest();
-        const [requestResult, bookingResult] = await Promise.all([
-          supabase.from("requests").select("status").eq("id", requestId).maybeSingle(),
-          supabase
-            .from("bookings")
-            .select("status, cancelled_at")
-            .eq("request_id", requestId)
-            .maybeSingle(),
-        ]);
+    if (requestResult.error) throw requestResult.error;
+    requestStatus = (requestResult.data?.status as RequestStatus | undefined) ?? "pending";
+    bookingStatus = (bookingResult.data?.status as BookingStatus | undefined) ?? null;
+    bookingCancelledAt = (bookingResult.data?.cancelled_at as string | null) ?? null;
+  }
 
-        if (requestResult.error) throw requestResult.error;
-        requestStatus = (requestResult.data?.status as RequestStatus | undefined) ?? "pending";
-        bookingStatus = (bookingResult.data?.status as BookingStatus | undefined) ?? null;
-        bookingCancelledAt = (bookingResult.data?.cancelled_at as string | null) ?? null;
-        messagingDevLogPhase("sendMessage.conversationLookup", performance.now() - lookupStartedAt, 3);
-      }
+  if (requestStatus === "declined") {
+    throw new Error("Messaging is closed for this booking.");
+  }
 
-      if (requestStatus === "declined") {
-        throw new Error("Messaging is closed for this booking.");
-      }
+  const sendCheck: ConversationSummary = {
+    id: conversationId,
+    requestId,
+    bookingId: null,
+    petId: null,
+    petName: null,
+    threadTitle: "",
+    petPhotoUrl: null,
+    otherPartyId: otherPartyId ?? "",
+    otherPartyName: "",
+    otherPartyAvatarUrl: null,
+    requestStatus,
+    bookingStatus,
+    bookingStartDate: null,
+    bookingEndDate: null,
+    bookingRequestedDates: [],
+    bookingCancelledAt,
+    requestDateFrom: null,
+    requestDateTo: null,
+    dateLabel: "",
+    dateRangeKey: "",
+    careType: null,
+    lastMessagePreview: null,
+    lastMessageAt: null,
+    unreadCount: 0,
+    sortAt: "",
+    conversationIds: [conversationId],
+  };
 
-      const sendCheck: ConversationSummary = {
-        id: conversationId,
-        requestId,
-        bookingId: null,
-        petId: null,
-        petName: null,
-        threadTitle: "",
-        petPhotoUrl: null,
-        otherPartyId: otherPartyId ?? "",
-        otherPartyName: "",
-        otherPartyAvatarUrl: null,
-        requestStatus,
-        bookingStatus,
-        bookingStartDate: null,
-        bookingEndDate: null,
-        bookingRequestedDates: [],
-        bookingCancelledAt,
-        requestDateFrom: null,
-        requestDateTo: null,
-        dateLabel: "",
-        dateRangeKey: "",
-        careType: null,
-        lastMessagePreview: null,
-        lastMessageAt: null,
-        unreadCount: 0,
-        sortAt: "",
-        conversationIds: [conversationId],
-      };
+  if (!canSendInConversation(sendCheck)) {
+    throw new Error("Messaging period has ended for this cancelled booking.");
+  }
 
-      if (!canSendInConversation(sendCheck)) {
-        throw new Error("Messaging period has ended for this cancelled booking.");
-      }
+  const [blockedEitherWay, senderProfile] = await Promise.all([
+    otherPartyId
+      ? isUserBlocked(supabase, senderId, otherPartyId)
+      : Promise.resolve(false),
+    supabase.from("profiles").select("role, active_mode").eq("id", senderId).maybeSingle(),
+  ]);
 
-      const guardStartedAt = performance.now();
-      const [blockedEitherWay, senderProfile] = await Promise.all([
-        otherPartyId
-          ? (async () => {
-              messagingDevTrackRequest();
-              return isUserBlocked(supabase, senderId, otherPartyId);
-            })()
-          : Promise.resolve(false),
-        (async () => {
-          messagingDevTrackRequest();
-          return supabase.from("profiles").select("role, active_mode").eq("id", senderId).maybeSingle();
-        })(),
-      ]);
-      messagingDevLogPhase("sendMessage.blockAndProfile", performance.now() - guardStartedAt, 2);
+  if (blockedEitherWay) {
+    throw new Error(BLOCKED_USER_MESSAGE);
+  }
 
-      if (blockedEitherWay) {
-        throw new Error(BLOCKED_USER_MESSAGE);
-      }
+  if (senderProfile.data) {
+    const mode = resolveActiveMode(
+      (senderProfile.data.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",
+      senderProfile.data.active_mode as string | null,
+    );
+    await assertActiveMembership(supabase, senderId, mode);
+  }
 
-      if (senderProfile.data) {
-        const membershipStartedAt = performance.now();
-        const mode = resolveActiveMode(
-          (senderProfile.data.role as "pet_parent" | "pet_friend" | "both") ?? "pet_friend",
-          senderProfile.data.active_mode as string | null,
-        );
-        messagingDevTrackRequest();
-        await assertActiveMembership(supabase, senderId, mode);
-        messagingDevLogPhase("sendMessage.membership", performance.now() - membershipStartedAt, 1);
-      }
+  const insertPayload: Record<string, unknown> = {
+    conversation_id: conversationId,
+    sender_id: senderId,
+    body: trimmed,
+  };
 
-      const insertPayload: Record<string, unknown> = {
-        conversation_id: conversationId,
-        sender_id: senderId,
-        body: trimmed,
-      };
+  if (media) {
+    insertPayload.storage_path = media.storagePath;
+    insertPayload.media_type = media.mediaType;
+    insertPayload.file_name = media.fileName;
+    insertPayload.file_size = media.fileSize;
+    insertPayload.mime_type = media.mimeType;
+  }
 
-      if (media) {
-        insertPayload.storage_path = media.storagePath;
-        insertPayload.media_type = media.mediaType;
-        insertPayload.file_name = media.fileName;
-        insertPayload.file_size = media.fileSize;
-        insertPayload.mime_type = media.mimeType;
-      }
+  let { data, error } = await supabase
+    .from("messages")
+    .insert(insertPayload)
+    .select(MESSAGE_THREAD_SELECT)
+    .single();
 
-      const insertStartedAt = performance.now();
-      messagingDevTrackRequest();
-      let { data, error } = await supabase
-        .from("messages")
-        .insert(insertPayload)
-        .select(MESSAGE_THREAD_SELECT)
-        .single();
-      messagingDevLogPhase("sendMessage.insert", performance.now() - insertStartedAt, 1);
+  if (error && media && isMissingColumnError(error)) {
+    throw new ChatMessageSaveError(
+      "Chat media is not available yet. Apply the latest Supabase migrations, then refresh.",
+    );
+  }
 
-      if (error && media && isMissingColumnError(error)) {
-        throw new ChatMessageSaveError(
-          "Chat media is not available yet. Apply the latest Supabase migrations, then refresh.",
-        );
-      }
+  if (error) {
+    throw new ChatMessageSaveError(error.message || "Message could not be saved.");
+  }
+  const row = data as MessageRow;
 
-      if (error) {
-        throw new ChatMessageSaveError(error.message || "Message could not be saved.");
-      }
-      const row = data as MessageRow;
-
-      return mapMessageRow(row, senderId);
-    },
-    { conversationId, hasPrecheck: Boolean(precheck?.requestId) },
-  );
+  return mapMessageRow(row, senderId);
 }
 
 export async function markConversationMessagesRead(
@@ -1259,7 +1166,6 @@ export async function markConversationMessagesRead(
   userId: string,
 ): Promise<void> {
   const now = new Date().toISOString();
-  messagingDevTrackRequest();
   const { error } = await supabase
     .from("messages")
     .update({ read_at: now })
@@ -1277,21 +1183,12 @@ export async function markConversationFullyRead(
   userId: string,
 ): Promise<void> {
   const ids = conversationIdsFor(conversation);
-  return messagingDevSpan(
-    "markConversationFullyRead",
-    async () => {
-      const { markNotificationsReadForConversations } = await import("@/lib/notifications");
+  const { markNotificationsReadForConversations } = await import("@/lib/notifications");
 
-      await Promise.all([
-        Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId))),
-        (async () => {
-          messagingDevTrackRequest();
-          return markNotificationsReadForConversations(supabase, ids, userId);
-        })(),
-      ]);
-    },
-    { conversationIdCount: ids.length },
-  );
+  await Promise.all([
+    Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId))),
+    markNotificationsReadForConversations(supabase, ids, userId),
+  ]);
 }
 
 export function subscribeToConversationMessages(

@@ -109,6 +109,7 @@ export function ChatPanel({
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const prefersSmoothScrollRef = useRef(false);
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;
@@ -149,6 +150,12 @@ export function ChatPanel({
     const container = scrollContainerRef.current;
     if (!container) return;
     container.scrollTo({ top: container.scrollHeight, behavior });
+  }, []);
+
+  const focusMessageInput = useCallback(() => {
+    requestAnimationFrame(() => {
+      messageInputRef.current?.focus();
+    });
   }, []);
 
   useEffect(() => {
@@ -299,6 +306,7 @@ export function ChatPanel({
 
     setSending(true);
     setError(null);
+    let sent = false;
     try {
       const msg = await sendMessage(
         supabase,
@@ -310,6 +318,7 @@ export function ChatPanel({
         messagePrecheck,
       );
       await deliverMessage(msg);
+      sent = true;
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
         setUpgradeOpen(true);
@@ -319,6 +328,9 @@ export function ChatPanel({
       }
     } finally {
       setSending(false);
+      if (sent) {
+        focusMessageInput();
+      }
     }
   }
 
@@ -350,6 +362,7 @@ export function ChatPanel({
         messagePrecheck,
       );
       await deliverMessage(msg);
+      focusMessageInput();
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
         setUpgradeOpen(true);
@@ -583,6 +596,7 @@ export function ChatPanel({
             {m.typeMessage}
           </label>
           <AutoResizeTextarea
+            ref={messageInputRef}
             id={`message_body_${conversationId}`}
             minRows={1}
             value={draft}
