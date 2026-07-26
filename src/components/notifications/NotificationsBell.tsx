@@ -24,7 +24,6 @@ import {
   type NotificationActionKind,
   type NotificationCategory,
 } from "@/lib/notifications";
-import { CONVERSATION_READ_EVENT } from "@/lib/messaging";
 import { createClient } from "@/lib/supabase";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -139,6 +138,9 @@ function NotificationRow({
   );
 }
 
+/** Coalesce rapid refresh signals (realtime + mark-read) into one network round-trip. */
+const NOTIFICATION_REFRESH_DEBOUNCE_MS = 100;
+
 export function NotificationsBell() {
   const router = useRouter();
   const pathname = usePathname();
@@ -179,6 +181,18 @@ export function NotificationsBell() {
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
+  const refreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleRefresh = useCallback(() => {
+    if (refreshDebounceRef.current) {
+      clearTimeout(refreshDebounceRef.current);
+    }
+    refreshDebounceRef.current = setTimeout(() => {
+      refreshDebounceRef.current = null;
+      void refreshRef.current();
+    }, NOTIFICATION_REFRESH_DEBOUNCE_MS);
+  }, []);
+
   useEffect(() => {
     if (!userId) return;
     const uid = userId;
@@ -210,21 +224,23 @@ export function NotificationsBell() {
     if (!userId) return;
 
     const unsubscribe = subscribeToNotifications(supabase, userId, () => {
-      void refreshRef.current();
+      scheduleRefresh();
     });
 
     const onRefresh = () => {
-      void refreshRef.current();
+      scheduleRefresh();
     };
-    window.addEventListener(CONVERSATION_READ_EVENT, onRefresh);
     window.addEventListener(NOTIFICATIONS_REFRESH_EVENT, onRefresh);
 
     return () => {
       unsubscribe();
-      window.removeEventListener(CONVERSATION_READ_EVENT, onRefresh);
       window.removeEventListener(NOTIFICATIONS_REFRESH_EVENT, onRefresh);
+      if (refreshDebounceRef.current) {
+        clearTimeout(refreshDebounceRef.current);
+        refreshDebounceRef.current = null;
+      }
     };
-  }, [userId, supabase]);
+  }, [userId, supabase, scheduleRefresh]);
 
   useEffect(() => {
     if (!open) return;
