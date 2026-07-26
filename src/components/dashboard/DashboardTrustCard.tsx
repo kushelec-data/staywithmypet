@@ -7,7 +7,6 @@ import {
 import { DashboardCheckRow } from "@/components/dashboard/DashboardCheckRow";
 import { VerifiedBadge } from "@/components/trust/VerifiedBadge";
 import { useLanguage } from "@/context/LanguageContext";
-import type { DashboardSnapshot } from "@/lib/dashboard-data";
 import { isProfileVerified } from "@/lib/trust-safety";
 import {
   calculateTrustScore,
@@ -26,7 +25,10 @@ import type { ProfileRow } from "@/lib/profile-utils";
 type DashboardTrustCardProps = {
   profile: ProfileRow;
   emailVerified: boolean;
-  snapshot: Pick<DashboardSnapshot, "reviewsCount" | "completedBookingsCount">;
+  snapshot: {
+    reviewsCount: number;
+    completedBookingsCount: number;
+  };
 };
 
 export function DashboardTrustCard({
