@@ -25,6 +25,7 @@ import {
   type NotificationCategory,
 } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase";
+import { appDevLogPerf } from "@/lib/app-dev-perf";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -139,14 +140,15 @@ function NotificationRow({
 }
 
 /** Coalesce rapid refresh signals (realtime + mark-read) into one network round-trip. */
-const NOTIFICATION_REFRESH_DEBOUNCE_MS = 100;
+const NOTIFICATION_REFRESH_DEBOUNCE_MS = 400;
 
 export function NotificationsBell() {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const supabase = useMemo(() => createClient(), []);
+  const userId = user?.id ?? null;
+  const supabase = useMemo(() => (userId ? createClient() : null), [userId]);
 
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -155,7 +157,6 @@ export function NotificationsBell() {
   const [error, setError] = useState<string | null>(null);
 
   const panelRef = useRef<HTMLDivElement>(null);
-  const userId = user?.id ?? null;
   const hasUnread = unreadCount > 0;
   const isNavActive =
     pathname === "/messages" || (pathname?.startsWith("/messages/") ?? false);
@@ -164,7 +165,7 @@ export function NotificationsBell() {
   const grouped = useMemo(() => groupNotificationsByCategory(items), [items]);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !supabase) return;
     try {
       const [list, count] = await Promise.all([
         fetchNotifications(supabase, userId),
@@ -184,18 +185,23 @@ export function NotificationsBell() {
   const refreshDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scheduleRefresh = useCallback(() => {
+    if (!userId) return;
     if (refreshDebounceRef.current) {
       clearTimeout(refreshDebounceRef.current);
     }
     refreshDebounceRef.current = setTimeout(() => {
       refreshDebounceRef.current = null;
+      appDevLogPerf("notifications-bell.debouncedRefresh", 0, 0, {
+        debounceMs: NOTIFICATION_REFRESH_DEBOUNCE_MS,
+      });
       void refreshRef.current();
     }, NOTIFICATION_REFRESH_DEBOUNCE_MS);
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !supabase) return;
     const uid = userId;
+    const client = supabase;
 
     let cancelled = false;
 
@@ -203,8 +209,8 @@ export function NotificationsBell() {
       setLoading(true);
       try {
         const [list, count] = await Promise.all([
-          fetchNotifications(supabase, uid),
-          fetchUnreadNotificationCount(supabase, uid),
+          fetchNotifications(client, uid),
+          fetchUnreadNotificationCount(client, uid),
         ]);
         if (!cancelled) {
           setItems(list);
@@ -221,7 +227,7 @@ export function NotificationsBell() {
   }, [supabase, userId]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !supabase) return;
 
     const unsubscribe = subscribeToNotifications(supabase, userId, () => {
       scheduleRefresh();
@@ -266,7 +272,7 @@ export function NotificationsBell() {
   }
 
   async function handleMarkAllRead() {
-    if (!userId || !hasUnread) return;
+    if (!userId || !supabase || !hasUnread) return;
     try {
       await markAllNotificationsRead(supabase, userId);
       const now = new Date().toISOString();
@@ -278,7 +284,7 @@ export function NotificationsBell() {
   }
 
   async function openNotification(notification: AppNotification) {
-    if (!userId) return;
+    if (!userId || !supabase) return;
     setOpen(false);
 
     if (!notification.readAt) {

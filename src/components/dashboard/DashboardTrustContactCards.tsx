@@ -2,13 +2,15 @@
 
 import { DashboardContactCard } from "@/components/dashboard/DashboardContactCard";
 import { DashboardTrustCard } from "@/components/dashboard/DashboardTrustCard";
-import type { DashboardSnapshot } from "@/lib/dashboard-data";
 import type { ProfileRow } from "@/lib/profile-utils";
 
 type DashboardTrustContactCardsProps = {
   profile: ProfileRow;
   emailVerified: boolean;
-  snapshot: Pick<DashboardSnapshot, "reviewsCount" | "completedBookingsCount">;
+  snapshot: {
+    reviewsCount: number;
+    completedBookingsCount: number;
+  };
 };
 
 /** @deprecated Prefer `DashboardTrustCard` and `DashboardContactCard` separately. */
