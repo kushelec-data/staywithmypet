@@ -1,11 +1,16 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import type { MembershipRole } from "@/lib/membership";
 import { scrollToMembershipPlans } from "@/lib/membership-plans-scroll";
 import { WELCOME_OFFER_CODE } from "@/lib/new-member-promotion";
-import { Check, Copy } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Clipboard,
+  Sparkles,
+  Tag,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -72,63 +77,73 @@ export function MembershipWelcomeOfferHero({
 
   return (
     <section
-      className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br from-lavender/70 via-[#FAF5FF] to-mint/45 px-5 py-6 shadow-[0_16px_48px_rgba(46,107,63,0.08)] sm:px-8 sm:py-8 ${className}`}
+      className={`rounded-2xl border border-brand-teal/10 bg-gradient-to-br from-mint/15 via-[#FCFCFA] to-lavender/10 px-3.5 py-3 shadow-[0_4px_20px_rgba(15,60,55,0.04)] sm:px-4 sm:py-3.5 ${className}`}
       aria-label={copy.badge}
     >
-      <div
-        className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-brand-pink/15 blur-2xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -bottom-12 -left-8 h-44 w-44 rounded-full bg-brand-teal/10 blur-2xl"
-        aria-hidden
-      />
-
-      <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:gap-8">
-        <div className="min-w-0">
-          <span className="inline-flex items-center rounded-full border border-white/70 bg-white/75 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-brand-teal">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-5">
+        <div className="min-w-0 flex-1">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-teal/15 bg-white/90 px-2.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-brand-teal">
+            <Sparkles className="h-3 w-3" aria-hidden />
             {copy.badge}
           </span>
-          <h2 className="mt-4 font-heading text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
+          <h2 className="mt-2 font-heading text-lg font-semibold leading-snug tracking-tight text-foreground sm:text-xl">
             {copy.headline}
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-            {copy.supporting}
-          </p>
+          <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-muted/80">{copy.supporting}</p>
         </div>
 
-        <div className="rounded-2xl border border-white/80 bg-white/90 p-5 shadow-[0_8px_32px_rgba(15,60,55,0.08)] backdrop-blur-sm">
-          <p className="text-center font-mono text-2xl font-bold tracking-[0.2em] text-foreground">
-            {WELCOME_OFFER_CODE}
-          </p>
-          <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
+        <div className="w-full shrink-0 lg:max-w-[18rem]">
+          <button
+            type="button"
+            onClick={() => void handleCopyCode()}
+            className={`membership-coupon-ticket group w-full rounded-xl border-2 border-dashed border-brand-teal/30 bg-white/90 px-3.5 py-2.5 text-center shadow-[0_2px_12px_rgba(15,60,55,0.06)] transition hover:border-brand-teal/45 hover:bg-white hover:shadow-[0_4px_16px_rgba(15,60,55,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal ${copied ? "membership-coupon-copied" : ""} ${copyBouncing ? "membership-copy-bounce" : ""}`}
+            aria-label={copied ? copy.copied : copy.copyCode}
+          >
+            <span className="mx-auto mb-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-mint/40 text-brand-teal">
+              <Tag className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <p className="font-mono text-sm font-semibold tracking-[0.2em] text-brand-teal sm:text-base">
+              {WELCOME_OFFER_CODE}
+            </p>
+            <p className="mt-1 text-[0.68rem] font-medium text-muted/75 transition group-hover:text-brand-teal/80">
+              {copied ? (
+                <span className="inline-flex items-center justify-center gap-1 text-brand-teal">
+                  <Check className="h-3 w-3" aria-hidden />
+                  {copy.copied}
+                </span>
+              ) : (
+                copy.clickToCopy
+              )}
+            </p>
+          </button>
+
+          <div className="mt-2 flex flex-col gap-1.5">
             <button
               type="button"
               onClick={() => void handleCopyCode()}
-              className={`membership-upgrade-btn-lift inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full border border-[#E5E2D8] bg-[#F8F6F1] px-5 text-sm font-semibold text-foreground transition hover:border-brand-teal/30 hover:bg-mint/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal sm:flex-none ${copyBouncing ? "membership-copy-bounce" : ""}`}
+              className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border border-brand-teal/25 bg-white px-3 text-xs font-medium text-brand-teal transition hover:border-brand-teal/40 hover:bg-mint/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
               aria-label={copied ? copy.copied : copy.copyCode}
             >
               {copied ? (
                 <>
-                  <Check className="h-4 w-4 text-brand-teal" aria-hidden />
+                  <Check className="h-3.5 w-3.5" aria-hidden />
                   {copy.copied}
                 </>
               ) : (
                 <>
-                  <Copy className="h-4 w-4" aria-hidden />
+                  <Clipboard className="h-3.5 w-3.5" aria-hidden />
                   {copy.copy}
                 </>
               )}
             </button>
-            <Button
+            <button
               type="button"
-              variant="primary"
-              size="md"
-              className="membership-upgrade-btn-lift w-full sm:w-auto sm:min-w-[11rem]"
               onClick={handleActivate}
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-teal px-5 text-sm font-semibold text-white shadow-[0_6px_20px_rgba(46,107,63,0.22)] transition hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
             >
               {copy.activate}
-            </Button>
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
           </div>
         </div>
       </div>

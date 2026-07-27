@@ -509,31 +509,19 @@ export function MembershipPageContent({
         onConfirm={confirmCancelMembership}
       />
 
-      <div className="relative mb-8 overflow-hidden rounded-[28px] px-1 py-2 sm:px-2 sm:py-4">
-        <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-mint/35 via-transparent to-lavender/25"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -right-16 top-0 h-48 w-48 rounded-full bg-brand-pink/10 blur-3xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full bg-brand-teal/10 blur-3xl"
-          aria-hidden
-        />
-        <div className="relative">
-          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            {pageTitle}
-          </h1>
-          <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">{pageSubtitle}</p>
-        </div>
-      </div>
-
-      <div className="space-y-6">
+      <div className="space-y-4">
         {welcomeOfferDisplayMode === "confirmed" ? (
           <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} />
         ) : null}
+
+        <div>
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            {pageTitle}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted sm:text-base">
+            {pageSubtitle}
+          </p>
+        </div>
 
         {dualActive ? (
           <p className={`inline-flex items-center gap-2 px-3 py-1 text-xs ${ACCOUNT_STATUS_BADGE_CLASS}`}>

@@ -3,8 +3,10 @@ import { buildMembershipPagePath } from "@/lib/membership-return";
 
 export const MEMBERSHIP_PLANS_SECTION_ID = "membership-plans";
 
-const HIGHLIGHT_CLASS = "membership-plans-highlight";
-const HIGHLIGHT_MS = 1200;
+export const MEMBERSHIP_PLAN_POPULAR_SELECTOR = '[data-membership-plan-popular="true"]';
+
+const POPULAR_HIGHLIGHT_CLASS = "membership-plan-popular-highlight";
+const HIGHLIGHT_MS = 1400;
 const FOCUS_DELAY_MS = 280;
 
 export function membershipActivateFallbackHref(
@@ -37,18 +39,22 @@ export function scrollToMembershipPlans(options: ScrollToMembershipPlansOptions 
   }
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  section.scrollIntoView({
+  const popularPlan = section.querySelector<HTMLElement>(MEMBERSHIP_PLAN_POPULAR_SELECTOR);
+  const scrollTarget = popularPlan ?? section;
+
+  scrollTarget.scrollIntoView({
     behavior: prefersReducedMotion ? "auto" : "smooth",
-    block: "start",
+    block: popularPlan ? "center" : "start",
   });
 
   window.setTimeout(() => {
-    if (!prefersReducedMotion) {
-      section.classList.add(HIGHLIGHT_CLASS);
-      window.setTimeout(() => section.classList.remove(HIGHLIGHT_CLASS), HIGHLIGHT_MS);
+    if (popularPlan && !prefersReducedMotion) {
+      popularPlan.classList.add(POPULAR_HIGHLIGHT_CLASS);
+      window.setTimeout(() => popularPlan.classList.remove(POPULAR_HIGHLIGHT_CLASS), HIGHLIGHT_MS);
     }
 
     const focusTarget =
+      popularPlan?.querySelector<HTMLElement>("[data-membership-plan-focus]:not([disabled])") ??
       section.querySelector<HTMLElement>("[data-membership-plan-focus]:not([disabled])") ??
       section.querySelector<HTMLElement>(
         '[data-membership-plan-card] button[type="button"]:not([disabled])',

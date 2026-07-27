@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
+  MEMBERSHIP_PLAN_POPULAR_SELECTOR,
   MEMBERSHIP_PLANS_SECTION_ID,
   membershipActivateFallbackHref,
   scrollToMembershipPlans,
@@ -26,25 +27,29 @@ describe("membershipActivateFallbackHref", () => {
 });
 
 describe("scrollToMembershipPlans", () => {
-  it("scrolls to plans section and focuses the first purchasable plan button", () => {
+  it("scrolls to the popular plan and highlights only that card", () => {
     const focusMock = vi.fn();
-    const scrollIntoViewMock = vi.fn();
+    const popularScrollMock = vi.fn();
     const focusButton = {
-      setAttribute: vi.fn(),
       focus: focusMock,
     } as unknown as HTMLElement;
 
-    const section = {
-      id: MEMBERSHIP_PLANS_SECTION_ID,
-      scrollIntoView: scrollIntoViewMock,
-      querySelector: vi.fn((selector: string) => {
-        if (selector.includes("data-membership-plan-focus")) return focusButton;
-        return null;
-      }),
+    const popularPlan = {
+      scrollIntoView: popularScrollMock,
+      querySelector: vi.fn(() => focusButton),
       classList: {
         add: vi.fn(),
         remove: vi.fn(),
       },
+    } as unknown as HTMLElement;
+
+    const section = {
+      id: MEMBERSHIP_PLANS_SECTION_ID,
+      scrollIntoView: vi.fn(),
+      querySelector: vi.fn((selector: string) => {
+        if (selector === MEMBERSHIP_PLAN_POPULAR_SELECTOR) return popularPlan;
+        return null;
+      }),
     } as unknown as HTMLElement;
 
     vi.stubGlobal("document", {
@@ -59,7 +64,8 @@ describe("scrollToMembershipPlans", () => {
     });
 
     expect(scrollToMembershipPlans()).toBe(true);
-    expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(popularScrollMock).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
+    expect(popularPlan.classList.add).toHaveBeenCalledWith("membership-plan-popular-highlight");
     expect(focusMock).toHaveBeenCalledWith({ preventScroll: true });
 
     vi.unstubAllGlobals();
@@ -103,11 +109,19 @@ describe("MembershipWelcomeOfferHero activate membership", () => {
     expect(heroSource).toContain('type="button"');
   });
 
+  it("uses lucide icons for badge, coupon, copy, and activate", () => {
+    expect(heroSource).toContain("Sparkles");
+    expect(heroSource).toContain("Tag");
+    expect(heroSource).toContain("Clipboard");
+    expect(heroSource).toContain("ArrowRight");
+  });
+
   it("wires account membership page to hero and plans anchor", () => {
     expect(pageSource).toContain("MembershipWelcomeOfferHero");
     expect(pageSource).toContain("MEMBERSHIP_PLANS_SECTION_ID");
     expect(pageSource).not.toContain('variant="strip"');
     expect(plansSource).toContain('data-membership-plan-focus');
+    expect(plansSource).toContain('data-membership-plan-popular');
     expect(plansSource).toContain("sectionId");
   });
 });

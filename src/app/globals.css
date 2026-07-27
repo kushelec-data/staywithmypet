@@ -676,21 +676,37 @@ select.input-field {
 @media (prefers-reduced-motion: no-preference) {
   .membership-plan-card-hover:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(15, 60, 55, 0.1);
+    box-shadow: 0 12px 32px rgba(15, 60, 55, 0.08);
   }
 
-  .membership-plans-highlight {
-    animation: membership-plans-pulse 1.2s ease-out;
+  .membership-plan-popular-highlight {
+    animation: membership-plan-popular-pulse 1.4s ease-out;
+  }
+
+  .membership-coupon-copied {
+    animation: membership-coupon-success 420ms ease-out;
   }
 }
 
-@keyframes membership-plans-pulse {
+@keyframes membership-plan-popular-pulse {
   0%,
   100% {
-    box-shadow: none;
+    box-shadow: 0 4px 16px rgba(15, 60, 55, 0.06);
   }
-  35% {
-    box-shadow: 0 0 0 4px rgba(46, 107, 63, 0.14);
+  40% {
+    box-shadow:
+      0 0 0 3px rgba(46, 107, 63, 0.16),
+      0 12px 32px rgba(15, 60, 55, 0.12);
+  }
+}
+
+@keyframes membership-coupon-success {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.02);
   }
 }
 

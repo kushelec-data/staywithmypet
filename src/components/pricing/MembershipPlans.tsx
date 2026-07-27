@@ -228,6 +228,7 @@ function PlanCard({
   return (
     <article
       data-membership-plan-card
+      data-membership-plan-popular={plan.popular ? "true" : undefined}
       className={`membership-plan-card-hover relative mx-auto flex h-full w-full max-w-md flex-col sm:max-w-none ${
         isAccount
           ? `${ACCOUNT_CARD_CLASS} p-5 sm:p-6`

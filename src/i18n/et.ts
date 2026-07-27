@@ -594,6 +594,7 @@ export const et = {
         supporting: "Kasuta maksmisel koodi WELCOME90. Piiratud aja avamispakkumine.",
         copy: "Kopeeri kood",
         copyCode: "Kopeeri sooduskood",
+        clickToCopy: "Klõpsa kopeerimiseks",
         copied: "Kopeeritud",
         activate: "Aktiveeri liikmelisus",
       },

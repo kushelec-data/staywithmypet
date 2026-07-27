@@ -588,9 +588,10 @@ export const en = {
       welcomeOffer: {
         badge: "WELCOME OFFER",
         headline: "Get 90% off your first membership",
-        supporting: "Use code WELCOME90 at checkout. Limited-time launch offer.",
+        supporting: "Use code WELCOME90 during checkout. Limited-time launch offer.",
         copy: "Copy code",
         copyCode: "Copy promo code",
+        clickToCopy: "Click to copy",
         copied: "Copied",
         activate: "Activate membership",
       },
