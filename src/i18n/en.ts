@@ -1277,6 +1277,7 @@ export const en = {
     conversations: "Conversations",
     loading: "Loading conversations…",
     loadError: "Could not load messages.",
+    retryThread: "Try again",
     sendError: "Could not send message.",
     emptyTitle: "No conversations yet",
     emptyDescription:

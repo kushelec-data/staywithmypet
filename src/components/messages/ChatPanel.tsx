@@ -117,14 +117,26 @@ export function ChatPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const prefersSmoothScrollRef = useRef(false);
+  const loadGenerationRef = useRef(0);
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;
+  const onConversationReadRef = useRef(onConversationRead);
+  const onInboxRefreshRef = useRef(onInboxRefresh);
+  onConversationReadRef.current = onConversationRead;
+  onInboxRefreshRef.current = onInboxRefresh;
 
-  const persistConversationRead = useCallback(async () => {
-    await markConversationFullyRead(supabase, conversationRef.current, userId);
-    onConversationRead?.();
-    await onInboxRefresh?.();
-  }, [onConversationRead, onInboxRefresh, supabase, userId]);
+  const [reloadNonce, setReloadNonce] = useState(0);
+
+  const scheduleMarkAsRead = useCallback(() => {
+    void markConversationFullyRead(supabase, conversationRef.current, userId)
+      .then(() => {
+        onConversationReadRef.current?.();
+        void onInboxRefreshRef.current?.();
+      })
+      .catch((err) => {
+        console.warn("[messages] mark-as-read failed", err);
+      });
+  }, [supabase, userId]);
 
   const canSend = canSendInConversation(conversation) && !blocked;
   const uploading = uploadProgress !== null;
@@ -196,9 +208,10 @@ export function ChatPanel({
   }, [conversationId]);
 
   useEffect(() => {
+    const generation = ++loadGenerationRef.current;
     let cancelled = false;
 
-    async function load() {
+    async function loadMessages() {
       setLoading(true);
       setError(null);
       setMessages([]);
@@ -213,26 +226,37 @@ export function ChatPanel({
           isUserBlocked(supabase, userId, conversation.otherPartyId),
           fetchBlockedUserIds(supabase, userId),
         ]);
-        if (cancelled) return;
+        if (cancelled || generation !== loadGenerationRef.current) return;
         setMessages(rows);
         setBlocked(isBlockedEitherWay);
         setBlockedByMe(blockedIds.has(conversation.otherPartyId));
-        await persistConversationRead();
       } catch (err) {
-        if (!cancelled) {
-          setMessages([]);
-          setError(formatMessagingError(err));
-        }
+        if (cancelled || generation !== loadGenerationRef.current) return;
+        setMessages([]);
+        setError(formatMessagingError(err));
+        console.error("[messages] load thread failed", err);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (generation === loadGenerationRef.current) {
+          setLoading(false);
+        }
       }
+
+      if (cancelled || generation !== loadGenerationRef.current) return;
+      scheduleMarkAsRead();
     }
 
-    void load();
+    void loadMessages();
     return () => {
       cancelled = true;
     };
-  }, [conversationId, supabase, userId, conversation.otherPartyId, persistConversationRead]);
+  }, [
+    conversationId,
+    supabase,
+    userId,
+    conversation.otherPartyId,
+    reloadNonce,
+    scheduleMarkAsRead,
+  ]);
 
   useEffect(() => {
     const channel = subscribeToConversationMessages(supabase, conversationId, userId, (message) => {
@@ -241,14 +265,14 @@ export function ChatPanel({
         return [...prev, message];
       });
       if (!message.isOwn) {
-        void persistConversationRead();
+        scheduleMarkAsRead();
       }
     });
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [conversationId, supabase, userId, persistConversationRead]);
+  }, [conversationId, supabase, userId, scheduleMarkAsRead]);
 
   useEffect(() => {
     if (loading) return;
@@ -556,12 +580,19 @@ export function ChatPanel({
       </div>
 
       {error ? (
-        <p
+        <div
           className={`mx-3 mb-1 shrink-0 ${STATUS_ALERT_ERROR_COMPACT_CLASS}`}
           role="alert"
         >
-          {error}
-        </p>
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={() => setReloadNonce((n) => n + 1)}
+            className="mt-1 text-xs font-medium text-brand-teal underline hover:no-underline"
+          >
+            {m.retryThread}
+          </button>
+        </div>
       ) : null}
 
       {uploading ? (

@@ -204,6 +204,15 @@ export function MessagesPageContent() {
     );
   }, []);
 
+  const handleConversationRead = useCallback(() => {
+    const conv = conversationsRef.current.find((c) => c.id === selectedIdRef.current);
+    if (conv) clearUnreadForConversation(conv);
+  }, [clearUnreadForConversation]);
+
+  const handleInboxRefresh = useCallback(() => {
+    return refreshConversations(selectedIdRef.current);
+  }, [refreshConversations]);
+
   const selectConversation = useCallback(
     async (id: string) => {
       setSelectedId(id);
@@ -316,8 +325,8 @@ export function MessagesPageContent() {
               supabase={supabase}
               onBack={handleBackToList}
               onMessageSent={handleMessageSent}
-              onConversationRead={() => clearUnreadForConversation(selectedConversation)}
-              onInboxRefresh={() => refreshConversations(selectedConversation.id)}
+              onConversationRead={handleConversationRead}
+              onInboxRefresh={handleInboxRefresh}
             />
           ) : (
             <div className="hidden flex-1 flex-col items-center justify-center px-6 py-8 text-center lg:flex">

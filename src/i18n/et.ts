@@ -1287,6 +1287,7 @@ export const et = {
     conversations: "Vestlused",
     loading: "Laadin vestlusi…",
     loadError: "Sõnumeid ei saanud laadida.",
+    retryThread: "Proovi uuesti",
     sendError: "Sõnumit ei saanud saata.",
     emptyTitle: "Vestlusi pole veel",
     emptyDescription:

@@ -209,9 +209,10 @@ describe("messages page read persistence wiring", () => {
     expect(pageSource).toContain("CONVERSATION_READ_EVENT");
   });
 
-  it("marks read when opening chat and refreshes inbox", () => {
-    expect(chatSource).toContain("persistConversationRead");
+  it("marks read when opening chat without blocking thread load", () => {
+    expect(chatSource).toContain("scheduleMarkAsRead");
     expect(chatSource).toContain("onInboxRefresh");
+    expect(chatSource).not.toContain("persistConversationRead");
   });
 
   it("uses merged-thread overlap when clearing unread badges", () => {
@@ -235,11 +236,11 @@ describe("unread read-state scenarios (documented)", () => {
     )).toContain("subscribeToInboxIncomingMessages");
   });
 
-  it("scenario 3: reopening active thread calls persistConversationRead again", () => {
+  it("scenario 3: reopening active thread schedules mark-as-read after load completes", () => {
     expect(readFileSync(
       join(process.cwd(), "src/components/messages/ChatPanel.tsx"),
       "utf8",
-    )).toContain("await persistConversationRead()");
+    )).toContain("scheduleMarkAsRead()");
   });
 
   it("scenario 4: active-thread realtime inserts mark read instead of incrementing unread", () => {
