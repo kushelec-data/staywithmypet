@@ -557,9 +557,9 @@ export const et = {
       petParentTitle: "Loomaomaniku liikmelisus",
       petFriendTitle: "Loomasõbra liikmelisus",
       petParentSubtitle:
-        "Vali endale sobiv liikmelisus, et saata hoiutaotlusi, leppida kokku hoiuperioode ja suhelda loomasõpradega.",
+        "Vali liikmelisus, mis sobib kõige paremini sinu vajadustega.",
       petFriendSubtitle:
-        "Plaanid loomasõpradele — võta hooldust vastu, koordineeri broneeringuid ja kirjuta sõnumeid, kui oled valmis.",
+        "Vali liikmelisus, mis sobib kõige paremini sinu vajadustega.",
       activeHeadline: "Sinu {role} liikmelisus on aktiivne",
       inactiveHeadline: "Aktiivset {role} liikmelisust pole",
       dualMember: "Mõlemad rollid on aktiivsed",
@@ -1386,7 +1386,7 @@ export const et = {
   pricing: {
     title: "Liikmelisus ja hinnad",
     subtitle:
-      "Loo konto, sirvi lemmikloomi ja sõpru ning lisa kuulutusi tasuta. Uuenda ainult siis, kui oled valmis sõnumeid saatma või broneerima.",
+      "Konto loomine, profiilide sirvimine ja oma kuulutuste lisamine on tasuta. Liikmelisuse saad aktiveerida siis, kui soovid hakata sõnumeid saatma või hoiukokkuleppeid tegema.",
     getStarted: "Alusta",
     choosePlan: "Vali pakett",
     activePlan: "Aktiivne plaan",

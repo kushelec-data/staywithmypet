@@ -555,9 +555,9 @@ export const en = {
       petParentTitle: "Pet Parent membership",
       petFriendTitle: "Pet Friend membership",
       petParentSubtitle:
-        "Plans for Pet Parents — send requests, book care, and message when you are ready.",
+        "Choose the membership that best fits your needs.",
       petFriendSubtitle:
-        "Plans for Pet Friends — accept care, coordinate bookings, and message when you are ready.",
+        "Choose the membership that best fits your needs.",
       activeHeadline: "Your {role} membership is active",
       inactiveHeadline: "No active {role} membership",
       dualMember: "Dual member — both roles active",
@@ -1375,7 +1375,7 @@ export const en = {
   pricing: {
     title: "Membership & Pricing",
     subtitle:
-      "Create an account, browse pets and pet friends, and create listings for free. Upgrade only when you're ready to message or make bookings.",
+      "Create an account, browse pets and pet friends, and create listings for free. Upgrade only when you're ready to message or make care arrangements.",
     getStarted: "Get started",
     choosePlan: "Choose plan",
     activePlan: "Active plan",
