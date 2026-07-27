@@ -16,7 +16,7 @@ type NewMemberPromotionBannerProps = {
   loggedIn: boolean;
   returnTo?: string | null;
   /** Compact single-line style for dashboard. */
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "strip";
   className?: string;
 };
 
@@ -41,6 +41,28 @@ export function NewMemberPromotionBanner({
       <div className={`${DASHBOARD_CALLOUT_CLASS} p-4 sm:p-5 ${className}`}>
         <p className="text-sm text-foreground">{promo.dashboardBannerBody}</p>
         <Button href={href} size="sm" className="mt-3">
+          {promo.activateMembershipCta}
+        </Button>
+      </div>
+    );
+  }
+
+  if (variant === "strip") {
+    return (
+      <div
+        className={`flex flex-col gap-3 rounded-2xl border border-lavender/80 bg-lavender/45 px-4 py-3 shadow-[0_4px_16px_rgba(46,107,63,0.08)] sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${className}`}
+        role="region"
+        aria-label={promo.bannerAriaLabel}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-white/70 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider text-brand-teal">
+            {promo.planBadge}
+          </span>
+          <p className="text-sm font-semibold leading-snug text-foreground">
+            {promo.stripOfferLine}
+          </p>
+        </div>
+        <Button href={href} size="sm" className="w-full shrink-0 sm:w-auto">
           {promo.activateMembershipCta}
         </Button>
       </div>

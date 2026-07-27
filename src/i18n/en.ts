@@ -1561,10 +1561,10 @@ export const en = {
   },
   testAccess: {
     invitedSection: {
-      title: "Invited test user?",
+      title: "Have an access code?",
       description:
-        "If you received an invitation from StayWithMyPet, activate your 3-month membership free using a platform access code.",
-      activateButton: "Activate with access code",
+        "Redeem your code to unlock exclusive offers, discounts or membership access.",
+      activateButton: "Redeem code",
     },
     alreadyHaveAccessCode: "Already have an access code?",
     accessCodePanelTitle: "Platform access code",
@@ -1572,7 +1572,7 @@ export const en = {
       "Enter your platform access code to activate {role} membership for {plan}. This is separate from Stripe payment.",
     closeAccessCode: "Close",
     membershipBanner:
-      "Invited users can activate membership with a platform access code — no card required.",
+      "You can activate membership with an access code — no card required.",
     membershipIntro:
       "Choose a {role} plan below. You will enter your platform access code on the next step — no payment required.",
     pageTitle: "Enter platform access code",
@@ -1610,6 +1610,7 @@ export const en = {
   newMemberPromotion: {
     bannerAriaLabel: "Welcome offer",
     offerSupportingCopy: "Get 90% off your first membership for a limited time.",
+    stripOfferLine: "90% OFF your first membership for a limited time.",
     checkoutNote: "Final discounted price is shown securely at checkout.",
     dashboardBannerBody:
       "Your welcome offer is waiting. Activate your first membership and save 90%.",

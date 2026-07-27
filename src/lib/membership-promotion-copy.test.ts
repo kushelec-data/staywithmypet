@@ -15,6 +15,7 @@ describe("membership promotion copy", () => {
   it("defines concise welcome-offer strings in English and Estonian", () => {
     expect(en.newMemberPromotion.planBadge).toBe("WELCOME OFFER");
     expect(en.newMemberPromotion.discountHeadline).toBe("90% OFF");
+    expect(en.newMemberPromotion.stripOfferLine).toContain("90%");
     expect(en.newMemberPromotion.offerSupportingCopy).toContain("90%");
     expect(en.newMemberPromotion.checkoutNote).toContain("checkout");
     expect(en.newMemberPromotion.activateMembershipCta).toBe("Activate membership");
@@ -25,6 +26,7 @@ describe("membership promotion copy", () => {
 
     expect(et.newMemberPromotion.planBadge).toBe("TERVITUSPAKKUMINE");
     expect(et.newMemberPromotion.discountHeadline).toContain("90%");
+    expect(et.newMemberPromotion.stripOfferLine).toContain("90%");
     expect(et.newMemberPromotion.offerSupportingCopy).toContain("90%");
     expect(et.newMemberPromotion.checkoutNote).toContain("kassas");
     expect(et.newMemberPromotion.activateMembershipCta).toBe("Aktiveeri liikmelisus");
@@ -32,6 +34,17 @@ describe("membership promotion copy", () => {
     expect(et.membershipUpsell.promotionBody).toContain("90%");
     expect(et.membershipUpsell.promotionCta).toBe("Aktiveeri liikmelisus");
     expect(et.membershipUpsell.notNow).toBe("Mitte praegu");
+  });
+
+  it("uses general access-code wording instead of invited test-user labels", () => {
+    expect(en.testAccess.invitedSection.title).toBe("Have an access code?");
+    expect(en.testAccess.invitedSection.activateButton).toBe("Redeem code");
+    expect(en.testAccess.invitedSection.title).not.toMatch(/test user/i);
+    expect(en.testAccess.invitedSection.activateButton).not.toMatch(/Invited/i);
+
+    expect(et.testAccess.invitedSection.title).toBe("Kas sul on sooduskood?");
+    expect(et.testAccess.invitedSection.activateButton).toBe("Kasuta koodi");
+    expect(et.testAccess.invitedSection.title).not.toMatch(/testkasutaja/i);
   });
 
   it("does not expose removed frontend price-calculation copy keys", () => {
@@ -46,11 +59,28 @@ describe("membership promotion copy", () => {
       "src/components/pricing/MembershipPlans.tsx",
       "src/components/membership/NewMemberPromotionBanner.tsx",
       "src/lib/new-member-promotion.ts",
+      "src/components/membership/MembershipPageContent.tsx",
     ]) {
       const source = readFileSync(join(process.cwd(), relativePath), "utf8");
       expect(source).not.toMatch(/newMemberPromotionalPricing/);
       expect(source).not.toMatch(/discountedPrice/);
       expect(source).not.toMatch(/line-through/);
     }
+  });
+
+  it("places welcome banner and access-code section above membership plans on the account page", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/membership/MembershipPageContent.tsx"),
+      "utf8",
+    );
+    const bannerIndex = source.indexOf("<NewMemberPromotionBanner");
+    const accessCodeIndex = source.indexOf("<InvitedTestUserSection");
+    const plansIndex = source.indexOf("<MembershipPlans");
+    expect(bannerIndex).toBeGreaterThan(-1);
+    expect(accessCodeIndex).toBeGreaterThan(-1);
+    expect(plansIndex).toBeGreaterThan(-1);
+    expect(bannerIndex).toBeLessThan(plansIndex);
+    expect(accessCodeIndex).toBeLessThan(plansIndex);
+    expect(source).toMatch(/variant="strip"/);
   });
 });

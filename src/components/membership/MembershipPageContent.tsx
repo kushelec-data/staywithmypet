@@ -480,6 +480,19 @@ export function MembershipPageContent({
         onConfirm={confirmCancelMembership}
       />
 
+      <NewMemberPromotionBanner
+        role={modeRole}
+        displayMode={welcomeOfferDisplayMode}
+        loggedIn
+        returnTo={returnTo}
+        variant="strip"
+        className="mb-4"
+      />
+
+      {planCheckout.showInvitedAccessSection ? (
+        <InvitedTestUserSection role={modeRole} className="mb-4" />
+      ) : null}
+
       {deployDiagnostics?.showBanner ? (
         <div
           className="mb-4 rounded-2xl border border-dashed border-amber-500/60 bg-amber-50 px-4 py-3 text-xs text-amber-950"
@@ -573,9 +586,9 @@ export function MembershipPageContent({
           role="alert"
         >
           {deployDiagnostics?.showBanner
-            ? `Stripe checkout is blocked for ${membershipRoleTitle(modeRole)}: ${stripeConfigMessage ?? "configuration incomplete"}. Platform access codes remain available below.`
+            ? `Stripe checkout is blocked for ${membershipRoleTitle(modeRole)}: ${stripeConfigMessage ?? "configuration incomplete"}. Use an access code if you have one.`
             : (stripeConfigMessage ??
-              "Stripe checkout is not configured yet. Use a platform access code if you have one.")}
+              "Stripe checkout is not configured yet. Use an access code if you have one.")}
         </p>
       ) : null}
 
@@ -587,14 +600,6 @@ export function MembershipPageContent({
           {stripeConfigMessage}
         </p>
       ) : null}
-
-      <NewMemberPromotionBanner
-        role={modeRole}
-        displayMode={welcomeOfferDisplayMode}
-        loggedIn
-        returnTo={returnTo}
-        className="mb-4"
-      />
 
       <MembershipPlans
         variant="account"
@@ -622,10 +627,6 @@ export function MembershipPageContent({
           isActive ? () => requestCancelMembership(modeRole) : undefined
         }
       />
-
-      {planCheckout.showInvitedAccessSection ? (
-        <InvitedTestUserSection role={modeRole} />
-      ) : null}
     </AccountLayout>
   );
 }

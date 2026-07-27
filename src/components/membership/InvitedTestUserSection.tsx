@@ -2,37 +2,40 @@
 
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
-import { ACCOUNT_BODY_TEXT, ACCOUNT_CARD_CLASS, ACCOUNT_CARD_PADDING_COMPACT } from "@/lib/account-ui";
 import { invitedTestAccessCodeHref } from "@/lib/membership-invited-access";
 import type { MembershipRole } from "@/lib/membership";
 
 type InvitedTestUserSectionProps = {
   role: MembershipRole;
+  className?: string;
 };
 
-export function InvitedTestUserSection({ role }: InvitedTestUserSectionProps) {
+export function InvitedTestUserSection({ role, className = "" }: InvitedTestUserSectionProps) {
   const { t } = useLanguage();
   const copy = t.testAccess.invitedSection;
 
   return (
     <section
-      className={`mt-8 ${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}
-      aria-labelledby="invited-test-user-heading"
-      data-testid="invited-test-user-section"
+      className={`rounded-2xl border border-lavender/80 bg-lavender/35 px-4 py-3 shadow-[0_2px_12px_rgba(46,107,63,0.06)] ${className}`}
+      aria-labelledby="membership-access-code-heading"
+      data-testid="membership-access-code-section"
     >
-      <h2
-        id="invited-test-user-heading"
-        className="font-heading text-base font-semibold text-foreground"
-      >
-        {copy.title}
-      </h2>
-      <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{copy.description}</p>
-      <div className="mt-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h2
+            id="membership-access-code-heading"
+            className="font-heading text-sm font-semibold text-foreground"
+          >
+            {copy.title}
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted sm:text-sm">{copy.description}</p>
+        </div>
         <Button
           href={invitedTestAccessCodeHref(role)}
           variant="secondary"
-          size="md"
-          data-testid="activate-with-access-code"
+          size="sm"
+          className="w-full shrink-0 sm:w-auto"
+          data-testid="redeem-access-code"
         >
           {copy.activateButton}
         </Button>

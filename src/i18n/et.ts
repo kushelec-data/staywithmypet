@@ -1571,10 +1571,10 @@ export const et = {
   },
   testAccess: {
     invitedSection: {
-      title: "Kutsutud testkasutaja?",
+      title: "Kas sul on sooduskood?",
       description:
-        "Kui said StayWithMyPet kutse, aktiveeri oma 3-kuune liikmelisus tasuta platvormi ligipääsukoodiga.",
-      activateButton: "Aktiveeri ligipääsukoodiga",
+        "Sisesta oma sooduskood, et kasutada kampaaniapakkumist või aktiveerida liikmelisus.",
+      activateButton: "Kasuta koodi",
     },
     alreadyHaveAccessCode: "Kas sul on juba ligipääsukood?",
     accessCodePanelTitle: "Platvormi ligipääsukood",
@@ -1582,7 +1582,7 @@ export const et = {
       "Sisesta platvormi ligipääsukood, et aktiveerida {role} liikmelisus paketile {plan}. See on Stripe maksest eraldi.",
     closeAccessCode: "Sulge",
     membershipBanner:
-      "Kutsutud kasutajad saavad liikmelisuse aktiveerida platvormi ligipääsukoodiga — kaarti pole vaja.",
+      "Liikmelisuse saad aktiveerida sooduskoodiga — kaarti pole vaja.",
     membershipIntro:
       "Vali allpool {role} pakett. Järgmisel sammul sisestad platvormi ligipääsukoodi — makset pole vaja.",
     pageTitle: "Sisesta platvormi ligipääsukood",
@@ -1621,6 +1621,7 @@ export const et = {
     bannerAriaLabel: "Tervituspakkumine",
     offerSupportingCopy:
       "Saa piiratud aja jooksul oma esimeselt liikmelisuselt 90% soodustust.",
+    stripOfferLine: "90% soodustust esimeselt liikmelisuselt piiratud aja jooksul.",
     checkoutNote: "Lõplik soodushind kuvatakse turvaliselt kassas.",
     dashboardBannerBody:
       "Sinu tervituspakkumine ootab. Aktiveeri esimene liikmelisus ja säästa 90%.",
