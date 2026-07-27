@@ -25,6 +25,10 @@ import Link from "next/link";
 import type { CareRequestActionErrorCode } from "@/app/actions/care-requests";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { membershipUpsellVariantForRequest } from "@/lib/membership-upsell";
+import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
+import {
+  isMembershipUpsellDismissedForSession,
+} from "@/lib/new-member-promotion";
 import { useProfile } from "@/context/ProfileContext";
 import {
   emptyMembershipsByRole,
@@ -140,6 +144,7 @@ export function SendRequestButton({
 
   const openUpgradeToast = useCallback(() => {
     if (upgradeToastOpenRef.current) return;
+    if (isMembershipUpsellDismissedForSession()) return;
     upgradeToastOpenRef.current = true;
     setUpgradeOpen(true);
   }, []);
@@ -457,9 +462,10 @@ export function SendRequestButton({
         open={upgradeOpen}
         variant={membershipUpsellVariantForRequest(target)}
         name={target.label}
-        role={senderMode === "pet_friend" ? "pet_friend" : "pet_parent"}
+        role={senderRole}
         returnTo={returnUrl}
         onClose={closeUpgradeToast}
+        promotionEligible={isWelcomeOfferEligibleForRole(profile, senderRole)}
       />
     </>
   );

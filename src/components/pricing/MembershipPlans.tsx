@@ -17,6 +17,7 @@ import {
   type PlanCheckoutErrors,
 } from "@/lib/membership-plan-checkout-state";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
+import type { WelcomeOfferDisplayMode } from "@/lib/new-member-promotion";
 
 export type PricingPlan = {
   id: string;
@@ -52,6 +53,13 @@ type MembershipPlansProps = {
   useTestAccessFlow?: boolean;
   /** Label for Stripe checkout CTA (account page). */
   payWithStripeLabel?: string;
+  /** Preferred checkout CTA label (e.g. Activate membership). */
+  activateMembershipLabel?: string;
+  /** Welcome-offer messaging on plan cards (no calculated prices). */
+  promotionDisplayMode?: WelcomeOfferDisplayMode;
+  promotionBadgeLabel?: string;
+  promotionDiscountHeadline?: string;
+  promotionCheckoutNote?: string;
   /** Secondary link to open platform access code form. */
   onOpenAccessCode?: (plan: PricingPlan) => void;
   accessCodeLinkLabel?: string;
@@ -116,6 +124,11 @@ function PlanCard({
   planConfigError,
   onChoosePlan,
   payWithStripeLabel,
+  activateMembershipLabel,
+  promotionDisplayMode = "none",
+  promotionBadgeLabel,
+  promotionDiscountHeadline,
+  promotionCheckoutNote,
   onOpenAccessCode,
   accessCodeLinkLabel,
   activePlanEndDate,
@@ -148,6 +161,11 @@ function PlanCard({
   planConfigError?: string | null;
   onChoosePlan?: (plan: PricingPlan) => void;
   payWithStripeLabel?: string;
+  activateMembershipLabel?: string;
+  promotionDisplayMode?: WelcomeOfferDisplayMode;
+  promotionBadgeLabel?: string;
+  promotionDiscountHeadline?: string;
+  promotionCheckoutNote?: string;
   onOpenAccessCode?: (plan: PricingPlan) => void;
   accessCodeLinkLabel?: string;
   activePlanEndDate?: string | null;
@@ -197,6 +215,13 @@ function PlanCard({
     !useTestAccessFlow;
 
   const isAccount = variant === "account";
+  const checkoutCtaLabel =
+    activateMembershipLabel ?? payWithStripeLabel ?? choosePlanLabel;
+  const showPromotionOffer =
+    promotionDisplayMode !== "none" &&
+    !isCurrent &&
+    !blockedByActiveMembership &&
+    !showComingSoon;
 
   return (
     <article
@@ -208,7 +233,7 @@ function PlanCard({
             }`
       } ${isAccount && (plan.popular || isCurrent) ? "ring-2 ring-[#2E6B3F]/25" : ""}`}
     >
-      {plan.popular && !isCurrent ? (
+      {plan.popular && !isCurrent && !showPromotionOffer ? (
         <span className="absolute -top-3 left-1/2 z-10 w-[calc(100%-1.5rem)] max-w-[18rem] -translate-x-1/2 rounded-full bg-brand-teal px-3 py-1.5 text-center text-[0.65rem] font-semibold leading-tight tracking-normal text-white shadow-sm sm:w-auto sm:max-w-none sm:whitespace-nowrap sm:px-5 sm:text-xs">
           {popularBadge}
         </span>
@@ -217,11 +242,15 @@ function PlanCard({
         <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-brand-pink px-4 py-1 text-xs font-semibold text-white shadow-sm">
           {activePlanLabel}
         </span>
+      ) : showPromotionOffer && promotionBadgeLabel ? (
+        <span className="absolute -top-3 left-1/2 z-10 w-[calc(100%-1.5rem)] max-w-[18rem] -translate-x-1/2 rounded-full bg-brand-teal px-3 py-1.5 text-center text-[0.65rem] font-semibold leading-tight tracking-normal text-white shadow-sm sm:w-auto sm:max-w-none sm:whitespace-nowrap sm:px-4 sm:text-[0.7rem]">
+          {promotionBadgeLabel}
+        </span>
       ) : null}
       <h3
         className={`font-heading font-semibold capitalize text-foreground ${
           isAccount ? "text-base" : "text-lg sm:text-xl"
-        } ${plan.popular || isCurrent ? "pt-1 sm:pt-2" : ""}`}
+        } ${plan.popular || isCurrent || showPromotionOffer ? "pt-1 sm:pt-2" : ""}`}
       >
         {plan.name}
       </h3>
@@ -234,6 +263,14 @@ function PlanCard({
       >
         {plan.price}
       </p>
+      {showPromotionOffer && promotionDiscountHeadline ? (
+        <p className="mt-1 text-sm font-bold uppercase tracking-wide text-brand-teal">
+          {promotionDiscountHeadline}
+        </p>
+      ) : null}
+      {showPromotionOffer && promotionCheckoutNote ? (
+        <p className="mt-1 text-xs text-muted">{promotionCheckoutNote}</p>
+      ) : null}
       {plan.dailyValue ? (
         <p
           className={`mt-1 text-sm font-semibold text-[#2E6B3F] ${
@@ -281,7 +318,9 @@ function PlanCard({
             className="mt-6 w-full sm:mt-8"
             size="lg"
           >
-            {choosePlanLabel}
+            {promotionDisplayMode !== "none" && activateMembershipLabel
+              ? activateMembershipLabel
+              : choosePlanLabel}
           </Button>
         )
       ) : (
@@ -344,11 +383,7 @@ function PlanCard({
                     : isCurrent
                       ? currentPlanButtonLabel
                       : canCheckout
-                        ? payWithStripeLabel && enableCheckout && !useTestAccessFlow
-                          ? payWithStripeLabel
-                          : useTestAccessFlow
-                            ? choosePlanLabel
-                            : choosePlanLabel
+                        ? checkoutCtaLabel
                         : planConfigError ?? checkoutUnavailableLabel}
           </Button>
           {canOpenAccessCode ? (
@@ -399,6 +434,11 @@ export function MembershipPlans({
   checkoutReturnTo,
   useTestAccessFlow = false,
   payWithStripeLabel,
+  activateMembershipLabel,
+  promotionDisplayMode = "none",
+  promotionBadgeLabel,
+  promotionDiscountHeadline,
+  promotionCheckoutNote,
   onOpenAccessCode,
   accessCodeLinkLabel,
   activePlanEndDate,
@@ -576,6 +616,11 @@ export function MembershipPlans({
             planConfigError={planConfigErrorForPlan(planCheckoutErrors, plan.id)}
             onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
             payWithStripeLabel={payWithStripeLabel}
+            activateMembershipLabel={activateMembershipLabel}
+            promotionDisplayMode={promotionDisplayMode}
+            promotionBadgeLabel={promotionBadgeLabel}
+            promotionDiscountHeadline={promotionDiscountHeadline}
+            promotionCheckoutNote={promotionCheckoutNote}
             onOpenAccessCode={onOpenAccessCode}
             accessCodeLinkLabel={accessCodeLinkLabel}
             activePlanEndDate={activePlanEndDate}

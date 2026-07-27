@@ -80,3 +80,26 @@ export function membershipUpsellCopy(
   }
   return { title: t.fallbackTitle, body: t.fallbackBody };
 }
+
+export function membershipUpsellDisplayCopy(
+  variant: MembershipUpsellVariant,
+  name: string | undefined,
+  t: Dictionary["membershipUpsell"],
+  options?: { promotionEligible?: boolean },
+): { title: string; body: string; cta: string; dismissLabel: string } {
+  if (options?.promotionEligible) {
+    return {
+      title: t.promotionTitle,
+      body: t.promotionBody,
+      cta: t.promotionCta,
+      dismissLabel: t.notNow,
+    };
+  }
+  const base = membershipUpsellCopy(variant, name, t);
+  return {
+    title: base.title,
+    body: base.body,
+    cta: t.unlockCta,
+    dismissLabel: t.maybeLater,
+  };
+}

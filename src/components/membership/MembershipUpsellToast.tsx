@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import type { MembershipRole } from "@/lib/membership";
 import {
-  membershipUpsellCopy,
+  membershipUpsellDisplayCopy,
   membershipUpsellHref,
   type MembershipUpsellVariant,
 } from "@/lib/membership-upsell";
+import { dismissMembershipUpsellForSession } from "@/lib/new-member-promotion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -25,6 +26,8 @@ type MembershipUpsellToastProps = {
   returnTo?: string | null;
   /** Close an overlay modal (e.g. availability calendar) before navigating. */
   onDismissModal?: () => void;
+  /** Show limited-time new-member promotion copy when eligible. */
+  promotionEligible?: boolean;
 };
 
 export function MembershipUpsellToast({
@@ -35,6 +38,7 @@ export function MembershipUpsellToast({
   role,
   returnTo,
   onDismissModal,
+  promotionEligible = false,
 }: MembershipUpsellToastProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -52,49 +56,53 @@ export function MembershipUpsellToast({
     return () => window.clearTimeout(timer);
   }, [open]);
 
-  const { title, body } = membershipUpsellCopy(variant, name, t.membershipUpsell);
+  const copy = membershipUpsellDisplayCopy(variant, name, t.membershipUpsell, {
+    promotionEligible,
+  });
   const upgradeHref = membershipUpsellHref(role, returnTo);
+
+  const handleDismiss = useCallback(() => {
+    dismissMembershipUpsellForSession();
+    onCloseRef.current();
+  }, []);
 
   const handleUnlock = useCallback(() => {
     onDismissModal?.();
-    onCloseRef.current();
+    handleDismiss();
     router.push(upgradeHref);
-  }, [onDismissModal, router, upgradeHref]);
-
-  const handleMaybeLater = useCallback(() => {
-    onCloseRef.current();
-  }, []);
+  }, [handleDismiss, onDismissModal, router, upgradeHref]);
 
   if (!mounted || !open) return null;
 
   return createPortal(
     <div
       className="pointer-events-auto fixed inset-x-0 bottom-6 z-[99999] flex justify-center px-3 sm:inset-x-auto sm:right-6 sm:left-auto sm:justify-end sm:px-0"
-      role="region"
+      role="dialog"
+      aria-modal="true"
       aria-live="polite"
-      aria-label={title}
+      aria-label={copy.title}
     >
       <div className="membership-upsell-toast w-full max-w-sm rounded-2xl border border-brand-teal/30 bg-[#fffaf2]/95 p-4 shadow-[0_14px_44px_rgba(15,60,55,0.14)] backdrop-blur-md dark:border-brand-teal/25 dark:bg-surface/95">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <p className="font-heading text-sm font-bold leading-snug text-foreground">{title}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted">{body}</p>
+            <p className="font-heading text-sm font-bold leading-snug text-foreground">{copy.title}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">{copy.body}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button type="button" variant="primary" size="sm" onClick={handleUnlock}>
-                {t.membershipUpsell.unlockCta}
+                {copy.cta}
               </Button>
               <button
                 type="button"
-                onClick={handleMaybeLater}
+                onClick={handleDismiss}
                 className="rounded-full px-2 py-1 text-xs font-medium text-muted transition hover:bg-mint/50 hover:text-foreground"
               >
-                {t.membershipUpsell.maybeLater}
+                {copy.dismissLabel}
               </button>
             </div>
           </div>
           <button
             type="button"
-            onClick={handleMaybeLater}
+            onClick={handleDismiss}
             className="-mr-1 -mt-1 shrink-0 rounded-full p-1.5 text-muted transition hover:bg-mint/50 hover:text-foreground"
             aria-label={t.membershipUpsell.close}
           >

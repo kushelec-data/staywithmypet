@@ -12,6 +12,7 @@ import {
 import { DashboardProfileHero } from "@/components/dashboard/DashboardProfileHero";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { DashboardReviewPromptBanner } from "@/components/dashboard/DashboardReviewPromptBanner";
+import { NewMemberPromotionBanner } from "@/components/membership/NewMemberPromotionBanner";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -34,6 +35,9 @@ import {
 } from "@/lib/profile-summaries";
 import { ProfileSummaryCard } from "@/components/profile/summary/ProfileSummaryCard";
 import { resolveActiveMode } from "@/lib/profile-mode";
+import { activeModeToMembershipRole } from "@/lib/membership";
+import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
+import { welcomeOfferDisplayModeForUser } from "@/lib/new-member-promotion";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -165,6 +169,13 @@ export function DashboardPageContent() {
   const emailVerified = Boolean(user.email_confirmed_at);
   const publicHref = publicProfileHref(profile.id);
 
+  const membershipRole = activeModeToMembershipRole(activeMode);
+  const welcomeOfferEligible = isWelcomeOfferEligibleForRole(profile, membershipRole);
+  const welcomeOfferDisplayMode = welcomeOfferDisplayModeForUser({
+    loggedIn: true,
+    confirmedEligible: welcomeOfferEligible,
+  });
+
   const needsMyAvailability =
     availabilityUx.showMyAvailability && profileCalDates.length === 0;
 
@@ -283,6 +294,17 @@ export function DashboardPageContent() {
             <DashboardReviewPromptBanner
               booking={snapshot.pendingReviewBooking}
               onReviewDone={() => void loadSnapshot()}
+            />
+          </section>
+        ) : null}
+
+        {welcomeOfferDisplayMode === "confirmed" ? (
+          <section aria-label="Membership offer">
+            <NewMemberPromotionBanner
+              role={membershipRole}
+              displayMode="confirmed"
+              loggedIn
+              variant="compact"
             />
           </section>
         ) : null}

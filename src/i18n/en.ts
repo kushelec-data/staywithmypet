@@ -1542,7 +1542,8 @@ export const en = {
     loadingReviews: "Loading reviews…",
   },
   membershipCheckout: {
-    payWithStripe: "Pay with Stripe",
+    payWithStripe: "Activate membership",
+    activateMembership: "Activate membership",
     paymentSuccess: "Your membership is active. You can use paid features in this mode.",
     paymentPending:
       "Payment received — your membership will activate shortly. Refresh this page if it does not update.",
@@ -1598,8 +1599,23 @@ export const en = {
     fallbackTitle: "🐾 You're one step away!",
     fallbackBody: "Unlock membership to message, request care, and make bookings.",
     unlockCta: "Unlock membership",
+    promotionTitle: "Ready to connect?",
+    promotionBody:
+      "Activate your first membership and get 90% off for a limited time.",
+    promotionCta: "Activate membership",
+    notNow: "Not now",
     maybeLater: "Maybe later",
     close: "Dismiss",
+  },
+  newMemberPromotion: {
+    bannerAriaLabel: "Welcome offer",
+    offerSupportingCopy: "Get 90% off your first membership for a limited time.",
+    checkoutNote: "Final discounted price is shown securely at checkout.",
+    dashboardBannerBody:
+      "Your welcome offer is waiting. Activate your first membership and save 90%.",
+    activateMembershipCta: "Activate membership",
+    planBadge: "WELCOME OFFER",
+    discountHeadline: "90% OFF",
   },
   faq: {
     badge: "FAQ",

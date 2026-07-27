@@ -3,7 +3,7 @@ import {
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
 } from "@/lib/membership";
-import { resolveUserMemberships } from "@/lib/membership-load";
+import { NO_WELCOME_OFFER_ELIGIBLE, resolveMembershipSnapshot } from "@/lib/membership-load";
 import { isAvatarUrlOwnedByUser } from "@/lib/profile-avatar-display";
 import { parseProfileDetails } from "@/lib/profile-details";
 import { resolveActiveMode } from "@/lib/profile-mode";
@@ -201,6 +201,7 @@ export function mapProfileRow(data: ProfileDbRow): ProfileRow {
     rating_count: data.rating_count ?? 0,
     membership_status: DEMO_MEMBERSHIP_LABEL,
     memberships: emptyMembershipsByRole(),
+    welcome_offer_eligible_by_role: NO_WELCOME_OFFER_ELIGIBLE,
     details: parseProfileDetails(data.details),
   };
 }
@@ -209,8 +210,12 @@ export async function attachMemberships(
   supabase: SupabaseClient,
   profile: ProfileRow,
 ): Promise<ProfileRow> {
-  const memberships = await resolveUserMemberships(supabase, profile.id);
-  return applyMembershipsToProfile(profile, memberships);
+  const snapshot = await resolveMembershipSnapshot(supabase, profile.id);
+  return applyMembershipsToProfile(
+    profile,
+    snapshot.memberships,
+    snapshot.welcomeOfferEligibleByRole,
+  );
 }
 
 function stripProfileWriteColumns(row: Record<string, unknown>): Record<string, unknown> {
@@ -302,12 +307,16 @@ export async function fetchUserProfile(
         "profile-load.enrichment+memberships",
         2,
         async () => {
-          const [enrichedRow, memberships] = await Promise.all([
+          const [enrichedRow, membershipSnapshot] = await Promise.all([
             enrichProfileDbRowWithTrustColumns(supabase, userId, row),
-            resolveUserMemberships(supabase, userId),
+            resolveMembershipSnapshot(supabase, userId),
           ]);
           const mapped = mapProfileRow(enrichedRow);
-          return applyMembershipsToProfile(mapped, memberships);
+          return applyMembershipsToProfile(
+            mapped,
+            membershipSnapshot.memberships,
+            membershipSnapshot.welcomeOfferEligibleByRole,
+          );
         },
         { parallel: true },
       );

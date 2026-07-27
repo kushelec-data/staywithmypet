@@ -53,11 +53,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { useProfile } from "@/context/ProfileContext";
-import { activeModeToMembershipRole } from "@/lib/membership";
+import { activeModeToMembershipRole, emptyMembershipsByRole } from "@/lib/membership";
 import {
   conversationExemptFromMembershipUpsell,
   shouldShowMembershipUpsellAfterMessageSend,
 } from "@/lib/membership-upsell";
+import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
+import {
+  isMembershipUpsellDismissedForSession,
+} from "@/lib/new-member-promotion";
 import { resolveActiveMode } from "@/lib/profile-mode";
 
 type ChatPanelProps = {
@@ -117,6 +121,15 @@ export function ChatPanel({
   const canSend = canSendInConversation(conversation) && !blocked;
   const uploading = uploadProgress !== null;
   const cancelledBookingGraceActive = isCancelledBookingChatGraceActive(conversation);
+  const membershipRole = profile
+    ? activeModeToMembershipRole(resolveActiveMode(profile.role, profile.active_mode))
+    : "pet_parent";
+  const promotionEligible = isWelcomeOfferEligibleForRole(profile, membershipRole);
+
+  const openMembershipUpsellIfAllowed = useCallback(() => {
+    if (isMembershipUpsellDismissedForSession()) return;
+    setUpgradeOpen(true);
+  }, []);
   const cancelledBookingGraceExpired = isCancelledBookingChatGraceExpired(conversation);
   const cancelledGraceEndLabel = formatCancelledBookingChatGraceEnd(
     conversation.bookingCancelledAt,
@@ -321,7 +334,7 @@ export function ChatPanel({
       sent = true;
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
-        setUpgradeOpen(true);
+        openMembershipUpsellIfAllowed();
         setError(null);
       } else {
         setError(formatMessagingError(err));
@@ -365,7 +378,7 @@ export function ChatPanel({
       focusMessageInput();
     } catch (err) {
       if (shouldShowMembershipUpsellAfterMessageSend(conversation, err)) {
-        setUpgradeOpen(true);
+        openMembershipUpsellIfAllowed();
         setError(null);
       } else if (err instanceof ChatMediaValidationError) {
         setError(
@@ -632,15 +645,10 @@ export function ChatPanel({
       <MembershipUpsellToast
         open={upgradeOpen && !conversationExemptFromMembershipUpsell(conversation)}
         variant="fallback"
-        role={
-          profile
-            ? activeModeToMembershipRole(
-                resolveActiveMode(profile.role, profile.active_mode),
-              )
-            : "pet_parent"
-        }
+        role={membershipRole}
         returnTo={membershipReturnTo}
         onClose={() => setUpgradeOpen(false)}
+        promotionEligible={promotionEligible}
       />
 
       {toastMounted && successToast

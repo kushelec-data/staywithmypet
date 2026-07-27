@@ -40,10 +40,15 @@ import {
 import { cancelMembershipAction } from "@/app/actions/membership";
 import { CancelMembershipConfirmModal } from "@/components/membership/CancelMembershipConfirmModal";
 import { InvitedTestUserSection } from "@/components/membership/InvitedTestUserSection";
+import { NewMemberPromotionBanner } from "@/components/membership/NewMemberPromotionBanner";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { resolveMembershipPlanCheckoutProps } from "@/lib/membership-invited-access";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
+import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
+import {
+  welcomeOfferDisplayModeForUser,
+} from "@/lib/new-member-promotion";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import type { MembershipDeployDiagnostics } from "@/lib/membership-deploy-diagnostics";
 import type { Dictionary } from "@/i18n/translations";
@@ -336,6 +341,11 @@ export function MembershipPageContent({
   const isActive = profile ? hasActiveMembershipForMode(memberships, planMode) : false;
   const modeRole = activeModeToMembershipRole(planMode);
   const activeMembership = memberships[modeRole];
+  const welcomeOfferEligible = isWelcomeOfferEligibleForRole(profile, modeRole);
+  const welcomeOfferDisplayMode = welcomeOfferDisplayModeForUser({
+    loggedIn: Boolean(user),
+    confirmedEligible: welcomeOfferEligible,
+  });
 
   const activePlanName = useMemo(() => {
     if (!profile || !isActive) return null;
@@ -578,6 +588,14 @@ export function MembershipPageContent({
         </p>
       ) : null}
 
+      <NewMemberPromotionBanner
+        role={modeRole}
+        displayMode={welcomeOfferDisplayMode}
+        loggedIn
+        returnTo={returnTo}
+        className="mb-4"
+      />
+
       <MembershipPlans
         variant="account"
         activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
@@ -591,7 +609,11 @@ export function MembershipPageContent({
         roleHasActiveMembership={hasActiveMembershipForRole(memberships, modeRole)}
         enableCheckout={planCheckout.enableStripeCheckout}
         useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
-        payWithStripeLabel={t.membershipCheckout.payWithStripe}
+        activateMembershipLabel={t.membershipCheckout.activateMembership}
+        promotionDisplayMode={welcomeOfferDisplayMode}
+        promotionBadgeLabel={t.newMemberPromotion.planBadge}
+        promotionDiscountHeadline={t.newMemberPromotion.discountHeadline}
+        promotionCheckoutNote={t.newMemberPromotion.checkoutNote}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
         cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}

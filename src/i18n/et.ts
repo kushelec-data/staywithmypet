@@ -1551,7 +1551,8 @@ export const et = {
     loadingReviews: "Laen arvustusi…",
   },
   membershipCheckout: {
-    payWithStripe: "Maksa Stripe'iga",
+    payWithStripe: "Aktiveeri liikmelisus",
+    activateMembership: "Aktiveeri liikmelisus",
     paymentSuccess:
       "Sinu liikmelisus on aktiivne. Saad selles rollis kasutada tasulisi funktsioone.",
     paymentPending:
@@ -1608,8 +1609,24 @@ export const et = {
     fallbackTitle: "🐾 Oled ühe sammu kaugusel!",
     fallbackBody: "Ava liikmelisus, et sõnumeid saata, hooldust paluda ja broneerida.",
     unlockCta: "Ava liikmelisus",
+    promotionTitle: "Valmis ühendust looma?",
+    promotionBody:
+      "Aktiveeri oma esimene liikmelisus ja saa piiratud aja jooksul 90% soodustust.",
+    promotionCta: "Aktiveeri liikmelisus",
+    notNow: "Mitte praegu",
     maybeLater: "Võib-olla hiljem",
     close: "Sulge",
+  },
+  newMemberPromotion: {
+    bannerAriaLabel: "Tervituspakkumine",
+    offerSupportingCopy:
+      "Saa piiratud aja jooksul oma esimeselt liikmelisuselt 90% soodustust.",
+    checkoutNote: "Lõplik soodushind kuvatakse turvaliselt kassas.",
+    dashboardBannerBody:
+      "Sinu tervituspakkumine ootab. Aktiveeri esimene liikmelisus ja säästa 90%.",
+    activateMembershipCta: "Aktiveeri liikmelisus",
+    planBadge: "TERVITUSPAKKUMINE",
+    discountHeadline: "90% SOODUSTUST",
   },
   faq: {
     badge: "KKK",
