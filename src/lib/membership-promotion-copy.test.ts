@@ -68,19 +68,35 @@ describe("membership promotion copy", () => {
     }
   });
 
-  it("places access code first, then welcome hero, then membership plans", () => {
+  it("places access code first, then welcome hero, then title, then membership plans", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/membership/MembershipPageContent.tsx"),
       "utf8",
     );
-    const heroIndex = source.indexOf("<MembershipWelcomeOfferHero");
     const accessCodeIndex = source.indexOf("<InvitedTestUserSection");
+    const heroIndex = source.indexOf("<MembershipWelcomeOfferHero");
+    const titleIndex = source.indexOf('data-testid="membership-page-title"');
     const plansIndex = source.indexOf("<MembershipPlans");
-    expect(heroIndex).toBeGreaterThan(-1);
     expect(accessCodeIndex).toBeGreaterThan(-1);
+    expect(heroIndex).toBeGreaterThan(-1);
+    expect(titleIndex).toBeGreaterThan(-1);
     expect(plansIndex).toBeGreaterThan(-1);
     expect(accessCodeIndex).toBeLessThan(heroIndex);
-    expect(heroIndex).toBeLessThan(plansIndex);
+    expect(heroIndex).toBeLessThan(titleIndex);
+    expect(titleIndex).toBeLessThan(plansIndex);
     expect(source).toContain("sectionId={MEMBERSHIP_PLANS_SECTION_ID}");
+  });
+
+  it("uses compact horizontal access code layout on md+ and stacked layout on mobile", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/membership/InvitedTestUserSection.tsx"),
+      "utf8",
+    );
+    expect(source).toContain("flex flex-col");
+    expect(source).toContain("md:flex-row");
+    expect(source).toContain("md:items-center");
+    expect(source).toContain("md:justify-between");
+    expect(source).toMatch(/w-full.*md:w-auto/);
+    expect(source).not.toMatch(/order-\d/);
   });
 });

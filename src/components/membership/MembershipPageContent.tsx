@@ -521,7 +521,7 @@ export function MembershipPageContent({
           <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} />
         ) : null}
 
-        <div>
+        <div data-testid="membership-page-title">
           <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {pageTitle}
           </h1>

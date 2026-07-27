@@ -65,8 +65,9 @@ export function MembershipWelcomeOfferHero({
 
   return (
     <section
-      className={`welcome-offer-card relative mx-auto w-full max-w-[1200px] overflow-hidden rounded-[24px] border border-neutral-200/80 bg-[#FCFCFC] px-5 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_28px_rgba(15,23,42,0.05)] sm:px-7 sm:py-6 lg:flex lg:min-h-[190px] lg:max-h-[220px] lg:items-center lg:px-9 lg:py-7 ${className}`}
+      className={`welcome-offer-card relative mx-auto w-full max-w-[1200px] overflow-hidden rounded-[24px] border border-neutral-200/80 bg-[#FCFCFC] px-7 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_28px_rgba(15,23,42,0.05)] sm:px-9 sm:py-6 lg:flex lg:min-h-[190px] lg:max-h-[220px] lg:items-center lg:px-11 lg:py-7 ${className}`}
       aria-label={copy.badge}
+      data-testid="membership-welcome-offer"
     >
       <div
         className="pointer-events-none absolute inset-0 rounded-[24px]"
@@ -77,13 +78,13 @@ export function MembershipWelcomeOfferHero({
         aria-hidden
       />
 
-      <div className="relative flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
-        <div className="min-w-0 lg:w-[62%] lg:pr-2">
+      <div className="relative flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:gap-16 xl:gap-20">
+        <div className="min-w-0 lg:w-[62%]">
           <span className="inline-flex items-center rounded-full bg-[#EEF7F0] px-2.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-[#2E6B3F] sm:text-[0.65rem]">
             {copy.badge}
           </span>
 
-          <h2 className="mt-2.5 max-w-xl font-heading text-[1.625rem] font-bold leading-[1.12] tracking-[-0.02em] text-[#2B2B2B] sm:text-[2rem] lg:text-[2.625rem]">
+          <h2 className="mt-2.5 max-w-xl font-heading text-[1.625rem] font-bold leading-[1.12] tracking-[-0.02em] text-[#2B2B2B] sm:text-[1.875rem] lg:text-[2.25rem]">
             {copy.headline}
           </h2>
 
@@ -97,7 +98,7 @@ export function MembershipWelcomeOfferHero({
             aria-hidden
           />
 
-          <div className="relative flex flex-col gap-2.5">
+          <div className="relative flex flex-col gap-6">
             <button
               type="button"
               onClick={() => void handleCopyCode()}
