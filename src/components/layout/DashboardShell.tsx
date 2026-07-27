@@ -1,20 +1,18 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
-import { headerNavForActiveMode, sidebarSectionsForActiveMode } from "@/lib/account-nav";
+import { sidebarSectionsForActiveMode } from "@/lib/account-nav";
 import { resolveActiveMode, sidebarModeControlForProfile } from "@/lib/profile-mode";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
-import { performActiveModeSwitch } from "@/lib/switch-active-mode";
-import { createClient } from "@/lib/supabase";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
 import { DashboardAccountNavStrip } from "@/components/dashboard/DashboardAccountNavStrip";
-import { DashboardHeaderNavLink } from "@/components/dashboard/DashboardHeaderNavLink";
 import { DashboardBreadcrumb } from "@/components/dashboard/DashboardBreadcrumb";
 import { Button } from "@/components/ui/Button";
 import { isProfileOwnedByUser } from "@/lib/profile-session-guard";
+import { useActiveModeSwitch } from "@/hooks/useActiveModeSwitch";
 import {
   dashboardBreadcrumbFromPath,
   type DashboardBreadcrumbParent,
@@ -76,19 +74,14 @@ export function DashboardShell({
     displayName,
     isIncomplete,
     needsRoleOnboarding: rolePending,
-    refreshProfile,
-    setProfileRow,
   } = useProfile();
-  const supabase = useMemo(() => createClient(), []);
   const resolvedActiveMode = profile
     ? resolveActiveMode(profile.role, profile.active_mode)
     : null;
   const sidebarSections = sidebarSectionsForActiveMode(resolvedActiveMode);
-  const headerNav = headerNavForActiveMode(resolvedActiveMode);
   const modeControl = sidebarModeControlForProfile(profile, t.account);
+  const { switchingMode, modeError, handleModeSwitch } = useActiveModeSwitch();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [switchingMode, setSwitchingMode] = useState<string | null>(null);
-  const [modeError, setModeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -139,59 +132,10 @@ export function DashboardShell({
     }
   }
 
-  const isMembershipRoute =
-    pathname === "/membership" || pathname.startsWith("/membership/");
-
-  async function handleModeSwitch(targetMode: "pet_parent" | "pet_friend") {
-    if (!user || switchingMode) return;
-    if (!profile) {
-      setModeError(t.account.profileStillLoading);
-      return;
-    }
-    if (resolveActiveMode(profile.role, profile.active_mode) === targetMode) return;
-
-    setSwitchingMode(targetMode);
-    setModeError(null);
-    try {
-      const result = await performActiveModeSwitch({
-        supabase,
-        user,
-        profile,
-        targetMode,
-        setProfileRow,
-        refreshProfile,
-      });
-      if (!result.ok) {
-        const message =
-          result.code === "unsupported_mode"
-            ? t.account.completeSetupBeforeSwitchingRoles
-            : result.message;
-        setModeError(message);
-        return;
-      }
-      if (isMembershipRoute) {
-        router.refresh();
-      } else {
-        router.push(DASHBOARD_PATH);
-        router.refresh();
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : t.account.couldNotSwitchMode;
-      setModeError(message);
-    } finally {
-      setSwitchingMode(null);
-    }
-  }
-
   return (
     <div className={`${ACCOUNT_LAYOUT_SHELL} ${ACCOUNT_LAYOUT_PADDING}`}>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3 sm:items-center">
+      <div className="mb-6">
         <p className={ACCOUNT_PAGE_HEADER_EYEBROW}>{t.account.eyebrow}</p>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          {headerNav.map((item) => (
-            <DashboardHeaderNavLink key={item.href} item={item} />
-          ))}
-        </div>
       </div>
 
       {showCompleteProfile ? (

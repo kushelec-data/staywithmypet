@@ -11,6 +11,8 @@ import { NotificationsBell } from "@/components/notifications/NotificationsBell"
 import { NavbarSavedLink } from "@/components/navbar/NavbarSavedLink";
 import { NavbarUserMenu } from "@/components/navbar/NavbarUserMenu";
 import { getAuthNavLinks, getPrimaryNavLinksForUser } from "@/lib/nav-i18n";
+import { sidebarModeControlForProfile } from "@/lib/profile-mode";
+import { useActiveModeSwitch } from "@/hooks/useActiveModeSwitch";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
 const LOGO_SRC = "/logo.png";
@@ -93,6 +95,10 @@ export function Navbar() {
   const { profile } = useProfile();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const { switchingMode, modeError, handleModeSwitch } = useActiveModeSwitch({
+    onSuccess: () => setOpen(false),
+  });
+  const modeControl = sidebarModeControlForProfile(profile, t.account);
 
   const isLoggedIn = !!user && !loading;
   const centerNavLinks = useMemo(
@@ -226,6 +232,10 @@ export function Navbar() {
                       onLogout={handleLogout}
                       loggingOut={loggingOut}
                       onNavigate={() => setOpen(false)}
+                      modeControl={modeControl}
+                      switchingMode={switchingMode}
+                      modeError={modeError}
+                      onModeSwitch={handleModeSwitch}
                     />
                   </div>
                 </>

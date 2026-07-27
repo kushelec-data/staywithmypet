@@ -98,6 +98,65 @@ function itemsForMode(items: ModeNavItem[], activeMode: ProfileActiveMode): Acco
     .map(({ href, label }) => ({ href, label }));
 }
 
+const MOBILE_NAV_STRIP_HREFS: Record<ProfileActiveMode, string[]> = {
+  pet_parent: [
+    "/dashboard",
+    "/requests?direction=incoming",
+    "/messages",
+    "/dashboard/bookings",
+    "/pets",
+  ],
+  pet_friend: [
+    "/dashboard",
+    "/requests?direction=outgoing",
+    "/messages",
+    "/dashboard/bookings",
+    "/saved",
+  ],
+};
+
+function accountNavItemForHref(activeMode: ProfileActiveMode, href: string): AccountNavItem {
+  const match = accountSidebarItems.find(
+    (item) => item.href === href && item.modes.includes(activeMode),
+  );
+  if (match) {
+    return { href: match.href, label: match.label };
+  }
+  return { href, label: href };
+}
+
+/** Secondary mobile account menu links (not in the five-item dashboard strip). */
+const MOBILE_ACCOUNT_MENU_SECONDARY_HREFS = [
+  "/dashboard/calendar",
+  "/membership",
+  "/change-password",
+] as const;
+
+/** Explicit mobile dashboard nav strip — five priority links per active mode. */
+export function mobileNavStripItemsForActiveMode(
+  activeMode: ProfileActiveMode | null | undefined,
+): AccountNavItem[] {
+  if (!activeMode) {
+    return [{ href: "/dashboard", label: "Dashboard" }];
+  }
+  return MOBILE_NAV_STRIP_HREFS[activeMode].map((href) =>
+    accountNavItemForHref(activeMode, href),
+  );
+}
+
+/** Calendar, membership, and account settings — mobile account menu only. */
+export function mobileAccountMenuSecondaryItemsForActiveMode(
+  activeMode: ProfileActiveMode | null | undefined,
+): AccountNavItem[] {
+  if (!activeMode) return [];
+  return MOBILE_ACCOUNT_MENU_SECONDARY_HREFS.flatMap((href) => {
+    const match = accountSidebarItems.find(
+      (item) => item.href === href && item.modes.includes(activeMode),
+    );
+    return match ? [{ href: match.href, label: match.label }] : [];
+  });
+}
+
 export function sidebarSectionsForActiveMode(
   activeMode: ProfileActiveMode | null | undefined,
 ): AccountSidebarSection[] {

@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { AccountSidebarNavLink } from "@/components/account/AccountSidebarNavLink";
-import { sidebarSectionsForActiveMode } from "@/lib/account-nav";
+import { mobileNavStripItemsForActiveMode } from "@/lib/account-nav";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 
 type DashboardAccountNavStripProps = {
@@ -15,7 +15,7 @@ export function DashboardAccountNavStrip({ activeMode }: DashboardAccountNavStri
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
-  const sections = sidebarSectionsForActiveMode(activeMode);
+  const primaryItems = mobileNavStripItemsForActiveMode(activeMode);
 
   return (
     <nav
@@ -23,20 +23,18 @@ export function DashboardAccountNavStrip({ activeMode }: DashboardAccountNavStri
       aria-label={t.account.accountNavAriaLabel}
     >
       <ul className="flex w-max min-w-full items-center gap-2 px-1">
-        {sections.flatMap((section) =>
-          section.items.map((item) => (
-            <li key={item.href} className="shrink-0">
-              <AccountSidebarNavLink
-                item={item}
-                pathname={pathname}
-                searchParams={searchParams}
-                navbarT={t.navbar}
-                t={t}
-                variant="strip"
-              />
-            </li>
-          )),
-        )}
+        {primaryItems.map((item) => (
+          <li key={item.href} className="shrink-0">
+            <AccountSidebarNavLink
+              item={item}
+              pathname={pathname}
+              searchParams={searchParams}
+              navbarT={t.navbar}
+              t={t}
+              variant="strip"
+            />
+          </li>
+        ))}
       </ul>
     </nav>
   );

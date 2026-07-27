@@ -231,7 +231,6 @@ export function DashboardPageContent() {
   ) : (
     <DashboardInfoCard title={locationPetTitle} editHref="/profile/edit">
       <div className="space-y-3 text-sm">
-        <p className="text-foreground">{profile.location?.trim() || acc.notSet}</p>
         {availabilityUx.showMyAvailability && user ? (
           <DashboardAvailabilityMiniCalendar
             availabilityDates={profileCalDates}
@@ -325,15 +324,7 @@ export function DashboardPageContent() {
         <section aria-label="Profile details" className="space-y-4 sm:space-y-5">
           <DashboardInfoCard title={dh.aboutMe} editHref="/profile/edit" editLabel={acc.edit}>
             {profile.bio?.trim() ? (
-              <>
-                <ExpandableBioText bio={profile.bio.trim()} />
-                <Link
-                  href="/profile/edit"
-                  className={`${DASHBOARD_LINK_CLASS} mt-2 inline-block text-xs`}
-                >
-                  {dh.viewMore}
-                </Link>
-              </>
+              <ExpandableBioText bio={profile.bio.trim()} />
             ) : (
               <DashboardEmptyState
                 message={dh.noBioYet}

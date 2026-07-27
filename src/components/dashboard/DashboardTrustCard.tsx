@@ -56,42 +56,52 @@ export function DashboardTrustCard({
 
   return (
     <DashboardInfoCard title={ts.formSectionTitle} titleStyle="panel">
-      {verified ? (
-        <div className="mb-2">
-          <VerifiedBadge tone="dashboard" />
+      <details open>
+        <summary className="cursor-pointer list-none text-xs text-muted marker:content-none [&::-webkit-details-marker]:hidden">
+          {ts.trustScoreTitle}:{" "}
+          <span className={`font-semibold ${dashboardScoreTextClass(displayPercent)}`}>
+            {displayPercent}%
+          </span>
+        </summary>
+        <div className="mt-2">
+          {verified ? (
+            <div className="mb-2">
+              <VerifiedBadge tone="dashboard" />
+            </div>
+          ) : null}
+          <div className={`${DASHBOARD_CARD_INNER_CLASS} px-2.5 py-2`}>
+            <p className={DASHBOARD_PANEL_SECTION_LABEL}>{ts.trustScoreTitle}</p>
+            <p
+              className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${dashboardScoreTextClass(displayPercent)}`}
+            >
+              {displayPercent}%
+            </p>
+            <div
+              className={`${DASHBOARD_PROGRESS_TRACK_CLASS} mt-2 h-1.5 overflow-hidden`}
+              role="progressbar"
+              aria-valuenow={displayPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className={`h-full ${DASHBOARD_PROGRESS_FILL_CLASS} transition-all duration-700 ease-out ${dashboardProgressFillClass(displayPercent)}`}
+                style={{ width: `${displayPercent}%` }}
+              />
+            </div>
+            <p className="mt-2 text-[0.7rem] text-muted">{ts.trustScoreHelper}</p>
+          </div>
+          <ul className="mt-2 space-y-1 text-xs text-muted">
+            {breakdown.checks.map((check) => (
+              <DashboardCheckRow
+                key={check.id}
+                status={check.status}
+                label={checklistLabel(check, ts)}
+                hint={checklistHint(check, ts)}
+              />
+            ))}
+          </ul>
         </div>
-      ) : null}
-      <div className={`${DASHBOARD_CARD_INNER_CLASS} px-2.5 py-2`}>
-        <p className={DASHBOARD_PANEL_SECTION_LABEL}>{ts.trustScoreTitle}</p>
-        <p
-          className={`mt-2 text-2xl font-semibold transition-colors duration-500 ${dashboardScoreTextClass(displayPercent)}`}
-        >
-          {displayPercent}%
-        </p>
-        <div
-          className={`${DASHBOARD_PROGRESS_TRACK_CLASS} mt-2 h-1.5 overflow-hidden`}
-          role="progressbar"
-          aria-valuenow={displayPercent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div
-            className={`h-full ${DASHBOARD_PROGRESS_FILL_CLASS} transition-all duration-700 ease-out ${dashboardProgressFillClass(displayPercent)}`}
-            style={{ width: `${displayPercent}%` }}
-          />
-        </div>
-        <p className="mt-2 text-[0.7rem] text-muted">{ts.trustScoreHelper}</p>
-      </div>
-      <ul className="mt-2 space-y-1 text-xs text-muted">
-        {breakdown.checks.map((check) => (
-          <DashboardCheckRow
-            key={check.id}
-            status={check.status}
-            label={checklistLabel(check, ts)}
-            hint={checklistHint(check, ts)}
-          />
-        ))}
-      </ul>
+      </details>
     </DashboardInfoCard>
   );
 }

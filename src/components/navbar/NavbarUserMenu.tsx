@@ -8,7 +8,14 @@ import { useProfile } from "@/context/ProfileContext";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { resolveAvatarPosition } from "@/lib/photo-position";
-import { getUserMenuLinks } from "@/lib/nav-i18n";
+import { getUserMenuLinks, accountSidebarLabel } from "@/lib/nav-i18n";
+import { mobileAccountMenuSecondaryItemsForActiveMode } from "@/lib/account-nav";
+import { resolveActiveMode } from "@/lib/profile-mode";
+import type { SidebarModeControl } from "@/lib/profile-mode";
+import {
+  ACCOUNT_SIDEBAR_ICON_CLASS,
+  ACCOUNT_SIDEBAR_MODE_SWITCH_ICON,
+} from "@/lib/account-sidebar-icons";
 
 type NavbarUserMenuProps = {
   onLogout: () => void | Promise<void>;
@@ -16,6 +23,10 @@ type NavbarUserMenuProps = {
   /** Wider trigger + stacked links for mobile drawer */
   variant?: "desktop" | "mobile";
   onNavigate?: () => void;
+  modeControl?: SidebarModeControl | null;
+  switchingMode?: string | null;
+  modeError?: string | null;
+  onModeSwitch?: (targetMode: "pet_parent" | "pet_friend") => void;
 };
 
 function isNavLinkActive(pathname: string, href: string): boolean {
@@ -32,6 +43,10 @@ export function NavbarUserMenu({
   loggingOut,
   variant = "desktop",
   onNavigate,
+  modeControl = null,
+  switchingMode = null,
+  modeError = null,
+  onModeSwitch,
 }: NavbarUserMenuProps) {
   const pathname = usePathname();
   const { t } = useLanguage();
@@ -42,6 +57,8 @@ export function NavbarUserMenu({
 
   const email = user?.email ?? null;
   const menuLinks = getUserMenuLinks(t.navbar, profile);
+  const activeMode = profile ? resolveActiveMode(profile.role, profile.active_mode) : null;
+  const secondaryMenuLinks = mobileAccountMenuSecondaryItemsForActiveMode(activeMode);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +94,76 @@ export function NavbarUserMenu({
             </Link>
           </li>
         ))}
+        {secondaryMenuLinks.length > 0 ? (
+          <>
+            <li className="mt-2 border-t border-border pt-2">
+              <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-muted">
+                {t.navbar.accountSection}
+              </p>
+            </li>
+            {secondaryMenuLinks.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`block min-h-[44px] rounded-xl px-4 py-3 text-base font-medium leading-snug ${
+                    isNavLinkActive(pathname, item.href)
+                      ? "bg-brand-pink-muted text-brand-pink"
+                      : "text-muted active:bg-mint/40"
+                  }`}
+                >
+                  {accountSidebarLabel(item.href, item.label, t)}
+                </Link>
+              </li>
+            ))}
+          </>
+        ) : null}
+        {modeControl ? (
+          <>
+            <li className="mt-2 border-t border-border pt-2">
+              <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-muted">
+                {t.account.switchMode}
+              </p>
+            </li>
+            <li>
+              {modeControl.kind === "switch" ? (
+                <button
+                  type="button"
+                  disabled={switchingMode !== null}
+                  onClick={() => onModeSwitch?.(modeControl.targetMode)}
+                  className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-4 py-3 text-left text-base font-medium leading-snug text-muted active:bg-mint/40 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
+                    className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                  {switchingMode === modeControl.targetMode ? t.account.switching : modeControl.label}
+                </button>
+              ) : (
+                <Link
+                  href={modeControl.href}
+                  onClick={onNavigate}
+                  className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-4 py-3 text-base font-medium leading-snug text-muted active:bg-mint/40"
+                >
+                  <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
+                    className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                  {modeControl.label}
+                </Link>
+              )}
+            </li>
+            {modeError ? (
+              <li>
+                <p className="px-4 pt-1 text-xs text-brand-pink" role="alert">
+                  {modeError}
+                </p>
+              </li>
+            ) : null}
+          </>
+        ) : null}
         <li>
           <button
             type="button"

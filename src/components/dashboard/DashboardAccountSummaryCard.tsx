@@ -4,7 +4,6 @@ import {
   DashboardInfoCard,
   DASHBOARD_PANEL_SECTION_LABEL,
 } from "@/components/dashboard/DashboardInfoCard";
-import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { dashboardCapabilitiesForActiveMode } from "@/lib/account-nav";
 import { resolveActiveMode } from "@/lib/profile-mode";
@@ -65,7 +64,6 @@ export function DashboardAccountSummaryCard({
       : [];
 
   const dh = t.dashboardHome;
-  const acc = t.account;
 
   return (
     <DashboardInfoCard title={dh.accountSummary} titleStyle="panel">
@@ -101,48 +99,6 @@ export function DashboardAccountSummaryCard({
           </ul>
         </div>
       ) : null}
-
-      <div
-        className={
-          showPetStats || (showRequestStats && requestStatLines.length > 0)
-            ? `mt-3 border-t ${DASHBOARD_DIVIDER} pt-3`
-            : ""
-        }
-      >
-        <p className={DASHBOARD_PANEL_SECTION_LABEL}>{dh.quickActions}</p>
-        <div className="mt-2 flex flex-col gap-1.5">
-          {caps.showAddPet ? (
-            <Button href="/pets/new" size="sm" className="w-full justify-center">
-              {acc.nav.addPet}
-            </Button>
-          ) : null}
-          {caps.showMyPets ? (
-            <Button
-              href="/pets"
-              variant={caps.showAddPet ? "outline" : "primary"}
-              size="sm"
-              className="w-full justify-center"
-            >
-              {acc.nav.myPets}
-            </Button>
-          ) : null}
-          {showRequestsQuickAction ? (
-            <Button href="/requests" variant="outline" size="sm" className="w-full justify-center">
-              {t.requests.myRequestsQuickAction}
-            </Button>
-          ) : null}
-          {caps.showFindCareCta ? (
-            <Button href="/find-care" variant="outline" size="sm" className="w-full justify-center">
-              {t.navbar.findPetFriends}
-            </Button>
-          ) : null}
-          {caps.showSearchPetsCta ? (
-            <Button href="/find-pets" size="sm" className="w-full justify-center">
-              {t.navbar.searchPets}
-            </Button>
-          ) : null}
-        </div>
-      </div>
     </DashboardInfoCard>
   );
 }
