@@ -153,6 +153,11 @@ export const et = {
       reviews: "Arvustused ja hinnangud",
       safeChat: "Turvalised päringud ja vestlus",
     },
+    tehnopolBadge: {
+      label: "Kiirendiprogrammis valitud",
+      primary: "Valitud Tehnopoli idufirmade kiirendiprogrammi 2026",
+      secondary: "StayWithMyPet on üks 9 programmi jaoks valitud idufirmast.",
+    },
     puppyWelcome: {
       ariaLabel: "Sõbralik kutsika abi",
       message: "Tere! Tahad meiega liituda?",

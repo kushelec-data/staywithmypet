@@ -2,6 +2,7 @@
 
 import { HeroPuppyAssistant } from "@/components/home/HeroPuppyAssistant";
 import { HeroStoryCarousel } from "@/components/home/HeroStoryCarousel";
+import { TehnopolAcceleratorBadge } from "@/components/home/TehnopolAcceleratorBadge";
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { CONTENT_CONTAINER, HEADING_HERO } from "@/lib/layout";
@@ -64,9 +65,11 @@ export function HeroSection() {
               {t.hero.eyebrow}
             </p>
 
+            <TehnopolAcceleratorBadge className="mx-auto mt-4 mb-5 lg:mx-0" />
+
             <h1
               key={locale}
-              className={`${HEADING_HERO} mx-auto mt-4 max-w-xl whitespace-pre-line sm:mt-5 lg:mx-0`}
+              className={`${HEADING_HERO} mx-auto max-w-xl whitespace-pre-line lg:mx-0`}
             >
               {t.hero.title}
             </h1>
