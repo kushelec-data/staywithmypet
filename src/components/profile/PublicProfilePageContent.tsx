@@ -27,7 +27,7 @@ import {
 import { usersShareActiveRequest } from "@/lib/request-profile-access";
 import { resolvedAvailability } from "@/lib/profile-details";
 import { createClient } from "@/lib/supabase";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type PublicProfilePageContentProps = {
   profileId: string;
@@ -41,6 +41,7 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
   const [pets, setPets] = useState<PublicPet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const viewedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +92,14 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
       cancelled = true;
     };
   }, [supabase, profileId, user?.id, t.publicProfileUi]);
+
+  useEffect(() => {
+    if (!profile || viewedRef.current) return;
+    viewedRef.current = true;
+    void import("@/lib/google-analytics").then(({ track }) => {
+      track("view_item", { item_id: profileId, item_category: "pet_friend_profile" });
+    });
+  }, [profile, profileId]);
 
   const { reviews, loading: reviewsLoading, ratingAvg, ratingCount } = useProfileReviews(
     profile?.id ?? null,

@@ -365,6 +365,10 @@ export function SendRequestButton({
 
       setOpen(false);
       setSuccess(true);
+      const { track } = await import("@/lib/google-analytics");
+      track("care_request_sent", {
+        request_type: target.kind === "pet" ? "pet_care" : "friend_care",
+      });
     } catch (err) {
       logRequestSubmitFailure(err, {
         flow: target.kind,

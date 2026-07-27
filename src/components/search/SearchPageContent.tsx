@@ -294,6 +294,11 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
     setSelectedAvailabilityItem(null);
   }, []);
 
+  const trackMarketplaceSearch = useCallback(async (searchType: "pets" | "care") => {
+    const { track } = await import("@/lib/google-analytics");
+    track("search", { search_type: searchType });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -451,7 +456,10 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
       searchMode="pets"
       filters={petFilters}
       onChange={setPetFilters}
-      onApply={() => setAppliedPetFilters({ ...petFilters })}
+      onApply={() => {
+        setAppliedPetFilters({ ...petFilters });
+        void trackMarketplaceSearch("pets");
+      }}
       onClearAll={() => {
         const empty = emptyPetSearchFilters();
         setPetFilters(empty);
@@ -462,7 +470,10 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
     <PetFriendSearchFilters
       filters={friendFilters}
       onChange={setFriendFilters}
-      onApply={() => setAppliedFriendFilters({ ...friendFilters })}
+      onApply={() => {
+        setAppliedFriendFilters({ ...friendFilters });
+        void trackMarketplaceSearch("care");
+      }}
       onClearAll={() => {
         const empty = emptyPetFriendSearchFilters();
         setFriendFilters(empty);

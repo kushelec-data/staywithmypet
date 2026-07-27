@@ -545,8 +545,12 @@ export function MembershipPlans({
       if (!data.url) {
         throw new Error(data.error ?? t.pricing.checkoutMissingUrl);
       }
-      const { track } = await import("@/lib/meta-pixel");
-      track("InitiateCheckout");
+      const [{ track: trackMeta }, { track: trackGa }] = await Promise.all([
+        import("@/lib/meta-pixel"),
+        import("@/lib/google-analytics"),
+      ]);
+      trackMeta("InitiateCheckout");
+      trackGa("begin_checkout");
       window.location.href = data.url;
     } catch (err) {
       const message = err instanceof Error ? err.message : t.pricing.checkoutError;

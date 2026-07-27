@@ -50,8 +50,12 @@ export function ContactPageClient() {
       });
 
       if (result.ok) {
-        const { track } = await import("@/lib/meta-pixel");
-        track("Lead");
+        const [{ track: trackMeta }, { track: trackGa }] = await Promise.all([
+          import("@/lib/meta-pixel"),
+          import("@/lib/google-analytics"),
+        ]);
+        trackMeta("Lead");
+        trackGa("generate_lead");
         setSuccess(true);
         form.reset();
         setPhoneDial(DEFAULT_PHONE_DIAL_CODE);
