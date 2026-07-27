@@ -318,6 +318,11 @@ export function MembershipPageContent({
 
       if (cancelledEffect) return;
 
+      if (activated) {
+        const { track } = await import("@/lib/meta-pixel");
+        track("Purchase");
+      }
+
       setCheckoutBanner(
         activated
           ? t.membershipCheckout.paymentSuccess
@@ -510,6 +515,10 @@ export function MembershipPageContent({
       />
 
       <div className="space-y-4">
+        {planCheckout.showInvitedAccessSection ? (
+          <InvitedTestUserSection role={modeRole} />
+        ) : null}
+
         {welcomeOfferDisplayMode === "confirmed" ? (
           <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} />
         ) : null}
@@ -634,10 +643,6 @@ export function MembershipPageContent({
               : undefined
           }
         />
-
-        {planCheckout.showInvitedAccessSection ? (
-          <InvitedTestUserSection role={modeRole} />
-        ) : null}
 
         {returnTo ? <MembershipReturnNotice returnTo={returnTo} /> : null}
 

@@ -68,7 +68,7 @@ describe("membership promotion copy", () => {
     }
   });
 
-  it("places welcome hero and access-code section around membership plans on the account page", () => {
+  it("places access code first, then welcome hero, then membership plans", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/membership/MembershipPageContent.tsx"),
       "utf8",
@@ -79,8 +79,8 @@ describe("membership promotion copy", () => {
     expect(heroIndex).toBeGreaterThan(-1);
     expect(accessCodeIndex).toBeGreaterThan(-1);
     expect(plansIndex).toBeGreaterThan(-1);
+    expect(accessCodeIndex).toBeLessThan(heroIndex);
     expect(heroIndex).toBeLessThan(plansIndex);
-    expect(plansIndex).toBeLessThan(accessCodeIndex);
     expect(source).toContain("sectionId={MEMBERSHIP_PLANS_SECTION_ID}");
   });
 });

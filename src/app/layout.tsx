@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { ConsentAwareAnalytics } from "@/components/cookies/ConsentAwareAnalytics";
 import { CookieConsentMount } from "@/components/cookies/CookieConsentMount";
 import { Footer } from "@/components/Footer";
@@ -55,6 +56,7 @@ export default function RootLayout({
           <CookieConsentMount />
         </LanguageProvider>
         <ConsentAwareAnalytics />
+        <MetaPixel />
       </body>
     </html>
   );

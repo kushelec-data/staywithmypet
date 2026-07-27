@@ -50,6 +50,8 @@ export function ContactPageClient() {
       });
 
       if (result.ok) {
+        const { track } = await import("@/lib/meta-pixel");
+        track("Lead");
         setSuccess(true);
         form.reset();
         setPhoneDial(DEFAULT_PHONE_DIAL_CODE);
