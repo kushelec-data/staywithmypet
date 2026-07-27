@@ -493,6 +493,8 @@ export function MembershipPlans({
       if (!data.url) {
         throw new Error(data.error ?? t.pricing.checkoutMissingUrl);
       }
+      const { track } = await import("@/lib/meta-pixel");
+      track("InitiateCheckout");
       window.location.href = data.url;
     } catch (err) {
       const message = err instanceof Error ? err.message : t.pricing.checkoutError;

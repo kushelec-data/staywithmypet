@@ -289,6 +289,11 @@ export function MembershipPageContent({
 
       if (cancelledEffect) return;
 
+      if (activated) {
+        const { track } = await import("@/lib/meta-pixel");
+        track("Purchase");
+      }
+
       setCheckoutBanner(
         activated
           ? t.membershipCheckout.paymentSuccess

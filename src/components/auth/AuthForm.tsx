@@ -245,6 +245,11 @@ export function AuthForm({ mode }: AuthFormProps) {
           return;
         }
 
+        if (data.user) {
+          const { track } = await import("@/lib/meta-pixel");
+          track("CompleteRegistration");
+        }
+
         if (data.session && data.user) {
           await finishSession(name);
           if (!isSubmitActive(generation)) return;
