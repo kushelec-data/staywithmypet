@@ -45,15 +45,13 @@ import { CancelMembershipConfirmModal } from "@/components/membership/CancelMemb
 import { InvitedTestUserSection } from "@/components/membership/InvitedTestUserSection";
 import { MembershipReturnNotice } from "@/components/membership/MembershipReturnNotice";
 import { MembershipWelcomeOfferHero } from "@/components/membership/MembershipWelcomeOfferHero";
-import { MEMBERSHIP_PLANS_SECTION_ID } from "@/lib/membership-plans-scroll";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { resolveMembershipPlanCheckoutProps } from "@/lib/membership-invited-access";
+import { MEMBERSHIP_PLANS_SECTION_ID } from "@/lib/membership-plans-scroll";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
 import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
-import {
-  welcomeOfferDisplayModeForUser,
-} from "@/lib/new-member-promotion";
+import { welcomeOfferDisplayModeForUser } from "@/lib/new-member-promotion";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import type { MembershipDeployDiagnostics } from "@/lib/membership-deploy-diagnostics";
 import type { Dictionary } from "@/i18n/translations";

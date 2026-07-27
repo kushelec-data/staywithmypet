@@ -347,6 +347,7 @@ function PlanCard({
           ) : null}
           <Button
             type="button"
+            data-membership-plan-focus={canCheckout && !isCurrent && !showComingSoon ? true : undefined}
             variant={
               showComingSoon
                 ? "secondary"
@@ -363,7 +364,6 @@ function PlanCard({
                 ? "membership-stripe-checkout-button"
                 : undefined
             }
-            data-membership-plan-focus={canCheckout ? "true" : undefined}
             disabled={
               showComingSoon || blockedByActiveMembership
                 ? true

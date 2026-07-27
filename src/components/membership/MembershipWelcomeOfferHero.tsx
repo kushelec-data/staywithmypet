@@ -4,13 +4,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import type { MembershipRole } from "@/lib/membership";
 import { scrollToMembershipPlans } from "@/lib/membership-plans-scroll";
 import { WELCOME_OFFER_CODE } from "@/lib/new-member-promotion";
-import {
-  ArrowRight,
-  Check,
-  Clipboard,
-  Sparkles,
-  Tag,
-} from "lucide-react";
+import { ArrowRight, Check, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -28,16 +22,12 @@ export function MembershipWelcomeOfferHero({
   const { t } = useLanguage();
   const router = useRouter();
   const copy = t.account.membershipPage.welcomeOffer;
-  const discountBadge = t.newMemberPromotion.discountHeadline;
   const [copied, setCopied] = useState(false);
-  const [copyBouncing, setCopyBouncing] = useState(false);
   const copiedTimerRef = useRef<number | null>(null);
-  const copyBounceTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
-      if (copyBounceTimerRef.current) window.clearTimeout(copyBounceTimerRef.current);
     };
   }, []);
 
@@ -69,78 +59,60 @@ export function MembershipWelcomeOfferHero({
     }
 
     setCopied(true);
-    setCopyBouncing(true);
     if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
-    if (copyBounceTimerRef.current) window.clearTimeout(copyBounceTimerRef.current);
     copiedTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
-    copyBounceTimerRef.current = window.setTimeout(() => setCopyBouncing(false), 320);
   }, []);
 
   return (
     <section
-      className={`relative overflow-hidden rounded-2xl border border-brand-teal/20 bg-gradient-to-br from-mint/45 via-lavender/35 to-brand-pink/20 px-3.5 py-3 shadow-[0_10px_36px_rgba(46,107,63,0.14)] sm:px-4 sm:py-3.5 ${className}`}
+      className={`welcome-offer-card relative mx-auto w-full max-w-[1200px] overflow-hidden rounded-[24px] border border-neutral-200/80 bg-[#FCFCFC] px-5 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_28px_rgba(15,23,42,0.05)] sm:px-7 sm:py-6 lg:flex lg:min-h-[190px] lg:max-h-[220px] lg:items-center lg:px-9 lg:py-7 ${className}`}
       aria-label={copy.badge}
     >
       <div
-        className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-brand-pink/25 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -bottom-12 left-8 h-32 w-32 rounded-full bg-brand-teal/20 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute right-1/3 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full bg-lavender/30 blur-2xl"
+        className="pointer-events-none absolute inset-0 rounded-[24px]"
+        style={{
+          background:
+            "radial-gradient(ellipse 55% 80% at 100% 50%, rgba(46,107,63,0.045), transparent 62%), radial-gradient(ellipse 40% 50% at 0% 100%, rgba(236,180,200,0.035), transparent 55%)",
+        }}
         aria-hidden
       />
 
-      <div className="relative flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between lg:gap-5">
-        <div className="min-w-0 flex-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-white/75 px-2.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-brand-teal shadow-sm">
-            <Sparkles className="h-3 w-3" aria-hidden />
+      <div className="relative flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
+        <div className="min-w-0 lg:w-[62%] lg:pr-2">
+          <span className="inline-flex items-center rounded-full bg-[#EEF7F0] px-2.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-[#2E6B3F] sm:text-[0.65rem]">
             {copy.badge}
           </span>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
-            <span
-              className="inline-flex h-[3.25rem] w-[3.25rem] shrink-0 -rotate-6 items-center justify-center rounded-full bg-gradient-to-br from-brand-teal via-[#3d8b55] to-brand-teal-hover text-center text-[0.62rem] font-bold leading-tight tracking-wide text-white shadow-[0_6px_18px_rgba(46,107,63,0.35)] sm:h-14 sm:w-14 sm:text-[0.68rem]"
-              aria-hidden
-            >
-              {discountBadge}
-            </span>
-            <h2 className="min-w-0 flex-1 font-heading text-lg font-semibold leading-snug tracking-tight text-foreground sm:text-xl">
-              {copy.headline}
-            </h2>
-          </div>
+          <h2 className="mt-2.5 max-w-xl font-heading text-[1.625rem] font-bold leading-[1.12] tracking-[-0.02em] text-[#2B2B2B] sm:text-[2rem] lg:text-[2.625rem]">
+            {copy.headline}
+          </h2>
 
-          <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-foreground/65">{copy.supporting}</p>
+          <p className="mt-1.5 text-sm leading-snug text-[#4B5563]">{copy.supporting}</p>
+          <p className="mt-1 text-xs text-[#9CA3AF]">{copy.footnote}</p>
         </div>
 
-        <div className="relative w-full shrink-0 lg:max-w-[18rem]">
-          <div className="rounded-xl bg-gradient-to-br from-mint/40 via-white/50 to-lavender/35 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-            <div
-              className="pointer-events-none absolute inset-2 rounded-lg opacity-30"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle at 20% 20%, rgba(46,107,63,0.12) 0, transparent 45%), radial-gradient(circle at 80% 80%, rgba(236,180,200,0.15) 0, transparent 40%)",
-              }}
-              aria-hidden
-            />
+        <div className="relative min-w-0 lg:w-[38%]">
+          <div
+            className="pointer-events-none absolute -right-2 top-1/2 h-24 w-28 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(46,107,63,0.07)_0%,transparent_72%)]"
+            aria-hidden
+          />
+
+          <div className="relative flex flex-col gap-2.5">
             <button
               type="button"
               onClick={() => void handleCopyCode()}
-              className={`membership-coupon-ticket group relative w-full rounded-lg border-2 border-dashed border-brand-teal/35 bg-white/55 px-3 py-2 text-center shadow-[0_3px_14px_rgba(15,60,55,0.08)] backdrop-blur-[1px] transition hover:border-brand-teal/50 hover:bg-white/70 hover:shadow-[0_6px_20px_rgba(15,60,55,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal ${copied ? "membership-coupon-copied" : ""} ${copyBouncing ? "membership-copy-bounce" : ""}`}
+              className={`welcome-offer-coupon group w-full rounded-[18px] border border-dashed border-[#2E6B3F]/28 bg-[#F3FAF5] px-3 py-2.5 text-left transition-[border-color,background-color] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E6B3F] sm:px-3.5 ${copied ? "border-[#2E6B3F]/45 bg-[#EBF5EE]" : ""}`}
               aria-label={copied ? copy.copied : copy.copyCode}
             >
-              <span className="mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full bg-mint/50 text-brand-teal">
+              <span className="mb-1 inline-flex h-5 w-5 items-center justify-center rounded-md bg-white/80 text-[#2E6B3F]">
                 <Tag className="h-3 w-3" aria-hidden />
               </span>
-              <p className="font-mono text-sm font-semibold tracking-[0.2em] text-brand-teal sm:text-base">
+              <p className="font-mono text-base font-semibold tracking-[0.18em] text-[#2E6B3F] sm:text-lg">
                 {WELCOME_OFFER_CODE}
               </p>
-              <p className="mt-0.5 text-[0.68rem] font-medium text-foreground/55 transition group-hover:text-brand-teal/85">
+              <p className="mt-0.5 text-[0.6875rem] font-medium text-[#6B7280] transition-colors duration-200 group-hover:text-[#2E6B3F]">
                 {copied ? (
-                  <span className="inline-flex items-center justify-center gap-1 text-brand-teal">
+                  <span className="inline-flex items-center gap-1 text-[#2E6B3F]">
                     <Check className="h-3 w-3" aria-hidden />
                     {copy.copied}
                   </span>
@@ -150,32 +122,30 @@ export function MembershipWelcomeOfferHero({
               </p>
             </button>
 
-            <div className="relative mt-2 flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
               <button
                 type="button"
                 onClick={() => void handleCopyCode()}
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border border-brand-teal/30 bg-mint/25 px-3 text-xs font-medium text-brand-teal transition hover:border-brand-teal/45 hover:bg-mint/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-xl border border-[#2E6B3F]/32 bg-[#FAFDFB] px-3 text-sm font-semibold text-[#2E6B3F] transition-[border-color,background-color,box-shadow] duration-200 hover:border-[#2E6B3F]/48 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E6B3F] sm:max-w-[42%]"
                 aria-label={copied ? copy.copied : copy.copyCode}
               >
                 {copied ? (
-                  <>
+                  <span className="inline-flex items-center gap-1.5">
                     <Check className="h-3.5 w-3.5" aria-hidden />
                     {copy.copied}
-                  </>
+                  </span>
                 ) : (
-                  <>
-                    <Clipboard className="h-3.5 w-3.5" aria-hidden />
-                    {copy.copy}
-                  </>
+                  copy.copy
                 )}
               </button>
+
               <button
                 type="button"
                 onClick={handleActivate}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-teal px-5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(46,107,63,0.28)] transition hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+                className="welcome-offer-activate inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#2E6B3F] px-4 text-sm font-semibold text-white shadow-[0_2px_10px_rgba(46,107,63,0.2)] transition-[background-color,box-shadow] duration-200 hover:bg-[#286035] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E6B3F] sm:min-w-0 sm:flex-[1.15]"
               >
                 {copy.activate}
-                <ArrowRight className="h-4 w-4" aria-hidden />
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </button>
             </div>
           </div>

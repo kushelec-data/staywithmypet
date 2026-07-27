@@ -589,9 +589,10 @@ export const et = {
         "Liikmelisuse tühistamine on salvestatud. Ligipääs kehtib kuni tasutud perioodi lõpuni.",
       cancelFailed: "Liikmesuse tühistamine ebaõnnestus",
       welcomeOffer: {
-        badge: "TERVITUSPAKKUMINE",
+        badge: "Piiratud avamispakkumine",
         headline: "Saa esimeselt liikmelisuselt 90% soodustust",
-        supporting: "Kasuta maksmisel koodi WELCOME90. Piiratud aja avamispakkumine.",
+        supporting: "Kasuta maksmisel koodi WELCOME90.",
+        footnote: "Piiratud aja avamispakkumine.",
         copy: "Kopeeri kood",
         copyCode: "Kopeeri sooduskood",
         clickToCopy: "Klõpsa kopeerimiseks",

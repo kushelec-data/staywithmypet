@@ -1,4 +1,4 @@
-const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ?? "";
+import { readCookieConsent } from "@/lib/cookie-consent";
 
 export const META_PIXEL_SCRIPT_ID = "meta-pixel";
 
@@ -10,13 +10,13 @@ declare global {
 }
 
 export function getMetaPixelId(): string {
-  return META_PIXEL_ID;
+  return process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ?? "";
 }
 
-/** Production build, pixel ID set, and not localhost. Safe to call on server (skips hostname check). */
-export function isMetaPixelEnabled(): boolean {
+/** Production build, pixel ID set, and not localhost. Does not check marketing consent. */
+export function isMetaPixelProductionRuntime(): boolean {
   if (process.env.NODE_ENV !== "production") return false;
-  if (!META_PIXEL_ID) return false;
+  if (!getMetaPixelId()) return false;
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
     if (
@@ -28,6 +28,17 @@ export function isMetaPixelEnabled(): boolean {
     }
   }
   return true;
+}
+
+/** Whether the user has granted marketing cookies. Browser-only. */
+export function hasMarketingConsent(): boolean {
+  if (typeof window === "undefined") return false;
+  return readCookieConsent()?.marketing === true;
+}
+
+/** Production runtime + marketing consent — required to load Pixel or send events. */
+export function isMetaPixelEnabled(): boolean {
+  return isMetaPixelProductionRuntime() && hasMarketingConsent();
 }
 
 function callFbq(...args: unknown[]): void {

@@ -586,9 +586,10 @@ export const en = {
       membershipCancelled: "Membership cancellation scheduled. Access continues until your paid period ends.",
       cancelFailed: "Failed to cancel membership",
       welcomeOffer: {
-        badge: "WELCOME OFFER",
+        badge: "Limited Launch Offer",
         headline: "Get 90% off your first membership",
-        supporting: "Use code WELCOME90 during checkout. Limited-time launch offer.",
+        supporting: "Use code WELCOME90 during checkout.",
+        footnote: "Limited-time launch offer.",
         copy: "Copy code",
         copyCode: "Copy promo code",
         clickToCopy: "Click to copy",
