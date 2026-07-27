@@ -50,6 +50,7 @@ export const WELCOME_OFFER_CODE = "WELCOME90";
 const UPSELL_DISMISS_STORAGE_KEY = "swmp.membership-upsell.dismissed";
 const UPSELL_DISMISS_TTL_MS = 30 * 60 * 1000;
 
+/** Automatic upsell toast only — not used for explicit Send care request clicks. */
 export function isMembershipUpsellDismissedForSession(): boolean {
   if (typeof window === "undefined") return false;
   try {
@@ -63,6 +64,7 @@ export function isMembershipUpsellDismissedForSession(): boolean {
   }
 }
 
+/** Automatic upsell toast only — not used when closing MembershipUpgradeModal. */
 export function dismissMembershipUpsellForSession(): void {
   if (typeof window === "undefined") return;
   try {

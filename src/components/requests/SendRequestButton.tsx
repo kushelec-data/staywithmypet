@@ -23,8 +23,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CareRequestActionErrorCode } from "@/app/actions/care-requests";
 import { MembershipUpgradeModal } from "@/components/membership/MembershipUpgradeModal";
-import { buildMembershipPagePath } from "@/lib/membership-return";
-import { isMembershipUpsellDismissedForSession } from "@/lib/new-member-promotion";
+import {
+  resolveSendRequestOpenAction,
+  shouldSubmitCareRequest,
+} from "@/lib/send-request-upgrade-flow";
 import { useProfile } from "@/context/ProfileContext";
 import {
   emptyMembershipsByRole,
@@ -123,15 +125,6 @@ export function SendRequestButton({
     return q ? `${pathname}?${q}` : pathname;
   }, [pathname, searchParams]);
 
-  const membershipHref = useMemo(
-    () =>
-      buildMembershipPagePath({
-        role: senderRole,
-        returnTo: returnUrl,
-      }),
-    [senderRole, returnUrl],
-  );
-
   const buttonLabel =
     success
       ? t.requests.requestSent
@@ -142,9 +135,7 @@ export function SendRequestButton({
   const isControlledModal = requestModalOpen !== undefined;
 
   const openUpgradeModal = useCallback(() => {
-    if (isMembershipUpsellDismissedForSession()) return false;
     setUpgradeModalOpen(true);
-    return true;
   }, []);
 
   const closeUpgradeModal = useCallback(() => {
@@ -248,7 +239,12 @@ export function SendRequestButton({
     setError(null);
     setSuccess(false);
 
-    if (needsUpgrade) {
+    const openAction = resolveSendRequestOpenAction({
+      blocked,
+      userLoggedIn: Boolean(user),
+      needsUpgrade,
+    });
+    if (openAction === "open_upgrade_modal") {
       openUpgradeModal();
       return;
     }
@@ -329,7 +325,7 @@ export function SendRequestButton({
       return;
     }
 
-    if (needsUpgrade) {
+    if (!shouldSubmitCareRequest(needsUpgrade)) {
       setOpen(false);
       openUpgradeModal();
       return;

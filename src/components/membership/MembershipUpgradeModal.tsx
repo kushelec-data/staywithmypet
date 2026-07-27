@@ -5,10 +5,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { playMembershipUpgradeModalSound } from "@/lib/membership-upgrade-modal-sound";
 import type { MembershipRole } from "@/lib/membership";
 import { buildMembershipPagePath } from "@/lib/membership-return";
-import {
-  dismissMembershipUpsellForSession,
-  WELCOME_OFFER_CODE,
-} from "@/lib/new-member-promotion";
+import { WELCOME_OFFER_CODE } from "@/lib/new-member-promotion";
 import { Check, Copy, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -104,7 +101,6 @@ export function MembershipUpgradeModal({
   }, []);
 
   const handleContinueBrowsing = useCallback(() => {
-    dismissMembershipUpsellForSession();
     onClose();
   }, [onClose]);
 
