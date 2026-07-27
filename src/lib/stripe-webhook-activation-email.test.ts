@@ -176,14 +176,28 @@ describe("Stripe membership activation emails", () => {
     );
   });
 
-  it("customer.subscription.updated sends no activation email", async () => {
+  it("customer.subscription.updated with cancel_at_period_end keeps paid access until period end", async () => {
     await handleSubscriptionEvent(
       activeSubscription({ status: "active", cancel_at_period_end: true }),
     );
 
     expect(mockUpsertUserMembershipAsAdmin).toHaveBeenCalledTimes(1);
     expect(mockUpsertUserMembershipAsAdmin).toHaveBeenCalledWith(
-      expect.objectContaining({ sendConfirmationEmail: false }),
+      expect.objectContaining({
+        sendConfirmationEmail: false,
+        status: "cancelled",
+        autoRenew: false,
+      }),
+    );
+  });
+
+  it("customer.subscription.deleted after paid period marks membership expired", async () => {
+    await handleSubscriptionEvent(activeSubscription({ status: "canceled" }));
+
+    expect(mockUpsertUserMembershipAsAdmin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "expired",
+      }),
     );
   });
 

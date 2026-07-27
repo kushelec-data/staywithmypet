@@ -17,7 +17,7 @@ export type ActivateMembershipInput = {
   planName?: string;
   endDate?: string | null;
   autoRenew?: boolean;
-  status?: "active" | "trialing";
+  status?: "active";
 };
 
 /**

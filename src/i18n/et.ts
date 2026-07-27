@@ -258,10 +258,13 @@ export const et = {
     permissionDenied:
       "Seda päringut ei saa saata. Kontrolli looma ja broneeringu andmeid.",
     petParentMembershipRequired:
-      "Hoolduspäringu saatmiseks on vajalik aktiivne lemmikloomaomaniku liikmesus.",
+      "Hooldustaotluse saatmiseks on vajalik kehtiv Pet Parent liikmelisus.",
     petFriendMembershipRequired:
-      "Hoolduspäringu saatmiseks on vajalik aktiivne loomasõbra liikmesus.",
-    viewMembershipPlans: "Vaata liikmesuse plaane",
+      "Hooldustaotluse saatmiseks on vajalik kehtiv Pet Friend liikmelisus.",
+    membershipLaunchOfferBadge: "Avamispakkumine",
+    membershipLaunchOfferBody:
+      "Kasuta koodi WELCOME90 ja saa liikmelisuselt 90% soodustust",
+    viewMembershipPlans: "Vaata liikmelisuse plaane",
     incomingMembershipUpsell: {
       petFriendTitle: "{petName} soovib, et sa tema eest hoolitseksid!",
       petFriendBody:
@@ -567,6 +570,8 @@ export const et = {
       on: "Sees",
       off: "Väljas",
       activePlanSuffix: "{plan} plaan",
+      cancelledActiveUntil: "Tühistatud — aktiivne kuni {date}",
+      cancelledRenewalStopped: "Pikendamine tühistatud — ligipääs kehtib kuni {date}.",
       browseFreeUpgrade: "Sirvi tasuta; tasulised funktsioonid avanevad liikmelisusega.",
       activeUnlocks:
         "Sinu {role} liikmelisus võimaldab selles rollis sõnumeid saata ja broneeringuid teha.",
@@ -577,10 +582,11 @@ export const et = {
       cancelMembershipPetFriend: "Tühista Pet Friend liikmelisus",
       cancelDialogTitle: "Tühistada liikmelisus?",
       cancelDialogBody:
-        "Sinu liikmelisus tühistatakse kohe ja kaotad selle rolli tasuliste funktsioonide kasutamise võimaluse.",
+        "Sinu liikmelisus jääb aktiivseks kuni praeguse tasutud perioodi lõpuni. Pärast seda kuupäeva seda automaatselt ei pikendata.",
       cancelDialogKeep: "Jäta liikmelisus alles",
       cancelDialogConfirm: "Tühista liikmelisus",
-      membershipCancelled: "Liikmesus tühistatud",
+      membershipCancelled:
+        "Liikmelisuse tühistamine on salvestatud. Ligipääs kehtib kuni tasutud perioodi lõpuni.",
       cancelFailed: "Liikmesuse tühistamine ebaõnnestus",
     },
     profileSetup: {

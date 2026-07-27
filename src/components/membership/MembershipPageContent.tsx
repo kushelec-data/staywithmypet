@@ -28,12 +28,15 @@ import {
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
   formatMembershipDate,
+  canCancelMembership,
   hasActiveMembershipForMode,
   hasActiveMembershipForRole,
+  isMembershipCancellationScheduled,
   membershipPlanLabel,
   membershipRoleTitle,
   membershipPlansForRole,
   membershipStatusForMode,
+  membershipStatusLabelForRow,
   type MembershipRole,
   type UserMembership,
 } from "@/lib/membership";
@@ -98,6 +101,7 @@ function RoleMembershipSummary({
   role,
   membership,
   isActive,
+  cancellationScheduled,
   t,
   cancelLabel,
   onCancel,
@@ -106,6 +110,7 @@ function RoleMembershipSummary({
   role: MembershipRole;
   membership: UserMembership | null;
   isActive: boolean;
+  cancellationScheduled: boolean;
   t: Dictionary;
   cancelLabel: string;
   onCancel: () => void;
@@ -115,9 +120,16 @@ function RoleMembershipSummary({
   const pageTitle = role === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
   const roleGenitive = membershipRoleGenitive(role, t);
   const planName = membership ? localizedMembershipPlanName(membership, t) : null;
+  const statusLabel = membership
+    ? membershipStatusLabelForRow(membership, {
+        activePlanSuffix: mpage.activePlanSuffix,
+        cancelledActiveUntil: mpage.cancelledActiveUntil,
+        demo: mpage.inactiveHeadline.replace("{role}", roleGenitive),
+      })
+    : null;
   const headline =
-    isActive && planName
-      ? mpage.activeHeadline.replace("{role}", roleGenitive)
+    isActive && statusLabel
+      ? statusLabel
       : mpage.inactiveHeadline.replace("{role}", roleGenitive);
 
   return (
@@ -126,9 +138,17 @@ function RoleMembershipSummary({
       <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>{headline}</p>
       {isActive && membership ? (
         <>
-          {planName ? (
+          {planName && !cancellationScheduled ? (
             <p className={`mt-1 ${ACCOUNT_BODY_VALUE} text-[#2E6B3F]`}>
               {mpage.activePlanSuffix.replace("{plan}", planName)}
+            </p>
+          ) : null}
+          {cancellationScheduled && membership.end_date ? (
+            <p className={`mt-1 ${ACCOUNT_BODY_TEXT}`}>
+              {mpage.cancelledRenewalStopped.replace(
+                "{date}",
+                formatMembershipDate(membership.end_date) ?? membership.end_date,
+              )}
             </p>
           ) : null}
           <dl className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -158,16 +178,18 @@ function RoleMembershipSummary({
           <p className={`mt-3 ${ACCOUNT_BODY_TEXT}`}>
             {mpage.activeUnlocks.replace("{role}", roleGenitive)}
           </p>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="mt-4"
-            disabled={cancelLoading}
-            onClick={onCancel}
-          >
-            {cancelLoading ? t.common.loading : cancelLabel}
-          </Button>
+          {canCancelMembership(membership) ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="mt-4"
+              disabled={cancelLoading}
+              onClick={onCancel}
+            >
+              {cancelLoading ? t.common.loading : cancelLabel}
+            </Button>
+          ) : null}
         </>
       ) : (
         <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{mpage.browseFreeUpgrade}</p>
@@ -336,7 +358,11 @@ export function MembershipPageContent({
   const dualActive = activeMembershipRoles.length === 2;
   const modeTab = activeModeToPricingTab(planMode);
   const status = profile
-    ? membershipStatusForMode(memberships, planMode)
+    ? membershipStatusForMode(memberships, planMode, {
+        activePlanSuffix: t.account.membershipPage.activePlanSuffix,
+        cancelledActiveUntil: t.account.membershipPage.cancelledActiveUntil,
+        demo: DEMO_MEMBERSHIP_LABEL,
+      })
     : DEMO_MEMBERSHIP_LABEL;
   const isActive = profile ? hasActiveMembershipForMode(memberships, planMode) : false;
   const modeRole = activeModeToMembershipRole(planMode);
@@ -524,6 +550,7 @@ export function MembershipPageContent({
               role={role}
               membership={memberships[role]}
               isActive
+              cancellationScheduled={isMembershipCancellationScheduled(memberships[role])}
               t={t}
               cancelLabel={cancelMembershipButtonLabel(role, dualActive, mpage)}
               onCancel={() => requestCancelMembership(role)}
@@ -621,10 +648,14 @@ export function MembershipPageContent({
         promotionCheckoutNote={t.newMemberPromotion.checkoutNote}
         planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
         checkoutReturnTo={returnTo}
-        cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}
+        cancelPlanLabel={
+          isActive && canCancelMembership(activeMembership) ? mpage.cancelMembership : undefined
+        }
         cancelPlanLoading={cancelLoadingRole === modeRole}
         onCancelPlan={
-          isActive ? () => requestCancelMembership(modeRole) : undefined
+          isActive && canCancelMembership(activeMembership)
+            ? () => requestCancelMembership(modeRole)
+            : undefined
         }
       />
     </AccountLayout>

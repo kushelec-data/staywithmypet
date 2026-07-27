@@ -21,10 +21,10 @@ import { formatRequestSubmitErrorForUi } from "@/lib/supabase-errors";
 import { createClient } from "@/lib/supabase";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import type { CareRequestActionErrorCode } from "@/app/actions/care-requests";
 import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
 import { membershipUpsellVariantForRequest } from "@/lib/membership-upsell";
+import { buildMembershipPagePath } from "@/lib/membership-return";
 import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
 import {
   isMembershipUpsellDismissedForSession,
@@ -100,6 +100,8 @@ export function SendRequestButton({
   const [pets, setPets] = useState<RequestPetOption[]>([]);
   const [petsLoading, setPetsLoading] = useState(false);
   const [noPets, setNoPets] = useState(false);
+  const [membershipBlockedNotice, setMembershipBlockedNotice] = useState(false);
+  const membershipBlockedRef = useRef<HTMLDivElement>(null);
 
   const isOwnPet = target.kind === "pet" && user?.id === target.petOwnerId;
   const isSelfProfile = target.kind === "profile" && user?.id === target.friendId;
@@ -128,6 +130,15 @@ export function SendRequestButton({
     return q ? `${pathname}?${q}` : pathname;
   }, [pathname, searchParams]);
 
+  const membershipHref = useMemo(
+    () =>
+      buildMembershipPagePath({
+        role: senderRole,
+        returnTo: returnUrl,
+      }),
+    [senderRole, returnUrl],
+  );
+
   const buttonLabel =
     success
       ? t.requests.requestSent
@@ -143,10 +154,16 @@ export function SendRequestButton({
   }, []);
 
   const openUpgradeToast = useCallback(() => {
-    if (upgradeToastOpenRef.current) return;
-    if (isMembershipUpsellDismissedForSession()) return;
+    if (upgradeToastOpenRef.current) return false;
+    if (isMembershipUpsellDismissedForSession()) return false;
     upgradeToastOpenRef.current = true;
     setUpgradeOpen(true);
+    return true;
+  }, []);
+
+  const showMembershipBlockedFeedback = useCallback(() => {
+    setMembershipBlockedNotice(true);
+    membershipBlockedRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, []);
 
   useEffect(() => {
@@ -182,6 +199,7 @@ export function SendRequestButton({
     }
     if (needsUpgrade) {
       setOpen(false);
+      showMembershipBlockedFeedback();
       openUpgradeToast();
       return;
     }
@@ -211,6 +229,7 @@ export function SendRequestButton({
     setOpen,
     needsUpgrade,
     openUpgradeToast,
+    showMembershipBlockedFeedback,
   ]);
 
   function resolveSubmitErrorMessage(code: CareRequestActionErrorCode): string {
@@ -251,6 +270,7 @@ export function SendRequestButton({
     setSuccess(false);
 
     if (needsUpgrade) {
+      showMembershipBlockedFeedback();
       openUpgradeToast();
       return;
     }
@@ -332,6 +352,7 @@ export function SendRequestButton({
     }
 
     if (needsUpgrade) {
+      showMembershipBlockedFeedback();
       openUpgradeToast();
       return;
     }
@@ -355,6 +376,7 @@ export function SendRequestButton({
 
       if (!result.success) {
         if (result.code === "MEMBERSHIP_REQUIRED") {
+          showMembershipBlockedFeedback();
           openUpgradeToast();
         }
         setError(
@@ -379,6 +401,7 @@ export function SendRequestButton({
         receiverId,
       });
       if (isMembershipRequiredError(err)) {
+        showMembershipBlockedFeedback();
         openUpgradeToast();
         setError(null);
       } else {
@@ -411,21 +434,38 @@ export function SendRequestButton({
           size={size}
           className={`w-full ${className}`}
           onClick={handleOpen}
-          disabled={authLoading || profileLoading || blocked || success || needsUpgrade}
+          disabled={authLoading || profileLoading || blocked || success}
+          aria-describedby={
+            needsUpgrade && membershipCheckReady ? "send-request-membership-blocked" : undefined
+          }
         >
           {buttonLabel}
         </Button>
       ) : null}
 
       {needsUpgrade && membershipCheckReady && !blocked ? (
-        <div className="mt-2 space-y-2 text-center text-xs">
-          <p className="text-muted">{membershipRequiredMessage}</p>
-          <Link
-            href="/membership"
-            className="inline-flex font-semibold text-brand-teal hover:underline"
-          >
+        <div
+          id="send-request-membership-blocked"
+          ref={membershipBlockedRef}
+          className="mt-3 space-y-3 rounded-xl border border-brand-pink/25 bg-brand-pink/10 px-3 py-3 text-center sm:px-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="rounded-lg border border-brand-teal/20 bg-mint/40 px-3 py-2.5">
+            <p className="text-[0.65rem] font-bold uppercase tracking-wide text-brand-teal">
+              {t.requests.membershipLaunchOfferBadge}
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-snug text-foreground sm:text-sm">
+              {t.requests.membershipLaunchOfferBody}
+            </p>
+          </div>
+          <p className="text-xs leading-relaxed text-muted sm:text-sm">{membershipRequiredMessage}</p>
+          {membershipBlockedNotice ? (
+            <p className="text-xs font-semibold text-brand-teal">{membershipRequiredMessage}</p>
+          ) : null}
+          <Button href={membershipHref} variant="secondary" size="sm" className="w-full">
             {t.requests.viewMembershipPlans}
-          </Link>
+          </Button>
         </div>
       ) : null}
 

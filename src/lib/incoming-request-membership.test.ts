@@ -136,10 +136,26 @@ describe("membership role qualification for accept", () => {
     expect(hasActiveMembershipForRole(memberships, "pet_parent")).toBe(false);
   });
 
-  it("cancelled membership cannot accept", () => {
+  it("cancelled membership with remaining paid period can accept", () => {
     const memberships = {
       pet_parent: null,
-      pet_friend: baseMembership({ status: "cancelled" }),
+      pet_friend: baseMembership({
+        status: "cancelled",
+        auto_renew: false,
+        end_date: "2099-01-01",
+      }),
+    };
+    expect(hasActiveMembershipForRole(memberships, "pet_friend")).toBe(true);
+  });
+
+  it("cancelled membership after expiry cannot accept", () => {
+    const memberships = {
+      pet_parent: null,
+      pet_friend: baseMembership({
+        status: "cancelled",
+        auto_renew: false,
+        end_date: "2020-01-01",
+      }),
     };
     expect(hasActiveMembershipForRole(memberships, "pet_friend")).toBe(false);
   });

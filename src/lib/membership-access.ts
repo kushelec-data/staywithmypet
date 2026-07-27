@@ -24,7 +24,7 @@ export async function loadMembershipsForUser(
 }
 
 /**
- * True when status is active|trialing AND (end_date null OR end_date > now()).
+ * True when status is active or cancelled-but-not-expired (via isMembershipActive).
  */
 export async function hasActiveMembership(
   supabase: SupabaseClient,

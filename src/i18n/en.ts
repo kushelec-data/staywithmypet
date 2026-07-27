@@ -256,9 +256,11 @@ export const en = {
     duplicateRequest: "You already have a request for these dates.",
     permissionDenied: "This request cannot be sent. Please check the pet and booking details.",
     petParentMembershipRequired:
-      "An active Pet Parent membership is required to send a care request.",
+      "A valid Pet Parent membership is required to send a care request.",
     petFriendMembershipRequired:
-      "An active Pet Friend membership is required to send a care request.",
+      "A valid Pet Friend membership is required to send a care request.",
+    membershipLaunchOfferBadge: "Launch offer",
+    membershipLaunchOfferBody: "Get 90% off membership with code WELCOME90",
     viewMembershipPlans: "View membership plans",
     incomingMembershipUpsell: {
       petFriendTitle: "{petName} would like you to look after them!",
@@ -566,6 +568,8 @@ export const en = {
       on: "On",
       off: "Off",
       activePlanSuffix: "{plan} plan",
+      cancelledActiveUntil: "Cancelled — active until {date}",
+      cancelledRenewalStopped: "Renewal cancelled — access continues until {date}.",
       browseFreeUpgrade: "Browse for free; upgrade to unlock paid features.",
       activeUnlocks:
         "Your {role} membership unlocks messaging and bookings in this mode.",
@@ -576,10 +580,10 @@ export const en = {
       cancelMembershipPetFriend: "Cancel Pet Friend membership",
       cancelDialogTitle: "Cancel membership?",
       cancelDialogBody:
-        "Your membership will be cancelled immediately and you will lose access to paid features for this role.",
+        "Your membership will stay active until the end of your current paid period. After that date it will not renew automatically.",
       cancelDialogKeep: "Keep membership",
       cancelDialogConfirm: "Cancel membership",
-      membershipCancelled: "Membership cancelled",
+      membershipCancelled: "Membership cancellation scheduled. Access continues until your paid period ends.",
       cancelFailed: "Failed to cancel membership",
     },
     profileSetup: {

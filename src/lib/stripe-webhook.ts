@@ -24,9 +24,9 @@ function subscriptionStatusToMembership(status: Stripe.Subscription.Status): Mem
     case "active":
       return "active";
     case "trialing":
-      return "trialing";
+      return "active";
     case "canceled":
-      return "cancelled";
+      return "expired";
     case "unpaid":
     case "past_due":
     case "incomplete":
@@ -36,6 +36,19 @@ function subscriptionStatusToMembership(status: Stripe.Subscription.Status): Mem
     default:
       return "inactive";
   }
+}
+
+/** Map Stripe subscription to DB status without ending paid access early. */
+function resolveMembershipStatusFromSubscription(
+  subscription: Stripe.Subscription,
+): MembershipStatus {
+  if (subscription.status === "active" || subscription.status === "trialing") {
+    if (subscription.cancel_at_period_end) {
+      return "cancelled";
+    }
+    return "active";
+  }
+  return subscriptionStatusToMembership(subscription.status);
 }
 
 function firstSubscriptionItem(subscription: Stripe.Subscription): Stripe.SubscriptionItem | undefined {
@@ -216,7 +229,7 @@ async function syncFromSubscription(
     status: subscription.status,
   });
 
-  const status = subscriptionStatusToMembership(subscription.status);
+  const status = resolveMembershipStatusFromSubscription(subscription);
   const startDate = periodStartIso(subscription) ?? new Date().toISOString();
 
   const result = await upsertUserMembershipAsAdmin({

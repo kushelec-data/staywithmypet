@@ -157,8 +157,7 @@ export type DbMembershipStatus =
   | "active"
   | "cancelled"
   | "expired"
-  | "inactive"
-  | "trialing";
+  | "inactive";
 
 export function toDbMembershipStatus(status: MembershipStatus | undefined): DbMembershipStatus {
   switch (status) {
@@ -168,8 +167,6 @@ export function toDbMembershipStatus(status: MembershipStatus | undefined): DbMe
       return "expired";
     case "inactive":
       return "inactive";
-    case "trialing":
-      return "trialing";
     case "active":
     default:
       return "active";
@@ -178,7 +175,7 @@ export function toDbMembershipStatus(status: MembershipStatus | undefined): DbMe
 
 /** Base enum (pre-20260603100000) only had active | cancelled | expired. */
 function membershipStatusFallback(dbStatus: DbMembershipStatus): DbMembershipStatus {
-  if (dbStatus === "inactive" || dbStatus === "trialing") return "active";
+  if (dbStatus === "inactive") return "active";
   return dbStatus;
 }
 
@@ -694,7 +691,7 @@ async function syncProfileMembershipStatusAfterChange(
   }
 }
 
-/** Cancel one role's membership (status → cancelled). Requires service role. */
+/** Cancel one role's membership (stops renewal; paid access continues until end_date). Requires service role. */
 export async function cancelUserMembershipAsAdmin(
   userId: string,
   role: MembershipRole,
@@ -753,14 +750,17 @@ export async function cancelUserMembershipAsAdmin(
   if (subscriptionId) {
     try {
       const { getStripe } = await import("@/lib/stripe");
-      await getStripe().subscriptions.cancel(subscriptionId);
-      console.log("[membership] stripe subscription cancelled", {
+      await getStripe().subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true,
+      });
+      console.log("[membership] stripe subscription scheduled for cancel at period end", {
         userId,
         role: dbRole,
         subscriptionId,
+        endDate: membership.end_date,
       });
     } catch (err) {
-      console.warn("[membership] stripe subscription cancel failed (continuing DB cancel)", {
+      console.warn("[membership] stripe subscription cancel-at-period-end failed (continuing DB cancel)", {
         userId,
         role: dbRole,
         subscriptionId,
@@ -772,7 +772,11 @@ export async function cancelUserMembershipAsAdmin(
   const cancelledAt = new Date().toISOString();
   const { data: updated, error: updateError } = await admin
     .from(MEMBERSHIP_TABLE)
-    .update({ status: "cancelled", updated_at: cancelledAt })
+    .update({
+      status: "cancelled",
+      auto_renew: false,
+      updated_at: cancelledAt,
+    })
     .eq("user_id", userId)
     .eq("role", dbRole)
     .eq("status", "active")

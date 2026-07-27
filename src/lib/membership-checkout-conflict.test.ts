@@ -96,9 +96,21 @@ describe("evaluateMembershipCheckoutConflict", () => {
     expect(result.blocked).toBe(false);
   });
 
-  it("cancelled membership permits new checkout", () => {
+  it("cancelled membership with remaining paid period blocks new checkout", () => {
     const result = evaluateMembershipCheckoutConflict(
       cancelledParent,
+      "pet_parent",
+      "3-month-owner",
+    );
+    expect(result.blocked).toBe(true);
+  });
+
+  it("cancelled membership after expiry permits new checkout", () => {
+    const result = evaluateMembershipCheckoutConflict(
+      {
+        ...cancelledParent,
+        end_date: "2020-01-01",
+      },
       "pet_parent",
       "3-month-owner",
     );

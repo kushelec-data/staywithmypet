@@ -7,12 +7,12 @@ import {
 export type MembershipRole = "pet_parent" | "pet_friend";
 
 /** Matches public.membership_status after 20260603100000_memberships_extend.sql */
+/** Matches production public.membership_status (active | cancelled | expired; inactive where migrated). */
 export type MembershipStatus =
   | "active"
   | "inactive"
   | "cancelled"
-  | "expired"
-  | "trialing";
+  | "expired";
 
 export type UserMembership = {
   id: string;
@@ -162,26 +162,49 @@ function startOfLocalDay(date: Date): Date {
 }
 
 /** True when membership end_date is on or after the calendar day of `now`. */
-function membershipEndOnOrAfterToday(end: Date, now = new Date()): boolean {
+export function membershipEndOnOrAfterToday(end: Date, now = new Date()): boolean {
   return startOfLocalDay(end).getTime() >= startOfLocalDay(now).getTime();
 }
 
+/** True when end_date is null or still on/after today. */
+export function membershipPeriodStillValid(
+  membership: Pick<UserMembership, "end_date"> | null | undefined,
+  now = new Date(),
+): boolean {
+  if (!membership) return false;
+  const end = parseMembershipEnd(membership as UserMembership);
+  if (!end) return true;
+  return membershipEndOnOrAfterToday(end, now);
+}
+
 /**
- * Active only when status is exactly active AND (end_date null OR end_date >= today).
- * Cancelled, expired, inactive, and trialing never qualify.
+ * Unlock paid access when the membership is active or cancelled-but-not-expired.
+ * Expired, inactive, and consumed one-time rows never qualify.
  */
 export function isMembershipActive(
   membership: UserMembership | null | undefined,
   now = new Date(),
 ): boolean {
   if (!membership) return false;
-  if (membership.status !== "active") return false;
+  if (membership.status === "expired" || membership.status === "inactive") {
+    return false;
+  }
   if (isOneTimePlanId(membership.plan_id) && isOneTimeMembershipConsumed(membership)) {
     return false;
   }
-  const end = parseMembershipEnd(membership);
-  if (!end) return true;
-  return membershipEndOnOrAfterToday(end, now);
+  if (!membershipPeriodStillValid(membership, now)) {
+    return false;
+  }
+  return membership.status === "active" || membership.status === "cancelled";
+}
+
+/** True when renewal is stopped but paid access continues until end_date. */
+export function isMembershipCancellationScheduled(
+  membership: UserMembership | null | undefined,
+  now = new Date(),
+): boolean {
+  if (!membership) return false;
+  return membership.status === "cancelled" && isMembershipActive(membership, now);
 }
 
 /** Profile/UI snapshot: only slots with an effectively active membership (non-active rows omitted). */
@@ -223,11 +246,37 @@ export function qualifiesAsActivePetParentMembership(
   return isMembershipActive(row as UserMembership, now);
 }
 
-/** True when the row can be cancelled (production: status must be exactly active). */
+/** True when the row can be cancelled (active renewal, not already scheduled). */
 export function canCancelMembership(
   membership: UserMembership | null | undefined,
+  now = new Date(),
 ): boolean {
-  return membership?.status === "active";
+  if (!membership) return false;
+  if (isMembershipCancellationScheduled(membership, now)) return false;
+  return membership.status === "active" && isMembershipActive(membership, now);
+}
+
+export function membershipStatusLabelForRow(
+  membership: UserMembership | null | undefined,
+  labels: {
+    activePlanSuffix: string;
+    cancelledActiveUntil: string;
+    demo: string;
+  },
+  now = new Date(),
+): string {
+  if (!membership || !isMembershipActive(membership, now)) {
+    return labels.demo;
+  }
+  const planName = membershipPlanLabel(membership);
+  if (isMembershipCancellationScheduled(membership, now)) {
+    const endLabel = formatMembershipDate(membership.end_date) ?? membership.end_date ?? "—";
+    return labels.cancelledActiveUntil.replace("{date}", endLabel);
+  }
+  if (planName) {
+    return labels.activePlanSuffix.replace("{plan}", planName);
+  }
+  return "Active";
 }
 
 export function hasActiveMembershipForMode(
@@ -269,9 +318,17 @@ export function membershipPlanLabel(
 export function membershipStatusForMode(
   memberships: UserMembershipsByRole,
   mode: ProfileActiveMode,
+  labels?: {
+    activePlanSuffix: string;
+    cancelledActiveUntil: string;
+    demo: string;
+  },
 ): string {
   const role = activeModeToMembershipRole(mode);
   const row = memberships[role];
+  if (labels) {
+    return membershipStatusLabelForRow(row, labels);
+  }
   if (isMembershipActive(row)) {
     return membershipPlanLabel(row) ?? "Active";
   }
