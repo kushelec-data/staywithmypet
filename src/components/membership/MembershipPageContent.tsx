@@ -294,8 +294,14 @@ export function MembershipPageContent({
       if (cancelledEffect) return;
 
       if (activated) {
-        const { track } = await import("@/lib/meta-pixel");
-        track("Purchase");
+        const [{ track: trackMeta }, { trackPurchaseOnce }] = await Promise.all([
+          import("@/lib/meta-pixel"),
+          import("@/lib/google-analytics"),
+        ]);
+        trackMeta("Purchase");
+        trackPurchaseOnce({
+          transaction_id: sessionId || returnKey,
+        });
       }
 
       setCheckoutBanner(

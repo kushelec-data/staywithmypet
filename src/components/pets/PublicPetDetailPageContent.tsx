@@ -28,7 +28,7 @@ import { PUBLIC_CARD, PUBLIC_SECTION_TITLE } from "@/lib/public-layout";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PublicSearchPet } from "@/lib/public-pet-search";
 
 type PublicPetDetailPageContentProps = {
@@ -45,6 +45,7 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
   const [notListedPublicly, setNotListedPublicly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const viewedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +75,14 @@ export function PublicPetDetailPageContent({ petId }: PublicPetDetailPageContent
       cancelled = true;
     };
   }, [supabase, petId, user?.id]);
+
+  useEffect(() => {
+    if (!pet || viewedRef.current) return;
+    viewedRef.current = true;
+    void import("@/lib/google-analytics").then(({ track }) => {
+      track("view_item", { item_id: petId, item_category: "pet" });
+    });
+  }, [pet, petId]);
 
   if (loading) {
     return (

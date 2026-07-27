@@ -123,6 +123,8 @@ export function RequestsPageContent() {
         if (!result.success) {
           throw new Error(result.message);
         }
+        const { track } = await import("@/lib/google-analytics");
+        track("booking_confirmed", { request_id: requestId });
         const { conversationId } = result;
         try {
           const { sendRequestStatusEmailsAction } = await import("@/app/actions/email-events");

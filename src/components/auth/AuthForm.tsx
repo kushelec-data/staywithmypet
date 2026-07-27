@@ -246,8 +246,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
 
         if (data.user) {
-          const { track } = await import("@/lib/meta-pixel");
-          track("CompleteRegistration");
+          const [{ track: trackMeta }, { track: trackGa }] = await Promise.all([
+            import("@/lib/meta-pixel"),
+            import("@/lib/google-analytics"),
+          ]);
+          trackMeta("CompleteRegistration");
+          trackGa("sign_up");
         }
 
         if (data.session && data.user) {
@@ -284,6 +288,8 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       await finishSession();
       if (!isSubmitActive(generation)) return;
+      const { track: trackGa } = await import("@/lib/google-analytics");
+      trackGa("login");
       await goAfterAuth(t.auth.loginSuccess, generation);
     } catch (err) {
       if (!isSubmitActive(generation)) return;
