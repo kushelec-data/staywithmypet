@@ -588,6 +588,19 @@ export const et = {
       membershipCancelled:
         "Liikmelisuse tühistamine on salvestatud. Ligipääs kehtib kuni tasutud perioodi lõpuni.",
       cancelFailed: "Liikmesuse tühistamine ebaõnnestus",
+      welcomeOffer: {
+        badge: "TERVITUSPAKKUMINE",
+        headline: "Saa esimeselt liikmelisuselt 90% soodustust",
+        supporting: "Kasuta maksmisel koodi WELCOME90. Piiratud aja avamispakkumine.",
+        copy: "Kopeeri kood",
+        copyCode: "Kopeeri sooduskood",
+        copied: "Kopeeritud",
+        activate: "Aktiveeri liikmelisus",
+      },
+      returnNotice: {
+        hint: "Pärast liikmelisuse aktiveerimist jätka lemmiku broneeringut.",
+        link: "Tagasi lemmiku profiilile",
+      },
     },
     profileSetup: {
       pageTitle: "Seadista profiil",

@@ -68,19 +68,19 @@ describe("membership promotion copy", () => {
     }
   });
 
-  it("places welcome banner and access-code section above membership plans on the account page", () => {
+  it("places welcome hero and access-code section around membership plans on the account page", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/membership/MembershipPageContent.tsx"),
       "utf8",
     );
-    const bannerIndex = source.indexOf("<NewMemberPromotionBanner");
+    const heroIndex = source.indexOf("<MembershipWelcomeOfferHero");
     const accessCodeIndex = source.indexOf("<InvitedTestUserSection");
     const plansIndex = source.indexOf("<MembershipPlans");
-    expect(bannerIndex).toBeGreaterThan(-1);
+    expect(heroIndex).toBeGreaterThan(-1);
     expect(accessCodeIndex).toBeGreaterThan(-1);
     expect(plansIndex).toBeGreaterThan(-1);
-    expect(bannerIndex).toBeLessThan(plansIndex);
-    expect(accessCodeIndex).toBeLessThan(plansIndex);
-    expect(source).toMatch(/variant="strip"/);
+    expect(heroIndex).toBeLessThan(plansIndex);
+    expect(plansIndex).toBeLessThan(accessCodeIndex);
+    expect(source).toContain("sectionId={MEMBERSHIP_PLANS_SECTION_ID}");
   });
 });

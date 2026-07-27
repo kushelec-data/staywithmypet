@@ -667,8 +667,31 @@ select.input-field {
     border-color 180ms ease;
 }
 
-.membership-upgrade-btn-lift:hover {
-  transform: translateY(-2px);
+.membership-plan-card-hover {
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .membership-plan-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(15, 60, 55, 0.1);
+  }
+
+  .membership-plans-highlight {
+    animation: membership-plans-pulse 1.2s ease-out;
+  }
+}
+
+@keyframes membership-plans-pulse {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  35% {
+    box-shadow: 0 0 0 4px rgba(46, 107, 63, 0.14);
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

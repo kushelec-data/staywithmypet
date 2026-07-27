@@ -39,6 +39,8 @@ type MembershipPlansProps = {
   initialTab?: "owner" | "friend";
   /** When set (account page), show only this role's plans — no role tabs. */
   modeFilter?: "owner" | "friend";
+  /** Anchor id for scroll-to-plans CTAs on the account page. */
+  sectionId?: string;
   /** Stripe-ready plans; when omitted, uses i18n pricing tables. */
   plans?: MembershipPlanDefinition[];
   /** Signed-in user id for Stripe Checkout (account page). */
@@ -225,13 +227,20 @@ function PlanCard({
 
   return (
     <article
-      className={`relative mx-auto flex h-full w-full max-w-md flex-col sm:max-w-none ${
+      data-membership-plan-card
+      className={`membership-plan-card-hover relative mx-auto flex h-full w-full max-w-md flex-col sm:max-w-none ${
         isAccount
           ? `${ACCOUNT_CARD_CLASS} p-5 sm:p-6`
           : `card-elevated rounded-3xl bg-surface p-5 sm:p-6 lg:p-8 ${
               plan.popular || isCurrent ? "ring-2 ring-brand-teal/40 shadow-lg shadow-brand-teal/10" : ""
             }`
-      } ${isAccount && (plan.popular || isCurrent) ? "ring-2 ring-[#2E6B3F]/25" : ""}`}
+      } ${
+        isAccount && plan.popular && !isCurrent
+          ? "ring-2 ring-brand-teal/30 shadow-md shadow-brand-teal/10"
+          : isAccount && isCurrent
+            ? "ring-2 ring-[#2E6B3F]/25"
+            : ""
+      }`}
     >
       {plan.popular && !isCurrent && !showPromotionOffer ? (
         <span className="absolute -top-3 left-1/2 z-10 w-[calc(100%-1.5rem)] max-w-[18rem] -translate-x-1/2 rounded-full bg-brand-teal px-3 py-1.5 text-center text-[0.65rem] font-semibold leading-tight tracking-normal text-white shadow-sm sm:w-auto sm:max-w-none sm:whitespace-nowrap sm:px-5 sm:text-xs">
@@ -353,6 +362,7 @@ function PlanCard({
                 ? "membership-stripe-checkout-button"
                 : undefined
             }
+            data-membership-plan-focus={canCheckout ? "true" : undefined}
             disabled={
               showComingSoon || blockedByActiveMembership
                 ? true
@@ -426,6 +436,7 @@ export function MembershipPlans({
   currentPlanLabel,
   initialTab = "owner",
   modeFilter,
+  sectionId,
   plans: plansProp,
   checkoutUserId,
   checkoutRole,
@@ -546,6 +557,56 @@ export function MembershipPlans({
     { id: "friend" as const, label: t.roles.petFriend.label, subtitle: t.roles.petFriend.tagline },
   ];
 
+  const plansGrid = (
+    <div
+      className={`grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 ${
+        showRoleTabs ? "mt-8 sm:mt-10 lg:mt-10" : "mt-0"
+      }`}
+    >
+      {plans.map((plan) => (
+        <PlanCard
+          key={plan.id}
+          plan={plan}
+          variant={variant}
+          activePlanId={activePlanId}
+          currentPlanLabel={currentPlanLabel}
+          getStartedLabel={t.pricing.getStarted}
+          choosePlanLabel={t.pricing.choosePlan}
+          activePlanLabel={t.pricing.activePlan}
+          currentPlanButtonLabel={t.pricing.currentPlan}
+          openingCheckoutLabel={t.pricing.openingCheckout}
+          redirectingLabel={t.pricing.redirecting}
+          checkoutUnavailableLabel={t.pricing.checkoutError}
+          comingSoonLabel={t.pricing.comingSoon}
+          activeMembershipExistsLabel={t.pricing.activeMembershipExists}
+          popularBadge={t.pricing.mostPopular}
+          enableCheckout={enableCheckout}
+          useTestAccessFlow={useTestAccessFlow}
+          checkoutUserId={checkoutUserId}
+          checkoutRole={effectiveCheckoutRole}
+          checkoutLoadingPlanId={checkoutLoadingPlanId}
+          checkoutError={checkoutRuntimeErrorForPlan(checkoutErrors, plan.id)}
+          planConfigError={planConfigErrorForPlan(planCheckoutErrors, plan.id)}
+          onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
+          payWithStripeLabel={payWithStripeLabel}
+          activateMembershipLabel={activateMembershipLabel}
+          promotionDisplayMode={promotionDisplayMode}
+          promotionBadgeLabel={promotionBadgeLabel}
+          promotionDiscountHeadline={promotionDiscountHeadline}
+          promotionCheckoutNote={promotionCheckoutNote}
+          onOpenAccessCode={onOpenAccessCode}
+          accessCodeLinkLabel={accessCodeLinkLabel}
+          activePlanEndDate={activePlanEndDate}
+          activePlanEndDateLabel={activePlanEndDateLabel}
+          cancelPlanLabel={cancelPlanLabel}
+          cancelPlanLoading={cancelPlanLoading}
+          onCancelPlan={onCancelPlan}
+          roleHasActiveMembership={roleHasActiveMembership}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <>
       {showRoleTabs ? (
@@ -585,53 +646,13 @@ export function MembershipPlans({
         </div>
       ) : null}
 
-      <div
-        className={`grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 ${
-          showRoleTabs ? "mt-8 sm:mt-10 lg:mt-10" : variant === "account" ? "mt-0" : "mt-0"
-        }`}
-      >
-        {plans.map((plan) => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            variant={variant}
-            activePlanId={activePlanId}
-            currentPlanLabel={currentPlanLabel}
-            getStartedLabel={t.pricing.getStarted}
-            choosePlanLabel={t.pricing.choosePlan}
-            activePlanLabel={t.pricing.activePlan}
-            currentPlanButtonLabel={t.pricing.currentPlan}
-            openingCheckoutLabel={t.pricing.openingCheckout}
-            redirectingLabel={t.pricing.redirecting}
-            checkoutUnavailableLabel={t.pricing.checkoutError}
-            comingSoonLabel={t.pricing.comingSoon}
-            activeMembershipExistsLabel={t.pricing.activeMembershipExists}
-            popularBadge={t.pricing.mostPopular}
-            enableCheckout={enableCheckout}
-            useTestAccessFlow={useTestAccessFlow}
-            checkoutUserId={checkoutUserId}
-            checkoutRole={effectiveCheckoutRole}
-            checkoutLoadingPlanId={checkoutLoadingPlanId}
-            checkoutError={checkoutRuntimeErrorForPlan(checkoutErrors, plan.id)}
-            planConfigError={planConfigErrorForPlan(planCheckoutErrors, plan.id)}
-            onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
-            payWithStripeLabel={payWithStripeLabel}
-            activateMembershipLabel={activateMembershipLabel}
-            promotionDisplayMode={promotionDisplayMode}
-            promotionBadgeLabel={promotionBadgeLabel}
-            promotionDiscountHeadline={promotionDiscountHeadline}
-            promotionCheckoutNote={promotionCheckoutNote}
-            onOpenAccessCode={onOpenAccessCode}
-            accessCodeLinkLabel={accessCodeLinkLabel}
-            activePlanEndDate={activePlanEndDate}
-            activePlanEndDateLabel={activePlanEndDateLabel}
-            cancelPlanLabel={cancelPlanLabel}
-            cancelPlanLoading={cancelPlanLoading}
-            onCancelPlan={onCancelPlan}
-            roleHasActiveMembership={roleHasActiveMembership}
-          />
-        ))}
-      </div>
+      {sectionId ? (
+        <section id={sectionId} className="scroll-mt-24">
+          {plansGrid}
+        </section>
+      ) : (
+        plansGrid
+      )}
     </>
   );
 }

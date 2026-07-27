@@ -585,6 +585,19 @@ export const en = {
       cancelDialogConfirm: "Cancel membership",
       membershipCancelled: "Membership cancellation scheduled. Access continues until your paid period ends.",
       cancelFailed: "Failed to cancel membership",
+      welcomeOffer: {
+        badge: "WELCOME OFFER",
+        headline: "Get 90% off your first membership",
+        supporting: "Use code WELCOME90 at checkout. Limited-time launch offer.",
+        copy: "Copy code",
+        copyCode: "Copy promo code",
+        copied: "Copied",
+        activate: "Activate membership",
+      },
+      returnNotice: {
+        hint: "After activating your membership, continue with your pet booking.",
+        link: "Return to pet profile",
+      },
     },
     profileSetup: {
       pageTitle: "Set up your profile",
