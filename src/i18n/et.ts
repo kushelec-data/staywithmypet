@@ -258,10 +258,13 @@ export const et = {
     permissionDenied:
       "Seda päringut ei saa saata. Kontrolli looma ja broneeringu andmeid.",
     petParentMembershipRequired:
-      "Hoolduspäringu saatmiseks on vajalik aktiivne lemmikloomaomaniku liikmesus.",
+      "Hooldustaotluse saatmiseks on vajalik kehtiv Pet Parent liikmelisus.",
     petFriendMembershipRequired:
-      "Hoolduspäringu saatmiseks on vajalik aktiivne loomasõbra liikmesus.",
-    viewMembershipPlans: "Vaata liikmesuse plaane",
+      "Hooldustaotluse saatmiseks on vajalik kehtiv Pet Friend liikmelisus.",
+    membershipLaunchOfferBadge: "Avamispakkumine",
+    membershipLaunchOfferBody:
+      "Kasuta koodi WELCOME90 ja saa liikmelisuselt 90% soodustust",
+    viewMembershipPlans: "Vaata liikmelisuse plaane",
     incomingMembershipUpsell: {
       petFriendTitle: "{petName} soovib, et sa tema eest hoolitseksid!",
       petFriendBody:
@@ -554,9 +557,9 @@ export const et = {
       petParentTitle: "Loomaomaniku liikmelisus",
       petFriendTitle: "Loomasõbra liikmelisus",
       petParentSubtitle:
-        "Vali endale sobiv liikmelisus, et saata hoiutaotlusi, leppida kokku hoiuperioode ja suhelda loomasõpradega.",
+        "Vali liikmelisus, mis sobib kõige paremini sinu vajadustega.",
       petFriendSubtitle:
-        "Plaanid loomasõpradele — võta hooldust vastu, koordineeri broneeringuid ja kirjuta sõnumeid, kui oled valmis.",
+        "Vali liikmelisus, mis sobib kõige paremini sinu vajadustega.",
       activeHeadline: "Sinu {role} liikmelisus on aktiivne",
       inactiveHeadline: "Aktiivset {role} liikmelisust pole",
       dualMember: "Mõlemad rollid on aktiivsed",
@@ -567,6 +570,8 @@ export const et = {
       on: "Sees",
       off: "Väljas",
       activePlanSuffix: "{plan} plaan",
+      cancelledActiveUntil: "Tühistatud — aktiivne kuni {date}",
+      cancelledRenewalStopped: "Pikendamine tühistatud — ligipääs kehtib kuni {date}.",
       browseFreeUpgrade: "Sirvi tasuta; tasulised funktsioonid avanevad liikmelisusega.",
       activeUnlocks:
         "Sinu {role} liikmelisus võimaldab selles rollis sõnumeid saata ja broneeringuid teha.",
@@ -577,11 +582,28 @@ export const et = {
       cancelMembershipPetFriend: "Tühista Pet Friend liikmelisus",
       cancelDialogTitle: "Tühistada liikmelisus?",
       cancelDialogBody:
-        "Sinu liikmelisus tühistatakse kohe ja kaotad selle rolli tasuliste funktsioonide kasutamise võimaluse.",
+        "Sinu liikmelisus jääb aktiivseks kuni praeguse tasutud perioodi lõpuni. Pärast seda kuupäeva seda automaatselt ei pikendata.",
       cancelDialogKeep: "Jäta liikmelisus alles",
       cancelDialogConfirm: "Tühista liikmelisus",
-      membershipCancelled: "Liikmesus tühistatud",
+      membershipCancelled:
+        "Liikmelisuse tühistamine on salvestatud. Ligipääs kehtib kuni tasutud perioodi lõpuni.",
       cancelFailed: "Liikmesuse tühistamine ebaõnnestus",
+      welcomeOffer: {
+        badge: "Piiratud avamispakkumine",
+        headlineLine1: "Saa 90% soodustust",
+        headlineLine2: "esimeselt liikmelisuselt",
+        supporting: "Liitu täna ja kasuta maksmisel koodi WELCOME90.",
+        footnote: "Piiratud aja avamispakkumine.",
+        copy: "Kopeeri kood",
+        copyCode: "Kopeeri sooduskood",
+        clickToCopy: "Klõpsa kopeerimiseks",
+        copied: "Kopeeritud",
+        activate: "Aktiveeri liikmelisus",
+      },
+      returnNotice: {
+        hint: "Pärast liikmelisuse aktiveerimist jätka lemmiku broneeringut.",
+        link: "Tagasi lemmiku profiilile",
+      },
     },
     profileSetup: {
       pageTitle: "Seadista profiil",
@@ -1380,7 +1402,7 @@ export const et = {
   pricing: {
     title: "Liikmelisus ja hinnad",
     subtitle:
-      "Loo konto, sirvi lemmikloomi ja sõpru ning lisa kuulutusi tasuta. Uuenda ainult siis, kui oled valmis sõnumeid saatma või broneerima.",
+      "Konto loomine, profiilide sirvimine ja oma kuulutuste lisamine on tasuta. Liikmelisuse saad aktiveerida siis, kui soovid hakata sõnumeid saatma või hoiukokkuleppeid tegema.",
     getStarted: "Alusta",
     choosePlan: "Vali pakett",
     activePlan: "Aktiivne plaan",
@@ -1551,7 +1573,8 @@ export const et = {
     loadingReviews: "Laen arvustusi…",
   },
   membershipCheckout: {
-    payWithStripe: "Maksa Stripe'iga",
+    payWithStripe: "Aktiveeri liikmelisus",
+    activateMembership: "Aktiveeri liikmelisus",
     paymentSuccess:
       "Sinu liikmelisus on aktiivne. Saad selles rollis kasutada tasulisi funktsioone.",
     paymentPending:
@@ -1570,10 +1593,10 @@ export const et = {
   },
   testAccess: {
     invitedSection: {
-      title: "Kutsutud testkasutaja?",
+      title: "Kas sul on sooduskood?",
       description:
-        "Kui said StayWithMyPet kutse, aktiveeri oma 3-kuune liikmelisus tasuta platvormi ligipääsukoodiga.",
-      activateButton: "Aktiveeri ligipääsukoodiga",
+        "Sisesta oma sooduskood, et kasutada kampaaniapakkumist või aktiveerida liikmelisus.",
+      activateButton: "Kasuta koodi",
     },
     alreadyHaveAccessCode: "Kas sul on juba ligipääsukood?",
     accessCodePanelTitle: "Platvormi ligipääsukood",
@@ -1581,7 +1604,7 @@ export const et = {
       "Sisesta platvormi ligipääsukood, et aktiveerida {role} liikmelisus paketile {plan}. See on Stripe maksest eraldi.",
     closeAccessCode: "Sulge",
     membershipBanner:
-      "Kutsutud kasutajad saavad liikmelisuse aktiveerida platvormi ligipääsukoodiga — kaarti pole vaja.",
+      "Liikmelisuse saad aktiveerida sooduskoodiga — kaarti pole vaja.",
     membershipIntro:
       "Vali allpool {role} pakett. Järgmisel sammul sisestad platvormi ligipääsukoodi — makset pole vaja.",
     pageTitle: "Sisesta platvormi ligipääsukood",
@@ -1601,6 +1624,19 @@ export const et = {
     activating: "Aktiveerin…",
     backToPlans: "Tagasi pakettide juurde",
   },
+  membershipUpgradeModal: {
+    badge: "Avamispakkumine",
+    headline: "Saa esimeselt liikmelisuselt 90% soodustust",
+    subtext: "Ava sõnumid ja hoiutaotlused juba täna.",
+    checkoutHint: "Kasuta maksmisel allolevat koodi.",
+    copy: "Kopeeri",
+    copyCode: "Kopeeri sooduskood",
+    copied: "Kopeeritud",
+    viewPlans: "Vaata liikmelisuse plaane",
+    continueBrowsing: "Jätka sirvimist",
+    close: "Sulge",
+    closeBackdrop: "Sulge dialoog",
+  },
   membershipUpsell: {
     oneStepTitle: "🐾 Oled ühe sammu kaugusel!",
     searchPetBody: "{name} tahab sinuga tutvuda. Ava liikmelisus, et päring saata.",
@@ -1608,8 +1644,25 @@ export const et = {
     fallbackTitle: "🐾 Oled ühe sammu kaugusel!",
     fallbackBody: "Ava liikmelisus, et sõnumeid saata, hooldust paluda ja broneerida.",
     unlockCta: "Ava liikmelisus",
+    promotionTitle: "Valmis ühendust looma?",
+    promotionBody:
+      "Aktiveeri oma esimene liikmelisus ja saa piiratud aja jooksul 90% soodustust.",
+    promotionCta: "Aktiveeri liikmelisus",
+    notNow: "Mitte praegu",
     maybeLater: "Võib-olla hiljem",
     close: "Sulge",
+  },
+  newMemberPromotion: {
+    bannerAriaLabel: "Tervituspakkumine",
+    offerSupportingCopy:
+      "Saa piiratud aja jooksul oma esimeselt liikmelisuselt 90% soodustust.",
+    stripOfferLine: "90% soodustust esimeselt liikmelisuselt piiratud aja jooksul.",
+    checkoutNote: "Lõplik soodushind kuvatakse turvaliselt kassas.",
+    dashboardBannerBody:
+      "Sinu tervituspakkumine ootab. Aktiveeri esimene liikmelisus ja säästa 90%.",
+    activateMembershipCta: "Aktiveeri liikmelisus",
+    planBadge: "TERVITUSPAKKUMINE",
+    discountHeadline: "90% SOODUSTUST",
   },
   faq: {
     badge: "KKK",

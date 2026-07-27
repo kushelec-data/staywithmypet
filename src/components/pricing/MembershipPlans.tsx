@@ -38,6 +38,8 @@ type MembershipPlansProps = {
   initialTab?: "owner" | "friend";
   /** When set (account page), show only this role's plans — no role tabs. */
   modeFilter?: "owner" | "friend";
+  /** Anchor id for scroll-to-plans CTAs on the account page. */
+  sectionId?: string;
   /** Stripe-ready plans; when omitted, uses i18n pricing tables. */
   plans?: MembershipPlanDefinition[];
   /** Signed-in user id for Stripe Checkout (account page). */
@@ -200,7 +202,9 @@ function PlanCard({
 
   return (
     <article
-      className={`relative mx-auto flex h-full w-full max-w-md flex-col sm:max-w-none ${
+      data-membership-plan-card
+      data-membership-plan-popular={plan.popular ? "true" : undefined}
+      className={`membership-plan-card-hover relative mx-auto flex h-full w-full max-w-md flex-col sm:max-w-none ${
         isAccount
           ? `${ACCOUNT_CARD_CLASS} p-5 sm:p-6`
           : `card-elevated rounded-3xl bg-surface p-5 sm:p-6 lg:p-8 ${
@@ -298,6 +302,7 @@ function PlanCard({
           ) : null}
           <Button
             type="button"
+            data-membership-plan-focus={canCheckout && !isCurrent && !showComingSoon ? true : undefined}
             variant={
               showComingSoon
                 ? "secondary"
@@ -391,6 +396,7 @@ export function MembershipPlans({
   currentPlanLabel,
   initialTab = "owner",
   modeFilter,
+  sectionId,
   plans: plansProp,
   checkoutUserId,
   checkoutRole,
@@ -548,6 +554,7 @@ export function MembershipPlans({
       ) : null}
 
       <div
+        id={sectionId}
         className={`grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 ${
           showRoleTabs ? "mt-8 sm:mt-10 lg:mt-10" : variant === "account" ? "mt-0" : "mt-0"
         }`}

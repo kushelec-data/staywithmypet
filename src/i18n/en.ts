@@ -256,9 +256,11 @@ export const en = {
     duplicateRequest: "You already have a request for these dates.",
     permissionDenied: "This request cannot be sent. Please check the pet and booking details.",
     petParentMembershipRequired:
-      "An active Pet Parent membership is required to send a care request.",
+      "A valid Pet Parent membership is required to send a care request.",
     petFriendMembershipRequired:
-      "An active Pet Friend membership is required to send a care request.",
+      "A valid Pet Friend membership is required to send a care request.",
+    membershipLaunchOfferBadge: "Launch offer",
+    membershipLaunchOfferBody: "Get 90% off membership with code WELCOME90",
     viewMembershipPlans: "View membership plans",
     incomingMembershipUpsell: {
       petFriendTitle: "{petName} would like you to look after them!",
@@ -553,9 +555,9 @@ export const en = {
       petParentTitle: "Pet Parent membership",
       petFriendTitle: "Pet Friend membership",
       petParentSubtitle:
-        "Plans for Pet Parents — send requests, book care, and message when you are ready.",
+        "Choose the membership that best fits your needs.",
       petFriendSubtitle:
-        "Plans for Pet Friends — accept care, coordinate bookings, and message when you are ready.",
+        "Choose the membership that best fits your needs.",
       activeHeadline: "Your {role} membership is active",
       inactiveHeadline: "No active {role} membership",
       dualMember: "Dual member — both roles active",
@@ -566,6 +568,8 @@ export const en = {
       on: "On",
       off: "Off",
       activePlanSuffix: "{plan} plan",
+      cancelledActiveUntil: "Cancelled — active until {date}",
+      cancelledRenewalStopped: "Renewal cancelled — access continues until {date}.",
       browseFreeUpgrade: "Browse for free; upgrade to unlock paid features.",
       activeUnlocks:
         "Your {role} membership unlocks messaging and bookings in this mode.",
@@ -576,11 +580,27 @@ export const en = {
       cancelMembershipPetFriend: "Cancel Pet Friend membership",
       cancelDialogTitle: "Cancel membership?",
       cancelDialogBody:
-        "Your membership will be cancelled immediately and you will lose access to paid features for this role.",
+        "Your membership will stay active until the end of your current paid period. After that date it will not renew automatically.",
       cancelDialogKeep: "Keep membership",
       cancelDialogConfirm: "Cancel membership",
-      membershipCancelled: "Membership cancelled",
+      membershipCancelled: "Membership cancellation scheduled. Access continues until your paid period ends.",
       cancelFailed: "Failed to cancel membership",
+      welcomeOffer: {
+        badge: "Limited Launch Offer",
+        headlineLine1: "Get 90% off",
+        headlineLine2: "your first membership",
+        supporting: "Join today and use code WELCOME90 during checkout.",
+        footnote: "Limited-time launch offer.",
+        copy: "Copy Code",
+        copyCode: "Copy promo code",
+        clickToCopy: "Click to copy",
+        copied: "Copied",
+        activate: "Activate Membership",
+      },
+      returnNotice: {
+        hint: "After activating your membership, continue with your pet booking.",
+        link: "Return to pet profile",
+      },
     },
     profileSetup: {
       pageTitle: "Set up your profile",
@@ -1371,7 +1391,7 @@ export const en = {
   pricing: {
     title: "Membership & Pricing",
     subtitle:
-      "Create an account, browse pets and pet friends, and create listings for free. Upgrade only when you're ready to message or make bookings.",
+      "Create an account, browse pets and pet friends, and create listings for free. Upgrade only when you're ready to message or make care arrangements.",
     getStarted: "Get started",
     choosePlan: "Choose plan",
     activePlan: "Active plan",
@@ -1542,7 +1562,8 @@ export const en = {
     loadingReviews: "Loading reviews…",
   },
   membershipCheckout: {
-    payWithStripe: "Pay with Stripe",
+    payWithStripe: "Activate membership",
+    activateMembership: "Activate membership",
     paymentSuccess: "Your membership is active. You can use paid features in this mode.",
     paymentPending:
       "Payment received — your membership will activate shortly. Refresh this page if it does not update.",
@@ -1560,10 +1581,10 @@ export const en = {
   },
   testAccess: {
     invitedSection: {
-      title: "Invited test user?",
+      title: "Have an access code?",
       description:
-        "If you received an invitation from StayWithMyPet, activate your 3-month membership free using a platform access code.",
-      activateButton: "Activate with access code",
+        "Redeem your code to unlock exclusive offers, discounts or membership access.",
+      activateButton: "Redeem code",
     },
     alreadyHaveAccessCode: "Already have an access code?",
     accessCodePanelTitle: "Platform access code",
@@ -1571,7 +1592,7 @@ export const en = {
       "Enter your platform access code to activate {role} membership for {plan}. This is separate from Stripe payment.",
     closeAccessCode: "Close",
     membershipBanner:
-      "Invited users can activate membership with a platform access code — no card required.",
+      "You can activate membership with an access code — no card required.",
     membershipIntro:
       "Choose a {role} plan below. You will enter your platform access code on the next step — no payment required.",
     pageTitle: "Enter platform access code",
@@ -1591,6 +1612,19 @@ export const en = {
     activating: "Activating…",
     backToPlans: "Back to plans",
   },
+  membershipUpgradeModal: {
+    badge: "Launch offer",
+    headline: "Get 90% off your first membership",
+    subtext: "Unlock messaging and care requests today.",
+    checkoutHint: "Use code below during checkout.",
+    copy: "Copy",
+    copyCode: "Copy promo code",
+    copied: "Copied",
+    viewPlans: "View membership plans",
+    continueBrowsing: "Continue browsing",
+    close: "Close",
+    closeBackdrop: "Close dialog",
+  },
   membershipUpsell: {
     oneStepTitle: "🐾 You're one step away!",
     searchPetBody: "{name} wanted to meet you. Unlock membership to send a request.",
@@ -1598,8 +1632,24 @@ export const en = {
     fallbackTitle: "🐾 You're one step away!",
     fallbackBody: "Unlock membership to message, request care, and make bookings.",
     unlockCta: "Unlock membership",
+    promotionTitle: "Ready to connect?",
+    promotionBody:
+      "Activate your first membership and get 90% off for a limited time.",
+    promotionCta: "Activate membership",
+    notNow: "Not now",
     maybeLater: "Maybe later",
     close: "Dismiss",
+  },
+  newMemberPromotion: {
+    bannerAriaLabel: "Welcome offer",
+    offerSupportingCopy: "Get 90% off your first membership for a limited time.",
+    stripOfferLine: "90% OFF your first membership for a limited time.",
+    checkoutNote: "Final discounted price is shown securely at checkout.",
+    dashboardBannerBody:
+      "Your welcome offer is waiting. Activate your first membership and save 90%.",
+    activateMembershipCta: "Activate membership",
+    planBadge: "WELCOME OFFER",
+    discountHeadline: "90% OFF",
   },
   faq: {
     badge: "FAQ",

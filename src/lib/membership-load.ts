@@ -3,6 +3,7 @@ import {
   emptyMembershipsByRole,
   filterActiveMembershipsByRole,
   indexMemberships,
+  type MembershipRole,
   type UserMembership,
   type UserMembershipsByRole,
 } from "@/lib/membership";
@@ -86,6 +87,67 @@ export async function fetchUserMemberships(
   return indexMemberships(await fetchUserMembershipRows(supabase, userId));
 }
 
+export type WelcomeOfferEligibleByRole = Record<MembershipRole, boolean>;
+
+export const NO_WELCOME_OFFER_ELIGIBLE: WelcomeOfferEligibleByRole = {
+  pet_parent: false,
+  pet_friend: false,
+};
+
+/** True when any user_memberships row exists for the role (active, cancelled, expired, etc.). */
+export function membershipRolesEverHeldFromRows(
+  rows: UserMembership[],
+): Record<MembershipRole, boolean> {
+  const held: Record<MembershipRole, boolean> = {
+    pet_parent: false,
+    pet_friend: false,
+  };
+  for (const row of rows) {
+    if (row.role === "pet_parent" || row.role === "pet_friend") {
+      held[row.role] = true;
+    }
+  }
+  return held;
+}
+
+/** First-ever membership offer: eligible only when no historical row exists for the role. */
+export function welcomeOfferEligibleFromRows(rows: UserMembership[]): WelcomeOfferEligibleByRole {
+  const everHeld = membershipRolesEverHeldFromRows(rows);
+  return {
+    pet_parent: !everHeld.pet_parent,
+    pet_friend: !everHeld.pet_friend,
+  };
+}
+
+export type ResolvedMembershipSnapshot = {
+  memberships: UserMembershipsByRole;
+  welcomeOfferEligibleByRole: WelcomeOfferEligibleByRole;
+};
+
+/** Single query: active membership slots + per-role welcome-offer eligibility from full history. */
+export async function resolveMembershipSnapshot(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ResolvedMembershipSnapshot> {
+  try {
+    const rows = await fetchUserMembershipRows(supabase, userId);
+    return {
+      memberships: filterActiveMembershipsByRole(indexMemberships(rows)),
+      welcomeOfferEligibleByRole: welcomeOfferEligibleFromRows(rows),
+    };
+  } catch (err) {
+    if (isPostgrestError(err)) {
+      logSupabaseError("resolveMembershipSnapshot", err);
+    } else {
+      console.error("[membership] resolveMembershipSnapshot", err);
+    }
+    return {
+      memberships: emptyMembershipsByRole(),
+      welcomeOfferEligibleByRole: NO_WELCOME_OFFER_ELIGIBLE,
+    };
+  }
+}
+
 /**
  * Load active memberships from user_memberships only (no legacy profile fallback).
  * Cancelled/expired rows are omitted; never infer dual membership from profiles.role.
@@ -94,15 +156,6 @@ export async function resolveUserMemberships(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserMembershipsByRole> {
-  try {
-    const rows = await fetchUserMembershipRows(supabase, userId);
-    return filterActiveMembershipsByRole(indexMemberships(rows));
-  } catch (err) {
-    if (isPostgrestError(err)) {
-      logSupabaseError("resolveUserMemberships", err);
-    } else {
-      console.error("[membership] resolveUserMemberships", err);
-    }
-    return emptyMembershipsByRole();
-  }
+  const snapshot = await resolveMembershipSnapshot(supabase, userId);
+  return snapshot.memberships;
 }

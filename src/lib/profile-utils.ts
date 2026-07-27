@@ -3,8 +3,11 @@ import {
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
   membershipStatusForMode,
+  type MembershipRole,
   type UserMembershipsByRole,
 } from "@/lib/membership";
+import type { WelcomeOfferEligibleByRole } from "@/lib/membership-load";
+import { NO_WELCOME_OFFER_ELIGIBLE } from "@/lib/membership-load";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
 
@@ -55,18 +58,29 @@ export type ProfileRow = {
   /** Plan label for the current active_mode only (not the other role). */
   membership_status: string;
   memberships: UserMembershipsByRole;
+  /** First-ever welcome offer eligibility per role (from full user_memberships history). */
+  welcome_offer_eligible_by_role: WelcomeOfferEligibleByRole;
   details: ProfileDetails;
 };
 
 export function applyMembershipsToProfile(
   profile: ProfileRow,
   memberships: UserMembershipsByRole,
+  welcomeOfferEligibleByRole: WelcomeOfferEligibleByRole = NO_WELCOME_OFFER_ELIGIBLE,
 ): ProfileRow {
   return {
     ...profile,
     memberships,
+    welcome_offer_eligible_by_role: welcomeOfferEligibleByRole,
     membership_status: membershipStatusForMode(memberships, profile.active_mode),
   };
+}
+
+export function isWelcomeOfferEligibleForRole(
+  profile: ProfileRow | null | undefined,
+  role: MembershipRole,
+): boolean {
+  return profile?.welcome_offer_eligible_by_role?.[role] === true;
 }
 
 export function membershipStatusForProfile(

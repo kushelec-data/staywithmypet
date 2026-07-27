@@ -40,10 +40,14 @@ import {
 import { cancelMembershipAction } from "@/app/actions/membership";
 import { CancelMembershipConfirmModal } from "@/components/membership/CancelMembershipConfirmModal";
 import { InvitedTestUserSection } from "@/components/membership/InvitedTestUserSection";
+import { MembershipWelcomeOfferHero } from "@/components/membership/MembershipWelcomeOfferHero";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { resolveMembershipPlanCheckoutProps } from "@/lib/membership-invited-access";
+import { MEMBERSHIP_PLANS_SECTION_ID } from "@/lib/membership-plans-scroll";
 import { buildMembershipPagePath, sanitizeReturnTo } from "@/lib/membership-return";
 import { parseMembershipPageRole } from "@/lib/membership-upsell";
+import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
+import { welcomeOfferDisplayModeForUser } from "@/lib/new-member-promotion";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import type { MembershipDeployDiagnostics } from "@/lib/membership-deploy-diagnostics";
 import type { Dictionary } from "@/i18n/translations";
@@ -341,6 +345,11 @@ export function MembershipPageContent({
   const isActive = profile ? hasActiveMembershipForMode(memberships, planMode) : false;
   const modeRole = activeModeToMembershipRole(planMode);
   const activeMembership = memberships[modeRole];
+  const welcomeOfferEligible = isWelcomeOfferEligibleForRole(profile, modeRole);
+  const welcomeOfferDisplayMode = welcomeOfferDisplayModeForUser({
+    loggedIn: Boolean(user),
+    confirmedEligible: welcomeOfferEligible,
+  });
 
   const activePlanName = useMemo(() => {
     if (!profile || !isActive) return null;
@@ -583,8 +592,13 @@ export function MembershipPageContent({
         </p>
       ) : null}
 
+      {welcomeOfferDisplayMode === "confirmed" ? (
+        <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} className="mb-6" />
+      ) : null}
+
       <MembershipPlans
         variant="account"
+        sectionId={MEMBERSHIP_PLANS_SECTION_ID}
         activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
         currentPlanLabel={isActive ? status : null}
         activePlanEndDate={isActive ? activeMembership?.end_date ?? null : null}
