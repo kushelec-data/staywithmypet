@@ -139,6 +139,26 @@ function conversationIdsFor(summary: Pick<ConversationSummary, "id" | "conversat
   return [...new Set(ids)];
 }
 
+/** True when two inbox rows represent the same merged thread. */
+export function conversationSummariesShareThread(
+  a: Pick<ConversationSummary, "id" | "conversationIds">,
+  b: Pick<ConversationSummary, "id" | "conversationIds">,
+): boolean {
+  const aIds = new Set(conversationIdsFor(a));
+  return conversationIdsFor(b).some((id) => aIds.has(id));
+}
+
+export function notifyConversationRead(
+  conversation: Pick<ConversationSummary, "id" | "conversationIds">,
+): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(CONVERSATION_READ_EVENT, {
+      detail: { conversationIds: conversationIdsFor(conversation) },
+    }),
+  );
+}
+
 export function formatConversationDateLabel(
   conversation: Pick<
     ConversationSummary,
@@ -1164,16 +1184,30 @@ export async function markConversationMessagesRead(
   supabase: SupabaseClient,
   conversationId: string,
   userId: string,
-): Promise<void> {
+): Promise<number> {
+  const { data, error } = await supabase.rpc("mark_conversation_messages_read", {
+    p_conversation_id: conversationId,
+  });
+
+  if (!error && typeof data === "number") {
+    return data;
+  }
+
+  if (error && !isMissingRpcError(error)) {
+    throw error;
+  }
+
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data: rows, error: updateError } = await supabase
     .from("messages")
     .update({ read_at: now })
     .eq("conversation_id", conversationId)
     .neq("sender_id", userId)
-    .is("read_at", null);
+    .is("read_at", null)
+    .select("id");
 
-  if (error) throw error;
+  if (updateError) throw updateError;
+  return rows?.length ?? 0;
 }
 
 /** Marks messages read for all conversation rows in a summary and related notifications. */
@@ -1181,14 +1215,40 @@ export async function markConversationFullyRead(
   supabase: SupabaseClient,
   conversation: Pick<ConversationSummary, "id" | "conversationIds">,
   userId: string,
-): Promise<void> {
+): Promise<number> {
   const ids = conversationIdsFor(conversation);
   const { markNotificationsReadForConversations } = await import("@/lib/notifications");
 
-  await Promise.all([
-    Promise.all(ids.map((id) => markConversationMessagesRead(supabase, id, userId))),
-    markNotificationsReadForConversations(supabase, ids, userId),
-  ]);
+  const markedCounts = await Promise.all(
+    ids.map((id) => markConversationMessagesRead(supabase, id, userId)),
+  );
+  await markNotificationsReadForConversations(supabase, ids, userId);
+
+  notifyConversationRead(conversation);
+  return markedCounts.reduce((sum, count) => sum + count, 0);
+}
+
+export function subscribeToInboxIncomingMessages(
+  supabase: SupabaseClient,
+  userId: string,
+  onIncoming: (conversationId: string) => void,
+): RealtimeChannel {
+  return supabase
+    .channel(`inbox-incoming:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+      },
+      (payload) => {
+        const row = payload.new as MessageRow;
+        if (!row?.conversation_id || row.sender_id === userId) return;
+        onIncoming(row.conversation_id);
+      },
+    )
+    .subscribe();
 }
 
 export function subscribeToConversationMessages(

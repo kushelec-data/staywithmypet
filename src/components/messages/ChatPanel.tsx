@@ -71,6 +71,7 @@ type ChatPanelProps = {
   onBack: () => void;
   onMessageSent: (preview: string, createdAt: string) => void;
   onConversationRead?: () => void;
+  onInboxRefresh?: () => void | Promise<void>;
 };
 
 const QUICK_EMOJIS = ["😊", "👍", "🐾", "❤️", "🙏"];
@@ -84,6 +85,7 @@ export function ChatPanel({
   onBack,
   onMessageSent,
   onConversationRead,
+  onInboxRefresh,
 }: ChatPanelProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -117,6 +119,12 @@ export function ChatPanel({
   const prefersSmoothScrollRef = useRef(false);
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;
+
+  const persistConversationRead = useCallback(async () => {
+    await markConversationFullyRead(supabase, conversationRef.current, userId);
+    onConversationRead?.();
+    await onInboxRefresh?.();
+  }, [onConversationRead, onInboxRefresh, supabase, userId]);
 
   const canSend = canSendInConversation(conversation) && !blocked;
   const uploading = uploadProgress !== null;
@@ -209,8 +217,7 @@ export function ChatPanel({
         setMessages(rows);
         setBlocked(isBlockedEitherWay);
         setBlockedByMe(blockedIds.has(conversation.otherPartyId));
-        await markConversationFullyRead(supabase, conversation, userId);
-        onConversationRead?.();
+        await persistConversationRead();
       } catch (err) {
         if (!cancelled) {
           setMessages([]);
@@ -225,7 +232,7 @@ export function ChatPanel({
     return () => {
       cancelled = true;
     };
-  }, [conversationId, supabase, userId, conversation.otherPartyId]);
+  }, [conversationId, supabase, userId, conversation.otherPartyId, persistConversationRead]);
 
   useEffect(() => {
     const channel = subscribeToConversationMessages(supabase, conversationId, userId, (message) => {
@@ -234,16 +241,14 @@ export function ChatPanel({
         return [...prev, message];
       });
       if (!message.isOwn) {
-        void markConversationFullyRead(supabase, conversationRef.current, userId).then(() => {
-          onConversationRead?.();
-        });
+        void persistConversationRead();
       }
     });
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [conversationId, supabase, userId, onConversationRead]);
+  }, [conversationId, supabase, userId, persistConversationRead]);
 
   useEffect(() => {
     if (loading) return;

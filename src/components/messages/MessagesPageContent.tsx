@@ -9,11 +9,14 @@ import { ChatPanel } from "@/components/messages/ChatPanel";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
+  CONVERSATION_READ_EVENT,
   ensureConversationForRequest,
   fetchConversations,
   formatMessagingError,
+  conversationSummariesShareThread,
   markConversationFullyRead,
   sortConversationSummaries,
+  subscribeToInboxIncomingMessages,
   type ConversationSummary,
 } from "@/lib/messaging";
 import { markMessageNotificationsRead } from "@/lib/notifications";
@@ -47,8 +50,10 @@ export function MessagesPageContent() {
   const selectedIdRef = useRef<string | null>(null);
   const listLoadedRef = useRef(false);
   const urlSyncedRef = useRef<string | null>(null);
+  const conversationsRef = useRef<ConversationSummary[]>([]);
 
   selectedIdRef.current = selectedId;
+  conversationsRef.current = conversations;
 
   const selectedConversation = useMemo(
     () => conversations.find((c) => c.id === selectedId) ?? null,
@@ -56,11 +61,11 @@ export function MessagesPageContent() {
   );
 
   const loadConversations = useCallback(
-    async (preferredId: string | null) => {
+    async (preferredId: string | null, options?: { silent?: boolean }) => {
       if (!user) return;
 
       setLoadError(null);
-      if (!listLoadedRef.current) setListLoading(true);
+      if (!options?.silent && !listLoadedRef.current) setListLoading(true);
 
       try {
         const rows = await fetchConversations(supabase, user.id);
@@ -86,6 +91,16 @@ export function MessagesPageContent() {
       }
     },
     [supabase, user?.id, router],
+  );
+
+  const refreshConversations = useCallback(
+    async (preserveId?: string | null) => {
+      await loadConversations(
+        preserveId === undefined ? selectedIdRef.current : preserveId,
+        { silent: true },
+      );
+    },
+    [loadConversations],
   );
 
   useEffect(() => {
@@ -129,32 +144,87 @@ export function MessagesPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const handleConversationRead = () => {
+      void refreshConversations(selectedIdRef.current);
+    };
+
+    window.addEventListener(CONVERSATION_READ_EVENT, handleConversationRead);
+    return () => {
+      window.removeEventListener(CONVERSATION_READ_EVENT, handleConversationRead);
+    };
+  }, [user?.id, refreshConversations]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let refreshTimer: number | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => {
+        void refreshConversations(selectedIdRef.current);
+      }, 250);
+    };
+
+    const channel = subscribeToInboxIncomingMessages(supabase, user.id, (conversationId) => {
+      const activeId = selectedIdRef.current;
+      const activeConversation =
+        conversationsRef.current.find((c) => c.id === activeId) ?? null;
+      if (
+        activeConversation &&
+        conversationSummariesShareThread(activeConversation, {
+          id: conversationId,
+          conversationIds: [conversationId],
+        })
+      ) {
+        void markConversationFullyRead(supabase, activeConversation, user.id)
+          .then(() => refreshConversations(activeId))
+          .catch(() => {
+            void refreshConversations(activeId);
+          });
+        return;
+      }
+
+      scheduleRefresh();
+    });
+
+    return () => {
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [supabase, user?.id, refreshConversations]);
+
   const clearUnreadForConversation = useCallback((conv: ConversationSummary) => {
-    const ids = new Set(conv.conversationIds?.length ? conv.conversationIds : [conv.id]);
     setConversations((prev) =>
-      prev.map((c) => (ids.has(c.id) ? { ...c, unreadCount: 0 } : c)),
+      prev.map((c) =>
+        conversationSummariesShareThread(c, conv) ? { ...c, unreadCount: 0 } : c,
+      ),
     );
   }, []);
 
-  function selectConversation(id: string) {
-    setSelectedId(id);
-    urlSyncedRef.current = id;
-    router.replace(`/messages?conversation=${id}`, { scroll: false });
+  const selectConversation = useCallback(
+    async (id: string) => {
+      setSelectedId(id);
+      urlSyncedRef.current = id;
+      router.replace(`/messages?conversation=${id}`, { scroll: false });
 
-    setConversations((prev) => {
-      const conv = prev.find((c) => c.id === id);
-      if (conv) {
-        const ids = new Set(conv.conversationIds?.length ? conv.conversationIds : [conv.id]);
-        if (user) {
-          void markConversationFullyRead(supabase, conv, user.id).catch(() => {
-            /* optimistic UI already cleared; refetch will reconcile */
-          });
-        }
-        return prev.map((c) => (ids.has(c.id) ? { ...c, unreadCount: 0 } : c));
+      const conv = conversations.find((c) => c.id === id);
+      if (!conv || !user) return;
+
+      clearUnreadForConversation(conv);
+
+      try {
+        await markConversationFullyRead(supabase, conv, user.id);
+      } catch {
+        /* refresh reconciles with database */
+      } finally {
+        await refreshConversations(id);
       }
-      return prev;
-    });
-  }
+    },
+    [clearUnreadForConversation, conversations, refreshConversations, router, supabase, user],
+  );
 
   function handleBackToList() {
     setSelectedId(null);
@@ -247,6 +317,7 @@ export function MessagesPageContent() {
               onBack={handleBackToList}
               onMessageSent={handleMessageSent}
               onConversationRead={() => clearUnreadForConversation(selectedConversation)}
+              onInboxRefresh={() => refreshConversations(selectedConversation.id)}
             />
           ) : (
             <div className="hidden flex-1 flex-col items-center justify-center px-6 py-8 text-center lg:flex">
