@@ -111,6 +111,7 @@ export function ChatPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const prefersSmoothScrollRef = useRef(false);
+  const loadGenerationRef = useRef(0);
   const conversationRef = useRef(conversation);
   conversationRef.current = conversation;
 
@@ -175,9 +176,10 @@ export function ChatPanel({
   }, [conversationId]);
 
   useEffect(() => {
+    const generation = ++loadGenerationRef.current;
     let cancelled = false;
 
-    async function load() {
+    async function loadMessages() {
       setLoading(true);
       setError(null);
       setMessages([]);
@@ -192,27 +194,39 @@ export function ChatPanel({
           isUserBlocked(supabase, userId, conversation.otherPartyId),
           fetchBlockedUserIds(supabase, userId),
         ]);
-        if (cancelled) return;
+        if (cancelled || generation !== loadGenerationRef.current) return;
         setMessages(rows);
         setBlocked(isBlockedEitherWay);
         setBlockedByMe(blockedIds.has(conversation.otherPartyId));
-        await markConversationFullyRead(supabase, conversation, userId);
-        onConversationRead?.();
       } catch (err) {
-        if (!cancelled) {
-          setMessages([]);
-          setError(formatMessagingError(err));
-        }
+        if (cancelled || generation !== loadGenerationRef.current) return;
+        setMessages([]);
+        setError(formatMessagingError(err));
+        console.error("[messages] load thread failed", err);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (generation === loadGenerationRef.current) {
+          setLoading(false);
+        }
       }
+
+      if (cancelled || generation !== loadGenerationRef.current) return;
+
+      void markConversationFullyRead(supabase, conversationRef.current, userId)
+        .then(() => {
+          if (generation === loadGenerationRef.current) {
+            onConversationRead?.();
+          }
+        })
+        .catch((err) => {
+          console.warn("[messages] mark-as-read failed", err);
+        });
     }
 
-    void load();
+    void loadMessages();
     return () => {
       cancelled = true;
     };
-  }, [conversationId, supabase, userId, conversation.otherPartyId]);
+  }, [conversationId, supabase, userId, conversation.otherPartyId, onConversationRead]);
 
   useEffect(() => {
     const channel = subscribeToConversationMessages(supabase, conversationId, userId, (message) => {
@@ -221,9 +235,11 @@ export function ChatPanel({
         return [...prev, message];
       });
       if (!message.isOwn) {
-        void markConversationFullyRead(supabase, conversationRef.current, userId).then(() => {
-          onConversationRead?.();
-        });
+        void markConversationFullyRead(supabase, conversationRef.current, userId)
+          .then(() => onConversationRead?.())
+          .catch((err) => {
+            console.warn("[messages] mark-as-read failed", err);
+          });
       }
     });
 
