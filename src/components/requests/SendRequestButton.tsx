@@ -22,13 +22,9 @@ import { createClient } from "@/lib/supabase";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CareRequestActionErrorCode } from "@/app/actions/care-requests";
-import { MembershipUpsellToast } from "@/components/membership/MembershipUpsellToast";
-import { membershipUpsellVariantForRequest } from "@/lib/membership-upsell";
+import { MembershipUpgradeModal } from "@/components/membership/MembershipUpgradeModal";
 import { buildMembershipPagePath } from "@/lib/membership-return";
-import { isWelcomeOfferEligibleForRole } from "@/lib/profile-utils";
-import {
-  isMembershipUpsellDismissedForSession,
-} from "@/lib/new-member-promotion";
+import { isMembershipUpsellDismissedForSession } from "@/lib/new-member-promotion";
 import { useProfile } from "@/context/ProfileContext";
 import {
   emptyMembershipsByRole,
@@ -89,8 +85,7 @@ export function SendRequestButton({
   const [openInternal, setOpenInternal] = useState(false);
   const open = requestModalOpen ?? openInternal;
   const setOpen = onRequestModalOpenChange ?? setOpenInternal;
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const upgradeToastOpenRef = useRef(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   // Synchronous guard against double submits: state updates are async, so a
   // fast double-click can re-enter handleSubmit before the button disables.
@@ -100,8 +95,6 @@ export function SendRequestButton({
   const [pets, setPets] = useState<RequestPetOption[]>([]);
   const [petsLoading, setPetsLoading] = useState(false);
   const [noPets, setNoPets] = useState(false);
-  const [membershipBlockedNotice, setMembershipBlockedNotice] = useState(false);
-  const membershipBlockedRef = useRef<HTMLDivElement>(null);
 
   const isOwnPet = target.kind === "pet" && user?.id === target.petOwnerId;
   const isSelfProfile = target.kind === "profile" && user?.id === target.friendId;
@@ -148,27 +141,15 @@ export function SendRequestButton({
 
   const isControlledModal = requestModalOpen !== undefined;
 
-  const closeUpgradeToast = useCallback(() => {
-    upgradeToastOpenRef.current = false;
-    setUpgradeOpen(false);
-  }, []);
-
-  const openUpgradeToast = useCallback(() => {
-    if (upgradeToastOpenRef.current) return false;
+  const openUpgradeModal = useCallback(() => {
     if (isMembershipUpsellDismissedForSession()) return false;
-    upgradeToastOpenRef.current = true;
-    setUpgradeOpen(true);
+    setUpgradeModalOpen(true);
     return true;
   }, []);
 
-  const showMembershipBlockedFeedback = useCallback(() => {
-    setMembershipBlockedNotice(true);
-    membershipBlockedRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  const closeUpgradeModal = useCallback(() => {
+    setUpgradeModalOpen(false);
   }, []);
-
-  useEffect(() => {
-    if (!upgradeOpen) upgradeToastOpenRef.current = false;
-  }, [upgradeOpen]);
 
   const loadRequesterPets = useCallback(async () => {
     if (!user || target.kind !== "profile") return [];
@@ -199,8 +180,7 @@ export function SendRequestButton({
     }
     if (needsUpgrade) {
       setOpen(false);
-      showMembershipBlockedFeedback();
-      openUpgradeToast();
+      openUpgradeModal();
       return;
     }
     if (target.kind !== "profile") {
@@ -228,8 +208,7 @@ export function SendRequestButton({
     router,
     setOpen,
     needsUpgrade,
-    openUpgradeToast,
-    showMembershipBlockedFeedback,
+    openUpgradeModal,
   ]);
 
   function resolveSubmitErrorMessage(code: CareRequestActionErrorCode): string {
@@ -270,8 +249,7 @@ export function SendRequestButton({
     setSuccess(false);
 
     if (needsUpgrade) {
-      showMembershipBlockedFeedback();
-      openUpgradeToast();
+      openUpgradeModal();
       return;
     }
 
@@ -352,8 +330,8 @@ export function SendRequestButton({
     }
 
     if (needsUpgrade) {
-      showMembershipBlockedFeedback();
-      openUpgradeToast();
+      setOpen(false);
+      openUpgradeModal();
       return;
     }
 
@@ -376,8 +354,8 @@ export function SendRequestButton({
 
       if (!result.success) {
         if (result.code === "MEMBERSHIP_REQUIRED") {
-          showMembershipBlockedFeedback();
-          openUpgradeToast();
+          setOpen(false);
+          openUpgradeModal();
         }
         setError(
           result.code === "DATES_UNAVAILABLE"
@@ -401,8 +379,8 @@ export function SendRequestButton({
         receiverId,
       });
       if (isMembershipRequiredError(err)) {
-        showMembershipBlockedFeedback();
-        openUpgradeToast();
+        setOpen(false);
+        openUpgradeModal();
         setError(null);
       } else {
         const msg = formatRequestSubmitErrorForUi(err);
@@ -435,38 +413,9 @@ export function SendRequestButton({
           className={`w-full ${className}`}
           onClick={handleOpen}
           disabled={authLoading || profileLoading || blocked || success}
-          aria-describedby={
-            needsUpgrade && membershipCheckReady ? "send-request-membership-blocked" : undefined
-          }
         >
           {buttonLabel}
         </Button>
-      ) : null}
-
-      {needsUpgrade && membershipCheckReady && !blocked ? (
-        <div
-          id="send-request-membership-blocked"
-          ref={membershipBlockedRef}
-          className="mt-3 space-y-3 rounded-xl border border-brand-pink/25 bg-brand-pink/10 px-3 py-3 text-center sm:px-4"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="rounded-lg border border-brand-teal/20 bg-mint/40 px-3 py-2.5">
-            <p className="text-[0.65rem] font-bold uppercase tracking-wide text-brand-teal">
-              {t.requests.membershipLaunchOfferBadge}
-            </p>
-            <p className="mt-1 text-xs font-semibold leading-snug text-foreground sm:text-sm">
-              {t.requests.membershipLaunchOfferBody}
-            </p>
-          </div>
-          <p className="text-xs leading-relaxed text-muted sm:text-sm">{membershipRequiredMessage}</p>
-          {membershipBlockedNotice ? (
-            <p className="text-xs font-semibold text-brand-teal">{membershipRequiredMessage}</p>
-          ) : null}
-          <Button href={membershipHref} variant="secondary" size="sm" className="w-full">
-            {t.requests.viewMembershipPlans}
-          </Button>
-        </div>
       ) : null}
 
       {success ? (
@@ -498,14 +447,11 @@ export function SendRequestButton({
         onSubmit={handleSubmit}
       />
 
-      <MembershipUpsellToast
-        open={upgradeOpen}
-        variant={membershipUpsellVariantForRequest(target)}
-        name={target.label}
+      <MembershipUpgradeModal
+        open={upgradeModalOpen}
         role={senderRole}
         returnTo={returnUrl}
-        onClose={closeUpgradeToast}
-        promotionEligible={isWelcomeOfferEligibleForRole(profile, senderRole)}
+        onClose={closeUpgradeModal}
       />
     </>
   );

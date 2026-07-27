@@ -629,6 +629,48 @@ select.input-field {
   }
 }
 
+@keyframes membership-upgrade-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes membership-upgrade-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes membership-copy-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  40% {
+    transform: translateY(-1px) scale(1.06);
+  }
+}
+
+.membership-upgrade-btn-lift {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.membership-upgrade-btn-lift:hover {
+  transform: translateY(-2px);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .message-fade-in {
     animation: message-fade-in 280ms ease-out both;
@@ -636,6 +678,18 @@ select.input-field {
 
   .membership-upsell-toast {
     animation: membership-upsell-in 320ms ease-out both;
+  }
+
+  .membership-upgrade-backdrop {
+    animation: membership-upgrade-backdrop-in 150ms ease-out both;
+  }
+
+  .membership-upgrade-modal-panel {
+    animation: membership-upgrade-modal-in 180ms ease-out both;
+  }
+
+  .membership-copy-bounce {
+    animation: membership-copy-bounce 320ms ease-out;
   }
 
   .explainer-slide-up {

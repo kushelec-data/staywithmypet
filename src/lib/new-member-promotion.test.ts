@@ -114,22 +114,31 @@ describe("newMemberPromotionMembershipHref", () => {
   });
 });
 
-describe("membership upsell session dismiss", () => {
-  it("stores and reads dismiss state in sessionStorage", () => {
+describe("membership upsell dismiss", () => {
+  it("stores and reads dismiss state in localStorage with 30 minute TTL", () => {
     const storage = new Map<string, string>();
+    let now = 1_000;
     vi.stubGlobal("window", {
-      sessionStorage: {
+      localStorage: {
         getItem: (key: string) => storage.get(key) ?? null,
         setItem: (key: string, value: string) => {
           storage.set(key, value);
         },
       },
     });
+    vi.spyOn(Date, "now").mockImplementation(() => now);
 
     expect(isMembershipUpsellDismissedForSession()).toBe(false);
     dismissMembershipUpsellForSession();
     expect(isMembershipUpsellDismissedForSession()).toBe(true);
 
+    now += 29 * 60 * 1000;
+    expect(isMembershipUpsellDismissedForSession()).toBe(true);
+
+    now += 2 * 60 * 1000;
+    expect(isMembershipUpsellDismissedForSession()).toBe(false);
+
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 });

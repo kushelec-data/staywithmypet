@@ -45,12 +45,19 @@ export function newMemberPromotionMembershipHrefDefault(): string {
   return `/signup?next=${encodeURIComponent(MEMBERSHIP_PATH)}`;
 }
 
-const UPSELL_DISMISS_SESSION_KEY = "swmp.membership-upsell.dismissed";
+export const WELCOME_OFFER_CODE = "WELCOME90";
+
+const UPSELL_DISMISS_STORAGE_KEY = "swmp.membership-upsell.dismissed";
+const UPSELL_DISMISS_TTL_MS = 30 * 60 * 1000;
 
 export function isMembershipUpsellDismissedForSession(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return window.sessionStorage.getItem(UPSELL_DISMISS_SESSION_KEY) === "1";
+    const raw = window.localStorage.getItem(UPSELL_DISMISS_STORAGE_KEY);
+    if (!raw) return false;
+    const dismissedAt = Number(raw);
+    if (!Number.isFinite(dismissedAt)) return false;
+    return Date.now() - dismissedAt < UPSELL_DISMISS_TTL_MS;
   } catch {
     return false;
   }
@@ -59,7 +66,7 @@ export function isMembershipUpsellDismissedForSession(): boolean {
 export function dismissMembershipUpsellForSession(): void {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(UPSELL_DISMISS_SESSION_KEY, "1");
+    window.localStorage.setItem(UPSELL_DISMISS_STORAGE_KEY, String(Date.now()));
   } catch {
     /* ignore */
   }
