@@ -108,7 +108,7 @@ describe("MembershipFloatingDogBanner wiring", () => {
   });
 
   it("9. mobile layout avoids overflow", () => {
-    expect(bannerSource).toContain("max-w-[880px]");
+    expect(bannerSource).toContain("max-w-[720px]");
     expect(bannerSource).toContain("flex-col");
     expect(bannerSource).toContain("min-w-0");
   });
@@ -126,7 +126,7 @@ describe("MembershipFloatingDogBanner wiring", () => {
 
   it("uses brand dog illustration at compact sizes", () => {
     expect(bannerSource).toContain("MembershipFloatingDogIllustration");
-    expect(bannerSource).toContain("h-[52px]");
-    expect(bannerSource).toContain("sm:h-[68px]");
+    expect(bannerSource).toContain("h-11");
+    expect(bannerSource).toContain("sm:h-14");
   });
 });

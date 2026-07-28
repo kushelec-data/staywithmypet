@@ -8,7 +8,6 @@ import {
   isMembershipFloatingBannerDismissed,
 } from "@/lib/membership-floating-banner";
 import { scrollToMembershipPlans } from "@/lib/membership-plans-scroll";
-import { WELCOME_OFFER_CODE } from "@/lib/new-member-promotion";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -83,11 +82,11 @@ export function MembershipFloatingDogBanner({
       data-membership-floating-banner-root
     >
       <div
-        className={`pointer-events-auto relative w-full max-w-[880px] ${motionClass}`}
+        className={`pointer-events-auto relative w-full max-w-[720px] ${motionClass}`}
         role="complementary"
         aria-label={copy.headline}
       >
-        <div className="relative overflow-hidden rounded-[20px] border border-brand-teal/12 bg-gradient-to-br from-mint/35 via-mint/15 to-lavender/25 shadow-[0_10px_32px_rgba(43,43,43,0.08)] backdrop-blur-[2px]">
+        <div className="relative overflow-hidden rounded-2xl border border-brand-teal/10 bg-gradient-to-br from-mint/30 via-mint/10 to-lavender/20 shadow-[0_6px_20px_rgba(43,43,43,0.06)] backdrop-blur-[2px]">
           <button
             type="button"
             onClick={handleClose}
@@ -97,32 +96,27 @@ export function MembershipFloatingDogBanner({
             <X className="h-4 w-4" aria-hidden />
           </button>
 
-          <div className="flex flex-col gap-3 p-3 pr-12 sm:flex-row sm:items-center sm:gap-4 sm:p-3.5 sm:pr-14">
+          <div className="flex flex-col gap-2.5 p-3 pr-11 sm:flex-row sm:items-center sm:gap-3 sm:p-3 sm:pr-12">
             <div className="flex min-w-0 items-end gap-2 sm:shrink-0">
-              <MembershipFloatingDogIllustration className="membership-floating-dog-illustration h-[52px] w-auto shrink-0 sm:h-[68px]" />
+              <MembershipFloatingDogIllustration className="membership-floating-dog-illustration h-11 w-auto shrink-0 sm:h-14" />
             </div>
 
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-semibold leading-snug text-foreground sm:text-[0.9375rem]">
+              <p className="text-sm font-medium leading-snug text-foreground">
                 {copy.headline}
               </p>
-              <p className="mt-0.5 text-xs leading-snug text-muted sm:text-[0.8125rem]">
+              <p className="mt-0.5 text-xs leading-snug text-muted">
                 {copy.supporting}
               </p>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-              <span className="inline-flex items-center rounded-full border border-dashed border-brand-teal/25 bg-mint/20 px-2.5 py-1 font-mono text-[0.6875rem] font-semibold tracking-[0.14em] text-brand-teal sm:text-xs">
-                {WELCOME_OFFER_CODE}
-              </span>
-              <button
-                type="button"
-                onClick={handleViewPlans}
-                className="inline-flex h-9 items-center justify-center rounded-full bg-brand-teal px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal sm:text-sm"
-              >
-                {copy.viewPlans}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleViewPlans}
+              className="inline-flex h-8 shrink-0 items-center justify-center self-start rounded-full bg-brand-teal px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal sm:self-center sm:px-4 sm:text-sm"
+            >
+              {copy.viewPlans}
+            </button>
           </div>
         </div>
       </div>

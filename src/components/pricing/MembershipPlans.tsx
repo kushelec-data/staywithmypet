@@ -213,7 +213,7 @@ function PlanCard({
       } ${isAccount && (plan.popular || isCurrent) ? "ring-2 ring-[#2E6B3F]/25" : ""}`}
     >
       {plan.popular && !isCurrent ? (
-        <span className="absolute -top-3 left-1/2 z-10 w-[calc(100%-1.5rem)] max-w-[18rem] -translate-x-1/2 rounded-full bg-brand-teal px-3 py-1.5 text-center text-[0.65rem] font-semibold leading-tight tracking-normal text-white shadow-sm sm:w-auto sm:max-w-none sm:whitespace-nowrap sm:px-5 sm:text-xs">
+        <span className="absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 rounded-full bg-brand-teal/95 px-3 py-1 text-[0.65rem] font-medium tracking-wide text-white shadow-sm sm:text-xs sm:px-4">
           {popularBadge}
         </span>
       ) : null}
@@ -559,7 +559,7 @@ export function MembershipPlans({
 
       <div
         id={sectionId}
-        className={`grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 ${
+        className={`grid grid-cols-1 items-stretch gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 ${
           showRoleTabs ? "mt-8 sm:mt-10 lg:mt-10" : variant === "account" ? "mt-0" : "mt-0"
         }`}
       >

@@ -112,7 +112,6 @@ function RoleMembershipSummary({
   cancelLoading: boolean;
 }) {
   const mpage = t.account.membershipPage;
-  const pageTitle = role === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
   const roleGenitive = membershipRoleGenitive(role, t);
   const planName = membership ? localizedMembershipPlanName(membership, t) : null;
   const headline =
@@ -122,8 +121,7 @@ function RoleMembershipSummary({
 
   return (
     <AccountCard className={ACCOUNT_CARD_PADDING_COMPACT}>
-      <p className={ACCOUNT_FIELD_LABEL_CLASS}>{pageTitle}</p>
-      <p className={`mt-2 ${ACCOUNT_SECTION_TITLE}`}>{headline}</p>
+      <p className={ACCOUNT_SECTION_TITLE}>{headline}</p>
       {isActive && membership ? (
         <>
           {planName ? (
@@ -474,14 +472,11 @@ export function MembershipPageContent({
   }
 
   const mpage = t.account.membershipPage;
-  const pageTitle = planMode === "pet_parent" ? mpage.petParentTitle : mpage.petFriendTitle;
-  const pageSubtitle =
-    planMode === "pet_parent" ? mpage.petParentSubtitle : mpage.petFriendSubtitle;
 
   return (
     <AccountLayout
-      title={pageTitle}
-      description={pageSubtitle}
+      title={t.pricing.title}
+      description={t.pricing.subtitle}
       hideCompleteProfileBanner
     >
       <CancelMembershipConfirmModal
@@ -491,145 +486,140 @@ export function MembershipPageContent({
         onConfirm={confirmCancelMembership}
       />
 
-      {deployDiagnostics?.showBanner ? (
-        <div
-          className="mb-4 rounded-2xl border border-dashed border-amber-500/60 bg-amber-50 px-4 py-3 text-xs text-amber-950"
-          role="status"
-          data-testid="membership-deploy-diagnostics"
-        >
-          <p className="font-semibold">{deployDiagnostics.bannerTitle}</p>
-          <ul className="mt-2 space-y-1 font-mono">
-            {deployDiagnostics.lines.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
+      <div className="space-y-10 sm:space-y-12">
+        {welcomeOfferDisplayMode === "confirmed" ? (
+          <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} />
+        ) : null}
+
+        {planCheckout.showInvitedAccessSection ? (
+          <InvitedTestUserSection role={modeRole} />
+        ) : null}
+
+        <div data-membership-section="membership-plans">
+          <MembershipPlans
+            variant="account"
+            sectionId={MEMBERSHIP_PLANS_SECTION_ID}
+            activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
+            currentPlanLabel={isActive ? status : null}
+            activePlanEndDate={isActive ? activeMembership?.end_date ?? null : null}
+            activePlanEndDateLabel={mpage.endsLabel}
+            modeFilter={modeTab}
+            plans={stripePlans}
+            checkoutUserId={user.id}
+            checkoutRole={modeRole}
+            roleHasActiveMembership={hasActiveMembershipForRole(memberships, modeRole)}
+            enableCheckout={planCheckout.enableStripeCheckout}
+            useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
+            payWithStripeLabel={t.membershipCheckout.payWithStripe}
+            planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
+            checkoutReturnTo={returnTo}
+            cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}
+            cancelPlanLoading={cancelLoadingRole === modeRole}
+            onCancelPlan={
+              isActive ? () => requestCancelMembership(modeRole) : undefined
+            }
+          />
         </div>
-      ) : null}
 
-      {dualActive ? (
-        <p className={`mb-4 inline-flex items-center gap-2 px-3 py-1 text-xs ${ACCOUNT_STATUS_BADGE_CLASS}`}>
-          {mpage.dualMember}
-        </p>
-      ) : null}
+        <div className="space-y-4 pt-2" data-membership-section="account-status">
+          {deployDiagnostics?.showBanner ? (
+            <div
+              className="rounded-2xl border border-dashed border-amber-500/60 bg-amber-50 px-4 py-3 text-xs text-amber-950"
+              role="status"
+              data-testid="membership-deploy-diagnostics"
+            >
+              <p className="font-semibold">{deployDiagnostics.bannerTitle}</p>
+              <ul className="mt-2 space-y-1 font-mono">
+                {deployDiagnostics.lines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
-      {activeMembershipRoles.length > 0 ? (
-        <div
-          className={`mb-6 ${activeMembershipRoles.length > 1 ? "grid gap-4 sm:grid-cols-2" : ""}`}
-        >
-          {activeMembershipRoles.map((role) => (
-            <RoleMembershipSummary
-              key={role}
-              role={role}
-              membership={memberships[role]}
-              isActive
-              t={t}
-              cancelLabel={cancelMembershipButtonLabel(role, dualActive, mpage)}
-              onCancel={() => requestCancelMembership(role)}
-              cancelLoading={cancelLoadingRole === role}
-            />
-          ))}
+          {dualActive ? (
+            <p className={`inline-flex items-center gap-2 px-3 py-1 text-xs ${ACCOUNT_STATUS_BADGE_CLASS}`}>
+              {mpage.dualMember}
+            </p>
+          ) : null}
+
+          {activeMembershipRoles.length > 0 ? (
+            <div className={activeMembershipRoles.length > 1 ? "grid gap-4 sm:grid-cols-2" : ""}>
+              {activeMembershipRoles.map((role) => (
+                <RoleMembershipSummary
+                  key={role}
+                  role={role}
+                  membership={memberships[role]}
+                  isActive
+                  t={t}
+                  cancelLabel={cancelMembershipButtonLabel(role, dualActive, mpage)}
+                  onCancel={() => requestCancelMembership(role)}
+                  cancelLoading={cancelLoadingRole === role}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {planCheckout.useTestAccessFlowOnCards && !isActive ? (
+            <p
+              className="rounded-2xl border border-[#2E6B3F]/20 bg-[#DDEEDF]/40 px-4 py-3 text-sm text-foreground"
+              role="status"
+            >
+              {t.testAccess.membershipBanner}
+            </p>
+          ) : null}
+
+          {returnTo ? (
+            <p
+              className="rounded-2xl border border-[#2E6B3F]/20 bg-[#DDEEDF]/40 px-4 py-3 text-sm text-foreground"
+              role="status"
+            >
+              {t.membershipCheckout.returnToHint}
+            </p>
+          ) : null}
+
+          {checkoutBanner ? (
+            <p className={`px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
+              {checkoutBanner}
+            </p>
+          ) : null}
+
+          {cancelSuccess ? (
+            <p className={`px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
+              {cancelSuccess}
+            </p>
+          ) : null}
+
+          {isActive && returnTo ? (
+            <div>
+              <Button href={returnTo} variant="primary" size="md">
+                {t.membershipCheckout.continueBooking}
+              </Button>
+            </div>
+          ) : null}
+
+          {cancelError ? (
+            <p className={`rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`} role="alert">
+              {cancelError}
+            </p>
+          ) : null}
+
+          {stripeCheckoutBlocked ? (
+            <p className={`rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`} role="alert">
+              {deployDiagnostics?.showBanner
+                ? `Stripe checkout is blocked for ${membershipRoleTitle(modeRole)}: ${stripeConfigMessage ?? "configuration incomplete"}. Platform access codes remain available on this page.`
+                : (stripeConfigMessage ??
+                  "Stripe checkout is not configured yet. Use a platform access code if you have one.")}
+            </p>
+          ) : null}
+
+          {stripeEnabled && stripeConfigMessage && !stripeCheckoutBlocked ? (
+            <p className={`rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`} role="alert">
+              {stripeConfigMessage}
+            </p>
+          ) : null}
         </div>
-      ) : null}
-
-      {planCheckout.useTestAccessFlowOnCards && !isActive ? (
-        <p
-          className="mb-4 rounded-2xl border border-[#2E6B3F]/25 bg-[#DDEEDF]/60 px-4 py-3 text-sm text-foreground"
-          role="status"
-        >
-          {t.testAccess.membershipBanner}
-        </p>
-      ) : null}
-
-      {returnTo ? (
-        <p
-          className="mb-4 rounded-2xl border border-[#2E6B3F]/25 bg-[#DDEEDF]/60 px-4 py-3 text-sm text-foreground"
-          role="status"
-        >
-          {t.membershipCheckout.returnToHint}
-        </p>
-      ) : null}
-
-      {checkoutBanner ? (
-        <p className={`mb-4 px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
-          {checkoutBanner}
-        </p>
-      ) : null}
-
-      {cancelSuccess ? (
-        <p className={`mb-4 px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
-          {cancelSuccess}
-        </p>
-      ) : null}
-
-      {isActive && returnTo ? (
-        <div className="mb-6">
-          <Button href={returnTo} variant="primary" size="md">
-            {t.membershipCheckout.continueBooking}
-          </Button>
-        </div>
-      ) : null}
-
-      {cancelError ? (
-        <p
-          className={`mb-4 rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`}
-          role="alert"
-        >
-          {cancelError}
-        </p>
-      ) : null}
-
-      {stripeCheckoutBlocked ? (
-        <p
-          className={`mb-4 rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`}
-          role="alert"
-        >
-          {deployDiagnostics?.showBanner
-            ? `Stripe checkout is blocked for ${membershipRoleTitle(modeRole)}: ${stripeConfigMessage ?? "configuration incomplete"}. Platform access codes remain available below.`
-            : (stripeConfigMessage ??
-              "Stripe checkout is not configured yet. Use a platform access code if you have one.")}
-        </p>
-      ) : null}
-
-      {stripeEnabled && stripeConfigMessage && !stripeCheckoutBlocked ? (
-        <p
-          className={`mb-4 rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`}
-          role="alert"
-        >
-          {stripeConfigMessage}
-        </p>
-      ) : null}
-
-      {welcomeOfferDisplayMode === "confirmed" ? (
-        <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} className="mb-6" />
-      ) : null}
-
-      <MembershipPlans
-        variant="account"
-        sectionId={MEMBERSHIP_PLANS_SECTION_ID}
-        activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
-        currentPlanLabel={isActive ? status : null}
-        activePlanEndDate={isActive ? activeMembership?.end_date ?? null : null}
-        activePlanEndDateLabel={mpage.endsLabel}
-        modeFilter={modeTab}
-        plans={stripePlans}
-        checkoutUserId={user.id}
-        checkoutRole={modeRole}
-        roleHasActiveMembership={hasActiveMembershipForRole(memberships, modeRole)}
-        enableCheckout={planCheckout.enableStripeCheckout}
-        useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
-        payWithStripeLabel={t.membershipCheckout.payWithStripe}
-        planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
-        checkoutReturnTo={returnTo}
-        cancelPlanLabel={isActive ? mpage.cancelMembership : undefined}
-        cancelPlanLoading={cancelLoadingRole === modeRole}
-        onCancelPlan={
-          isActive ? () => requestCancelMembership(modeRole) : undefined
-        }
-      />
-
-      {planCheckout.showInvitedAccessSection ? (
-        <InvitedTestUserSection role={modeRole} />
-      ) : null}
+      </div>
 
       <MembershipFloatingDogBanner role={modeRole} returnTo={returnTo} />
     </AccountLayout>

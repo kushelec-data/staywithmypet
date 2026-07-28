@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
-import { ACCOUNT_BODY_TEXT, ACCOUNT_CARD_CLASS, ACCOUNT_CARD_PADDING_COMPACT } from "@/lib/account-ui";
+import { ACCOUNT_BODY_TEXT } from "@/lib/account-ui";
 import { invitedTestAccessCodeHref } from "@/lib/membership-invited-access";
 import type { MembershipRole } from "@/lib/membership";
 
@@ -16,9 +16,10 @@ export function InvitedTestUserSection({ role }: InvitedTestUserSectionProps) {
 
   return (
     <section
-      className={`mt-8 ${ACCOUNT_CARD_CLASS} ${ACCOUNT_CARD_PADDING_COMPACT}`}
+      className="rounded-2xl border border-neutral-200/60 bg-neutral-50/50 px-6 py-5 sm:px-7 sm:py-6"
       aria-labelledby="invited-test-user-heading"
       data-testid="invited-test-user-section"
+      data-membership-section="access-code"
     >
       <h2
         id="invited-test-user-heading"
@@ -26,8 +27,8 @@ export function InvitedTestUserSection({ role }: InvitedTestUserSectionProps) {
       >
         {copy.title}
       </h2>
-      <p className={`mt-2 ${ACCOUNT_BODY_TEXT}`}>{copy.description}</p>
-      <div className="mt-5">
+      <p className={`mt-2 max-w-2xl ${ACCOUNT_BODY_TEXT}`}>{copy.description}</p>
+      <div className="mt-4">
         <Button
           href={invitedTestAccessCodeHref(role)}
           variant="secondary"
