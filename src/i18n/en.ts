@@ -153,7 +153,7 @@ export const en = {
       safeChat: "Safe requests & chat",
     },
     tehnopolBadge: {
-      label: "Accelerator selected",
+      label: "ACCELERATOR SELECTED",
       primary: "Selected for the Tehnopol Startup Incubator 2026",
       secondary: "StayWithMyPet is one of 9 startups selected for the programme.",
     },
