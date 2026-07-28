@@ -757,6 +757,10 @@ select.input-field {
     animation: membership-floating-dog-pull 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  .membership-floating-cta-pulse {
+    animation: membership-floating-cta-pulse 900ms ease-out 1;
+  }
+
   .membership-coupon-copied {
     animation: membership-coupon-success 420ms ease-out;
   }
@@ -809,6 +813,18 @@ select.input-field {
   }
   100% {
     transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes membership-floating-cta-pulse {
+  0%,
+  100% {
+    box-shadow: 0 1px 4px rgba(46, 107, 63, 0.18);
+    transform: scale(1);
+  }
+  45% {
+    box-shadow: 0 0 0 4px rgba(46, 107, 63, 0.14);
+    transform: scale(1.03);
   }
 }
 
@@ -1408,9 +1424,27 @@ select.input-field {
 
   .membership-floating-banner-enter,
   .membership-floating-banner-exit,
-  .membership-floating-banner-enter .membership-floating-dog-pull {
+  .membership-floating-banner-enter .membership-floating-dog-pull,
+  .membership-floating-cta-pulse {
     animation: none;
   }
+}
+
+/* Google Places autocomplete dropdown — must not block page clicks when hidden. */
+.membership-3d-dog-host,
+.membership-3d-dog-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: manipulation;
+}
+
+.membership-3d-dog-canvas {
+  outline: none;
+}
+
+.membership-floating-dog-3d-slot {
+  max-width: 100%;
 }
 
 /* Google Places autocomplete dropdown — must not block page clicks when hidden. */

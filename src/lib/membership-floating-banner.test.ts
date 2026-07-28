@@ -124,9 +124,8 @@ describe("MembershipFloatingDogBanner wiring", () => {
     expect(bannerSource).toContain('if (!mounted || phase === "idle") return null');
   });
 
-  it("uses brand dog illustration at compact sizes", () => {
-    expect(bannerSource).toContain("MembershipFloatingDogIllustration");
-    expect(bannerSource).toContain("h-[52px]");
-    expect(bannerSource).toContain("sm:h-[68px]");
+  it("uses 3D dog beside banner with SVG fallback path", () => {
+    expect(bannerSource).toContain("Membership3DDog");
+    expect(bannerSource).toContain("membership-floating-dog-3d-slot");
   });
 });
