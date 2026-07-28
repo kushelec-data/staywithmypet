@@ -109,24 +109,31 @@ describe("MembershipWelcomeOfferHero activate membership", () => {
     expect(heroSource).toContain('type="button"');
   });
 
-  it("uses lucide icons for coupon, copy confirmation, and activate", () => {
-    expect(heroSource).toContain("Tag");
+  it("uses lucide icons for copy, copy confirmation, and activate", () => {
+    expect(heroSource).toContain("Copy");
     expect(heroSource).toContain("Check");
     expect(heroSource).toContain("ArrowRight");
+    expect(heroSource).not.toContain("Tag");
     expect(heroSource).not.toContain("Sparkles");
     expect(heroSource).not.toContain("Clipboard");
   });
 
-  it("wires account membership page with access code before hero, title, and plans anchor", () => {
+  it("does not render a duplicate coupon card panel", () => {
+    expect(heroSource).not.toContain("welcome-offer-coupon");
+    expect(heroSource).not.toContain("clickToCopy");
+    expect(heroSource).not.toContain("font-mono text-base");
+  });
+
+  it("wires account membership page with launch offer before access code and plans anchor", () => {
     expect(pageSource).toContain("MembershipWelcomeOfferHero");
     expect(pageSource).toContain("InvitedTestUserSection");
     expect(pageSource).toContain("MEMBERSHIP_PLANS_SECTION_ID");
     expect(pageSource).not.toContain('variant="strip"');
-    const accessCodeIndex = pageSource.indexOf("<InvitedTestUserSection");
-    const heroIndex = pageSource.indexOf("<MembershipWelcomeOfferHero");
-    const titleIndex = pageSource.indexOf('data-testid="membership-page-title"');
-    expect(accessCodeIndex).toBeLessThan(heroIndex);
-    expect(heroIndex).toBeLessThan(titleIndex);
+    const launchOfferIndex = pageSource.indexOf('data-membership-section="launch-offer"');
+    const accessCodeIndex = pageSource.indexOf('data-membership-section="access-code"');
+    const plansIndex = pageSource.indexOf('data-membership-section="membership-plans"');
+    expect(launchOfferIndex).toBeLessThan(accessCodeIndex);
+    expect(accessCodeIndex).toBeLessThan(plansIndex);
     expect(plansSource).toContain('data-membership-plan-focus');
     expect(plansSource).toContain('data-membership-plan-popular');
     expect(plansSource).toContain("sectionId");

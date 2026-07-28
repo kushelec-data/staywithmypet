@@ -68,22 +68,19 @@ describe("membership promotion copy", () => {
     }
   });
 
-  it("places access code first, then welcome hero, then title, then membership plans", () => {
+  it("places launch offer first, then access code, then membership plans", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/membership/MembershipPageContent.tsx"),
       "utf8",
     );
-    const accessCodeIndex = source.indexOf("<InvitedTestUserSection");
-    const heroIndex = source.indexOf("<MembershipWelcomeOfferHero");
-    const titleIndex = source.indexOf('data-testid="membership-page-title"');
-    const plansIndex = source.indexOf("<MembershipPlans");
+    const launchOfferIndex = source.indexOf('data-membership-section="launch-offer"');
+    const accessCodeIndex = source.indexOf('data-membership-section="access-code"');
+    const plansIndex = source.indexOf('data-membership-section="membership-plans"');
+    expect(launchOfferIndex).toBeGreaterThan(-1);
     expect(accessCodeIndex).toBeGreaterThan(-1);
-    expect(heroIndex).toBeGreaterThan(-1);
-    expect(titleIndex).toBeGreaterThan(-1);
     expect(plansIndex).toBeGreaterThan(-1);
-    expect(accessCodeIndex).toBeLessThan(heroIndex);
-    expect(heroIndex).toBeLessThan(titleIndex);
-    expect(titleIndex).toBeLessThan(plansIndex);
+    expect(launchOfferIndex).toBeLessThan(accessCodeIndex);
+    expect(accessCodeIndex).toBeLessThan(plansIndex);
     expect(source).toContain("sectionId={MEMBERSHIP_PLANS_SECTION_ID}");
   });
 

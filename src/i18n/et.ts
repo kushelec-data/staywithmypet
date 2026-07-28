@@ -608,6 +608,13 @@ export const et = {
         hint: "Pärast liikmelisuse aktiveerimist jätka lemmiku broneeringut.",
         link: "Tagasi lemmiku profiilile",
       },
+      floatingBanner: {
+        headline: "Kas vajad liikmelisuse valimisel veidi abi?",
+        supporting:
+          "Vaata allpool olevaid pakette ja kasuta koodi WELCOME90, et saada esimeselt liikmelisuselt 90% soodustust.",
+        viewPlans: "Vaata pakette",
+        closeLabel: "Sulge liikmelisuse abibänner",
+      },
     },
     profileSetup: {
       pageTitle: "Seadista profiil",

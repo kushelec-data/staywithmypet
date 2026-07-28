@@ -45,6 +45,7 @@ import { CancelMembershipConfirmModal } from "@/components/membership/CancelMemb
 import { InvitedTestUserSection } from "@/components/membership/InvitedTestUserSection";
 import { MembershipReturnNotice } from "@/components/membership/MembershipReturnNotice";
 import { MembershipWelcomeOfferHero } from "@/components/membership/MembershipWelcomeOfferHero";
+import { MembershipFloatingDogBanner } from "@/components/membership/MembershipFloatingDogBanner";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { resolveMembershipPlanCheckoutProps } from "@/lib/membership-invited-access";
 import { MEMBERSHIP_PLANS_SECTION_ID } from "@/lib/membership-plans-scroll";
@@ -519,12 +520,16 @@ export function MembershipPageContent({
       />
 
       <div className="space-y-4">
-        {planCheckout.showInvitedAccessSection ? (
-          <InvitedTestUserSection role={modeRole} />
+        {welcomeOfferDisplayMode === "confirmed" ? (
+          <div data-membership-section="launch-offer">
+            <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} />
+          </div>
         ) : null}
 
-        {welcomeOfferDisplayMode === "confirmed" ? (
-          <MembershipWelcomeOfferHero role={modeRole} returnTo={returnTo} />
+        {planCheckout.showInvitedAccessSection ? (
+          <div data-membership-section="access-code">
+            <InvitedTestUserSection role={modeRole} />
+          </div>
         ) : null}
 
         <div data-testid="membership-page-title">
@@ -616,37 +621,39 @@ export function MembershipPageContent({
           </p>
         ) : null}
 
-        <MembershipPlans
-          variant="account"
-          sectionId={MEMBERSHIP_PLANS_SECTION_ID}
-          activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
-          currentPlanLabel={isActive ? status : null}
-          activePlanEndDate={isActive ? activeMembership?.end_date ?? null : null}
-          activePlanEndDateLabel={mpage.endsLabel}
-          modeFilter={modeTab}
-          plans={stripePlans}
-          checkoutUserId={user.id}
-          checkoutRole={modeRole}
-          roleHasActiveMembership={hasActiveMembershipForRole(memberships, modeRole)}
-          enableCheckout={planCheckout.enableStripeCheckout}
-          useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
-          activateMembershipLabel={t.membershipCheckout.activateMembership}
-          promotionDisplayMode={welcomeOfferDisplayMode}
-          promotionBadgeLabel={t.newMemberPromotion.planBadge}
-          promotionDiscountHeadline={t.newMemberPromotion.discountHeadline}
-          promotionCheckoutNote={t.newMemberPromotion.checkoutNote}
-          planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
-          checkoutReturnTo={returnTo}
-          cancelPlanLabel={
-            isActive && canCancelMembership(activeMembership) ? mpage.cancelMembership : undefined
-          }
-          cancelPlanLoading={cancelLoadingRole === modeRole}
-          onCancelPlan={
-            isActive && canCancelMembership(activeMembership)
-              ? () => requestCancelMembership(modeRole)
-              : undefined
-          }
-        />
+        <div data-membership-section="membership-plans">
+          <MembershipPlans
+            variant="account"
+            sectionId={MEMBERSHIP_PLANS_SECTION_ID}
+            activePlanId={isActive ? activeMembership?.plan_id ?? null : null}
+            currentPlanLabel={isActive ? status : null}
+            activePlanEndDate={isActive ? activeMembership?.end_date ?? null : null}
+            activePlanEndDateLabel={mpage.endsLabel}
+            modeFilter={modeTab}
+            plans={stripePlans}
+            checkoutUserId={user.id}
+            checkoutRole={modeRole}
+            roleHasActiveMembership={hasActiveMembershipForRole(memberships, modeRole)}
+            enableCheckout={planCheckout.enableStripeCheckout}
+            useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
+            activateMembershipLabel={t.membershipCheckout.activateMembership}
+            promotionDisplayMode={welcomeOfferDisplayMode}
+            promotionBadgeLabel={t.newMemberPromotion.planBadge}
+            promotionDiscountHeadline={t.newMemberPromotion.discountHeadline}
+            promotionCheckoutNote={t.newMemberPromotion.checkoutNote}
+            planCheckoutErrors={stripeEnabled ? stripePlanErrorsByRole?.[modeRole] : undefined}
+            checkoutReturnTo={returnTo}
+            cancelPlanLabel={
+              isActive && canCancelMembership(activeMembership) ? mpage.cancelMembership : undefined
+            }
+            cancelPlanLoading={cancelLoadingRole === modeRole}
+            onCancelPlan={
+              isActive && canCancelMembership(activeMembership)
+                ? () => requestCancelMembership(modeRole)
+                : undefined
+            }
+          />
+        </div>
 
         {returnTo ? <MembershipReturnNotice returnTo={returnTo} /> : null}
 
@@ -658,6 +665,8 @@ export function MembershipPageContent({
           </div>
         ) : null}
       </div>
+
+      <MembershipFloatingDogBanner role={modeRole} returnTo={returnTo} />
     </AccountLayout>
   );
 }
