@@ -41,6 +41,7 @@ import { cancelMembershipAction } from "@/app/actions/membership";
 import { CancelMembershipConfirmModal } from "@/components/membership/CancelMembershipConfirmModal";
 import { InvitedTestUserSection } from "@/components/membership/InvitedTestUserSection";
 import { MembershipWelcomeOfferHero } from "@/components/membership/MembershipWelcomeOfferHero";
+import { MembershipFloatingDogBanner } from "@/components/membership/MembershipFloatingDogBanner";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { resolveMembershipPlanCheckoutProps } from "@/lib/membership-invited-access";
 import { MEMBERSHIP_PLANS_SECTION_ID } from "@/lib/membership-plans-scroll";
@@ -629,6 +630,8 @@ export function MembershipPageContent({
       {planCheckout.showInvitedAccessSection ? (
         <InvitedTestUserSection role={modeRole} />
       ) : null}
+
+      <MembershipFloatingDogBanner role={modeRole} returnTo={returnTo} />
     </AccountLayout>
   );
 }

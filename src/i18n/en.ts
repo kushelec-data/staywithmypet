@@ -606,6 +606,13 @@ export const en = {
         hint: "After activating your membership, continue with your pet booking.",
         link: "Return to pet profile",
       },
+      floatingBanner: {
+        headline: "A little help choosing your membership?",
+        supporting:
+          "Explore the plans below and use WELCOME90 for 90% off your first membership.",
+        viewPlans: "View plans",
+        closeLabel: "Dismiss membership helper banner",
+      },
     },
     profileSetup: {
       pageTitle: "Set up your profile",
