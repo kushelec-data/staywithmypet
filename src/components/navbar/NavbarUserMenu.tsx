@@ -13,9 +13,11 @@ import { mobileAccountMenuSecondaryItemsForActiveMode } from "@/lib/account-nav"
 import { resolveActiveMode } from "@/lib/profile-mode";
 import type { SidebarModeControl } from "@/lib/profile-mode";
 import {
+  accountSidebarIconForHref,
   ACCOUNT_SIDEBAR_ICON_CLASS,
   ACCOUNT_SIDEBAR_MODE_SWITCH_ICON,
 } from "@/lib/account-sidebar-icons";
+import { mobileNavRowClass } from "@/components/navbar/mobile-nav-styles";
 
 type NavbarUserMenuProps = {
   onLogout: () => void | Promise<void>;
@@ -77,23 +79,32 @@ export function NavbarUserMenu({
   }
 
   if (variant === "mobile") {
+    const rowClass = (href: string) =>
+      mobileNavRowClass(isNavLinkActive(pathname, href));
+
     return (
-      <ul className="space-y-0.5">
-        {menuLinks.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              onClick={onNavigate}
-              className={`block min-h-[44px] rounded-xl px-4 py-3 text-base font-medium leading-snug ${
-                isNavLinkActive(pathname, link.href)
-                  ? "bg-brand-pink-muted text-brand-pink"
-                  : "text-muted active:bg-mint/40"
-              }`}
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
+      <ul className="min-w-0 max-w-full space-y-0.5">
+        {menuLinks.map((link) => {
+          const Icon = accountSidebarIconForHref(link.href);
+          const active = isNavLinkActive(pathname, link.href);
+          return (
+            <li key={link.href} className="min-w-0 max-w-full">
+              <Link
+                href={link.href}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                className={rowClass(link.href)}
+              >
+                <Icon
+                  className={`h-5 w-5 shrink-0 ${active ? ACCOUNT_SIDEBAR_ICON_CLASS.active : ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1 truncate">{link.label}</span>
+              </Link>
+            </li>
+          );
+        })}
         {secondaryMenuLinks.length > 0 ? (
           <>
             <li className="mt-2 border-t border-border pt-2">
@@ -101,21 +112,29 @@ export function NavbarUserMenu({
                 {t.navbar.accountSection}
               </p>
             </li>
-            {secondaryMenuLinks.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={`block min-h-[44px] rounded-xl px-4 py-3 text-base font-medium leading-snug ${
-                    isNavLinkActive(pathname, item.href)
-                      ? "bg-brand-pink-muted text-brand-pink"
-                      : "text-muted active:bg-mint/40"
-                  }`}
-                >
-                  {accountSidebarLabel(item.href, item.label, t)}
-                </Link>
-              </li>
-            ))}
+            {secondaryMenuLinks.map((item) => {
+              const Icon = accountSidebarIconForHref(item.href);
+              const active = isNavLinkActive(pathname, item.href);
+              return (
+                <li key={item.href} className="min-w-0 max-w-full">
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
+                    aria-current={active ? "page" : undefined}
+                    className={rowClass(item.href)}
+                  >
+                    <Icon
+                      className={`h-5 w-5 shrink-0 ${active ? ACCOUNT_SIDEBAR_ICON_CLASS.active : ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                      strokeWidth={1.75}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      {accountSidebarLabel(item.href, item.label, t)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </>
         ) : null}
         {modeControl ? (
@@ -125,33 +144,35 @@ export function NavbarUserMenu({
                 {t.account.switchMode}
               </p>
             </li>
-            <li>
+            <li className="min-w-0 max-w-full">
               {modeControl.kind === "switch" ? (
                 <button
                   type="button"
                   disabled={switchingMode !== null}
                   onClick={() => onModeSwitch?.(modeControl.targetMode)}
-                  className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-4 py-3 text-left text-base font-medium leading-snug text-muted active:bg-mint/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-[48px] w-full min-w-0 max-w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-base font-medium leading-snug text-muted active:bg-mint/40 hover:bg-mint/30 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
-                    className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                    className={`h-5 w-5 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
                     strokeWidth={1.75}
                     aria-hidden
                   />
-                  {switchingMode === modeControl.targetMode ? t.account.switching : modeControl.label}
+                  <span className="min-w-0 flex-1 truncate">
+                    {switchingMode === modeControl.targetMode ? t.account.switching : modeControl.label}
+                  </span>
                 </button>
               ) : (
                 <Link
                   href={modeControl.href}
                   onClick={onNavigate}
-                  className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-4 py-3 text-base font-medium leading-snug text-muted active:bg-mint/40"
+                  className="flex min-h-[48px] w-full min-w-0 max-w-full items-center gap-3 rounded-xl px-4 py-2.5 text-base font-medium leading-snug text-muted active:bg-mint/40 hover:bg-mint/30"
                 >
                   <ACCOUNT_SIDEBAR_MODE_SWITCH_ICON
-                    className={`h-4 w-4 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
+                    className={`h-5 w-5 shrink-0 ${ACCOUNT_SIDEBAR_ICON_CLASS.inactive}`}
                     strokeWidth={1.75}
                     aria-hidden
                   />
-                  {modeControl.label}
+                  <span className="min-w-0 flex-1 truncate">{modeControl.label}</span>
                 </Link>
               )}
             </li>
@@ -164,12 +185,12 @@ export function NavbarUserMenu({
             ) : null}
           </>
         ) : null}
-        <li>
+        <li className="min-w-0 max-w-full">
           <button
             type="button"
             disabled={loggingOut}
             onClick={() => void onLogout()}
-            className="block min-h-[44px] w-full rounded-xl px-4 py-3 text-left text-base font-medium leading-snug text-muted active:bg-mint/40"
+            className="flex min-h-[48px] w-full min-w-0 max-w-full items-center rounded-xl px-4 py-2.5 text-left text-base font-medium leading-snug text-muted active:bg-mint/40 hover:bg-mint/30"
           >
             {t.navbar.logout}
           </button>

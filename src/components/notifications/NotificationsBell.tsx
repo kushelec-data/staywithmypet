@@ -28,6 +28,8 @@ import { createClient } from "@/lib/supabase";
 import { appDevLogPerf } from "@/lib/app-dev-perf";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { mobileNavRowClass } from "@/components/navbar/mobile-nav-styles";
 
 /** Outline bell only (stroke-based) — unified across all states via `currentColor`. */
 function BellIcon({ className }: { className?: string }) {
@@ -142,7 +144,82 @@ function NotificationRow({
 /** Coalesce rapid refresh signals (realtime + mark-read) into one network round-trip. */
 const NOTIFICATION_REFRESH_DEBOUNCE_MS = 400;
 
-export function NotificationsBell() {
+type NotificationsBellProps = {
+  /** Icon button in header (default) or full-width drawer row on mobile. */
+  variant?: "icon" | "menu-row";
+  onNavigate?: () => void;
+};
+
+function NotificationPanel({
+  n,
+  hasUnread,
+  error,
+  loading,
+  grouped,
+  onMarkAllRead,
+  onOpen,
+}: {
+  n: Dictionary["notifications"];
+  hasUnread: boolean;
+  error: string | null;
+  loading: boolean;
+  grouped: ReturnType<typeof groupNotificationsByCategory>;
+  onMarkAllRead: () => void;
+  onOpen: (notification: AppNotification) => void;
+}) {
+  return (
+    <>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold text-foreground">{n.title}</h3>
+        {hasUnread ? (
+          <button
+            type="button"
+            onClick={onMarkAllRead}
+            className="shrink-0 text-xs font-semibold text-brand-teal hover:underline"
+          >
+            {n.markAllRead}
+          </button>
+        ) : null}
+      </div>
+
+      {error ? (
+        <p className={`mx-3 my-2 shrink-0 ${STATUS_ALERT_ERROR_COMPACT_CLASS}`} role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="min-h-0 max-h-[min(70dvh,28rem)] overflow-y-auto overscroll-contain">
+        {loading ? (
+          <p className="px-4 py-6 text-center text-sm text-muted">{n.loading}</p>
+        ) : grouped.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted">{n.empty}</p>
+        ) : (
+          grouped.map((group) => (
+            <section key={group.category} aria-label={categoryLabel(group.category, n)}>
+              <h4 className="sticky top-0 z-[1] border-b border-border bg-cream/95 px-4 py-2 text-[0.65rem] font-bold uppercase tracking-wide text-muted backdrop-blur-sm">
+                {categoryLabel(group.category, n)}
+              </h4>
+              <ul>
+                {group.items.map((notification) => (
+                  <NotificationRow
+                    key={notification.id}
+                    notification={notification}
+                    onOpen={(item) => onOpen(item)}
+                    onAction={(item) => onOpen(item)}
+                    actionText={actionLabel(notificationActionKind(notification), n)}
+                    unreadLabel={n.unread}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
+export function NotificationsBell({ variant = "icon", onNavigate }: NotificationsBellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
@@ -286,6 +363,7 @@ export function NotificationsBell() {
   async function openNotification(notification: AppNotification) {
     if (!userId || !supabase) return;
     setOpen(false);
+    onNavigate?.();
 
     if (!notification.readAt) {
       try {
@@ -332,16 +410,31 @@ export function NotificationsBell() {
 
   const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
   const n = t.notifications;
+  const isMenuRow = variant === "menu-row";
 
-  const bellButtonClasses = [
-    "relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150",
-    isActive
-      ? "border-brand-teal/25 bg-mint/40 text-brand-teal shadow-sm"
-      : "border-border bg-surface text-muted hover:bg-mint/30 hover:text-foreground/80",
-  ].join(" ");
+  const bellButtonClasses = isMenuRow
+    ? mobileNavRowClass(isActive, false)
+    : [
+        "relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150",
+        isActive
+          ? "border-brand-teal/25 bg-mint/40 text-brand-teal shadow-sm"
+          : "border-border bg-surface text-muted hover:bg-mint/30 hover:text-foreground/80",
+      ].join(" ");
+
+  const panelContent = (
+    <NotificationPanel
+      n={n}
+      hasUnread={hasUnread}
+      error={error}
+      loading={loading}
+      grouped={grouped}
+      onMarkAllRead={() => void handleMarkAllRead()}
+      onOpen={(item) => void openNotification(item)}
+    />
+  );
 
   return (
-    <div ref={panelRef} className="relative">
+    <div ref={panelRef} className={isMenuRow ? "min-w-0 max-w-full" : "relative"}>
       <button
         type="button"
         onClick={() => void handleToggle()}
@@ -353,71 +446,50 @@ export function NotificationsBell() {
           hasUnread ? `${n.bellLabel} (${unreadCount} unread)` : n.bellLabel
         }
       >
-        <BellIcon />
+        <BellIcon className={isMenuRow ? "h-5 w-5 shrink-0" : undefined} />
+        {isMenuRow ? <span className="min-w-0 flex-1 truncate text-left">{n.bellLabel}</span> : null}
         {hasUnread ? (
           <span
-            className="absolute -right-0.5 -top-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[0.625rem] font-bold leading-none text-white shadow-sm motion-safe:animate-pulse ring-2 ring-surface"
-            aria-hidden
+            className={
+              isMenuRow
+                ? "ml-auto inline-flex h-6 min-w-[1.5rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold leading-none text-white"
+                : "absolute -right-0.5 -top-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 text-[0.625rem] font-bold leading-none text-white shadow-sm motion-safe:animate-pulse ring-2 ring-surface"
+            }
+            aria-hidden={isMenuRow}
+            aria-label={isMenuRow ? `${unreadCount} unread notifications` : undefined}
           >
             {badgeLabel}
           </span>
         ) : null}
       </button>
 
-      {open ? (
+      {open && isMenuRow && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[110] lg:hidden" role="presentation">
+              <button
+                type="button"
+                className="fixed inset-0 bg-black/40"
+                aria-label={n.title}
+                onClick={() => setOpen(false)}
+              />
+              <div
+                className="fixed inset-x-0 bottom-0 z-[111] mx-auto flex max-h-[min(85dvh,32rem)] w-full max-w-[420px] flex-col overflow-hidden rounded-t-2xl border border-border bg-surface shadow-[0_-8px_32px_rgba(0,0,0,0.12)]"
+                role="menu"
+                style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+              >
+                {panelContent}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {open && !isMenuRow ? (
         <div
           className="absolute right-0 z-50 mt-2 flex w-[min(calc(100vw-1.5rem),22rem)] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)] sm:w-[22rem]"
           role="menu"
         >
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <h3 className="text-sm font-semibold text-foreground">{n.title}</h3>
-            {hasUnread ? (
-              <button
-                type="button"
-                onClick={() => void handleMarkAllRead()}
-                className="shrink-0 text-xs font-semibold text-brand-teal hover:underline"
-              >
-                {n.markAllRead}
-              </button>
-            ) : null}
-          </div>
-
-          {error ? (
-            <p
-              className={`mx-3 my-2 shrink-0 ${STATUS_ALERT_ERROR_COMPACT_CLASS}`}
-              role="alert"
-            >
-              {error}
-            </p>
-          ) : null}
-
-          <div className="min-h-0 max-h-[min(70dvh,28rem)] overflow-y-auto overscroll-contain">
-            {loading ? (
-              <p className="px-4 py-6 text-center text-sm text-muted">{n.loading}</p>
-            ) : grouped.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted">{n.empty}</p>
-            ) : (
-              grouped.map((group) => (
-                <section key={group.category} aria-label={categoryLabel(group.category, n)}>
-                  <h4 className="sticky top-0 z-[1] border-b border-border bg-cream/95 px-4 py-2 text-[0.65rem] font-bold uppercase tracking-wide text-muted backdrop-blur-sm">
-                    {categoryLabel(group.category, n)}
-                  </h4>
-                  <ul>
-                    {group.items.map((notification) => (
-                      <NotificationRow
-                        key={notification.id}
-                        notification={notification}
-                        onOpen={(item) => void openNotification(item)}
-                        onAction={(item) => void openNotification(item)}
-                        actionText={actionLabel(notificationActionKind(notification), n)}
-                        unreadLabel={n.unread}
-                      />
-                    ))}
-                  </ul>
-                </section>
-              ))
-            )}
-          </div>
+          {panelContent}
         </div>
       ) : null}
     </div>

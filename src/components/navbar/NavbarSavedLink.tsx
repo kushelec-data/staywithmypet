@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
+import { mobileNavRowClass } from "@/components/navbar/mobile-nav-styles";
 
 function HeartIcon({ className }: { className?: string }) {
   return (
@@ -16,10 +17,30 @@ function HeartIcon({ className }: { className?: string }) {
   );
 }
 
-export function NavbarSavedLink() {
+type NavbarSavedLinkProps = {
+  variant?: "icon" | "menu-row";
+  onNavigate?: () => void;
+};
+
+export function NavbarSavedLink({ variant = "icon", onNavigate }: NavbarSavedLinkProps) {
   const pathname = usePathname();
   const { t } = useLanguage();
   const active = pathname === "/saved";
+  const isMenuRow = variant === "menu-row";
+
+  if (isMenuRow) {
+    return (
+      <Link
+        href="/saved"
+        onClick={onNavigate}
+        className={mobileNavRowClass(active)}
+        aria-current={active ? "page" : undefined}
+      >
+        <HeartIcon className="h-5 w-5 shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{t.navbar.saved}</span>
+      </Link>
+    );
+  }
 
   return (
     <Link

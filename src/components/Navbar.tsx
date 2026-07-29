@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -10,6 +10,8 @@ import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 import { NavbarSavedLink } from "@/components/navbar/NavbarSavedLink";
 import { NavbarUserMenu } from "@/components/navbar/NavbarUserMenu";
+import { MobileNavDrawer } from "@/components/navbar/MobileNavDrawer";
+import { mobileNavRowClass, mobileNavSectionClass } from "@/components/navbar/mobile-nav-styles";
 import { getAuthNavLinks, getPrimaryNavLinksForUser } from "@/lib/nav-i18n";
 import { sidebarModeControlForProfile } from "@/lib/profile-mode";
 import { useActiveModeSwitch } from "@/hooks/useActiveModeSwitch";
@@ -77,16 +79,6 @@ function guestLinkClass(active: boolean, tealActive = false) {
   }`;
 }
 
-function mobileNavLinkClass(active: boolean, tealActive = false) {
-  return `block min-h-[44px] rounded-xl px-4 py-3 text-base font-medium leading-snug ${
-    active
-      ? tealActive
-        ? "bg-mint/60 text-brand-teal"
-        : "bg-brand-pink-muted text-brand-pink"
-      : "text-muted active:bg-mint/40"
-  }`;
-}
-
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -95,6 +87,7 @@ export function Navbar() {
   const { profile } = useProfile();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const { switchingMode, modeError, handleModeSwitch } = useActiveModeSwitch({
     onSuccess: () => setOpen(false),
   });
@@ -117,6 +110,10 @@ export function Navbar() {
     } finally {
       setLoggingOut(false);
     }
+  }
+
+  function closeDrawer() {
+    setOpen(false);
   }
 
   useEffect(() => {
@@ -186,11 +183,13 @@ export function Navbar() {
             )}
 
             <button
+              ref={menuTriggerRef}
               type="button"
               className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border bg-mint/50 transition-colors active:bg-mint lg:hidden"
               aria-expanded={open}
+              aria-controls="mobile-nav-drawer"
               aria-label={open ? t.common.closeMenu : t.common.openMenu}
-              onClick={() => setOpen((v) => !v)}
+              onClick={() => setOpen((value) => !value)}
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 {open ? (
@@ -202,73 +201,104 @@ export function Navbar() {
             </button>
           </div>
         </nav>
+      </div>
 
-        <div
-          className={`grid transition-[grid-template-rows] duration-300 ease-out lg:hidden ${
-            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="max-h-[min(75dvh,28rem)] overflow-y-auto overscroll-y-contain border-t border-border py-2 [-webkit-overflow-scrolling:touch]">
-              <ul className="space-y-0.5">
-                {centerNavLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link href={link.href} className={mobileNavLinkClass(linkActive(link.href), tealNavActive(link.href))}>
-                      {link.label}
+      <MobileNavDrawer
+        open={open}
+        onClose={closeDrawer}
+        ariaLabel={t.common.openMenu}
+        closeLabel={t.common.closeMenu}
+        returnFocusRef={menuTriggerRef}
+        headerStart={
+          <Link
+            href="/"
+            onClick={closeDrawer}
+            className="inline-flex min-w-0 items-center"
+            aria-label="StayWithMyPet home"
+          >
+            <img src={LOGO_SRC} alt="StayWithMyPet" className={LOGO_CLASS} width={200} height={52} />
+          </Link>
+        }
+        headerEnd={<LanguageSwitcher />}
+      >
+        <nav id="mobile-nav-drawer" aria-label="Mobile navigation" className="min-w-0 max-w-full pb-4">
+          <section className={mobileNavSectionClass()} aria-label={t.navbar.findPets}>
+            <ul className="min-w-0 max-w-full space-y-0.5">
+              {centerNavLinks.map((link) => {
+                const active = linkActive(link.href);
+                return (
+                  <li key={link.href} className="min-w-0 max-w-full">
+                    <Link
+                      href={link.href}
+                      onClick={closeDrawer}
+                      aria-current={active ? "page" : undefined}
+                      className={mobileNavRowClass(active, tealNavActive(link.href))}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{link.label}</span>
                     </Link>
                   </li>
-                ))}
-              </ul>
+                );
+              })}
+            </ul>
+          </section>
 
-              {isLoggedIn ? (
-                <>
-                  <div className="my-2 flex items-center gap-2 px-4 md:hidden">
-                    <NotificationsBell />
-                    <NavbarSavedLink />
-                  </div>
-                  <div className="px-1 md:hidden">
-                    <NavbarUserMenu
-                      variant="mobile"
-                      onLogout={handleLogout}
-                      loggingOut={loggingOut}
-                      onNavigate={() => setOpen(false)}
-                      modeControl={modeControl}
-                      switchingMode={switchingMode}
-                      modeError={modeError}
-                      onModeSwitch={handleModeSwitch}
+          {isLoggedIn ? (
+            <>
+              <section className={`${mobileNavSectionClass()} border-t border-border pt-2 md:hidden`} aria-label={t.notifications.bellLabel}>
+                <ul className="min-w-0 max-w-full space-y-0.5">
+                  <li className="min-w-0 max-w-full">
+                    <NotificationsBell
+                      variant="menu-row"
+                      onNavigate={closeDrawer}
                     />
-                  </div>
-                </>
-              ) : (
-                <ul className="mt-1 space-y-0.5 border-t border-border pt-2">
-                  {authNavLinks.map((link) => (
-                    <li key={link.href}>
+                  </li>
+                  <li className="min-w-0 max-w-full">
+                    <NavbarSavedLink variant="menu-row" onNavigate={closeDrawer} />
+                  </li>
+                </ul>
+              </section>
+
+              <section className={`${mobileNavSectionClass()} border-t border-border pt-2 md:hidden`} aria-label={t.navbar.accountMenu}>
+                <NavbarUserMenu
+                  variant="mobile"
+                  onLogout={handleLogout}
+                  loggingOut={loggingOut}
+                  onNavigate={closeDrawer}
+                  modeControl={modeControl}
+                  switchingMode={switchingMode}
+                  modeError={modeError}
+                  onModeSwitch={handleModeSwitch}
+                />
+              </section>
+            </>
+          ) : (
+            <section className={`${mobileNavSectionClass()} border-t border-border pt-2`}>
+              <ul className="min-w-0 max-w-full space-y-0.5">
+                {authNavLinks.map((link) => {
+                  const active = linkActive(link.href);
+                  const emphasis = "emphasis" in link && link.emphasis;
+                  return (
+                    <li key={link.href} className="min-w-0 max-w-full">
                       <Link
                         href={link.href}
-                        className={`block min-h-[44px] rounded-xl px-4 py-3 text-base font-medium leading-snug ${
-                          "emphasis" in link && link.emphasis
-                            ? "bg-brand-teal text-white"
-                            : linkActive(link.href)
-                              ? tealNavActive(link.href)
-                                ? "bg-mint/60 text-brand-teal"
-                                : "bg-brand-pink-muted text-brand-pink"
-                              : "text-muted active:bg-mint/40"
-                        }`}
+                        onClick={closeDrawer}
+                        aria-current={active ? "page" : undefined}
+                        className={
+                          emphasis
+                            ? "flex min-h-[48px] w-full min-w-0 max-w-full items-center rounded-xl bg-brand-teal px-4 py-2.5 text-base font-semibold text-white"
+                            : mobileNavRowClass(active, tealNavActive(link.href))
+                        }
                       >
-                        {link.label}
+                        <span className="min-w-0 flex-1 truncate">{link.label}</span>
                       </Link>
                     </li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 sm:hidden">
-                <LanguageSwitcher />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+        </nav>
+      </MobileNavDrawer>
     </header>
   );
 }

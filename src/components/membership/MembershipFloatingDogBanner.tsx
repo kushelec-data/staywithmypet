@@ -1,6 +1,6 @@
 "use client";
 
-import { Membership3DDog } from "@/components/membership/Membership3DDog";
+import { MembershipFloatingDogIllustration } from "@/components/membership/MembershipFloatingDogIllustration";
 import { useLanguage } from "@/context/LanguageContext";
 import type { MembershipRole } from "@/lib/membership";
 import {
@@ -8,7 +8,6 @@ import {
   isMembershipFloatingBannerDismissed,
 } from "@/lib/membership-floating-banner";
 import { scrollToMembershipPlans } from "@/lib/membership-plans-scroll";
-import { WELCOME_OFFER_CODE } from "@/lib/new-member-promotion";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -32,11 +31,8 @@ export function MembershipFloatingDogBanner({
   const copy = t.account.membershipPage.floatingBanner;
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<BannerPhase>("idle");
-  const [ctaPulse, setCtaPulse] = useState(false);
   const enteredRef = useRef(false);
   const closeTimerRef = useRef<number | null>(null);
-  const ctaPulseTimerRef = useRef<number | null>(null);
-  const showDog = phase !== "idle";
 
   useEffect(() => {
     setMounted(true);
@@ -52,7 +48,6 @@ export function MembershipFloatingDogBanner({
     return () => {
       window.clearTimeout(settleTimer);
       if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
-      if (ctaPulseTimerRef.current) window.clearTimeout(ctaPulseTimerRef.current);
     };
   }, []);
 
@@ -72,11 +67,6 @@ export function MembershipFloatingDogBanner({
     }, CLOSE_MS);
   }, []);
 
-  const handleDogIntroComplete = useCallback(() => {
-    setCtaPulse(true);
-    ctaPulseTimerRef.current = window.setTimeout(() => setCtaPulse(false), 900);
-  }, []);
-
   if (!mounted || phase === "idle") return null;
 
   const motionClass =
@@ -92,56 +82,41 @@ export function MembershipFloatingDogBanner({
       data-membership-floating-banner-root
     >
       <div
-        className={`pointer-events-auto relative w-full max-w-[880px] ${motionClass}`}
+        className={`pointer-events-auto relative w-full max-w-[720px] ${motionClass}`}
         role="complementary"
         aria-label={copy.headline}
       >
-        <div className="flex flex-col items-center gap-1 sm:flex-row sm:items-end sm:justify-center sm:gap-2">
-          {showDog ? (
-            <div className="membership-floating-dog-3d-slot order-2 shrink-0 sm:order-1">
-              <Membership3DDog
-                className="h-[72px] w-[72px] sm:h-[96px] sm:w-[96px]"
-                onIntroComplete={handleDogIntroComplete}
-              />
+        <div className="relative overflow-hidden rounded-2xl border border-brand-teal/10 bg-gradient-to-br from-mint/30 via-mint/10 to-lavender/20 shadow-[0_6px_20px_rgba(43,43,43,0.06)] backdrop-blur-[2px]">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute right-2 top-2 z-[2] inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/70 text-muted transition hover:bg-mint/30 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            aria-label={copy.closeLabel}
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+
+          <div className="flex flex-col gap-2.5 p-3 pr-11 sm:flex-row sm:items-center sm:gap-3 sm:p-3 sm:pr-12">
+            <div className="flex min-w-0 items-end gap-2 sm:shrink-0">
+              <MembershipFloatingDogIllustration className="membership-floating-dog-illustration h-11 w-auto shrink-0 sm:h-14" />
             </div>
-          ) : null}
 
-          <div className="relative order-1 min-w-0 w-full max-w-[880px] sm:order-2 sm:flex-1">
-            <div className="relative overflow-hidden rounded-[20px] border border-brand-teal/12 bg-gradient-to-br from-mint/35 via-mint/15 to-lavender/25 shadow-[0_10px_32px_rgba(43,43,43,0.08)] backdrop-blur-[2px]">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="absolute right-2 top-2 z-[2] inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/70 text-muted transition hover:bg-mint/30 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
-                aria-label={copy.closeLabel}
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </button>
-
-              <div className="flex flex-col gap-3 p-3 pr-12 sm:flex-row sm:items-center sm:gap-4 sm:p-3.5 sm:pr-14">
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="text-sm font-semibold leading-snug text-foreground sm:text-[0.9375rem]">
-                    {copy.headline}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-snug text-muted sm:text-[0.8125rem]">
-                    {copy.supporting}
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-                  <span className="inline-flex items-center rounded-full border border-dashed border-brand-teal/25 bg-mint/20 px-2.5 py-1 font-mono text-[0.6875rem] font-semibold tracking-[0.14em] text-brand-teal sm:text-xs">
-                    {WELCOME_OFFER_CODE}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleViewPlans}
-                    data-membership-floating-cta
-                    className={`membership-floating-cta inline-flex h-9 items-center justify-center rounded-full bg-brand-teal px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal sm:text-sm ${ctaPulse ? "membership-floating-cta-pulse" : ""}`}
-                  >
-                    {copy.viewPlans}
-                  </button>
-                </div>
-              </div>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-sm font-medium leading-snug text-foreground">
+                {copy.headline}
+              </p>
+              <p className="mt-0.5 text-xs leading-snug text-muted">
+                {copy.supporting}
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={handleViewPlans}
+              className="inline-flex h-8 shrink-0 items-center justify-center self-start rounded-full bg-brand-teal px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-teal-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal sm:self-center sm:px-4 sm:text-sm"
+            >
+              {copy.viewPlans}
+            </button>
           </div>
         </div>
       </div>
