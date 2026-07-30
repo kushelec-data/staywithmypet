@@ -71,6 +71,7 @@ export function TrustSafetyFormSection({
           onNationalChange={(phoneNational) => patch({ phoneNational })}
           disabled={disabled}
         />
+        <p className="text-xs text-muted">{ts.phonePrivacyHelper}</p>
 
         <div className="rounded-xl border border-black/[0.06] bg-mint/15 px-3 py-2.5 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -100,6 +101,7 @@ export function TrustSafetyFormSection({
         <div className="border-t border-black/5 pt-4">
           <h3 className="text-sm font-semibold text-foreground">{ts.emergencySectionTitle}</h3>
           <p className="mt-1 text-xs text-muted">{ts.emergencySectionHint}</p>
+          <p className="mt-1 text-xs text-muted">{ts.emergencyPrivacyHelper}</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
