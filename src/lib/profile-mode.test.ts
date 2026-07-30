@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   canSwitchActiveMode,
+  isEnablingSecondRole,
+  mergedRoleForEnable,
+  parseProfileSetupEnableParam,
+  profileSetupEnableHref,
   resolveActiveMode,
   roleAfterModeSwitch,
   sidebarModeControlForProfile,
@@ -93,7 +97,7 @@ describe("sidebarModeControlForProfile", () => {
     expect(control).toEqual({
       kind: "enable",
       label: "Create Pet Friend profile",
-      href: "/profile/setup",
+      href: "/profile/setup?enable=pet_friend",
       targetMode: "pet_friend",
     });
   });
@@ -105,7 +109,7 @@ describe("sidebarModeControlForProfile", () => {
     expect(control).toEqual({
       kind: "enable",
       label: "Create Pet Parent profile",
-      href: "/profile/setup",
+      href: "/profile/setup?enable=pet_parent",
       targetMode: "pet_parent",
     });
   });
@@ -119,5 +123,32 @@ describe("sidebarModeControlForProfile", () => {
     );
     expect(parentControl?.kind).toBe("enable");
     expect(friendControl?.kind).toBe("enable");
+  });
+});
+
+describe("profile setup enable flow", () => {
+  it("builds setup href with enable query for the target mode", () => {
+    expect(profileSetupEnableHref("pet_parent")).toBe("/profile/setup?enable=pet_parent");
+  });
+
+  it("detects second-role setup for single-role users", () => {
+    const friendProfile = profile({
+      role: "pet_friend",
+      active_mode: "pet_friend",
+      role_chosen_at: "2026-01-01T00:00:00.000Z",
+    });
+    expect(isEnablingSecondRole(friendProfile, parseProfileSetupEnableParam("pet_parent"))).toBe(
+      true,
+    );
+    expect(isEnablingSecondRole(friendProfile, parseProfileSetupEnableParam("pet_friend"))).toBe(
+      false,
+    );
+    expect(isEnablingSecondRole(friendProfile, null)).toBe(false);
+  });
+
+  it("merges single role into both when enabling the other role", () => {
+    expect(mergedRoleForEnable("pet_friend", "pet_parent")).toBe("both");
+    expect(mergedRoleForEnable("pet_parent", "pet_friend")).toBe("both");
+    expect(mergedRoleForEnable("both", "pet_parent")).toBe("both");
   });
 });

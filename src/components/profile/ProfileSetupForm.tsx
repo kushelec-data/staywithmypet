@@ -38,10 +38,10 @@ import {
   petFriendFormFromDetailsRaw,
   type PetFriendProfileFormInput,
 } from "@/lib/profile-friend-form";
-import { saveUserProfile, type ProfileRole, type ProfileSetupInput } from "@/lib/profile-setup";
+import { saveUserProfile, saveUserActiveMode, type ProfileRole, type ProfileSetupInput } from "@/lib/profile-setup";
 import { createClient } from "@/lib/supabase";
 import { availabilityUxForProfile } from "@/lib/availability-ux";
-import { resolveActiveMode } from "@/lib/profile-mode";
+import { resolveActiveMode, isEnablingSecondRole, mergedRoleForEnable, parseProfileSetupEnableParam } from "@/lib/profile-mode";
 import {
   BIO_WORD_MAX,
   getWordCount,
@@ -79,7 +79,7 @@ import {
 import { mergePetFriendIntoDetails } from "@/lib/profile-friend-form";
 import { prefillLanguagesIfEmpty, prefillProfileLocationIfEmpty } from "@/lib/pet-form-prefill";
 import { formDraftStorageKey } from "@/lib/form-draft-storage";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const DASHBOARD_PATH = "/dashboard";
@@ -135,6 +135,8 @@ export function ProfileSetupForm({
   hideRolePicker = false,
 }: ProfileSetupFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const enableMode = parseProfileSetupEnableParam(searchParams.get("enable"));
   const { t } = useLanguage();
   const setup = t.account.profileSetup;
   const onboardingRole = t.onboarding.role;
@@ -162,6 +164,7 @@ export function ProfileSetupForm({
   const { user } = useAuth();
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
+  const enablingSecondRole = isEnablingSecondRole(profile, enableMode);
 
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<ProfileRole>("pet_friend");
@@ -363,6 +366,9 @@ export function ProfileSetupForm({
         if (!profile.display_name?.trim() && user) {
           setDisplayName(resolveProfileDisplayName(user, null));
         }
+        if (enablingSecondRole && enableMode) {
+          setRole(mergedRoleForEnable(profile.role, enableMode));
+        }
       }
       return;
     }
@@ -388,7 +394,7 @@ export function ProfileSetupForm({
       setAvatarUrl(null);
       setPetFriendForm(emptyPetFriendProfileForm());
     }
-  }, [profile, profileLoading, user, setters, markHydratedFromServer]);
+  }, [profile, profileLoading, user, setters, markHydratedFromServer, enablingSecondRole, enableMode]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -471,11 +477,17 @@ export function ProfileSetupForm({
     setError(null);
     setSuccess(null);
     try {
-      const saved = await saveUserProfile(supabase, user.id, payload, {
+      let saved = await saveUserProfile(supabase, user.id, payload, {
         user,
         existingDisplayName: profile?.display_name ?? (trimmedName || null),
-        preserveRole: profile?.role_chosen_at ? profile.role : undefined,
+        preserveRole: profile?.role_chosen_at && !enablingSecondRole ? profile.role : undefined,
       });
+      if (enablingSecondRole && enableMode && saved.role === "both") {
+        saved = await saveUserActiveMode(supabase, user.id, enableMode, saved, {
+          user,
+          existingDisplayName: saved.display_name,
+        });
+      }
       setProfileRow(saved);
       applyProfileToForm(saved, setters);
       await refreshProfile();

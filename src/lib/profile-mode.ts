@@ -67,6 +67,36 @@ export function sidebarModeActionForProfile(
   };
 }
 
+export function profileSetupEnableHref(targetMode: ProfileActiveMode): string {
+  return `/profile/setup?enable=${targetMode}`;
+}
+
+export function parseProfileSetupEnableParam(
+  value: string | null | undefined,
+): ProfileActiveMode | null {
+  if (value === "pet_parent" || value === "pet_friend") return value;
+  return null;
+}
+
+/** User opened setup to add their other role (single-role profile with role already chosen). */
+export function isEnablingSecondRole(
+  profile: ProfileRow | null,
+  enableMode: ProfileActiveMode | null,
+): boolean {
+  if (!profile?.role_chosen_at || !enableMode) return false;
+  if (profile.role === "both") return false;
+  return profile.role !== enableMode;
+}
+
+export function mergedRoleForEnable(
+  currentRole: ProfileRole,
+  enableMode: ProfileActiveMode,
+): ProfileRole {
+  if (currentRole === "both") return "both";
+  if (currentRole === enableMode) return currentRole;
+  return "both";
+}
+
 /** Sidebar mode switch or explicit enable-other-role CTA. */
 export function sidebarModeControlForProfile(
   profile: ProfileRow | null,
@@ -92,7 +122,7 @@ export function sidebarModeControlForProfile(
     return {
       kind: "enable",
       label: accountT?.createPetFriendProfile ?? "Create Pet Friend profile",
-      href: "/profile/setup",
+      href: profileSetupEnableHref("pet_friend"),
       targetMode: "pet_friend",
     };
   }
@@ -101,7 +131,7 @@ export function sidebarModeControlForProfile(
     return {
       kind: "enable",
       label: accountT?.createPetParentProfile ?? "Create Pet Parent profile",
-      href: "/profile/setup",
+      href: profileSetupEnableHref("pet_parent"),
       targetMode: "pet_parent",
     };
   }
