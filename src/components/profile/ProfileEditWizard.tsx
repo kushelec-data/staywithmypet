@@ -17,7 +17,8 @@ export type ProfileEditWizardStep = {
   id: ProfileEditSectionKey;
   title: string;
   description: string;
-  complete: boolean;
+  statusLabel: string;
+  statusComplete: boolean;
   content: ReactNode;
   isEditing: boolean;
   saving: boolean;
@@ -29,8 +30,6 @@ export type ProfileEditWizardStep = {
 
 type ProfileEditWizardLabels = {
   stepNumber: string;
-  statusCompleted: string;
-  statusIncomplete: string;
   previous: string;
   nextStep: string;
   edit: string;
@@ -120,7 +119,7 @@ export function ProfileEditWizard({
       : `flex gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] md:grid md:overflow-visible ${tabGridClass}`;
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5">
+    <div className="mx-auto w-full max-w-3xl space-y-4">
       <div
         ref={tabsRef}
         role="tablist"
@@ -130,7 +129,7 @@ export function ProfileEditWizard({
         {steps.map((step, index) => {
           const selected = index === activeIndex;
           const stepLabel = labels.stepNumber.replace("{n}", String(index + 1));
-          const statusLabel = step.complete ? labels.statusCompleted : labels.statusIncomplete;
+          const statusLabel = step.statusLabel;
           const tabText = `${stepLabel} ${step.title}`;
 
           return (
@@ -153,8 +152,8 @@ export function ProfileEditWizard({
               </span>
               <span className={`leading-snug ${ACCOUNT_SECTION_TITLE} text-sm`}>{step.title}</span>
               <span
-                className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                  step.complete
+                className={`inline-flex w-fit max-w-full rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  step.statusComplete
                     ? "bg-[#DDEEDF] text-[#2E6B3F]"
                     : "bg-black/5 text-muted"
                 }`}
@@ -172,7 +171,7 @@ export function ProfileEditWizard({
         role="tabpanel"
         aria-labelledby={`profile-edit-tab-${activeStep.id}`}
       >
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
           <p className={ACCOUNT_BODY_TEXT}>{activeStep.description}</p>
           <Button
             type="button"

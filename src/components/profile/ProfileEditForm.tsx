@@ -38,7 +38,9 @@ import { normalizeFullName } from "@/lib/name-format";
 import { useRouter } from "next/navigation";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import {
+  getProfileEditStepBadge,
   isProfileEditSectionComplete,
+  profileEditStepForRequiredField,
   profileEditStepFromHash,
   visibleProfileEditSteps,
   type ProfileEditSectionKey,
@@ -89,7 +91,7 @@ import {
 import { formDraftStorageKey } from "@/lib/form-draft-storage";
 import { ProfileRequiredFieldsBanner } from "@/components/profile/ProfileRequiredFieldsBanner";
 import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
-import { focusFirstInvalidField, requiredFieldOrderProps } from "@/lib/form-field-focus";
+import { focusFirstInvalidField, focusRequiredFieldTarget, requiredFieldOrderProps } from "@/lib/form-field-focus";
 import {
   evaluateProfileRequiredFields,
   validateBasicProfileFormSlice,
@@ -350,6 +352,51 @@ export function ProfileEditForm() {
     [profile, petIntros],
   );
 
+  const stepStatusLabel = useCallback(
+    (section: ProfileEditSectionKey) => {
+      const badge = getProfileEditStepBadge(section, requiredFieldsResult, profile);
+      const wizard = pe.wizard;
+      if (badge.kind === "complete") return wizard.statusCompleted;
+      if (badge.kind === "optional_remaining") return wizard.statusOptionalRemaining;
+      if (badge.count === 1) return wizard.statusOneRequiredMissing;
+      return wizard.statusNRequiredMissing.replace("{count}", String(badge.count));
+    },
+    [requiredFieldsResult, profile, pe.wizard],
+  );
+
+  const stepStatusComplete = useCallback(
+    (section: ProfileEditSectionKey) =>
+      getProfileEditStepBadge(section, requiredFieldsResult, profile).kind === "complete",
+    [requiredFieldsResult, profile],
+  );
+
+  const navigateToMissingField = useCallback(
+    (field: { id: ProfileRequiredFieldId; focusId?: string; href?: string }) => {
+      const step = profileEditStepForRequiredField(field.id);
+      const stepIndex = visibleSteps.indexOf(step);
+      if (stepIndex >= 0) {
+        setActiveStepIndex(stepIndex);
+        if (!editing[step]) {
+          setEditing((prev) => ({ ...prev, [step]: true }));
+        }
+        window.requestAnimationFrame(() => {
+          window.setTimeout(() => {
+            focusRequiredFieldTarget(field, { onNavigate: (href) => router.push(href) });
+          }, 120);
+        });
+        return;
+      }
+      focusRequiredFieldTarget(field, { onNavigate: (href) => router.push(href) });
+    },
+    [visibleSteps, editing, router],
+  );
+
+  const handleCompleteNow = useCallback(() => {
+    const first = requiredFieldsResult.missing[0];
+    if (!first) return;
+    navigateToMissingField(first);
+  }, [requiredFieldsResult.missing, navigateToMissingField]);
+
   const isStepFieldsEnabled = useCallback(
     (section: ProfileEditSectionKey) => editing[section] && activeStepId === section,
     [editing, activeStepId],
@@ -383,6 +430,11 @@ export function ProfileEditForm() {
           },
           setAvatarUrl,
         });
+        if (!profile.display_name?.trim() && user) {
+          setDisplayName((current) =>
+            current.trim() ? current : resolveProfileDisplayName(user, profile.display_name),
+          );
+        }
         applyTrustFromProfile(profile, setTrustSafety, setPreferredVet);
         setPetFriendForm(
           petFriendFormFromDetailsRaw(
@@ -762,7 +814,8 @@ export function ProfileEditForm() {
 
   const wizardSteps: ProfileEditWizardStep[] = visibleSteps.map((stepId) => {
     const meta = stepMeta[stepId];
-    const complete = sectionComplete(stepId);
+    const statusLabel = stepStatusLabel(stepId);
+    const statusComplete = stepStatusComplete(stepId);
     let content: ReactNode = null;
 
     if (stepId === "basic") {
@@ -940,7 +993,8 @@ export function ProfileEditForm() {
       id: stepId,
       title: meta.title,
       description: meta.description,
-      complete,
+      statusLabel,
+      statusComplete,
       content,
       isEditing: isStepFieldsEnabled(stepId),
       saving: saving[stepId],
@@ -953,16 +1007,19 @@ export function ProfileEditForm() {
 
   return (
     <>
-      <FormDraftStatus status={draftStatus} className="mb-3" />
-      <ProfileRequiredFieldsBanner result={requiredFieldsResult} className="mb-4" />
+      <FormDraftStatus status={draftStatus} className="mb-2" />
+      <ProfileRequiredFieldsBanner
+        result={requiredFieldsResult}
+        className="mb-3"
+        onCompleteNow={handleCompleteNow}
+        onFocusMissingField={navigateToMissingField}
+      />
       <ProfileEditWizard
       steps={wizardSteps}
       activeIndex={activeStepIndex}
       onActiveIndexChange={setActiveStepIndex}
       labels={{
         stepNumber: pe.wizard.stepNumber,
-        statusCompleted: pe.wizard.statusCompleted,
-        statusIncomplete: pe.wizard.statusIncomplete,
         previous: pe.wizard.previous,
         nextStep: pe.wizard.nextStep,
         edit: pe.edit,

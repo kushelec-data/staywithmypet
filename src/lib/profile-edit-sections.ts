@@ -5,10 +5,10 @@ import type { ProfileRow } from "@/lib/profile-utils";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
 import { isPhoneOnFile } from "@/lib/profile-completeness";
 import {
-  COMMON_REQUIRED_FIELDS,
   evaluateProfileRequiredFields,
-  isSinglePetMarketplaceReady,
-  PET_FRIEND_REQUIRED_FIELDS,
+  type ProfileRequiredFieldId,
+  type ProfileRequiredFieldsResult,
+  type ProfileRequiredFieldStatus,
 } from "@/lib/profile-required-fields";
 
 export type ProfileEditSectionKey = "basic" | "trust" | "petFriend" | "availability" | "petParent";
@@ -19,7 +19,77 @@ export function visibleProfileEditSteps(
 ): ProfileEditSectionKey[] {
   const mode = activeMode ?? (role === "pet_parent" ? "pet_parent" : "pet_friend");
   if (mode === "pet_friend") return ["basic", "trust", "petFriend", "availability"];
-  return ["basic", "trust"];
+  return ["basic", "trust", "petParent"];
+}
+
+/** Maps each required field id to the profile-edit wizard step that owns it. */
+export const PROFILE_REQUIRED_FIELD_STEP: Record<
+  ProfileRequiredFieldId,
+  ProfileEditSectionKey
+> = {
+  display_name: "basic",
+  profile_photo: "basic",
+  location: "basic",
+  bio: "basic",
+  languages: "basic",
+  experience: "petFriend",
+  pet_types: "petFriend",
+  pet_sizes: "petFriend",
+  care_services: "petFriend",
+  service_area: "petFriend",
+  care_preference_toggles: "petFriend",
+  availability: "availability",
+  pet_listing: "petParent",
+  pet_name: "petParent",
+  pet_species: "petParent",
+  pet_age: "petParent",
+  pet_size: "petParent",
+  pet_photo: "petParent",
+  pet_personality: "petParent",
+  pet_care_needs: "petParent",
+  pet_availability: "petParent",
+};
+
+export function profileEditStepForRequiredField(
+  fieldId: ProfileRequiredFieldId,
+): ProfileEditSectionKey {
+  return PROFILE_REQUIRED_FIELD_STEP[fieldId];
+}
+
+export function missingRequiredFieldsForStep(
+  result: ProfileRequiredFieldsResult,
+  step: ProfileEditSectionKey,
+): ProfileRequiredFieldStatus[] {
+  return result.missing.filter((field) => PROFILE_REQUIRED_FIELD_STEP[field.id] === step);
+}
+
+export type ProfileEditStepBadge =
+  | { kind: "complete" }
+  | { kind: "required_missing"; count: number }
+  | { kind: "optional_remaining" };
+
+export function getProfileEditStepBadge(
+  step: ProfileEditSectionKey,
+  result: ProfileRequiredFieldsResult,
+  profile: ProfileRow | null,
+): ProfileEditStepBadge {
+  if (step === "trust") {
+    return isTrustSafetySectionComplete(profile)
+      ? { kind: "complete" }
+      : { kind: "optional_remaining" };
+  }
+
+  const missingCount = missingRequiredFieldsForStep(result, step).length;
+  if (missingCount === 0) return { kind: "complete" };
+  return { kind: "required_missing", count: missingCount };
+}
+
+export function isProfileEditStepComplete(
+  step: ProfileEditSectionKey,
+  result: ProfileRequiredFieldsResult,
+  profile: ProfileRow | null,
+): boolean {
+  return getProfileEditStepBadge(step, result, profile).kind === "complete";
 }
 
 const HASH_TO_STEP: Record<string, ProfileEditSectionKey> = {
@@ -49,42 +119,32 @@ function evaluateForProfile(
   });
 }
 
-function fieldDone(
-  result: ReturnType<typeof evaluateProfileRequiredFields>,
-  id: (typeof COMMON_REQUIRED_FIELDS)[number]["id"],
-): boolean {
-  return result.fields.find((f) => f.id === id)?.done ?? false;
-}
-
-export function isBasicProfileSectionComplete(
-  profile: ProfileRow | null,
-  _bioValid?: boolean,
-): boolean {
-  if (!profile) return false;
-  const result = evaluateForProfile(profile);
-  return COMMON_REQUIRED_FIELDS.every((def) => fieldDone(result, def.id));
-}
-
 export function isTrustSafetySectionComplete(profile: ProfileRow | null): boolean {
   if (!profile) return false;
   const emergency = parseEmergencyContactFromProfile(profile);
   return isPhoneOnFile(profile) || Boolean(emergency?.name?.trim());
 }
 
-const FRIEND_PROFILE_FIELD_IDS = PET_FRIEND_REQUIRED_FIELDS.filter(
-  (f) => f.id !== "availability",
-).map((f) => f.id);
+export function isBasicProfileSectionComplete(
+  profile: ProfileRow | null,
+  _bioValid?: boolean,
+  petIntros: PetIntroDisplay[] = [],
+): boolean {
+  if (!profile) return false;
+  const result = evaluateForProfile(profile, petIntros);
+  return isProfileEditStepComplete("basic", result, profile);
+}
 
 export function isPetFriendSectionComplete(profile: ProfileRow | null): boolean {
   if (!profile) return false;
   const result = evaluateForProfile(profile);
-  return FRIEND_PROFILE_FIELD_IDS.every((id) => fieldDone(result, id));
+  return isProfileEditStepComplete("petFriend", result, profile);
 }
 
 export function isAvailabilitySectionComplete(profile: ProfileRow | null): boolean {
   if (!profile) return false;
   const result = evaluateForProfile(profile);
-  return fieldDone(result, "availability");
+  return isProfileEditStepComplete("availability", result, profile);
 }
 
 export function isPetParentSectionComplete(
@@ -92,7 +152,8 @@ export function isPetParentSectionComplete(
   petIntros: PetIntroDisplay[] = [],
 ): boolean {
   if (!profile) return false;
-  return petIntros.some(isSinglePetMarketplaceReady);
+  const result = evaluateForProfile(profile, petIntros);
+  return isProfileEditStepComplete("petParent", result, profile);
 }
 
 export function isProfileEditSectionComplete(
@@ -100,16 +161,8 @@ export function isProfileEditSectionComplete(
   profile: ProfileRow | null,
   options: { petIntros?: PetIntroDisplay[] } = {},
 ): boolean {
-  switch (section) {
-    case "basic":
-      return isBasicProfileSectionComplete(profile);
-    case "trust":
-      return isTrustSafetySectionComplete(profile);
-    case "petFriend":
-      return isPetFriendSectionComplete(profile);
-    case "availability":
-      return isAvailabilitySectionComplete(profile);
-    case "petParent":
-      return isPetParentSectionComplete(profile, options.petIntros);
-  }
+  if (!profile) return false;
+  if (section === "trust") return isTrustSafetySectionComplete(profile);
+  const result = evaluateForProfile(profile, options.petIntros);
+  return isProfileEditStepComplete(section, result, profile);
 }

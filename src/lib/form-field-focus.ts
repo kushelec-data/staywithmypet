@@ -1,20 +1,73 @@
 import type { KeyboardEvent } from "react";
 import type { ProfileRequiredFieldId } from "@/lib/profile-required-fields";
 
+export const PROFILE_REQUIRED_FIELD_HIGHLIGHT_CLASS = "profile-required-field-highlight";
+
+function resolveFocusTarget(el: HTMLElement): HTMLElement {
+  if (
+    el.matches(
+      'input:not([type="hidden"]), textarea, select, button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+  ) {
+    return el;
+  }
+  const inner = el.querySelector<HTMLElement>(
+    'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])',
+  );
+  return inner ?? el;
+}
+
+function applyFieldHighlight(el: HTMLElement): void {
+  const target = resolveFocusTarget(el);
+  target.classList.add(PROFILE_REQUIRED_FIELD_HIGHLIGHT_CLASS);
+  window.setTimeout(() => {
+    target.classList.remove(PROFILE_REQUIRED_FIELD_HIGHLIGHT_CLASS);
+  }, 2000);
+}
+
 /** Scroll to and focus the first invalid required field. */
 export function focusFirstInvalidField(
   issues: { focusId?: string }[],
   formRoot?: HTMLElement | null,
 ): boolean {
+  if (typeof document === "undefined") return false;
   const root = formRoot ?? document;
   for (const issue of issues) {
     if (!issue.focusId) continue;
     const el = root.querySelector<HTMLElement>(`#${CSS.escape(issue.focusId)}`);
     if (!el) continue;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
-    if ("focus" in el && typeof el.focus === "function") {
-      el.focus({ preventScroll: true });
+    const focusTarget = resolveFocusTarget(el);
+    if ("focus" in focusTarget && typeof focusTarget.focus === "function") {
+      focusTarget.focus({ preventScroll: true });
     }
+    applyFieldHighlight(el);
+    return true;
+  }
+  return false;
+}
+
+export type FocusRequiredFieldTarget = {
+  focusId?: string;
+  href?: string;
+};
+
+export type FocusRequiredFieldOptions = {
+  formRoot?: HTMLElement | null;
+  onNavigate?: (href: string) => void;
+};
+
+/** Scroll/focus a required field or navigate to its href. */
+export function focusRequiredFieldTarget(
+  target: FocusRequiredFieldTarget,
+  options: FocusRequiredFieldOptions = {},
+): boolean {
+  if (target.focusId) {
+    const focused = focusFirstInvalidField([{ focusId: target.focusId }], options.formRoot);
+    if (focused) return true;
+  }
+  if (target.href) {
+    options.onNavigate?.(target.href);
     return true;
   }
   return false;
