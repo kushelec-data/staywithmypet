@@ -67,7 +67,7 @@ export function mapPetRecordToFormInput(record: PetDbRecord): PetProfileFormInpu
     temperament: strArr(record, "temperament"),
     requiresMedication: (() => {
       const value = record.requires_medication ?? details(record).requires_medication;
-      return typeof value === "boolean" ? value : false;
+      return typeof value === "boolean" ? value : null;
     })(),
     healthCharacteristics: str(record, "health_characteristics"),
     feedingSchedule: str(record, "feeding_schedule"),

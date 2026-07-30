@@ -886,6 +886,64 @@ export const en = {
       pet_availability: "Please add at least one available date or availability note.",
     },
   },
+  petFormPhase2: {
+    selectSex: "Select sex",
+    selectSize: "Select size",
+    selectEnergyLevel: "Select energy level",
+    selectWalkNeeds: "Select walk needs",
+    medicationUnset: "Not specified",
+    savedContinueLater:
+      "Your pet profile is saved. You can add health, behaviour and care details later.",
+    requiredForSearch: "Required before your profile can appear in search.",
+    optionalLater: "Optional — you can add this later.",
+    privateField: "Private — not shown on your public profile.",
+    sharedAfterBooking: "Shared only after an accepted booking.",
+    useProfileLocation: "Use my profile location",
+    sections: {
+      health: "Health and medications",
+      healthDescription: "Medication and health notes for safe care.",
+      feeding: "Feeding and eating habits",
+      feedingDescription: "Meal times and eating preferences.",
+      walking: "Walking needs",
+      walkingDescription: "How often your pet needs walks.",
+      behaviour: "Behaviour around people and animals",
+      behaviourDescription: "Energy level and behaviour notes.",
+      friendRequirements: "Friend/caregiver requirements",
+      friendRequirementsDescription: "Who can care for your pet.",
+      careLocation: "Care location details",
+      careLocationDescription: "Where care should happen.",
+      notes: "Additional notes",
+      notesDescription: "Anything else carers should know.",
+    },
+    sensitive: {
+      medication:
+        "Helps carers prepare safely. Shared with matched Pet Friends after a booking is accepted.",
+      healthConditions:
+        "Helps carers plan safe care. Shared with matched Pet Friends after a booking is accepted.",
+      behaviourNotes:
+        "Helps prevent surprises during care. Shared with matched Pet Friends after a booking is accepted.",
+      feedingInstructions:
+        "Helps carers follow your routine. Shared with matched Pet Friends after a booking is accepted.",
+      specialCare:
+        "Helps carers meet your pet's needs. Shared with matched Pet Friends after a booking is accepted.",
+      phone: "Used for account safety and urgent contact. Not shown on your public profile.",
+      emergencyContact:
+        "Used only if we cannot reach you about an active booking. Not shown on your public profile.",
+    },
+    categories: {
+      title: "Profile completion",
+      basic: "Basic details",
+      photos: "Photos",
+      care: "Care",
+      health: "Health",
+      behaviour: "Behaviour",
+      availability: "Availability",
+      statusComplete: "Complete",
+      statusRequiredMissing: "Required items missing",
+      statusOptionalRemaining: "Optional details remaining",
+      completeNext: "Complete next",
+    },
+  },
   dashboardCalendar: {
     pageTitle: "Calendar",
     pageDescription:

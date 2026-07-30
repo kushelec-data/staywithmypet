@@ -2,6 +2,7 @@
 
 import { ProfileChipMultiSelect } from "@/components/profile/form/ProfileFormFields";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
+import { FormFieldHelper } from "@/components/forms/RequiredFieldLabel";
 import { useLanguage } from "@/context/LanguageContext";
 import { toProfileLabeledChipOptions, toProfileStringChipOptions } from "@/lib/profile-option-labels";
 import { careTypeOptions, petTypeOptions } from "@/lib/profile-friend-options";
@@ -52,7 +53,8 @@ export function PetParentProfileFormSection({
   disabled,
   labels,
 }: PetParentProfileFormSectionProps) {
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
+  const optionalHint = t.petFormPhase2.optionalLater;
   const petTypeChips = useMemo(() => toProfileLabeledChipOptions(petTypeOptions, locale), [locale]);
   const careTypeChips = useMemo(() => toProfileStringChipOptions(careTypeOptions, locale), [locale]);
 
@@ -69,6 +71,7 @@ export function PetParentProfileFormSection({
         <label htmlFor="own_pets_summary" className="form-field-label">
           {labels.ownPetsSummary}
         </label>
+        <FormFieldHelper>{optionalHint}</FormFieldHelper>
         <AutoResizeTextarea
           id="own_pets_summary"
           minRows={3}

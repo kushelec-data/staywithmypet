@@ -26,7 +26,7 @@ export type PetProfileFormInput = {
   size: string;
   energyLevel: string;
   temperament: string[];
-  requiresMedication: boolean;
+  requiresMedication: boolean | null;
   healthCharacteristics: string;
   feedingSchedule: string;
   walkNeeds: string;
@@ -97,7 +97,7 @@ function buildPetDetails(input: PetProfileFormInput): Record<string, unknown> {
     date_of_birth: dobIso || null,
     gender: input.gender || null,
     energy_level: input.energyLevel || null,
-    requires_medication: input.requiresMedication,
+    requires_medication: input.requiresMedication ?? null,
     health_characteristics: input.healthCharacteristics.trim() || null,
     feeding_schedule: input.feedingSchedule.trim() || null,
     walk_needs: input.walkNeeds || null,
@@ -140,7 +140,7 @@ function buildPetProfileFields(input: PetProfileFormInput) {
     input.eatingHabits.trim() ? `Eating: ${input.eatingHabits.trim()}` : "",
     input.positiveTraits.trim() ? `Strengths: ${input.positiveTraits.trim()}` : "",
     input.challengingTraits.trim() ? `Challenges: ${input.challengingTraits.trim()}` : "",
-    input.requiresMedication ? "Requires medication: Yes" : "",
+    input.requiresMedication === true ? "Requires medication: Yes" : "",
     input.additionalNotes.trim(),
     careSummary,
   ]
@@ -175,7 +175,7 @@ function buildPetProfileFields(input: PetProfileFormInput) {
     size_label: input.size || null,
     energy_level: input.energyLevel || null,
     temperament: input.temperament,
-    requires_medication: input.requiresMedication,
+    requires_medication: input.requiresMedication ?? null,
     health_characteristics: input.healthCharacteristics.trim() || null,
     feeding_schedule: input.feedingSchedule.trim() || null,
     walk_needs: input.walkNeeds || null,

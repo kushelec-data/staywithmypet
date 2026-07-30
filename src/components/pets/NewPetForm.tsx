@@ -70,8 +70,19 @@ import {
 } from "@/lib/pet-date-of-birth";
 import { translateProfileHelper, translateProfileLabel } from "@/lib/profile-translations";
 import { FormDraftStatus } from "@/components/forms/FormDraftStatus";
-import { RequiredFieldLabel, FormFieldError } from "@/components/forms/RequiredFieldLabel";
+import { RequiredFieldLabel, FormFieldError, FormFieldHelper } from "@/components/forms/RequiredFieldLabel";
+import { PetFormCategoryStatus } from "@/components/pets/PetFormCategoryStatus";
+import { PetFormAdvancedSections } from "@/components/pets/PetFormAdvancedSections";
+import {
+  petFormSliceFromFormState,
+  type PetFormSectionId,
+} from "@/lib/pet-form-completion";
+import {
+  isProfileLocationUsableForPetPrefill,
+  profileLocationToPetFormFields,
+} from "@/lib/pet-form-prefill";
 import { focusFirstInvalidField, requiredFieldOrderProps } from "@/lib/form-field-focus";
+import { useRouter } from "next/navigation";
 import {
   validatePetProfileFormSlice,
   type ProfileRequiredFieldId,
@@ -79,7 +90,6 @@ import {
 import { useFormDraftStorage } from "@/hooks/useFormDraftStorage";
 import { buildPetFormDraft, type PetFormDraftData } from "@/lib/form-drafts/pet-form-draft";
 import { formDraftStorageKey } from "@/lib/form-draft-storage";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const emptyForm = (): PetProfileFormInput => ({
@@ -89,21 +99,21 @@ const emptyForm = (): PetProfileFormInput => ({
   breedSelection: "",
   breedOther: "",
   dateOfBirth: "",
-  gender: "Male",
-  size: "5_10_kg",
-  energyLevel: "Medium",
+  gender: "",
+  size: "",
+  energyLevel: "",
   temperament: [],
-  requiresMedication: false,
+  requiresMedication: null,
   healthCharacteristics: "",
   feedingSchedule: "",
-  walkNeeds: "None",
+  walkNeeds: "",
   eatingHabits: "",
   positiveTraits: "",
   challengingTraits: "",
   additionalNotes: "",
   friendRequirements: [],
   availability: "",
-  careLocation: petCareLocationOptions[2],
+  careLocation: "",
   careTypes: [],
   careTypesOther: "",
   genderOther: "",
@@ -122,7 +132,7 @@ type NewPetFormProps = {
 export function NewPetForm({ petId }: NewPetFormProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const { refreshProfile } = useProfile();
+  const { refreshProfile, profile } = useProfile();
   const supabase = useMemo(() => createClient(), []);
   const isEdit = Boolean(petId);
 
@@ -143,9 +153,12 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   const [isListedPublicly, setIsListedPublicly] = useState(false);
   const [listingVisibilitySaving, setListingVisibilitySaving] = useState(false);
   const [listingVisibilitySuccess, setListingVisibilitySuccess] = useState(false);
+  const [openSections, setOpenSections] = useState<Partial<Record<PetFormSectionId, boolean>>>({});
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const formInitializedRef = useRef(false);
   const { locale, t } = useLanguage();
   const petsCopy = t.account.petsPage;
+  const phase2 = t.petFormPhase2;
   const pl = useCallback((en: string) => translateProfileLabel(en, locale), [locale]);
   const yesLabel = translateProfileLabel("Yes", locale);
   const noLabel = translateProfileLabel("No", locale);
@@ -174,6 +187,51 @@ export function NewPetForm({ petId }: NewPetFormProps) {
     }),
     [locale],
   );
+
+  const categoryInput = useMemo(() => {
+    const hasPhoto = isEdit ? existingPhotos.length > 0 : pendingPhotos.length > 0;
+    return petFormSliceFromFormState({
+      name: form.name,
+      speciesForm: form.speciesForm,
+      dateOfBirthDisplay: dobDisplay,
+      size: form.size,
+      temperament: form.temperament,
+      positiveTraits: form.positiveTraits,
+      challengingTraits: form.challengingTraits,
+      additionalNotes: form.additionalNotes,
+      energyLevel: form.energyLevel,
+      careTypes: form.careTypes,
+      availabilityDates: form.availabilityDates,
+      availabilityNotes: form.availability,
+      hasPhoto,
+      healthCharacteristics: form.healthCharacteristics,
+      requiresMedication: form.requiresMedication,
+      feedingSchedule: form.feedingSchedule,
+      eatingHabits: form.eatingHabits,
+      walkNeeds: form.walkNeeds,
+      friendRequirements: form.friendRequirements,
+      careLocation: form.careLocation,
+    });
+  }, [form, dobDisplay, existingPhotos.length, pendingPhotos.length, isEdit]);
+
+  const canUseProfileLocation = isProfileLocationUsableForPetPrefill(profile);
+
+  function handleOpenSection(sectionId: PetFormSectionId, open = true) {
+    setOpenSections((prev) => ({ ...prev, [sectionId]: open }));
+  }
+
+  function handleUseProfileLocation() {
+    if (!profile) return;
+    setForm((prev) => ({ ...prev, ...profileLocationToPetFormFields(profile) }));
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.sessionStorage.getItem("pet-profile-saved-continue") === "1") {
+      window.sessionStorage.removeItem("pet-profile-saved-continue");
+      setSaveSuccessMessage(phase2.savedContinueLater);
+    }
+  }, [phase2.savedContinueLater]);
 
   const draftKey = useMemo(() => {
     if (!user?.id) return "";
@@ -563,6 +621,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
       await refreshProfile();
       notifyDashboardRefresh();
       clearDraft();
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("pet-profile-saved-continue", "1");
+      }
       router.replace(`/pets/${newPetId}/edit`);
       router.refresh();
     } catch (err) {
@@ -577,16 +638,28 @@ export function NewPetForm({ petId }: NewPetFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 pb-24">
       <FormDraftStatus status={draftStatus} />
       <p className="rounded-2xl border border-black/5 bg-mint/20 px-4 py-3 text-sm text-muted">
         {t.profileRequiredFields.requiredHint}
       </p>
+      <FormFieldHelper className="text-sm text-muted">{phase2.requiredForSearch}</FormFieldHelper>
+      {saveSuccessMessage ? (
+        <p className="rounded-2xl border border-brand-teal/30 bg-brand-teal/10 px-4 py-3 text-sm text-foreground" role="status">
+          {saveSuccessMessage}
+        </p>
+      ) : null}
       {error ? (
         <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
           {error}
         </p>
       ) : null}
+
+      <PetFormCategoryStatus
+        input={categoryInput}
+        openSections={openSections}
+        onOpenSection={(sectionId) => handleOpenSection(sectionId, true)}
+      />
 
       {isEdit && petId ? (
         <PetListingVisibilityControl
@@ -751,8 +824,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
                 genderOther: gender === "Other" ? prev.genderOther : "",
               }));
             }}
-            className="input-field mt-1"
+            className="input-field mt-1 w-full"
           >
+            <option value="">{phase2.selectSex}</option>
             {localizedGenderOptions.map((g) => (
               <option key={g.value} value={g.value}>
                 {g.label}
@@ -778,8 +852,9 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             id="size"
             value={form.size}
             onChange={(e) => patch("size", e.target.value)}
-            className="input-field mt-1"
+            className="input-field mt-1 w-full"
           >
+            <option value="">{phase2.selectSize}</option>
             {localizedSizeOptions.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
@@ -788,23 +863,6 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           </select>
           <FormFieldError message={fieldErrors.pet_size} />
         </div>
-        <div>
-          <label htmlFor="energy" className="form-field-label">
-            {pl("Energy level")}
-          </label>
-          <select
-            id="energy"
-            value={form.energyLevel}
-            onChange={(e) => patch("energyLevel", e.target.value)}
-            className="input-field mt-1"
-          >
-            {localizedEnergyOptions.map((e) => (
-              <option key={e.value} value={e.value}>
-                {e.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </PetFormSection>
 
       <PetFormSection title={pl("Temperament and care")}>
@@ -812,6 +870,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           <RequiredFieldLabel as="span" required>
             {t.profileRequiredFields.items.pet_personality}
           </RequiredFieldLabel>
+          <FormFieldHelper>{phase2.requiredForSearch}</FormFieldHelper>
         </div>
         <PetFormChipGroup
           label={pl("Temperament")}
@@ -821,81 +880,6 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           disabled={saving}
         />
         <div className="sm:col-span-2">
-          <span className="form-field-label">{pl("Requires medication")}</span>
-          <div className="mt-2 flex gap-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
-              <input
-                type="radio"
-                name="medication"
-                checked={form.requiresMedication}
-                onChange={() => patch("requiresMedication", true)}
-              />
-              {yesLabel}
-            </label>
-            <label className="flex items-center gap-2 text-sm font-medium text-[#333333] dark:text-foreground">
-              <input
-                type="radio"
-                name="medication"
-                checked={!form.requiresMedication}
-                onChange={() => patch("requiresMedication", false)}
-              />
-              {noLabel}
-            </label>
-          </div>
-        </div>
-        <div className="sm:col-span-2">
-          <label htmlFor="health" className="form-field-label">
-            {pl("Health characteristics")}
-          </label>
-          <AutoResizeTextarea
-            id="health"
-            minRows={2}
-            value={form.healthCharacteristics}
-            onChange={(e) => patch("healthCharacteristics", e.target.value)}
-            className="input-field mt-1"
-          />
-        </div>
-        <div>
-          <label htmlFor="feeding" className="form-field-label">
-            {pl("Feeding Schedule")}
-          </label>
-          <input
-            id="feeding"
-            value={form.feedingSchedule}
-            onChange={(e) => patch("feedingSchedule", e.target.value)}
-            className="input-field mt-1"
-          />
-        </div>
-        <div>
-          <label htmlFor="walk" className="form-field-label">
-            {pl("Walk needs")}
-          </label>
-          <select
-            id="walk"
-            value={form.walkNeeds}
-            onChange={(e) => patch("walkNeeds", e.target.value)}
-            className="input-field mt-1"
-          >
-            {localizedWalkOptions.map((w) => (
-              <option key={w.value} value={w.value}>
-                {w.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="sm:col-span-2">
-          <label htmlFor="eating" className="form-field-label">
-            {pl("Eating habits")}
-          </label>
-          <AutoResizeTextarea
-            id="eating"
-            minRows={2}
-            value={form.eatingHabits}
-            onChange={(e) => patch("eatingHabits", e.target.value)}
-            className="input-field mt-1"
-          />
-        </div>
-        <div>
           <label htmlFor="positive" className="form-field-label">
             {pl("Positive traits")}
           </label>
@@ -904,46 +888,33 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             minRows={2}
             value={form.positiveTraits}
             onChange={(e) => patch("positiveTraits", e.target.value)}
-            className="input-field mt-1"
+            className="input-field mt-1 w-full"
           />
+          <FormFieldHelper>{phase2.sensitive.behaviourNotes}</FormFieldHelper>
         </div>
-        <div>
-          <label htmlFor="challenging" className="form-field-label">
-            {pl("Challenging traits")}
-          </label>
-          <AutoResizeTextarea
-            id="challenging"
-            minRows={2}
-            value={form.challengingTraits}
-            onChange={(e) => patch("challengingTraits", e.target.value)}
-            className="input-field mt-1"
+        <div id="pet-care-types" className="sm:col-span-2">
+          <RequiredFieldLabel as="span" required>
+            {t.profileRequiredFields.items.pet_care_needs}
+          </RequiredFieldLabel>
+          <PetFormChipGroup
+            label=""
+            options={localizedCareTypeOptions}
+            selected={form.careTypes}
+            onToggle={(v) => toggleList("careTypes", v)}
+            disabled={saving}
+            otherField={{
+              text: form.careTypesOther,
+              onTextChange: (careTypesOther) => patch("careTypesOther", careTypesOther),
+              label: OTHER_FIELD_COPY.careType.label,
+              placeholder: OTHER_FIELD_COPY.careType.placeholder,
+              inputId: "pet_care_types_other",
+            }}
           />
-        </div>
-        <div className="sm:col-span-2">
-          <label htmlFor="notes" className="form-field-label">
-            {pl("Additional Notes")}
-          </label>
-          <AutoResizeTextarea
-            id="notes"
-            minRows={3}
-            value={form.additionalNotes}
-            onChange={(e) => patch("additionalNotes", e.target.value)}
-            className="input-field mt-1"
-          />
+          <FormFieldError message={fieldErrors.pet_care_needs} />
         </div>
         <div className="sm:col-span-2">
           <FormFieldError message={fieldErrors.pet_personality} />
         </div>
-      </PetFormSection>
-
-      <PetFormSection title={pl("Pet Friend requirements")}>
-        <PetFormChipGroup
-          label={pl("Requirements")}
-          options={localizedFriendReqOptions}
-          selected={form.friendRequirements}
-          onToggle={(v) => toggleList("friendRequirements", v)}
-          disabled={saving}
-        />
       </PetFormSection>
 
       <PetFormSection title={pl("Availability and care location")}>
@@ -984,45 +955,21 @@ export function NewPetForm({ petId }: NewPetFormProps) {
           />
         </div>
         <div className="sm:col-span-2">
-          <span className="form-field-label">{pl("Care location preference")}</span>
-          <div className="mt-2 space-y-2">
-            {localizedCareLocationOptions.map((opt) => (
-              <label key={opt.value} className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="care_location"
-                  checked={form.careLocation === opt.value}
-                  onChange={() => patch("careLocation", opt.value)}
-                />
-                {opt.label}
-              </label>
-            ))}
-          </div>
-        </div>
-        <div id="pet-care-types" className="sm:col-span-2">
-          <RequiredFieldLabel as="span" required>
-            {t.profileRequiredFields.items.pet_care_needs}
-          </RequiredFieldLabel>
-          <PetFormChipGroup
-          label=""
-          options={localizedCareTypeOptions}
-          selected={form.careTypes}
-          onToggle={(v) => toggleList("careTypes", v)}
-          disabled={saving}
-          otherField={{
-            text: form.careTypesOther,
-            onTextChange: (careTypesOther) => patch("careTypesOther", careTypesOther),
-            label: OTHER_FIELD_COPY.careType.label,
-            placeholder: OTHER_FIELD_COPY.careType.placeholder,
-            inputId: "pet_care_types_other",
-          }}
-        />
-          <FormFieldError message={fieldErrors.pet_care_needs} />
-        </div>
-        <div className="sm:col-span-2">
-          <label htmlFor="location" className="form-field-label">
+          <RequiredFieldLabel htmlFor="location" required>
             {pl("Location / address")}
-          </label>
+          </RequiredFieldLabel>
+          {canUseProfileLocation ? (
+            <div className="mt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={saving}
+                onClick={handleUseProfileLocation}
+              >
+                {phase2.useProfileLocation}
+              </Button>
+            </div>
+          ) : null}
           <GooglePlacesInput
             id="location"
             value={locationInputDisplayValue(form.address, form.location)}
@@ -1048,7 +995,7 @@ export function NewPetForm({ petId }: NewPetFormProps) {
             }}
             required
             disabled={saving}
-            className="input-field mt-1"
+            className="input-field mt-1 w-full"
             placeholder={petsCopy.locationPlaceholder}
             datalistId={PET_LOCATION_DATALIST_ID}
           />
@@ -1057,11 +1004,36 @@ export function NewPetForm({ petId }: NewPetFormProps) {
               <option key={city} value={city} />
             ))}
           </datalist>
+          <FormFieldHelper>{phase2.privateField}</FormFieldHelper>
           <p className="mt-1 text-xs text-muted">
             {getGoogleMapsApiKey() ? petsCopy.locationHintGoogle : petsCopy.locationHintList}
           </p>
         </div>
       </PetFormSection>
+
+      <PetFormAdvancedSections
+        form={form}
+        saving={saving}
+        optionalLabel={phase2.optionalLater}
+        localizedEnergyOptions={localizedEnergyOptions}
+        localizedWalkOptions={localizedWalkOptions}
+        localizedFriendReqOptions={localizedFriendReqOptions}
+        localizedCareLocationOptions={localizedCareLocationOptions}
+        selectWalkNeedsPlaceholder={phase2.selectWalkNeeds}
+        selectEnergyPlaceholder={phase2.selectEnergyLevel}
+        openSections={openSections}
+        onOpenSection={handleOpenSection}
+        onPatch={patch}
+        onToggleList={(key, value) => toggleList(key, value)}
+        sensitiveCopy={phase2.sensitive}
+        sectionCopy={{
+          ...phase2.sections,
+          medicationUnset: phase2.medicationUnset,
+        }}
+        pl={pl}
+        yesLabel={yesLabel}
+        noLabel={noLabel}
+      />
 
       {requiresListingTerms ? (
         <div className="space-y-3">

@@ -47,3 +47,12 @@ export function FormFieldError({ id, message }: FormFieldErrorProps) {
     </p>
   );
 }
+
+type FormFieldHelperProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+export function FormFieldHelper({ children, className }: FormFieldHelperProps) {
+  return <p className={className ?? "mt-1 text-xs text-muted"}>{children}</p>;
+}

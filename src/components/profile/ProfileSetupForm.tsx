@@ -77,6 +77,7 @@ import {
   type ProfileRequiredFieldId,
 } from "@/lib/profile-required-fields";
 import { mergePetFriendIntoDetails } from "@/lib/profile-friend-form";
+import { prefillLanguagesIfEmpty, prefillProfileLocationIfEmpty } from "@/lib/pet-form-prefill";
 import { formDraftStorageKey } from "@/lib/form-draft-storage";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -372,6 +373,8 @@ export function ProfileSetupForm({
 
     if (user) {
       setDisplayName(resolveProfileDisplayName(user, null));
+      setLanguages((current) => prefillLanguagesIfEmpty(current, profile));
+      setProfileLocation((current) => prefillProfileLocationIfEmpty(current, profile));
     } else {
       setDisplayName("");
       setRole("pet_friend");

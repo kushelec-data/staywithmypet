@@ -892,6 +892,64 @@ export const et = {
       pet_availability: "Palun lisa vähemalt üks vaba kuupäev või saadavuse märkus.",
     },
   },
+  petFormPhase2: {
+    selectSex: "Vali sugu",
+    selectSize: "Vali suurus",
+    selectEnergyLevel: "Vali energiatase",
+    selectWalkNeeds: "Vali jalutuskordade vajadus",
+    medicationUnset: "Määramata",
+    savedContinueLater:
+      "Lemmiku profiil on salvestatud. Tervise-, käitumis- ja hooldusandmed saad lisada hiljem.",
+    requiredForSearch: "Nõutav enne, kui profiil otsingus nähtavaks saab.",
+    optionalLater: "Valikuline — saad lisada hiljem.",
+    privateField: "Privaatne — ei kuvata avalikul profiilil.",
+    sharedAfterBooking: "Jagatakse alles pärast kinnitatud broneeringut.",
+    useProfileLocation: "Kasuta minu profiiliaadressi",
+    sections: {
+      health: "Tervis ja ravimid",
+      healthDescription: "Ravimid ja tervisenõuded turvalise hoolduse jaoks.",
+      feeding: "Söötmine ja söömisharjumused",
+      feedingDescription: "Söögikorrad ja eelistused.",
+      walking: "Jalutuskordade vajadus",
+      walkingDescription: "Kui tihti lemmik jalutust vajab.",
+      behaviour: "Käitumine inimeste ja teiste loomade suhtes",
+      behaviourDescription: "Energiatase ja käitumismärkmed.",
+      friendRequirements: "Loomasõbra/hooldaja nõuded",
+      friendRequirementsDescription: "Kes saab sinu lemmikut hoida.",
+      careLocation: "Hoolduse asukoha detailid",
+      careLocationDescription: "Kus hooldus toimub.",
+      notes: "Lisamärkmed",
+      notesDescription: "Muu, mida hooldajal teada peaks.",
+    },
+    sensitive: {
+      medication:
+        "Aitab hooldajal turvaliselt valmistuda. Jagatakse sobiva loomasõbraga pärast broneeringu kinnitamist.",
+      healthConditions:
+        "Aitab turvalist hooldust planeerida. Jagatakse sobiva loomasõbraga pärast broneeringu kinnitamist.",
+      behaviourNotes:
+        "Aitab hoolduse ajal üllatusi vältida. Jagatakse sobiva loomasõbraga pärast broneeringu kinnitamist.",
+      feedingInstructions:
+        "Aitab hooldajal sinu rutiini järgida. Jagatakse sobiva loomasõbraga pärast broneeringu kinnitamist.",
+      specialCare:
+        "Aitab hooldajal sinu lemmiku vajadusi täita. Jagatakse sobiva loomasõbraga pärast broneeringu kinnitamist.",
+      phone: "Kasutatakse konto turvalisuse ja kiireks kontakteerumiseks. Ei kuvata avalikul profiilil.",
+      emergencyContact:
+        "Kasutatakse ainult siis, kui sinuga aktiivse broneeringu kohta ühendust ei saa. Ei kuvata avalikul profiilil.",
+    },
+    categories: {
+      title: "Profiili täitmine",
+      basic: "Põhiandmed",
+      photos: "Fotod",
+      care: "Hooldus",
+      health: "Tervis",
+      behaviour: "Käitumine",
+      availability: "Saadavus",
+      statusComplete: "Täidetud",
+      statusRequiredMissing: "Kohustuslikud andmed puuduvad",
+      statusOptionalRemaining: "Valikulised detailid puuduvad",
+      completeNext: "Täida järgmine",
+    },
+  },
   dashboardCalendar: {
     pageTitle: "Kalender",
     pageDescription:
