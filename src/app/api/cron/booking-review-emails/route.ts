@@ -1,14 +1,6 @@
-import { isCronRecoveryConfigured } from "@/lib/booking-completion";
 import { processPendingBookingReviewEmails } from "@/lib/booking-review-emails";
+import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
 import { NextResponse } from "next/server";
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim() || process.env.EMAIL_INTERNAL_SECRET?.trim();
-  if (!secret) return false;
-  const header = request.headers.get("authorization");
-  if (header === `Bearer ${secret}`) return true;
-  return request.headers.get("x-cron-secret") === secret;
-}
 
 /**
  * POST /api/cron/booking-review-emails
@@ -18,14 +10,7 @@ function isAuthorized(request: Request): boolean {
  * Auth: Authorization: Bearer CRON_SECRET (Vercel) or x-cron-secret
  */
 export async function POST(request: Request) {
-  if (!isCronRecoveryConfigured()) {
-    console.error(
-      "[cron:booking-review-emails] CRON_SECRET or EMAIL_INTERNAL_SECRET is not configured",
-    );
-    return NextResponse.json({ error: "Cron not configured" }, { status: 503 });
-  }
-
-  if (!isAuthorized(request)) {
+  if (!isInternalSecretAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

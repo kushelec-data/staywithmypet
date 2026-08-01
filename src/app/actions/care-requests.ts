@@ -1,6 +1,7 @@
 "use server";
 
 import { deliverCareRequestNotifications } from "@/lib/request-delivery";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 import { createCareRequest, respondToRequest, type CreateCareRequestInput } from "@/lib/requests";
 import {
   type CareRequestCreateErrorCode,
@@ -72,7 +73,7 @@ async function requestMeta(): Promise<{ ipAddress: string | null; userAgent: str
     const userAgent = h.get("user-agent");
     return { ipAddress: ipAddress ?? null, userAgent: userAgent ?? null };
   } catch (err) {
-    console.warn("[care-request:submit] requestMeta unavailable", {
+    safeLogWarn("[care-request:submit] requestMeta unavailable", {
       message: err instanceof Error ? err.message : String(err),
     });
     return { ipAddress: null, userAgent: null };
@@ -139,7 +140,7 @@ export async function submitCareRequestAction(
     return { success: false, code: "NOT_SIGNED_IN", message: "Not signed in." };
   }
 
-  console.info("[care-request:submit] start", {
+  safeLogInfo("[care-request:submit] start", {
     userId,
     petId: input.petId,
     petParentId: input.petParentId,
@@ -152,7 +153,7 @@ export async function submitCareRequestAction(
   });
 
   if (!input.termsAccepted) {
-    console.warn("[care-request:submit] terms not accepted", { userId });
+    safeLogWarn("[care-request:submit] terms not accepted", { userId });
     return {
       success: false,
       code: "TERMS_REQUIRED",
@@ -172,7 +173,7 @@ export async function submitCareRequestAction(
   const memberships = await loadMembershipsForUser(supabase, userId);
   const membershipResult = membershipSnapshot(memberships, input.senderRole);
 
-  console.info("[care-request:submit] membership check", {
+  safeLogInfo("[care-request:submit] membership check", {
     userId,
     petId: input.petId,
     ...membershipResult,
@@ -209,7 +210,7 @@ export async function submitCareRequestAction(
     ...meta,
   });
 
-  console.info("[care-request:submit] terms acceptance", {
+  safeLogInfo("[care-request:submit] terms acceptance", {
     userId,
     requestId,
     termsVersion: CURRENT_TERMS_VERSION,
@@ -239,7 +240,7 @@ export async function submitCareRequestAction(
     requestId,
   });
 
-  console.info("[care-request:submit] request insert", {
+  safeLogInfo("[care-request:submit] request insert", {
     userId,
     plannedRequestId: requestId,
     petId: input.petId,
@@ -269,7 +270,7 @@ export async function submitCareRequestAction(
     requestId,
   );
   if (!linked.ok) {
-    console.error("[care-request:submit] terms request_id link failed", {
+    safeLogError("[care-request:submit] terms request_id link failed", {
       userId,
       acceptanceId: termsRecorded.id,
       requestId,
@@ -277,7 +278,7 @@ export async function submitCareRequestAction(
       message: linked.error,
     });
   } else {
-    console.info("[care-request:submit] terms linked to request", {
+    safeLogInfo("[care-request:submit] terms linked to request", {
       userId,
       acceptanceId: termsRecorded.id,
       requestId,
@@ -286,12 +287,12 @@ export async function submitCareRequestAction(
 
   try {
     await deliverCareRequestNotifications(created.requestId, userId);
-    console.info("[care-request:submit] notifications delivered", {
+    safeLogInfo("[care-request:submit] notifications delivered", {
       userId,
       requestId: created.requestId,
     });
   } catch (err) {
-    console.error("[care-request:submit] notification delivery failed", {
+    safeLogError("[care-request:submit] notification delivery failed", {
       userId,
       requestId: created.requestId,
       stage: "deliverCareRequestNotifications",
@@ -299,7 +300,7 @@ export async function submitCareRequestAction(
     });
   }
 
-  console.info("[care-request:submit] success", {
+  safeLogInfo("[care-request:submit] success", {
     userId,
     requestId: created.requestId,
     petId: input.petId,
@@ -376,7 +377,7 @@ export async function acceptCareRequestAction(input: {
 
     return { success: true, conversationId };
   } catch (err) {
-    console.error("[care-request:accept] failed", {
+    safeLogError("[care-request:accept] failed", {
       userId,
       requestId: input.requestId,
       message: err instanceof Error ? err.message : String(err),

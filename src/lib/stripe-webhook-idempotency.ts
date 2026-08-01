@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isMissingRelationError } from "@/lib/supabase-errors";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 
 const TABLE = "stripe_webhook_events";
 
@@ -15,7 +16,7 @@ export async function claimStripeWebhookEvent(
 ): Promise<boolean> {
   const admin = createAdminClient();
   if (!admin) {
-    console.warn("[stripe] webhook idempotency skipped: no admin client");
+    safeLogWarn("stripe webhook idempotency skipped", { reason: "no_admin_client" });
     return true;
   }
 
@@ -29,16 +30,18 @@ export async function claimStripeWebhookEvent(
   }
 
   if (error.code === "23505") {
-    console.log("[stripe] webhook event already processed", { eventId, eventType });
+    safeLogInfo("stripe webhook event already processed", { eventId, eventType });
     return false;
   }
 
   if (isMissingRelationError(error)) {
-    console.warn("[stripe] webhook idempotency table missing; processing without dedup");
+    safeLogWarn("stripe webhook idempotency table missing", {
+      reason: "processing_without_dedup",
+    });
     return true;
   }
 
-  console.error("[stripe] webhook idempotency claim failed", {
+  safeLogError("stripe webhook idempotency claim failed", {
     eventId,
     eventType,
     code: error.code,

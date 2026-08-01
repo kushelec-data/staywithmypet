@@ -1,10 +1,12 @@
-import { emptyMembershipsByRole, hasActiveMembershipForRole } from "@/lib/membership";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
 import { isMembershipConfirmWritable } from "@/lib/stripe-webhook-config";
 import { membershipRoleFromMergedMetadata } from "@/lib/stripe-webhook-resolve";
 import { getStripe } from "@/lib/stripe";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 import { createClient } from "@/lib/supabase/server";
+import { emptyMembershipsByRole, hasActiveMembershipForRole } from "@/lib/membership";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -21,7 +23,7 @@ type ConfirmBody = {
  */
 export async function POST(request: Request) {
   if (!isMembershipConfirmWritable()) {
-    console.error("[stripe] confirm-membership: server cannot verify memberships");
+    safeLogError("stripe confirm-membership server cannot verify memberships");
     return NextResponse.json(
       { error: "Membership activation is not configured on the server." },
       { status: 503 },
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
     session = await stripe.checkout.sessions.retrieve(sessionId);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Session not found";
-    console.error("[stripe] confirm-membership retrieve failed", { sessionId, message });
+    safeLogError("stripe confirm-membership retrieve failed", { sessionId, message });
     return NextResponse.json({ error: "Checkout session not found." }, { status: 404 });
   }
 
@@ -65,7 +67,7 @@ export async function POST(request: Request) {
     null;
 
   if (!metaUserId || metaUserId !== authUserId) {
-    console.warn("[stripe] confirm-membership user mismatch", {
+    safeLogWarn("stripe confirm-membership user mismatch", {
       sessionId,
       authUserId,
       metaUserId,
@@ -92,7 +94,7 @@ export async function POST(request: Request) {
     }
   }
 
-  console.log("[stripe] confirm-membership status", {
+  safeLogInfo("stripe confirm-membership status", {
     sessionId,
     authUserId,
     paymentStatus: session.payment_status,

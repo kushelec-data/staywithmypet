@@ -17,7 +17,8 @@ import {
 import { claimStripeWebhookEvent } from "@/lib/stripe-webhook-idempotency";
 import { webhookFailureBody } from "@/lib/stripe-webhook-handler-error";
 import { MEMBERSHIP_TABLE } from "@/lib/membership-activate";
-import { maskId, redactEmail } from "@/lib/security/log-redact";
+import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
+import { isSafeDebugLoggingEnabled, safeLogError, safeLogInfo } from "@/lib/security/safe-log";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
@@ -43,27 +44,33 @@ function logCheckoutHandlerFailure(
   const fields = checkoutMetadataFields(meta);
   const normalizedRole = membershipRoleFromMergedMetadata(meta);
   const body = webhookFailureBody(err);
-  console.error("[stripe] webhook checkout handler failed", {
+  safeLogError("stripe webhook checkout handler failed", {
     eventType: event.type,
     eventId: event.id,
     sessionId: session.id,
     paymentStatus: session.payment_status,
-    metadataUserId: maskId(fields.user_id),
+    metadataUserId: fields.user_id,
     metadataMembershipRole: fields.membership_role,
     metadataRole: fields.role,
     metadataPlanId: fields.plan_id,
     metadataPriceId: fields.price_id,
     normalizedRole,
     supabaseTable: MEMBERSHIP_TABLE,
-    ...body,
+    step: body.step,
+    code: body.code,
+    message: body.message,
     stack: err instanceof Error ? err.stack : undefined,
   });
 }
 
 function webhookFailureResponse(err: unknown): NextResponse {
   const body = webhookFailureBody(err);
-  console.error("[stripe] webhook handler failed", body);
-  return NextResponse.json(body, { status: 500 });
+  safeLogError("stripe webhook handler failed", {
+    step: body.step,
+    code: body.code,
+    message: body.message,
+  });
+  return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
 }
 
 export const runtime = "nodejs";
@@ -76,14 +83,7 @@ export const dynamic = "force-dynamic";
  * secret is unset or does not match, hiding the endpoint's existence.
  */
 export async function GET(request: Request) {
-  const configured =
-    process.env.CRON_SECRET?.trim() || process.env.EMAIL_INTERNAL_SECRET?.trim();
-  const provided =
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ||
-    request.headers.get("x-cron-secret")?.trim() ||
-    request.headers.get("x-email-internal-secret")?.trim();
-
-  if (!configured || !provided || provided !== configured) {
+  if (!isInternalSecretAuthorized(request, { allowEmailInternalHeader: true })) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -97,15 +97,17 @@ export async function POST(request: Request) {
   logStripeEnvPresence("webhook");
 
   const health = getMembershipWebhookHealth();
-  console.log("[stripe] webhook env health", health);
+  if (isSafeDebugLoggingEnabled()) {
+    safeLogInfo("stripe webhook env health", health);
+  }
 
   if (!process.env.STRIPE_WEBHOOK_SECRET?.trim()) {
-    console.error("[stripe] webhook rejected: STRIPE_WEBHOOK_SECRET not configured");
+    safeLogError("stripe webhook rejected", { reason: "webhook_secret_not_configured" });
     return NextResponse.json({ error: "Webhook secret not configured." }, { status: 503 });
   }
 
   if (!isMembershipWebhookWritable()) {
-    console.error("[stripe] webhook rejected: cannot write memberships", health);
+    safeLogError("stripe webhook rejected", { reason: "membership_not_writable" });
     return NextResponse.json({ error: "Membership webhook not configured." }, { status: 503 });
   }
 
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
   try {
     if (!signature) {
-      console.error("[stripe] webhook rejected: missing stripe-signature header");
+      safeLogError("stripe webhook rejected", { reason: "missing_stripe_signature" });
       throw new Error("Missing stripe-signature header");
     }
     event = stripe.webhooks.constructEvent(
@@ -124,21 +126,20 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Signature verification failed";
-    console.error("[stripe] webhook signature debug", {
-      webhookSecretExists: !!process.env.STRIPE_WEBHOOK_SECRET?.trim(),
-      webhookSecretPrefix: process.env.STRIPE_WEBHOOK_SECRET?.trim().slice(0, 8) ?? null,
-      signatureHeaderExists: !!signature,
-      rawBodyLength: body.length,
-      endpointPath: new URL(request.url).pathname,
-    });
+    if (isSafeDebugLoggingEnabled()) {
+      safeLogError("stripe webhook signature debug", {
+        webhookSecretExists: !!process.env.STRIPE_WEBHOOK_SECRET?.trim(),
+        signatureHeaderExists: !!signature,
+        rawBodyLength: body.length,
+      });
+    }
     if (signature) {
-      console.error("[stripe] webhook signature verification failed:", message);
+      safeLogError("stripe webhook signature verification failed", { message });
     }
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  console.log("[stripe] signature verified");
-  console.log("[stripe] webhook event received", {
+  safeLogInfo("stripe webhook event received", {
     eventType: event.type,
     eventId: event.id,
   });
@@ -158,15 +159,15 @@ export async function POST(request: Request) {
         const normalizedRole = membershipRoleFromMergedMetadata(meta);
         const customerEmail = await checkoutSessionEmail(session);
 
-        console.log("[stripe] checkout.session.completed", {
+        safeLogInfo("stripe checkout.session.completed", {
           eventType: event.type,
           eventId: event.id,
           sessionId: session.id,
           paymentStatus: session.payment_status,
           mode: session.mode,
-          customerEmail: redactEmail(customerEmail),
-          clientReferenceId: maskId(session.client_reference_id),
-          metadataUserId: maskId(fields.user_id),
+          customerEmail,
+          clientReferenceId: session.client_reference_id,
+          metadataUserId: fields.user_id,
           normalizedRole,
           supabaseTable: MEMBERSHIP_TABLE,
         });
@@ -195,7 +196,7 @@ export async function POST(request: Request) {
               upsertLog.planId = activationResult.planId;
             }
           }
-          console.log("[stripe] checkout.session.completed upsert result", upsertLog);
+          safeLogInfo("stripe checkout.session.completed upsert result", upsertLog);
         }
         break;
       }
@@ -203,7 +204,7 @@ export async function POST(request: Request) {
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log("[stripe] webhook received", {
+        safeLogInfo("stripe webhook received", {
           eventType: event.type,
           subscriptionId: subscription.id,
         });
@@ -213,7 +214,7 @@ export async function POST(request: Request) {
       case "invoice.payment_succeeded":
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log("[stripe] webhook received", {
+        safeLogInfo("stripe webhook received", {
           eventType: event.type,
           invoiceId: invoice.id,
         });
@@ -225,13 +226,13 @@ export async function POST(request: Request) {
         break;
       }
       case "invoice.paid":
-        console.log("[stripe] webhook ignored invoice.paid (sync via invoice.payment_succeeded)", {
+        safeLogInfo("stripe webhook ignored invoice.paid", {
           eventType: event.type,
           eventId: event.id,
         });
         break;
       default:
-        console.log("[stripe] webhook ignored unhandled event", { eventType: event.type });
+        safeLogInfo("stripe webhook ignored unhandled event", { eventType: event.type });
         break;
     }
   } catch (err) {
@@ -242,17 +243,19 @@ export async function POST(request: Request) {
       logCheckoutHandlerFailure(event, event.data.object as Stripe.Checkout.Session, err);
     } else {
       const body = webhookFailureBody(err);
-      console.error("[stripe] webhook handler failed", {
+      safeLogError("stripe webhook handler failed", {
         eventType: event.type,
         eventId: event.id,
         supabaseTable: MEMBERSHIP_TABLE,
-        ...body,
+        step: body.step,
+        code: body.code,
+        message: body.message,
         stack: err instanceof Error ? err.stack : undefined,
       });
     }
     return webhookFailureResponse(err);
   }
 
-  console.log("[stripe] webhook handled ok", { eventType: event.type });
+  safeLogInfo("stripe webhook handled ok", { eventType: event.type });
   return NextResponse.json({ received: true });
 }

@@ -6,6 +6,7 @@ import {
   throwCheckoutActivationFailure,
   type CheckoutActivationResult,
 } from "@/lib/stripe-checkout-activate";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 import { WebhookHandlerError } from "@/lib/stripe-webhook-handler-error";
 import {
   normalizeCatalogPlanId,
@@ -85,7 +86,7 @@ async function resolvePlanIdFromStripePrice(priceId: string): Promise<string | u
       return normalizeCatalogPlanId(metaPlan) ?? metaPlan;
     }
   } catch (err) {
-    console.warn("[stripe] price retrieve failed for plan_id resolution", {
+    safeLogWarn("[stripe] price retrieve failed for plan_id resolution", {
       priceIdSuffix: priceId.slice(-6),
       message: err instanceof Error ? err.message : String(err),
     });
@@ -106,7 +107,7 @@ async function assertMembershipUpsert(
   context: string,
 ): Promise<void> {
   if (!result.ok) {
-    console.error("[membership] upsert error", {
+    safeLogError("[membership] upsert error", {
       message: result.error,
       code: result.code ?? null,
       supabaseError: result.supabaseError ?? null,
@@ -119,7 +120,7 @@ async function assertMembershipUpsert(
       payloadAttempted: result.payloadAttempted ?? null,
     });
   }
-  console.log("[membership] upsert success", {
+  safeLogInfo("[membership] upsert success", {
     userId: result.membership.user_id,
     role: result.membership.role,
     planId: result.membership.plan_id,
@@ -148,17 +149,16 @@ async function resolveSubscriptionUserId(
     if (!customer.deleted && customer.email?.trim()) {
       userId = await findSupabaseUserIdByEmail(customer.email);
       if (userId) {
-        console.log("[stripe] subscription user resolved via customer email", {
+        safeLogInfo("[stripe] subscription user resolved via customer email", {
           subscriptionId: subscription.id,
           userId,
         });
       }
     }
   } catch (err) {
-    console.error(
-      "[stripe] subscription customer lookup failed",
-      err instanceof Error ? err.message : String(err),
-    );
+    safeLogError("stripe subscription customer lookup failed", {
+      message: err instanceof Error ? err.message : String(err),
+    });
   }
 
   return userId;
@@ -201,7 +201,7 @@ async function syncFromSubscription(
     (customerMeta ? membershipRoleFromMergedMetadata(customerMeta) : null);
 
   if (!role) {
-    console.warn("[stripe] subscription sync skipped: missing membership_role metadata", {
+    safeLogWarn("[stripe] subscription sync skipped: missing membership_role metadata", {
       subscriptionId: subscription.id,
       status: subscription.status,
       metadata: subscription.metadata ?? {},
@@ -220,7 +220,7 @@ async function syncFromSubscription(
     );
   }
 
-  console.log("[stripe] subscription sync", {
+  safeLogInfo("[stripe] subscription sync", {
     subscriptionId: subscription.id,
     userId,
     role,
@@ -253,7 +253,7 @@ async function syncFromSubscription(
 export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
 ): Promise<Extract<CheckoutActivationResult, { ok: true }>> {
-  console.log("[stripe] handleCheckoutSessionCompleted start", {
+  safeLogInfo("[stripe] handleCheckoutSessionCompleted start", {
     sessionId: session.id,
     paymentStatus: session.payment_status,
     mode: session.mode,
@@ -268,7 +268,7 @@ export async function handleCheckoutSessionCompleted(
 
   if (!result.activated) {
     if (result.reason === "membership_conflict") {
-      console.log("[stripe] checkout completed; activation skipped (membership conflict)", {
+      safeLogInfo("[stripe] checkout completed; activation skipped (membership conflict)", {
         sessionId: session.id,
         userId: result.userId,
         role: result.role,
@@ -276,7 +276,7 @@ export async function handleCheckoutSessionCompleted(
         code: result.code,
       });
     } else {
-      console.log("[stripe] checkout completed; activation deferred until paid", {
+      safeLogInfo("[stripe] checkout completed; activation deferred until paid", {
         sessionId: session.id,
         paymentStatus: session.payment_status,
       });
@@ -289,7 +289,7 @@ export async function handleCheckoutSessionCompleted(
 export async function handleCheckoutAsyncPaymentSucceeded(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
-  console.log("[stripe] handleCheckoutAsyncPaymentSucceeded", {
+  safeLogInfo("[stripe] handleCheckoutAsyncPaymentSucceeded", {
     sessionId: session.id,
     paymentStatus: session.payment_status,
   });
@@ -302,7 +302,7 @@ export async function handleCheckoutAsyncPaymentSucceeded(
 
   if (!result.activated) {
     if (result.reason === "membership_conflict") {
-      console.log("[stripe] async checkout activation skipped (membership conflict)", {
+      safeLogInfo("[stripe] async checkout activation skipped (membership conflict)", {
         sessionId: session.id,
         code: result.code,
       });
@@ -320,7 +320,7 @@ export async function handleSubscriptionEvent(subscription: Stripe.Subscription)
     subscription.status === "incomplete" ||
     subscription.status === "incomplete_expired"
   ) {
-    console.log("[stripe] subscription sync deferred until active (checkout webhook activates)", {
+    safeLogInfo("[stripe] subscription sync deferred until active (checkout webhook activates)", {
       subscriptionId: subscription.id,
       status: subscription.status,
     });
@@ -338,7 +338,9 @@ function subscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
 export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
   const subId = subscriptionIdFromInvoice(invoice);
   if (!subId) {
-    console.warn("[stripe] invoice.payment_succeeded without subscription", invoice.id);
+    safeLogWarn("stripe invoice.payment_succeeded without subscription", {
+      invoiceId: invoice.id,
+    });
     return;
   }
   const stripe = getStripe();
@@ -349,7 +351,9 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Pr
 export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   const subId = subscriptionIdFromInvoice(invoice);
   if (!subId) {
-    console.warn("[stripe] invoice.payment_failed without subscription", invoice.id);
+    safeLogWarn("stripe invoice.payment_failed without subscription", {
+      invoiceId: invoice.id,
+    });
     return;
   }
   const stripe = getStripe();

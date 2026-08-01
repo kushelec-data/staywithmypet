@@ -1,17 +1,9 @@
 import { membershipEmailContext } from "@/lib/membership-emails";
 import { sendTransactionalEmail } from "@/lib/email-send";
 import type { UserMembership } from "@/lib/membership";
+import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim() || process.env.EMAIL_INTERNAL_SECRET?.trim();
-  if (!secret) return false;
-  const header = request.headers.get("authorization");
-  if (header === `Bearer ${secret}`) return true;
-  if (request.headers.get("x-cron-secret") === secret) return true;
-  return request.headers.get("x-email-internal-secret") === secret;
-}
 
 /**
  * Scheduled job: send 7-day expiry and 2-day auto-renewal reminders.
@@ -20,7 +12,7 @@ function isAuthorized(request: Request): boolean {
  * Auth: Authorization: Bearer CRON_SECRET (Vercel) or x-email-internal-secret / x-cron-secret
  */
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!isInternalSecretAuthorized(request, { allowEmailInternalHeader: true })) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

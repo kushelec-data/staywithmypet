@@ -3,6 +3,7 @@ import {
   type EmailEventType,
   type EmailTemplateContext,
 } from "@/lib/email-send";
+import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
 import { NextResponse } from "next/server";
 
 type SendEmailBody = {
@@ -14,18 +15,11 @@ type SendEmailBody = {
   context?: EmailTemplateContext;
 };
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.EMAIL_INTERNAL_SECRET?.trim();
-  if (!secret) return false;
-  const header = request.headers.get("x-email-internal-secret");
-  return header === secret;
-}
-
 /**
  * Internal-only email dispatch (cron / workers). App flows use server actions in `email-events.ts`.
  */
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!isInternalSecretAuthorized(request, { emailInternalOnly: true })) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

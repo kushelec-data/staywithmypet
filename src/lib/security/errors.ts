@@ -1,4 +1,5 @@
 import type { PostgrestError } from "@supabase/supabase-js";
+import { isSafeDebugLoggingEnabled, sanitizeLogFields } from "@/lib/security/safe-log";
 
 const GENERIC_MESSAGE = "Something went wrong. Please try again.";
 
@@ -45,15 +46,25 @@ export function toFriendlyClientMessage(error: unknown, fallback = GENERIC_MESSA
 
 export function logServerError(context: string, error: unknown): void {
   if (isPostgrestError(error)) {
-    console.error(`[${context}]`, {
+    const fields = {
       code: error.code,
       message: error.message,
       details: error.details,
       hint: error.hint,
-    });
+    };
+    if (isSafeDebugLoggingEnabled()) {
+      console.error(`[${context}]`, fields);
+      return;
+    }
+    console.error(`[${context}]`, sanitizeLogFields(fields));
     return;
   }
-  console.error(`[${context}]`, error);
+  if (isSafeDebugLoggingEnabled()) {
+    console.error(`[${context}]`, error);
+    return;
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`[${context}]`, { message });
 }
 
 function looksLikeDatabaseError(message: string): boolean {

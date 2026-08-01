@@ -24,6 +24,7 @@ import { normalizeCatalogPlanId } from "@/lib/stripe-plans";
 import { isOneTimePlanId } from "@/lib/one-time-membership";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 
 export const MEMBERSHIP_TABLE = "user_memberships";
 
@@ -75,7 +76,7 @@ async function loadStripeSubscriptionIdForCancel(
     if (isMissingColumnError(error, "stripe_subscription_id")) {
       return null;
     }
-    console.warn("[membership] stripe_subscription_id lookup skipped", {
+    safeLogWarn("[membership] stripe_subscription_id lookup skipped", {
       membershipId,
       message: error.message,
     });
@@ -330,7 +331,7 @@ async function ensureProfileRow(
     .maybeSingle();
 
   if (selectError) {
-    console.error("[membership] profiles lookup failed", {
+    safeLogError("[membership] profiles lookup failed", {
       userId,
       table: "profiles",
       step: "ensure_profile",
@@ -343,7 +344,7 @@ async function ensureProfileRow(
 
   const { data: authData, error: authError } = await admin.auth.admin.getUserById(userId);
   if (authError || !authData.user) {
-    console.error("[membership] auth user missing for profile bootstrap", {
+    safeLogError("[membership] auth user missing for profile bootstrap", {
       userId,
       message: authError?.message ?? "user not found",
     });
@@ -369,7 +370,7 @@ async function ensureProfileRow(
     if (insertError.code === "23505") {
       return { ok: true };
     }
-    console.error("[membership] profiles bootstrap insert failed", {
+    safeLogError("[membership] profiles bootstrap insert failed", {
       userId,
       table: "profiles",
       ...supabaseErrorDetail(insertError),
@@ -377,7 +378,7 @@ async function ensureProfileRow(
     return membershipFailure(insertError, insertError.message, { step: "ensure_profile" });
   }
 
-  console.log("[membership] profiles row bootstrapped for webhook", { userId });
+  safeLogInfo("[membership] profiles row bootstrapped for webhook", { userId });
   return { ok: true };
 }
 
@@ -447,7 +448,7 @@ export async function upsertUserMembership(
   }
 
   let dbStatus = toDbMembershipStatus(input.status);
-  console.log("[membership] upsert user_memberships", {
+  safeLogInfo("[membership] upsert user_memberships", {
     table: MEMBERSHIP_TABLE,
     userId: input.userId,
     role: input.role,
@@ -482,7 +483,7 @@ export async function upsertUserMembership(
   if (error && isInvalidEnumValueError(error)) {
     const fallbackStatus = membershipStatusFallback(dbStatus);
     if (fallbackStatus !== dbStatus) {
-      console.warn("[membership] retrying upsert with status fallback", {
+      safeLogWarn("[membership] retrying upsert with status fallback", {
         from: dbStatus,
         to: fallbackStatus,
         userId: input.userId,
@@ -494,7 +495,7 @@ export async function upsertUserMembership(
 
   if (error) {
     const detail = supabaseErrorDetail(error);
-    console.error("[membership] upsert error", {
+    safeLogError("[membership] upsert error", {
       table: MEMBERSHIP_TABLE,
       userId: input.userId,
       role: input.role,
@@ -543,7 +544,7 @@ export async function upsertUserMembership(
       if (!patchResult.error) break;
       if (!(col in patchPayload) && !patchSelect.includes(col)) break;
       if (!isMissingColumnError(patchResult.error, col)) break;
-      console.warn(`[membership] skipping optional column ${col} (run migrations)`);
+      safeLogWarn(`[membership] skipping optional column ${col} (run migrations)`);
       strippedOptional.push(col);
       patchPayload = stripOptionalColumns(patchPayload, [col]);
       if (patchSelect.includes(col)) {
@@ -554,7 +555,7 @@ export async function upsertUserMembership(
 
     if (patchResult.error) {
       const detail = supabaseErrorDetail(patchResult.error);
-      console.error("[membership] optional column patch failed (core row saved)", {
+      safeLogError("[membership] optional column patch failed (core row saved)", {
         membershipId: membership.id,
         strippedOptional,
         ...detail,
@@ -564,7 +565,7 @@ export async function upsertUserMembership(
     }
   }
 
-  console.log("[membership] upsert success", {
+  safeLogInfo("[membership] upsert success", {
     table: MEMBERSHIP_TABLE,
     userId: input.userId,
     role: dbRole,
@@ -581,13 +582,13 @@ export async function upsertUserMembership(
       .eq("id", input.userId);
 
     if (profileError) {
-      console.error("[membership] profiles.membership_status update failed", {
+      safeLogError("[membership] profiles.membership_status update failed", {
         userId: input.userId,
         table: "profiles",
         ...supabaseErrorDetail(profileError),
       });
     } else {
-      console.log("[membership] database updated", {
+      safeLogInfo("[membership] database updated", {
         table: "profiles",
         userId: input.userId,
         membership_status: planLabel,
@@ -611,7 +612,7 @@ export async function upsertUserMembership(
     revalidatePath("/membership");
     revalidatePath("/dashboard");
   } catch (err) {
-    console.warn("[membership] post-upsert side effects failed (membership row saved)", {
+    safeLogWarn("[membership] post-upsert side effects failed (membership row saved)", {
       userId: input.userId,
       role: dbRole,
       message: err instanceof Error ? err.message : String(err),
@@ -627,7 +628,7 @@ export async function upsertUserMembershipAsAdmin(
 ): Promise<UpsertMembershipResult> {
   const admin = createAdminClient();
   if (!admin) {
-    console.error("[membership] admin client unavailable: SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL missing");
+    safeLogError("[membership] admin client unavailable: SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL missing");
     return {
       ok: false,
       error: "SUPABASE_SERVICE_ROLE_KEY is not configured.",
@@ -664,7 +665,7 @@ async function syncProfileMembershipStatusAfterChange(
   try {
     rows = await fetchUserMembershipRows(admin, userId);
   } catch (err) {
-    console.warn("[membership] profile status sync skipped", {
+    safeLogWarn("[membership] profile status sync skipped", {
       userId,
       message: err instanceof Error ? err.message : String(err),
     });
@@ -684,7 +685,7 @@ async function syncProfileMembershipStatusAfterChange(
     .eq("id", userId);
 
   if (updateError) {
-    console.warn("[membership] profiles.membership_status sync failed", {
+    safeLogWarn("[membership] profiles.membership_status sync failed", {
       userId,
       ...supabaseErrorDetail(updateError),
     });
@@ -753,14 +754,14 @@ export async function cancelUserMembershipAsAdmin(
       await getStripe().subscriptions.update(subscriptionId, {
         cancel_at_period_end: true,
       });
-      console.log("[membership] stripe subscription scheduled for cancel at period end", {
+      safeLogInfo("[membership] stripe subscription scheduled for cancel at period end", {
         userId,
         role: dbRole,
         subscriptionId,
         endDate: membership.end_date,
       });
     } catch (err) {
-      console.warn("[membership] stripe subscription cancel-at-period-end failed (continuing DB cancel)", {
+      safeLogWarn("[membership] stripe subscription cancel-at-period-end failed (continuing DB cancel)", {
         userId,
         role: dbRole,
         subscriptionId,
@@ -795,7 +796,7 @@ export async function cancelUserMembershipAsAdmin(
   }
 
   const cancelled = mapProductionMembershipRow(updated as unknown as Record<string, unknown>);
-  console.log("[membership] membership cancelled", {
+  safeLogInfo("[membership] membership cancelled", {
     userId,
     role: dbRole,
     membershipId: cancelled.id,

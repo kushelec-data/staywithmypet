@@ -1,5 +1,6 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { logServerError, toFriendlyClientMessage } from "@/lib/security/errors";
+import { isSafeDebugLoggingEnabled, safeLogError, sanitizeLogFields } from "@/lib/security/safe-log";
 
 export type SupabaseErrorDetail = {
   code: string | null;
@@ -28,18 +29,25 @@ export function supabaseErrorDetail(error: PostgrestError | null | undefined): S
   };
 }
 
-/** Log full PostgREST / Postgres error fields for debugging. */
+/** Log PostgREST / Postgres error fields with production-safe redaction. */
 export function logSupabaseError(context: string, error: PostgrestError | Error): void {
   if (isPostgrestError(error)) {
-    console.error(`[request] ${context}`, {
+    const fields = {
       code: error.code,
       message: error.message,
       details: error.details,
       hint: error.hint,
-    });
+    };
+    if (isSafeDebugLoggingEnabled()) {
+      console.error(`[request] ${context}`, fields);
+      return;
+    }
+    console.error(`[request] ${context}`, sanitizeLogFields(fields));
     return;
   }
-  console.error(`[request] ${context}`, error);
+  safeLogError(`request ${context}`, {
+    message: error instanceof Error ? error.message : String(error),
+  });
 }
 
 /** Invalid enum literal (e.g. membership_status before inactive/trialing migration). */

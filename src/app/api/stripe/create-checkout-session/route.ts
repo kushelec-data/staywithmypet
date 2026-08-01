@@ -7,7 +7,6 @@ import {
   stripeCheckoutModeForPlanId,
   stripeCheckoutPriceError,
   stripePriceEnvVarForPlanId,
-  stripePriceIdSuffix,
   validateStripePriceForCheckout,
 } from "@/lib/stripe-plans";
 import { MEMBERSHIP_PLAN_CATALOG, isMembershipPlanPurchasable, type MembershipRole } from "@/lib/membership";
@@ -22,8 +21,7 @@ import { getRequestOrigin } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
-import { maskId } from "@/lib/security/log-redact";
-import { envStringFingerprint, envVarForPlanId } from "@/lib/stripe-runtime-debug";
+import { isSafeDebugLoggingEnabled, safeLogError, safeLogInfo } from "@/lib/security/safe-log";
 import { requireAuthUserId } from "@/lib/security/assert-owner";
 import { createClient } from "@/lib/supabase/server";
 import Stripe from "stripe";
@@ -195,23 +193,24 @@ export async function POST(request: Request) {
   const stripe = getStripe();
 
   const resolvedEnvVar = stripePriceEnvVarForPlanId(trimmedPlanId) ?? "STRIPE_*_PRICE_ID";
-  const resolvedPriceFingerprint = envStringFingerprint(resolvedEnvVar);
 
-  console.log("[stripe] checkout plan env resolution", {
-    clickedPlanId: trimmedPlanId,
-    envVarUsed: resolvedEnvVar,
-    envVarFromPlanId: envVarForPlanId(trimmedPlanId),
-    priceFingerprint: {
-      exists: resolvedPriceFingerprint.exists,
-      first10: resolvedPriceFingerprint.first10,
-      last6: resolvedPriceFingerprint.last6,
-      length: resolvedPriceFingerprint.length,
-      hadOuterWhitespace: resolvedPriceFingerprint.hadOuterWhitespace,
-      rawLength: resolvedPriceFingerprint.rawLength,
-    },
-    stripeMode: mode,
-    role,
-  });
+  if (isSafeDebugLoggingEnabled()) {
+    const { envStringFingerprint, envVarForPlanId } = await import("@/lib/stripe-runtime-debug");
+    const resolvedPriceFingerprint = envStringFingerprint(resolvedEnvVar);
+    safeLogInfo("stripe checkout plan env resolution", {
+      clickedPlanId: trimmedPlanId,
+      envVarUsed: resolvedEnvVar,
+      envVarFromPlanId: envVarForPlanId(trimmedPlanId),
+      priceFingerprint: {
+        exists: resolvedPriceFingerprint.exists,
+        length: resolvedPriceFingerprint.length,
+        hadOuterWhitespace: resolvedPriceFingerprint.hadOuterWhitespace,
+        rawLength: resolvedPriceFingerprint.rawLength,
+      },
+      stripeMode: mode,
+      role,
+    });
+  }
 
   const checkoutMetadata = buildStripeCheckoutMetadata({
     userId: sessionUserId,
@@ -221,28 +220,12 @@ export async function POST(request: Request) {
     priceEnv: resolvedEnvVar,
   });
 
-    console.log("[stripe] checkout session metadata", {
-      user_id: maskId(sessionUserId),
-      role: checkoutMetadata.role,
+  safeLogInfo("stripe checkout session metadata", {
+    user_id: sessionUserId,
+    role: checkoutMetadata.role,
     membership_role: checkoutMetadata.membership_role,
     plan_id: trimmedPlanId,
     price_env: resolvedEnvVar,
-  });
-
-  const priceSuffix =
-    resolvedPriceId && resolvedPriceId.length > 6
-      ? resolvedPriceId.slice(-6)
-      : resolvedPriceId
-        ? stripePriceIdSuffix(resolvedPriceId)
-        : null;
-
-  console.log("[stripe] checkout resolved", {
-    selectedPlan: trimmedPlanId,
-    resolvedEnvVar,
-    priceConfigured: Boolean(resolvedPriceId),
-    priceSuffix,
-    stripeMode: mode,
-    role,
   });
 
   const priceTypeError = await validateStripePriceForCheckout(
@@ -252,18 +235,11 @@ export async function POST(request: Request) {
     mode,
   );
   if (priceTypeError) {
-    console.error("[stripe] checkout price validation failed", {
+    safeLogError("stripe checkout price validation failed", {
       clickedPlanId: trimmedPlanId,
       envVarUsed: resolvedEnvVar,
-      priceFingerprint: {
-        first10: resolvedPriceFingerprint.first10,
-        last6: resolvedPriceFingerprint.last6,
-        length: resolvedPriceFingerprint.length,
-        hadOuterWhitespace: resolvedPriceFingerprint.hadOuterWhitespace,
-      },
       role,
       stripeMode: mode,
-      priceSuffix,
     });
     return checkoutErrorResponse(trimmedPlanId, priceTypeError, 400);
   }
@@ -307,26 +283,24 @@ export async function POST(request: Request) {
 
   try {
     const session = await stripe.checkout.sessions.create(sessionParams);
-    console.log("[stripe] checkout session created", {
+    safeLogInfo("stripe checkout session created", {
       sessionId: session.id,
       mode,
-      user_id: maskId(sessionUserId),
+      user_id: sessionUserId,
       role: checkoutMetadata.role,
       membership_role: checkoutMetadata.membership_role,
       plan_id: trimmedPlanId,
       price_env: resolvedEnvVar,
-      metadataKeys: Object.keys(sessionParams.metadata ?? {}),
     });
     if (!session.url) {
       return NextResponse.json({ error: "Checkout session missing URL." }, { status: 500 });
     }
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error("[stripe] create checkout session failed", {
+    safeLogError("stripe create checkout session failed", {
       planId: trimmedPlanId,
       role,
       mode,
-      envVar: stripePriceEnvVarForPlanId(trimmedPlanId),
       message: err instanceof Error ? err.message : String(err),
     });
     const error = checkoutErrorFromStripe(err, trimmedPlanId, mode);

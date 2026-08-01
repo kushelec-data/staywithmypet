@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertRateLimitShared } from "@/lib/security";
+import { safeLogError } from "@/lib/security/safe-log";
 import { headers } from "next/headers";
 
 export type SubscribeNewsletterResult =
@@ -71,12 +72,10 @@ export async function subscribeNewsletterAction(email: string): Promise<Subscrib
     const devMessage = [error.code, error.message, error.details, error.hint]
       .filter(Boolean)
       .join(" — ");
-    console.error("[newsletter] subscribe failed", {
+    safeLogError("newsletter subscribe failed", {
       email: normalized,
       code: error.code,
       message: error.message,
-      details: error.details,
-      hint: error.hint,
     });
     return { ok: false, error: "server", devMessage };
   }

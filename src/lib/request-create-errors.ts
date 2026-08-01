@@ -1,4 +1,5 @@
 import type { PostgrestError } from "@supabase/supabase-js";
+import { isSafeDebugLoggingEnabled, safeLogError, sanitizeLogFields } from "@/lib/security/safe-log";
 import { MEMBERSHIP_REQUIRED_MESSAGE } from "@/lib/membership-access";
 import { BLOCKED_USER_MESSAGE } from "@/lib/trust-safety";
 import {
@@ -120,22 +121,26 @@ export function logCareRequestCreateFailure(
   context: Record<string, unknown>,
   error: PostgrestError | Error | string,
 ): void {
+  const { payload: _payload, ...safeContext } = context;
+
   if (isPostgrestError(error)) {
-    console.error(`[care-request:create] ${stage} failed`, {
-      ...context,
+    const fields = {
+      ...safeContext,
       code: error.code ?? null,
       message: error.message,
       details: error.details ?? null,
       hint: error.hint ?? null,
-    });
+    };
+    if (isSafeDebugLoggingEnabled()) {
+      console.error(`[care-request:create] ${stage} failed`, fields);
+      return;
+    }
+    console.error(`[care-request:create] ${stage} failed`, sanitizeLogFields(fields));
     return;
   }
 
   const message = typeof error === "string" ? error : error.message;
-  console.error(`[care-request:create] ${stage} failed`, {
-    ...context,
-    message,
-  });
+  safeLogError(`care-request:create ${stage} failed`, { ...safeContext, message });
 }
 
 export function buildDatesUnavailableFailure(

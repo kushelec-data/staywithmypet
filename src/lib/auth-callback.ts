@@ -1,7 +1,8 @@
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { ensureUserProfile, syncProfileEmailVerified } from "@/lib/profile";
 import { fetchUserProfile } from "@/lib/profile-load";
 import type { ProfileRow } from "@/lib/profile-utils";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 
 const LOG_PREFIX = "[StayWithMyPet][auth/callback]";
 
@@ -12,27 +13,15 @@ function sleep(ms: number): Promise<void> {
 export type AuthCallbackLogContext = Record<string, unknown>;
 
 export function logAuthCallback(step: string, context?: AuthCallbackLogContext): void {
-  if (context) {
-    console.info(`${LOG_PREFIX} ${step}`, context);
-  } else {
-    console.info(`${LOG_PREFIX} ${step}`);
-  }
+  safeLogInfo(`${LOG_PREFIX} ${step}`, context);
 }
 
 export function logAuthCallbackWarn(step: string, context?: AuthCallbackLogContext): void {
-  if (context) {
-    console.warn(`${LOG_PREFIX} ${step}`, context);
-  } else {
-    console.warn(`${LOG_PREFIX} ${step}`);
-  }
+  safeLogWarn(`${LOG_PREFIX} ${step}`, context);
 }
 
 export function logAuthCallbackError(step: string, context?: AuthCallbackLogContext): void {
-  if (context) {
-    console.error(`${LOG_PREFIX} ${step}`, context);
-  } else {
-    console.error(`${LOG_PREFIX} ${step}`);
-  }
+  safeLogError(`${LOG_PREFIX} ${step}`, context);
 }
 
 /** Brief retry loop for session cookies to settle after OAuth code exchange. */

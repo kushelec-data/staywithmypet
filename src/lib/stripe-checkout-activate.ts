@@ -1,6 +1,7 @@
 import "server-only";
 
 import type Stripe from "stripe";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 import {
   billingIntervalFromPlanId,
   computeMembershipEndDate,
@@ -76,7 +77,7 @@ export async function activateMembershipFromCheckoutSession(
 ): Promise<CheckoutActivationResult> {
   const sessionId = session.id;
 
-  console.log("[stripe] checkout.session metadata", {
+  safeLogInfo("[stripe] checkout.session metadata", {
     sessionId,
     paymentStatus: session.payment_status,
     metadata: session.metadata ?? {},
@@ -84,7 +85,7 @@ export async function activateMembershipFromCheckoutSession(
   });
 
   if (!checkoutSessionIsPaid(session)) {
-    console.warn("[stripe] checkout activation skipped: payment not paid", {
+    safeLogWarn("[stripe] checkout activation skipped: payment not paid", {
       sessionId,
       paymentStatus: session.payment_status,
     });
@@ -102,7 +103,7 @@ export async function activateMembershipFromCheckoutSession(
   } catch (err) {
     if (isWebhookHandlerError(err)) throw err;
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[stripe] checkout activation context failed", {
+    safeLogError("[stripe] checkout activation context failed", {
       sessionId,
       message,
       metadata: session.metadata ?? {},
@@ -159,7 +160,7 @@ export async function activateMembershipFromCheckoutSession(
       existingForConflict?.stripe_checkout_session_id === sessionId &&
       isMembershipActive(existingForConflict as Parameters<typeof isMembershipActive>[0])
     ) {
-      console.log("[stripe] checkout session already activated (idempotent)", {
+      safeLogInfo("[stripe] checkout session already activated (idempotent)", {
         sessionId,
         userId,
         role,
@@ -182,7 +183,7 @@ export async function activateMembershipFromCheckoutSession(
     });
 
     if (activationConflict.conflict) {
-      console.warn("[stripe] checkout activation conflict — membership not overwritten", {
+      safeLogWarn("[stripe] checkout activation conflict — membership not overwritten", {
         sessionId,
         userId,
         role,
@@ -207,11 +208,11 @@ export async function activateMembershipFromCheckoutSession(
 
   if (!userId?.trim()) {
     const error = `[stripe] checkout ${sessionId}: missing user_id after resolution`;
-    console.error("[stripe] checkout activation aborted", { sessionId, metadata: session.metadata ?? {} });
+    safeLogError("[stripe] checkout activation aborted", { sessionId, metadata: session.metadata ?? {} });
     return { ok: false, error, code: "missing_user_id", step: "validate_user_id" };
   }
 
-  console.log("[stripe] activating membership from checkout", {
+  safeLogInfo("[stripe] activating membership from checkout", {
     sessionId,
     userId,
     role,
@@ -232,7 +233,7 @@ export async function activateMembershipFromCheckoutSession(
       subscription = await stripe.subscriptions.retrieve(subId);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error("[stripe] subscription retrieve failed", { sessionId, subId, message });
+      safeLogError("[stripe] subscription retrieve failed", { sessionId, subId, message });
       return { ok: false, error: message, step: "stripe_subscription_retrieve" };
     }
   }
@@ -272,7 +273,7 @@ export async function activateMembershipFromCheckoutSession(
   });
 
   if (!result.ok) {
-    console.error("[stripe] checkout membership upsert failed", {
+    safeLogError("[stripe] checkout membership upsert failed", {
       sessionId,
       table: MEMBERSHIP_TABLE,
       userId,
@@ -292,7 +293,7 @@ export async function activateMembershipFromCheckoutSession(
     };
   }
 
-  console.log("[membership] checkout activation succeeded", {
+  safeLogInfo("[membership] checkout activation succeeded", {
     sessionId,
     userId,
     role,

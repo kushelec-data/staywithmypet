@@ -1,9 +1,12 @@
 import "server-only";
 
 import { hasServerEnv } from "@/lib/server-env";
+import { isSafeDebugLoggingEnabled } from "@/lib/security/safe-log";
 
-/** Temporary production debugging — remove after env is verified on Vercel. */
+/** Env presence booleans — only when APP_SAFE_DEBUG_LOG=1 in development/preview. */
 export function logStripeEnvPresence(context: string): void {
+  if (!isSafeDebugLoggingEnabled()) return;
+
   console.log(`[stripe-env:${context}] STRIPE_SECRET_KEY exists:`, hasServerEnv("STRIPE_SECRET_KEY"));
   console.log(`[stripe-env:${context}] STRIPE_WEBHOOK_SECRET exists:`, hasServerEnv("STRIPE_WEBHOOK_SECRET"));
   console.log(`[stripe-env:${context}] SUPABASE_SERVICE_ROLE_KEY exists:`, hasServerEnv("SUPABASE_SERVICE_ROLE_KEY"));

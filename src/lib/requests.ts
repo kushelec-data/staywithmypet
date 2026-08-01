@@ -44,6 +44,7 @@ import {
   logCareRequestCreateFailure,
   type CreateCareRequestResult,
 } from "@/lib/request-create-errors";
+import { safeLogError, safeLogInfo, safeLogWarn } from "@/lib/security/safe-log";
 import {
   INCOMING_REQUEST_COLUMNS,
   isIncomingRequest,
@@ -517,7 +518,7 @@ function logRequestListQueryError(
   userId: string,
   error: { message: string; code?: string; details?: string; hint?: string },
 ): void {
-  console.error("[request:list] Supabase query error", {
+  safeLogError("[request:list] Supabase query error", {
     column,
     userId,
     message: error.message,
@@ -577,7 +578,7 @@ async function fetchRequestsForDirection(
   const merged = await fetchRequestRowsByParticipantColumns(supabase, userId, columns);
   const rows = sortRequestsNewestFirst(filterRowsForDirection(merged, userId, direction));
 
-  console.info(`[request:list] ${direction} loaded`, {
+  safeLogInfo(`[request:list] ${direction} loaded`, {
     userId,
     merged: merged.length,
     afterDirectionFilter: rows.length,
@@ -601,7 +602,7 @@ async function fetchRequestsForDirection(
   }
 
   if (isEmbedQueryError(withRelations.error)) {
-    console.warn("[request:list] embed select failed, using base rows", {
+    safeLogWarn("[request:list] embed select failed, using base rows", {
       direction,
       message: withRelations.error.message,
       code: withRelations.error.code,
@@ -609,7 +610,7 @@ async function fetchRequestsForDirection(
     return enrichRequests(supabase, rows, userId, direction);
   }
 
-  console.error("[request:list] embed by id failed", {
+  safeLogError("[request:list] embed by id failed", {
     direction,
     userId,
     message: withRelations.error.message,
@@ -776,7 +777,7 @@ export async function createCareRequest(
 
     const duplicateRequestId = existingPending?.[0]?.id;
     if (duplicateRequestId) {
-      console.info("[care-request:create] duplicate pending request suppressed", {
+      safeLogInfo("[care-request:create] duplicate pending request suppressed", {
         ...logContext,
         existingRequestId: duplicateRequestId,
       });
@@ -799,16 +800,16 @@ export async function createCareRequest(
       status: "pending",
     };
 
-    console.info("[care-request:create] insert start", logContext);
+    safeLogInfo("[care-request:create] insert start", logContext);
 
     const { error } = await supabase.from("requests").insert(payload);
     if (error) {
       logSupabaseError("insert", error);
-      logCareRequestCreateFailure("insert", { ...logContext, payload }, error);
+      logCareRequestCreateFailure("insert", logContext, error);
       return buildCareRequestCreateFailure(error, senderRole);
     }
 
-    console.info("[request:delivery] inserted", {
+    safeLogInfo("[request:delivery] inserted", {
       requestId,
       senderId: payload.sender_id,
       receiverId: payload.receiver_id,
@@ -825,7 +826,9 @@ export async function createCareRequest(
         if (isPostgrestError(err)) {
           logSupabaseError("request message seed", err);
         } else {
-          console.error("[request] message seed", err);
+          safeLogError("request message seed", {
+            message: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }
@@ -851,13 +854,15 @@ export function logRequestSubmitFailure(
   context?: Record<string, unknown>,
 ): void {
   if (context && Object.keys(context).length > 0) {
-    console.error("[request] submit context", context);
+    safeLogError("[request] submit context", context);
   }
   if (isPostgrestError(error)) {
     logSupabaseError("submit", error);
     return;
   }
-  console.error("[request] submit", error);
+  safeLogError("request submit", {
+    message: error instanceof Error ? error.message : String(error),
+  });
 }
 
 export type RespondToRequestResult = {
@@ -951,7 +956,7 @@ export async function respondToRequest(
     );
     await linkOneTimeMembershipsForRequestAction(requestId);
   } catch (err) {
-    console.warn("[one-time-membership] link after accept failed", {
+    safeLogWarn("[one-time-membership] link after accept failed", {
       requestId,
       message: err instanceof Error ? err.message : String(err),
     });
