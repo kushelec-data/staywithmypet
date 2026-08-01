@@ -1,8 +1,20 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MembershipRole } from "@/lib/membership";
 import { isMembershipActive, type UserMembership } from "@/lib/membership";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const ACTIVE_MEMBERSHIP_SELECT = "user_id, status, end_date, plan_id, consumed_at";
+
+function logMarketplaceFilter(
+  marketplace: "find-pets" | "find-care",
+  stats: {
+    candidateCount: number;
+    activeMembershipUserIdsCount: number;
+    finalCount: number;
+  },
+): void {
+  console.info(`[marketplace/${marketplace}] membership filter`, stats);
+}
 
 function todayUtcIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -82,4 +94,48 @@ export async function loadActiveMembershipUserIds(
   }
 
   return userIds;
+}
+
+export async function userHasActiveMembership(
+  _supabase: SupabaseClient,
+  userId: string,
+  role: MembershipRole,
+): Promise<boolean> {
+  const trimmed = userId.trim();
+  if (!trimmed) return false;
+  const activeIds = await loadActiveMembershipUserIds(role);
+  return activeIds.has(trimmed);
+}
+
+export async function filterProfilesWithActivePetFriendMembership<T extends { id: string }>(
+  _supabase: SupabaseClient,
+  profiles: T[],
+): Promise<T[]> {
+  const candidateCount = profiles.length;
+  const activeIds = await loadActiveMembershipUserIds("pet_friend");
+  const filtered = profiles.filter((profile) => activeIds.has(profile.id));
+
+  logMarketplaceFilter("find-care", {
+    candidateCount,
+    activeMembershipUserIdsCount: activeIds.size,
+    finalCount: filtered.length,
+  });
+
+  return filtered;
+}
+
+export async function filterPetsWhoseOwnerHasActivePetParentMembership<
+  T extends { ownerId: string },
+>(_supabase: SupabaseClient, pets: T[]): Promise<T[]> {
+  const candidateCount = pets.length;
+  const activeIds = await loadActiveMembershipUserIds("pet_parent");
+  const filtered = pets.filter((pet) => activeIds.has(pet.ownerId));
+
+  logMarketplaceFilter("find-pets", {
+    candidateCount,
+    activeMembershipUserIdsCount: activeIds.size,
+    finalCount: filtered.length,
+  });
+
+  return filtered;
 }

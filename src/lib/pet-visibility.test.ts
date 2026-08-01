@@ -91,9 +91,9 @@ describe("pet listing visibility", () => {
 });
 
 describe("marketplace membership helpers remain available", () => {
-  it("exports pet parent membership filter helper for other callers", async () => {
+  it("exports pet parent membership filter helper on the server module", async () => {
     const { filterPetsWhoseOwnerHasActivePetParentMembership } = await import(
-      "@/lib/marketplace-membership"
+      "@/lib/marketplace-membership-server"
     );
     expect(typeof filterPetsWhoseOwnerHasActivePetParentMembership).toBe("function");
   });
