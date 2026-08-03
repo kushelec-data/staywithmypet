@@ -441,6 +441,20 @@ const MESSAGE_THREAD_SELECT =
 const MESSAGE_THREAD_LEGACY_SELECT =
   "id, conversation_id, sender_id, body, read_at, created_at" as const;
 
+/** Default page size for thread history (newest first in SQL, chronological in UI). */
+export const MESSAGE_PAGE_SIZE = 50;
+
+export type FetchMessagesOptions = {
+  limit?: number;
+  /** ISO timestamp — load messages strictly older than this cursor. */
+  before?: string | null;
+};
+
+export type FetchMessagesPage = {
+  messages: ChatMessage[];
+  hasOlder: boolean;
+};
+
 function mapMessageRow(row: MessageRow, userId: string): ChatMessage {
   const mediaType =
     row.media_type === "image" || row.media_type === "video"
@@ -507,43 +521,145 @@ export function formatMessagingError(error: unknown): string {
   return "Could not load messages.";
 }
 
-async function fetchRecentInboxMessages(
+const INBOX_LATEST_MESSAGE_NESTED_SELECT =
+  "id, messages ( body, created_at, media_type )" as const;
+
+const INBOX_LATEST_MESSAGE_NESTED_LEGACY_SELECT =
+  "id, messages ( body, created_at )" as const;
+
+type InboxNestedConversationRow = {
+  id: string;
+  messages: Array<{
+    body: string | null;
+    created_at: string;
+    media_type?: string | null;
+  }> | null;
+};
+
+function mapNestedInboxPreview(row: InboxNestedConversationRow): MessageInboxPreviewRow | null {
+  const latest = row.messages?.[0];
+  if (!latest) return null;
+  return {
+    conversation_id: row.id,
+    body: latest.body ?? "",
+    created_at: latest.created_at,
+    media_type: latest.media_type ?? null,
+  };
+}
+
+/** One row per conversation via nested PostgREST resource (limit 1 per parent). */
+async function fetchLatestInboxPreviewsNested(
+  supabase: SupabaseClient,
+  conversationIds: string[],
+): Promise<MessageInboxPreviewRow[] | null> {
+  const db = asMessagingDbClient(supabase);
+  const withMedia = await db
+    .from("conversations")
+    .select(INBOX_LATEST_MESSAGE_NESTED_SELECT)
+    .in("id", conversationIds)
+    .order("created_at", { foreignTable: "messages", ascending: false })
+    .limit(1, { foreignTable: "messages" });
+
+  if (!withMedia.error) {
+    return (withMedia.data as unknown as InboxNestedConversationRow[] | null)
+      ?.map(mapNestedInboxPreview)
+      .filter((row): row is MessageInboxPreviewRow => row !== null) ?? [];
+  }
+
+  if (!isMissingColumnError(withMedia.error)) {
+    return null;
+  }
+
+  const legacy = await db
+    .from("conversations")
+    .select(INBOX_LATEST_MESSAGE_NESTED_LEGACY_SELECT)
+    .in("id", conversationIds)
+    .order("created_at", { foreignTable: "messages", ascending: false })
+    .limit(1, { foreignTable: "messages" });
+
+  if (legacy.error) {
+    return null;
+  }
+
+  return (legacy.data as unknown as InboxNestedConversationRow[] | null)
+    ?.map((row) =>
+      mapNestedInboxPreview({
+        ...row,
+        messages: (row.messages ?? []).map((m) => ({ ...m, media_type: null })),
+      }),
+    )
+    .filter((row): row is MessageInboxPreviewRow => row !== null) ?? [];
+}
+
+async function fetchLatestInboxPreviewForConversation(
+  supabase: SupabaseClient,
+  conversationId: string,
+  includeMedia: boolean,
+): Promise<MessageInboxPreviewRow | null> {
+  const db = asMessagingDbClient(supabase);
+  const select = includeMedia
+    ? MESSAGE_INBOX_PREVIEW_SELECT
+    : MESSAGE_INBOX_PREVIEW_LEGACY_SELECT;
+
+  const { data, error } = await db
+    .from("messages")
+    .select(select)
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) return null;
+
+  if (includeMedia) {
+    return data as unknown as MessageInboxPreviewRow;
+  }
+
+  const legacy = data as unknown as Pick<MessageInboxPreviewRow, "conversation_id" | "body" | "created_at">;
+  return {
+    conversation_id: legacy.conversation_id,
+    body: legacy.body,
+    created_at: legacy.created_at,
+    media_type: null,
+  };
+}
+
+/** Latest message per conversation — one nested query, or parallel limit-1 fallbacks. */
+async function fetchLatestInboxMessagePreviews(
   supabase: SupabaseClient,
   conversationIds: string[],
 ): Promise<MessageInboxPreviewRow[]> {
   if (!conversationIds.length) return [];
 
+  const nested = await fetchLatestInboxPreviewsNested(supabase, conversationIds);
+  if (nested !== null) {
+    return nested;
+  }
+
   const db = asMessagingDbClient(supabase);
-  const withMedia = await db
+  const probe = await db
     .from("messages")
     .select(MESSAGE_INBOX_PREVIEW_SELECT)
-    .in("conversation_id", conversationIds)
-    .order("created_at", { ascending: false });
+    .eq("conversation_id", conversationIds[0]!)
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  if (!withMedia.error) {
-    return withMedia.data ?? [];
+  const includeMedia = !probe.error || !isMissingColumnError(probe.error);
+  if (probe.error && !isMissingColumnError(probe.error)) {
+    throw probe.error;
   }
 
-  if (!isMissingColumnError(withMedia.error)) {
-    throw withMedia.error;
-  }
+  const rows = await Promise.all(
+    conversationIds.map((conversationId) =>
+      fetchLatestInboxPreviewForConversation(supabase, conversationId, includeMedia),
+    ),
+  );
 
-  const legacy = await db
-    .from("messages")
-    .select(MESSAGE_INBOX_PREVIEW_LEGACY_SELECT)
-    .in("conversation_id", conversationIds)
-    .order("created_at", { ascending: false });
-
-  if (legacy.error) {
-    throw legacy.error;
-  }
-
-  return (legacy.data ?? []).map((row) => ({
-    conversation_id: row.conversation_id,
-    body: row.body,
-    created_at: row.created_at,
-    media_type: null,
-  }));
+  return rows.filter((row): row is MessageInboxPreviewRow => row !== null);
 }
 
 async function fetchRequestForConversation(
@@ -851,7 +967,7 @@ export async function fetchConversations(
 
   const [recentMessages, petsResult, bookingResult, unreadResult, profilesResult] =
     await Promise.all([
-      fetchRecentInboxMessages(supabase, conversationIds),
+      fetchLatestInboxMessagePreviews(supabase, conversationIds),
       petIds.length
         ? supabase
             .from("pets")
@@ -883,18 +999,16 @@ export async function fetchConversations(
 
   const lastByConversation = new Map<string, { body: string; created_at: string }>();
   for (const m of recentMessages) {
-    if (!lastByConversation.has(m.conversation_id)) {
-      lastByConversation.set(m.conversation_id, {
-        body: chatMessagePreviewText({
-          body: m.body,
-          mediaType:
-            m.media_type === "image" || m.media_type === "video"
-              ? m.media_type
-              : null,
-        }),
-        created_at: m.created_at,
-      });
-    }
+    lastByConversation.set(m.conversation_id, {
+      body: chatMessagePreviewText({
+        body: m.body,
+        mediaType:
+          m.media_type === "image" || m.media_type === "video"
+            ? m.media_type
+            : null,
+      }),
+      created_at: m.created_at,
+    });
   }
 
   const petNames = new Map<string, string>();
@@ -986,49 +1100,141 @@ export async function fetchConversations(
   return prepareInboxConversations(summaries);
 }
 
-export async function fetchMessages(
+async function fetchMessagesPageRows(
   supabase: SupabaseClient,
   conversationId: string,
   userId: string,
-): Promise<ChatMessage[]> {
+  options: FetchMessagesOptions,
+): Promise<FetchMessagesPage> {
+  const limit = options.limit ?? MESSAGE_PAGE_SIZE;
   const db = asMessagingDbClient(supabase);
-  const full = await db
+
+  let query = db
     .from("messages")
     .select(MESSAGE_THREAD_SELECT)
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(limit + 1);
+
+  if (options.before) {
+    query = query.lt("created_at", options.before);
+  }
+
+  const full = await query;
 
   if (!full.error) {
-    return (full.data ?? []).map((row) => mapMessageRow(row, userId));
+    const rows = full.data ?? [];
+    const hasOlder = rows.length > limit;
+    const page = hasOlder ? rows.slice(0, limit) : rows;
+    return {
+      messages: page.reverse().map((row) => mapMessageRow(row, userId)),
+      hasOlder,
+    };
   }
 
   if (!isMissingColumnError(full.error)) {
     throw full.error;
   }
 
-  const legacy = await db
+  let legacyQuery = db
     .from("messages")
     .select(MESSAGE_THREAD_LEGACY_SELECT)
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(limit + 1);
+
+  if (options.before) {
+    legacyQuery = legacyQuery.lt("created_at", options.before);
+  }
+
+  const legacy = await legacyQuery;
 
   if (legacy.error) {
     throw legacy.error;
   }
 
-  return (legacy.data ?? []).map((row) =>
-    mapMessageRow(
-      {
-        ...row,
-        storage_path: null,
-        media_type: null,
-        file_name: null,
-        file_size: null,
-        mime_type: null,
-      },
-      userId,
+  const rows = legacy.data ?? [];
+  const hasOlder = rows.length > limit;
+  const page = hasOlder ? rows.slice(0, limit) : rows;
+
+  return {
+    messages: page.reverse().map((row) =>
+      mapMessageRow(
+        {
+          ...row,
+          storage_path: null,
+          media_type: null,
+          file_name: null,
+          file_size: null,
+          mime_type: null,
+        },
+        userId,
+      ),
     ),
-  );
+    hasOlder,
+  };
+}
+
+export async function fetchMessages(
+  supabase: SupabaseClient,
+  conversationId: string,
+  userId: string,
+  options?: FetchMessagesOptions,
+): Promise<FetchMessagesPage> {
+  return fetchMessagesPageRows(supabase, conversationId, userId, options ?? {});
+}
+
+type SendMessageContext = {
+  requestId: string;
+  requestStatus: RequestStatus;
+  bookingStatus: BookingStatus | null;
+  bookingCancelledAt: string | null;
+};
+
+async function resolveSendMessageContext(
+  supabase: SupabaseClient,
+  conversationId: string,
+  precheck?: SendMessagePrecheck | null,
+): Promise<SendMessageContext> {
+  if (precheck?.requestId) {
+    return {
+      requestId: precheck.requestId,
+      requestStatus: precheck.requestStatus,
+      bookingStatus: precheck.bookingStatus,
+      bookingCancelledAt: precheck.bookingCancelledAt,
+    };
+  }
+
+  const { data: conversationRow, error: conversationError } = await supabase
+    .from("conversations")
+    .select("request_id")
+    .eq("id", conversationId)
+    .maybeSingle();
+
+  if (conversationError) throw conversationError;
+  if (!conversationRow?.request_id) {
+    throw new Error("Conversation not found.");
+  }
+
+  const requestId = conversationRow.request_id as string;
+
+  const [requestResult, bookingResult] = await Promise.all([
+    supabase.from("requests").select("status").eq("id", requestId).maybeSingle(),
+    supabase
+      .from("bookings")
+      .select("status, cancelled_at")
+      .eq("request_id", requestId)
+      .maybeSingle(),
+  ]);
+
+  if (requestResult.error) throw requestResult.error;
+
+  return {
+    requestId,
+    requestStatus: (requestResult.data?.status as RequestStatus | undefined) ?? "pending",
+    bookingStatus: (bookingResult.data?.status as BookingStatus | undefined) ?? null,
+    bookingCancelledAt: (bookingResult.data?.cancelled_at as string | null) ?? null,
+  };
 }
 
 export async function sendMessage(
@@ -1040,55 +1246,33 @@ export async function sendMessage(
   media?: SendMessageMedia | null,
   precheck?: SendMessagePrecheck | null,
 ): Promise<ChatMessage> {
-  const sessionUserId = await requireAuthUserId(supabase);
-  if (senderId !== sessionUserId) {
-    throw new Error("You cannot send messages as another user.");
-  }
-  await assertRateLimitShared("message_send", sessionUserId);
-
   const trimmed = body.trim();
   if (!trimmed && !media?.storagePath) {
     throw new Error("Message cannot be empty.");
   }
 
-  let requestId: string;
-  let requestStatus: RequestStatus;
-  let bookingStatus: BookingStatus | null;
-  let bookingCancelledAt: string | null;
-
-  if (precheck?.requestId) {
-    requestId = precheck.requestId;
-    requestStatus = precheck.requestStatus;
-    bookingStatus = precheck.bookingStatus;
-    bookingCancelledAt = precheck.bookingCancelledAt;
-  } else {
-    const { data: conversationRow, error: conversationError } = await supabase
-      .from("conversations")
-      .select("request_id")
-      .eq("id", conversationId)
-      .maybeSingle();
-
-    if (conversationError) throw conversationError;
-    if (!conversationRow?.request_id) {
-      throw new Error("Conversation not found.");
-    }
-
-    requestId = conversationRow.request_id as string;
-
-    const [requestResult, bookingResult] = await Promise.all([
-      supabase.from("requests").select("status").eq("id", requestId).maybeSingle(),
-      supabase
-        .from("bookings")
-        .select("status, cancelled_at")
-        .eq("request_id", requestId)
-        .maybeSingle(),
-    ]);
-
-    if (requestResult.error) throw requestResult.error;
-    requestStatus = (requestResult.data?.status as RequestStatus | undefined) ?? "pending";
-    bookingStatus = (bookingResult.data?.status as BookingStatus | undefined) ?? null;
-    bookingCancelledAt = (bookingResult.data?.cancelled_at as string | null) ?? null;
+  const sessionUserId = await requireAuthUserId(supabase);
+  if (senderId !== sessionUserId) {
+    throw new Error("You cannot send messages as another user.");
   }
+
+  const rateLimitPromise = assertRateLimitShared("message_send", sessionUserId);
+  const contextPromise = resolveSendMessageContext(supabase, conversationId, precheck);
+  const guardsPromise = Promise.all([
+    otherPartyId
+      ? isUserBlocked(supabase, senderId, otherPartyId)
+      : Promise.resolve(false),
+    supabase.from("profiles").select("role, active_mode").eq("id", senderId).maybeSingle(),
+  ]);
+
+  await rateLimitPromise;
+
+  const [context, [blockedEitherWay, senderProfile]] = await Promise.all([
+    contextPromise,
+    guardsPromise,
+  ]);
+
+  const { requestId, requestStatus, bookingStatus, bookingCancelledAt } = context;
 
   if (requestStatus === "declined") {
     throw new Error("Messaging is closed for this booking.");
@@ -1126,13 +1310,6 @@ export async function sendMessage(
   if (!canSendInConversation(sendCheck)) {
     throw new Error("Messaging period has ended for this cancelled booking.");
   }
-
-  const [blockedEitherWay, senderProfile] = await Promise.all([
-    otherPartyId
-      ? isUserBlocked(supabase, senderId, otherPartyId)
-      : Promise.resolve(false),
-    supabase.from("profiles").select("role, active_mode").eq("id", senderId).maybeSingle(),
-  ]);
 
   if (blockedEitherWay) {
     throw new Error(BLOCKED_USER_MESSAGE);

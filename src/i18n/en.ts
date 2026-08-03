@@ -1382,6 +1382,8 @@ export const en = {
     withPerson: "With {name}",
     noMessagesYet: "No messages yet",
     loadingThread: "Loading messages…",
+    loadOlderMessages: "Load older messages",
+    loadingOlderMessages: "Loading…",
     threadEmpty: "Say hello and coordinate care details.",
     threadEmptyTitle: "Start the conversation 👋",
     threadEmptyHint: "Say hello and coordinate pet care details.",

@@ -83,6 +83,33 @@ export type PetIntroDisplay = {
   hasPersonality: boolean;
 };
 
+/** Normalize Supabase `pet_photos` embed (array or single row). */
+export function normalizePetPhotosJoin(raw: unknown): PetPhotoJoin[] {
+  if (Array.isArray(raw)) {
+    return raw as PetPhotoJoin[];
+  }
+  if (raw && typeof raw === "object") {
+    return [raw as PetPhotoJoin];
+  }
+  return [];
+}
+
+/** Same URL resolution as dashboard/public pet cards (`PetIntroCard`). */
+export function petIntroMainPhotoUrl(
+  pet: Pick<PetIntroDisplay, "primaryPhotoUrl" | "photoUrls">,
+): string {
+  const primary = pet.primaryPhotoUrl?.trim();
+  if (primary) return primary;
+  return pet.photoUrls.find((url) => Boolean(url?.trim())) ?? "";
+}
+
+/** True when the card would render an uploaded photo (not the species placeholder). */
+export function petIntroHasDisplayPhoto(
+  pet: Pick<PetIntroDisplay, "primaryPhotoUrl" | "photoUrls">,
+): boolean {
+  return Boolean(petIntroMainPhotoUrl(pet));
+}
+
 type PetPhotoJoin = {
   public_url: string | null;
   is_primary: boolean;
@@ -333,10 +360,7 @@ export function mapRowToPetIntro(
     ? formatNearbyLocation(locationRaw)
     : locationRaw;
 
-  const photos =
-    "pet_photos" in row && Array.isArray(row.pet_photos)
-      ? (row.pet_photos as PetPhotoJoin[])
-      : [];
+  const photos = normalizePetPhotosJoin("pet_photos" in row ? row.pet_photos : null);
 
   const rawSize = pickStr(row.size_label, details, "size_label");
   const weightKey = normalizePetWeightStorageValue(rawSize);

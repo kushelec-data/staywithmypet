@@ -1,6 +1,6 @@
 import { getWordCount, isBioWordCountValid } from "@/lib/bio-words";
 import { validatePetDateOfBirthDisplay } from "@/lib/pet-date-of-birth";
-import type { PetIntroDisplay } from "@/lib/pet-intro";
+import { petIntroHasDisplayPhoto, type PetIntroDisplay } from "@/lib/pet-intro";
 import {
   parseProfileDetails,
   profileCalendarSelectedDates,
@@ -172,7 +172,7 @@ function petHasSize(pet: PetIntroDisplay): boolean {
 }
 
 function petHasPhoto(pet: PetIntroDisplay): boolean {
-  return Boolean(pet.primaryPhotoUrl?.trim() || pet.photoUrls.length > 0);
+  return petIntroHasDisplayPhoto(pet);
 }
 
 function petHasPersonality(pet: PetIntroDisplay): boolean {

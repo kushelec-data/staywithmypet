@@ -1392,6 +1392,8 @@ export const et = {
     withPerson: "Koos: {name}",
     noMessagesYet: "Sõnumeid pole veel",
     loadingThread: "Laadin sõnumeid…",
+    loadOlderMessages: "Laadi vanemad sõnumid",
+    loadingOlderMessages: "Laadin…",
     threadEmpty: "Tervita ja lepi hoolduse detailid kokku.",
     threadEmptyTitle: "Alusta vestlust 👋",
     threadEmptyHint: "Tervita ja lepi hoolduse detailid kokku.",
