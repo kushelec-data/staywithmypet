@@ -28,8 +28,9 @@ export const siteEnPartial = {
   },
   hero: {
     eyebrow: "Built for Responsible Pet Sharing",
-    title: "Find Loyal Companionship or Share Your Pet With Someone Who Truly Cares",
-    subtitle: "Stay With My Pet connects pet parents with caring animal lovers who want to share time, care, and joy — in a safe, flexible, and responsible way.",
+    title: "Trusted local pet care for happier pets.",
+    subtitle:
+      "Connect with verified local Pet Friends for walks, companionship, and home-based pet care.",
   },
   faq: {
     badge: "FAQ",

@@ -228,7 +228,7 @@ export function HeroStoryCarousel() {
               </p>
               <Link
                 href={activeSlide.href}
-                className="mt-3 inline-flex min-h-[2.25rem] w-full max-w-full items-center justify-center rounded-full border border-white/35 bg-brand-teal/80 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-black/25 backdrop-blur-md transition hover:bg-brand-teal/95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:mt-3.5 sm:w-auto sm:text-sm"
+                className="mt-3 inline-flex min-h-[2.25rem] w-full max-w-full items-center justify-center rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[11px] font-medium text-white/85 backdrop-blur-sm transition hover:bg-white/20 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:mt-3.5 sm:w-auto sm:text-xs"
               >
                 {activeSlide.cta}
               </Link>

@@ -28,8 +28,9 @@ export const siteEtPartial = {
   },
   hero: {
     eyebrow: "Loodud vastutustundlikuks lemmiklooma jagamiseks",
-    title: "Iga lemmik väärib parimat hoolt - ka siis, kui sina ei saa tema kõrval olla",
-    subtitle: "Stay With My Pet on liikmelisuspõhine kogukond, mis ühendab loomaomanikud ja loomasõbrad, et pakkuda turvalist, kodust ja vastastikku hoolivat lahendust, kus looma heaolu on alati esikohal.",
+    title: "Usaldusväärne kodune lemmiklooma hooldus sinu lähedal.",
+    subtitle:
+      "Ühenda end kinnitatud kohalike loomasõpradega jalutuskäikudeks, seltsiks ja koduseks hoolduseks.",
   },
   faq: {
     badge: "KKK",

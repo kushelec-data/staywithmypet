@@ -142,16 +142,15 @@ export const et = {
   },
   hero: {
     eyebrow: "EESTI ESIMENE LEMMIKLOOMADE JAGAMISE KOGUKOND",
-    title:
-      "Iga lemmik väärib parimat hoolt – ka siis, kui sina ei saa tema kõrval olla.",
+    title: "Usaldusväärne kodune lemmiklooma hooldus sinu lähedal.",
     subtitle:
-      "Stay With My Pet ühendab loomaomanikud usaldusväärsete loomasõpradega, kes pakuvad sinu lemmikule turvalist kodust hoolt, seltsi ja tuge just siis, kui seda kõige rohkem vaja on.",
-    findCareCta: "Leia hoidja",
-    becomeFriendCta: "Leia lemmik",
+      "Ühenda end kinnitatud kohalike loomasõpradega jalutuskäikudeks, seltsiks ja koduseks hoolduseks.",
+    findCareCta: "Leia lemmikuhoidja",
+    becomeFriendCta: "Hakka loomasõbraks",
     trustCards: {
-      verified: "Kinnitatud profiilid",
-      reviews: "Arvustused ja hinnangud",
-      safeChat: "Turvalised päringud ja vestlus",
+      verified: "Kinnitatud liikmeprofiilid",
+      reviews: "Turvalised liikmelisuse maksed",
+      safeChat: "Arvustused pärast hooldust",
     },
     tehnopolBadge: {
       label: "VALITUD PROGRAMMI",

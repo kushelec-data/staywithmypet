@@ -82,10 +82,19 @@ export function HeroSection() {
             </p>
 
             <div className="mx-auto mt-6 flex w-full max-w-sm flex-col gap-3 sm:mt-7 sm:max-w-none sm:flex-row sm:justify-center lg:mx-0 lg:justify-start">
-              <Button href="/find-care" size="lg">
+              <Button
+                href="/find-care"
+                size="lg"
+                className="shadow-lg shadow-brand-teal/25 sm:min-w-[11.5rem]"
+              >
                 {t.hero.findCareCta}
               </Button>
-              <Button href="/find-pets" variant="secondary" size="lg">
+              <Button
+                href="/find-pets"
+                variant="outline"
+                size="lg"
+                className="border-border/80 bg-surface/60 font-medium text-muted shadow-none hover:bg-surface"
+              >
                 {t.hero.becomeFriendCta}
               </Button>
             </div>

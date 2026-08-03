@@ -142,15 +142,15 @@ export const en = {
   },
   hero: {
     eyebrow: "ESTONIA'S FIRST PET SHARING COMMUNITY",
-    title: "Every pet deserves the best care — even when you can't be there.",
+    title: "Trusted local pet care for happier pets.",
     subtitle:
-      "Stay With My Pet connects Pet Parents with trusted animal lovers who provide safe, home-based care, companionship, and support when you need it most.",
-    findCareCta: "Find Care",
-    becomeFriendCta: "Find Pets",
+      "Connect with verified local Pet Friends for walks, companionship, and home-based pet care.",
+    findCareCta: "Find Pet Care",
+    becomeFriendCta: "Become a Pet Friend",
     trustCards: {
-      verified: "Verified profiles",
-      reviews: "Reviews & ratings",
-      safeChat: "Safe requests & chat",
+      verified: "Verified member profiles",
+      reviews: "Secure membership payments",
+      safeChat: "Reviews after completed care",
     },
     tehnopolBadge: {
       label: "ACCELERATOR SELECTED",
