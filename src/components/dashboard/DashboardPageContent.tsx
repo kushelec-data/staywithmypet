@@ -283,7 +283,8 @@ export function DashboardPageContent() {
             displayName={displayName}
             email={user.email}
             publicProfileHref={publicHref}
-            isPublic={profile.is_public}
+            activeMode={activeMode}
+            completeness={completeness}
             reviewsAvg={reviewsAvg}
             reviewsCount={reviewsCount}
           />
