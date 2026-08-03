@@ -96,6 +96,8 @@ export function ChatPanel({
   const conversationDateLabel = formatConversationDateLabel(conversation, locale);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState("");
@@ -111,9 +113,12 @@ export function ChatPanel({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const prefersSmoothScrollRef = useRef(false);
+  const preserveScrollRef = useRef(false);
   const loadGenerationRef = useRef(0);
   const conversationRef = useRef(conversation);
+  const onConversationReadRef = useRef(onConversationRead);
   conversationRef.current = conversation;
+  onConversationReadRef.current = onConversationRead;
 
   const canSend = canSendInConversation(conversation) && !blocked;
   const uploading = uploadProgress !== null;
@@ -183,21 +188,25 @@ export function ChatPanel({
       setLoading(true);
       setError(null);
       setMessages([]);
+      setHasOlder(false);
+      setLoadingOlder(false);
       setDraft("");
       setEmojiOpen(false);
       setUploadProgress(null);
       prefersSmoothScrollRef.current = false;
 
       try {
-        const [rows, isBlockedEitherWay, blockedIds] = await Promise.all([
+        const otherPartyId = conversationRef.current.otherPartyId;
+        const [page, isBlockedEitherWay, blockedIds] = await Promise.all([
           fetchMessages(supabase, conversationId, userId),
-          isUserBlocked(supabase, userId, conversation.otherPartyId),
+          isUserBlocked(supabase, userId, otherPartyId),
           fetchBlockedUserIds(supabase, userId),
         ]);
         if (cancelled || generation !== loadGenerationRef.current) return;
-        setMessages(rows);
+        setMessages(page.messages);
+        setHasOlder(page.hasOlder);
         setBlocked(isBlockedEitherWay);
-        setBlockedByMe(blockedIds.has(conversation.otherPartyId));
+        setBlockedByMe(blockedIds.has(otherPartyId));
       } catch (err) {
         if (cancelled || generation !== loadGenerationRef.current) return;
         setMessages([]);
@@ -214,7 +223,7 @@ export function ChatPanel({
       void markConversationFullyRead(supabase, conversationRef.current, userId)
         .then(() => {
           if (generation === loadGenerationRef.current) {
-            onConversationRead?.();
+            onConversationReadRef.current?.();
           }
         })
         .catch((err) => {
@@ -226,7 +235,51 @@ export function ChatPanel({
     return () => {
       cancelled = true;
     };
-  }, [conversationId, supabase, userId, conversation.otherPartyId, onConversationRead]);
+  }, [conversationId, supabase, userId]);
+
+  const handleLoadOlder = useCallback(async () => {
+    if (loadingOlder || !hasOlder || loading) return;
+    const oldest = messages[0];
+    if (!oldest) return;
+
+    setLoadingOlder(true);
+    setError(null);
+
+    const container = scrollContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight ?? 0;
+    preserveScrollRef.current = true;
+
+    try {
+      const page = await fetchMessages(supabase, conversationId, userId, {
+        before: oldest.createdAt,
+      });
+      setMessages((prev) => {
+        const existing = new Set(prev.map((item) => item.id));
+        const older = page.messages.filter((item) => !existing.has(item.id));
+        return [...older, ...prev];
+      });
+      setHasOlder(page.hasOlder);
+
+      requestAnimationFrame(() => {
+        const scrollContainer = scrollContainerRef.current;
+        if (!scrollContainer) return;
+        scrollContainer.scrollTop += scrollContainer.scrollHeight - prevScrollHeight;
+      });
+    } catch (err) {
+      setError(formatMessagingError(err));
+      console.error("[messages] load older failed", err);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [
+    conversationId,
+    hasOlder,
+    loading,
+    loadingOlder,
+    messages,
+    supabase,
+    userId,
+  ]);
 
   useEffect(() => {
     const channel = subscribeToConversationMessages(supabase, conversationId, userId, (message) => {
@@ -236,7 +289,7 @@ export function ChatPanel({
       });
       if (!message.isOwn) {
         void markConversationFullyRead(supabase, conversationRef.current, userId)
-          .then(() => onConversationRead?.())
+          .then(() => onConversationReadRef.current?.())
           .catch((err) => {
             console.warn("[messages] mark-as-read failed", err);
           });
@@ -246,10 +299,14 @@ export function ChatPanel({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [conversationId, supabase, userId, onConversationRead]);
+  }, [conversationId, supabase, userId]);
 
   useEffect(() => {
     if (loading) return;
+    if (preserveScrollRef.current) {
+      preserveScrollRef.current = false;
+      return;
+    }
     const behavior = prefersSmoothScrollRef.current ? "smooth" : "auto";
     scrollThreadToBottom(behavior);
     prefersSmoothScrollRef.current = true;
@@ -550,6 +607,11 @@ export function ChatPanel({
             conversation.otherPartyName.trim().charAt(0).toUpperCase() || "?"
           }
           supabase={supabase}
+          hasOlder={hasOlder}
+          loadingOlder={loadingOlder}
+          onLoadOlder={() => void handleLoadOlder()}
+          loadOlderLabel={m.loadOlderMessages}
+          loadingOlderLabel={m.loadingOlderMessages}
         />
       </div>
 

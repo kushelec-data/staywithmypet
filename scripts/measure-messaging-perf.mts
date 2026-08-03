@@ -142,7 +142,7 @@ async function signInAsMessagingUser(): Promise<{
 }
 
 async function main(): Promise<void> {
-  const timings: Array<{ operation: string; durationMs: number }> = [];
+  const timings: Array<{ operation: string; durationMs: number; detail?: string }> = [];
 
   loadEnvLocal();
 
@@ -154,6 +154,7 @@ async function main(): Promise<void> {
   timings.push({
     operation: "fetchConversations",
     durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+    detail: `${conversations.length} conversations`,
   });
   console.info(`[measure-messaging-perf] inbox conversations: ${conversations.length}`);
 
@@ -165,10 +166,11 @@ async function main(): Promise<void> {
   const thread = conversations[0]!;
 
   startedAt = performance.now();
-  await fetchMessages(supabase, thread.id, userId);
+  const messagePage = await fetchMessages(supabase, thread.id, userId);
   timings.push({
     operation: "fetchMessages",
     durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+    detail: `${messagePage.messages.length} messages loaded, hasOlder=${messagePage.hasOlder}`,
   });
 
   startedAt = performance.now();
@@ -186,7 +188,11 @@ async function main(): Promise<void> {
         userId,
         conversationId: thread.id,
         timings,
-        note: "read-only; sendMessage is not invoked to avoid creating chat messages",
+        comparisonNotes: {
+          fetchMessages: "paginated newest 50 (was: full thread history)",
+          fetchConversations: "inbox preview uses latest message per conversation (was: all messages scan)",
+          sendMessage: "not invoked (read-only); precheck + parallel guards in app code",
+        },
       },
       null,
       2,

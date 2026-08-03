@@ -5,7 +5,7 @@ import { AppImage } from "@/components/ui/AppImage";
 import { useLanguage } from "@/context/LanguageContext";
 import { AvailabilityDateChips } from "@/components/ui/AvailabilityDateChips";
 import Link from "next/link";
-import type { PetIntroDisplay } from "@/lib/pet-intro";
+import { petIntroMainPhotoUrl, type PetIntroDisplay } from "@/lib/pet-intro";
 import { speciesEmoji } from "@/lib/pet-data";
 import { publicPetHref } from "@/lib/public-pet";
 import {
@@ -131,7 +131,7 @@ export function PetIntroCard({
 
 function PetCompactPhotos({ pet, dashboard }: { pet: PetIntroDisplay; dashboard?: boolean }) {
   const mainPx = dashboard ? MAIN_DASHBOARD_PX : MAIN_DEFAULT_PX;
-  const mainUrl = pet.primaryPhotoUrl ?? pet.photoUrls[0] ?? "";
+  const mainUrl = petIntroMainPhotoUrl(pet);
   const extraUrls = pet.photoUrls.filter((url) => url && url !== mainUrl).slice(0, 2);
 
   return (

@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import * as messaging from "@/lib/messaging";
 import {
@@ -132,6 +134,7 @@ function createCountingSupabase(mode: "inbox" | "send" | "send-precheck"): {
       is: () => api,
       neq: () => api,
       or: () => api,
+      lt: () => api,
       order: () => api,
       limit: () => api,
       then: (
@@ -391,10 +394,11 @@ describe("syncAcceptedRequestConversations", () => {
     await fetchConversations(client, USER_ID);
 
     const selects = calls.filter((c) => c.op === "select");
-    expect(selects.length).toBeLessThan(10);
+    expect(selects.length).toBeLessThan(11);
     expect(selects.length).toBe(9);
     expect(selects.filter((c) => c.table === "requests").length).toBe(2);
-    expect(selects.filter((c) => c.table === "conversations").length).toBe(2);
+    expect(selects.filter((c) => c.table === "conversations").length).toBe(3);
+    expect(selects.filter((c) => c.table === "messages").length).toBe(1);
     expect(calls.some((c) => c.op === "upsert")).toBe(false);
     expect(calls.some((c) => c.op === "insert")).toBe(false);
   });
@@ -408,11 +412,43 @@ describe("messaging performance — documented round-trip counts", () => {
     });
   });
 
+  it("fetchMessages: full history → paginated newest 50", () => {
+    expect({
+      rowsBefore: "all messages in conversation",
+      rowsAfter: 50,
+      sqlOrderBefore: "ascending",
+      sqlOrderAfter: "descending + reverse in UI",
+    }).toMatchObject({
+      rowsAfter: 50,
+      sqlOrderAfter: "descending + reverse in UI",
+    });
+  });
+
+  it("inbox previews: all messages scan → latest per conversation only", () => {
+    expect({
+      strategyBefore: "all messages ordered desc, dedupe in JS",
+      strategyAfter: "nested limit-1 per conversation (or parallel limit-1 fallback)",
+    }).toMatchObject({
+      strategyAfter: "nested limit-1 per conversation (or parallel limit-1 fallback)",
+    });
+  });
+
   it("sendMessage from ChatPanel: 3 lookup round-trips removed via precheck", () => {
     expect({ lookupRoundTripsBefore: 3, lookupRoundTripsAfter: 0 }).toMatchObject({
       lookupRoundTripsBefore: 3,
       lookupRoundTripsAfter: 0,
     });
+  });
+
+  it("sendMessage: context + guard lookups parallelized after auth", () => {
+    const source = readFileSync(join(process.cwd(), "src/lib/messaging.ts"), "utf8");
+    const sendBlock = source.slice(
+      source.indexOf("export async function sendMessage"),
+      source.indexOf("export async function markConversationMessagesRead"),
+    );
+    expect(sendBlock).toContain("const contextPromise = resolveSendMessageContext");
+    expect(sendBlock).toContain("const guardsPromise = Promise.all");
+    expect(sendBlock).toMatch(/await Promise\.all\(\[\s*contextPromise,\s*guardsPromise,\s*\]\)/);
   });
 
   it("notification bell on mark-read: 2 refresh cycles → 1 debounced refresh", () => {

@@ -26,6 +26,11 @@ type MessageThreadProps = {
   incomingAvatarUrl?: string | null;
   incomingInitial?: string;
   supabase: SupabaseClient;
+  hasOlder?: boolean;
+  loadingOlder?: boolean;
+  onLoadOlder?: () => void;
+  loadOlderLabel?: string;
+  loadingOlderLabel?: string;
 };
 
 function DateDivider({ label }: { label: string }) {
@@ -70,6 +75,11 @@ export function MessageThread({
   incomingAvatarUrl,
   incomingInitial = "?",
   supabase,
+  hasOlder = false,
+  loadingOlder = false,
+  onLoadOlder,
+  loadOlderLabel,
+  loadingOlderLabel,
 }: MessageThreadProps) {
   const { t } = useLanguage();
 
@@ -99,6 +109,18 @@ export function MessageThread({
 
   return (
     <div className="flex min-h-full flex-col justify-end px-1 py-2 sm:px-2">
+      {hasOlder ? (
+        <div className="mb-2 flex justify-center">
+          <button
+            type="button"
+            onClick={() => onLoadOlder?.()}
+            disabled={loadingOlder}
+            className={`rounded-full px-3 py-1 text-[0.6875rem] font-medium ${MESSAGES_META_TEXT_CLASS} hover:bg-[#EDE8DE] disabled:opacity-50`}
+          >
+            {loadingOlder ? loadingOlderLabel : loadOlderLabel}
+          </button>
+        </div>
+      ) : null}
       {sections.map((section) => (
         <div key={section.dateKey}>
           <DateDivider label={section.label} />

@@ -17,6 +17,8 @@ describe("ChatPanel message loading", () => {
       chatSource.indexOf("void loadMessages();"),
     );
 
+    expect(loadBlock).toContain("page.messages");
+    expect(loadBlock).toContain("page.hasOlder");
     expect(loadBlock).toContain("} finally {");
     expect(loadBlock).toContain("setLoading(false)");
 
@@ -50,8 +52,8 @@ describe("cancelled booking threads", () => {
       "utf8",
     );
     const fetchBlock = messagingSource.slice(
+      messagingSource.indexOf("async function fetchMessagesPageRows"),
       messagingSource.indexOf("export async function fetchMessages"),
-      messagingSource.indexOf("export async function sendMessage"),
     );
     expect(fetchBlock).not.toContain("canSendInConversation");
     expect(fetchBlock).not.toContain("bookingStatus");
