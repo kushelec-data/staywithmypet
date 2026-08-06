@@ -3,6 +3,7 @@
 import { TermsLegalLink } from "@/components/legal/TermsLegalLink";
 import { useLanguage } from "@/context/LanguageContext";
 import { PRIVACY_PATH, SAFETY_PATH, TERMS_PATH } from "@/lib/terms-acceptance";
+import type { RefObject } from "react";
 
 export type TermsAcceptanceVariant = "signup" | "membership" | "booking";
 
@@ -13,6 +14,14 @@ type TermsAcceptanceCheckboxProps = {
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
   className?: string;
+  /** Inline validation message shown beside the checkbox. */
+  error?: string | null;
+  /** Highlights the checkbox when validation failed. */
+  invalid?: boolean;
+  inputRef?: RefObject<HTMLInputElement | null>;
+  containerRef?: RefObject<HTMLDivElement | null>;
+  /** When false, terms are validated in app logic instead of HTML5 constraint validation. */
+  required?: boolean;
 };
 
 export function TermsAcceptanceCheckbox({
@@ -22,6 +31,11 @@ export function TermsAcceptanceCheckbox({
   onCheckedChange,
   disabled = false,
   className = "",
+  error = null,
+  invalid = false,
+  inputRef,
+  containerRef,
+  required = true,
 }: TermsAcceptanceCheckboxProps) {
   const { t } = useLanguage();
   const copy = t.termsAcceptance;
@@ -51,20 +65,37 @@ export function TermsAcceptanceCheckbox({
       </>
     );
 
+  const showInvalid = invalid || Boolean(error);
+  const errorId = `${id}-error`;
+
   return (
-    <div className={`flex items-start gap-3 ${className}`}>
+    <div ref={containerRef} className={`flex items-start gap-3 ${className}`.trim()}>
       <input
+        ref={inputRef}
         id={id}
         type="checkbox"
         checked={checked}
         disabled={disabled}
         onChange={(event) => onCheckedChange(event.target.checked)}
-        className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/20 text-brand-teal focus:ring-2 focus:ring-brand-teal/40 disabled:opacity-50"
-        required
+        aria-invalid={showInvalid}
+        aria-describedby={error ? errorId : undefined}
+        required={required}
+        className={`mt-0.5 h-4 w-4 shrink-0 rounded text-brand-teal focus:ring-2 disabled:opacity-50 ${
+          showInvalid
+            ? "border-2 border-red-600 ring-2 ring-red-600/25 focus:ring-red-600/40"
+            : "border-black/20 focus:ring-brand-teal/40"
+        }`}
       />
-      <label htmlFor={id} className="text-sm leading-relaxed text-foreground">
-        {label}
-      </label>
+      <div className="min-w-0 flex-1">
+        <label htmlFor={id} className="text-sm leading-relaxed text-foreground">
+          {label}
+        </label>
+        {error ? (
+          <p id={errorId} className="mt-1.5 text-sm font-medium text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

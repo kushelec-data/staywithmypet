@@ -55,6 +55,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       invalidCredentials: t.auth.invalidCredentials,
       emailAlreadyRegistered: t.auth.emailAlreadyRegistered,
       emailNotConfirmed: t.auth.emailNotConfirmed,
+      confirmationEmailFailed: t.auth.confirmationEmailFailed,
       weakPassword: t.auth.weakPassword,
       oauthFailed: t.auth.oauthFailed,
       profileCreateFailed: t.auth.profileCreateFailed,
@@ -71,12 +72,29 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
+  const termsContainerRef = useRef<HTMLDivElement>(null);
+  const termsCheckboxRef = useRef<HTMLInputElement>(null);
   const showSignupDebug = isSignupDebugEnabled();
 
   const isSubmitActive = useCallback(
     (generation: number) => mountedRef.current && generation === submitGenerationRef.current,
     [],
   );
+
+  const focusSignupTermsField = useCallback(() => {
+    termsContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    requestAnimationFrame(() => {
+      termsCheckboxRef.current?.focus({ preventScroll: true });
+    });
+  }, []);
+
+  const handleTermsAcceptedChange = useCallback((checked: boolean) => {
+    setTermsAccepted(checked);
+    if (checked) {
+      setTermsError(null);
+    }
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -185,6 +203,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const generation = ++submitGenerationRef.current;
 
     setError(null);
+    setTermsError(null);
     setSuccess(null);
     setInfo(null);
     setSignupDebug(null);
@@ -199,7 +218,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     if (isSignup && name !== fullName) {
       setFullName(name);
     }
-    const passwordField = isSignup ? password : String(form.get("password") ?? "");
+    const passwordFromForm = String(form.get("password") ?? "");
+    const passwordField = isSignup ? password || passwordFromForm : passwordFromForm;
 
     try {
       const rateAction = isSignup ? "auth_signup" : "auth_login";
@@ -213,7 +233,10 @@ export function AuthForm({ mode }: AuthFormProps) {
 
       if (isSignup) {
         if (!termsAccepted) {
-          if (isSubmitActive(generation)) setError(t.termsAcceptance.errors.acceptanceRequired);
+          if (isSubmitActive(generation)) {
+            setTermsError(t.termsAcceptance.errors.signupAcceptanceRequired);
+            focusSignupTermsField();
+          }
           return;
         }
         if (!passwordMeetsPolicy(passwordField)) {
@@ -233,7 +256,9 @@ export function AuthForm({ mode }: AuthFormProps) {
           },
         });
 
-        if (!isSubmitActive(generation)) return;
+        if (!isSubmitActive(generation)) {
+          return;
+        }
 
         logSignupResponseDev(data, signUpError, emailRedirectTo);
         if (showSignupDebug) {
@@ -241,7 +266,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
 
         if (signUpError) {
-          setError(signUpError.message);
+          setError(formatAuthError(signUpError, authMessages));
           return;
         }
 
@@ -256,7 +281,9 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         if (data.session && data.user) {
           await finishSession(name);
-          if (!isSubmitActive(generation)) return;
+          if (!isSubmitActive(generation)) {
+            return;
+          }
           try {
             const { recordTermsAcceptanceAction } = await import("@/app/actions/terms-acceptance");
             await recordTermsAcceptanceAction({ context: "signup" });
@@ -292,7 +319,9 @@ export function AuthForm({ mode }: AuthFormProps) {
       trackGa("login");
       await goAfterAuth(t.auth.loginSuccess, generation);
     } catch (err) {
-      if (!isSubmitActive(generation)) return;
+      if (!isSubmitActive(generation)) {
+        return;
+      }
       if (isSignup) {
         const message = err instanceof Error ? err.message : t.auth.errorGeneric;
         setError(message || t.auth.errorGeneric);
@@ -499,8 +528,13 @@ export function AuthForm({ mode }: AuthFormProps) {
                 variant="signup"
                 id="signup-terms"
                 checked={termsAccepted}
-                onCheckedChange={setTermsAccepted}
+                onCheckedChange={handleTermsAcceptedChange}
                 disabled={loading}
+                required={false}
+                error={termsError}
+                invalid={Boolean(termsError)}
+                inputRef={termsCheckboxRef}
+                containerRef={termsContainerRef}
               />
             ) : null}
             {error ? (
@@ -540,12 +574,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 {success}
               </p>
             ) : null}
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={loading || (isSignup && !termsAccepted)}
-            >
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
               {loading ? t.auth.pleaseWait : copy.submit}
             </Button>
           </form>

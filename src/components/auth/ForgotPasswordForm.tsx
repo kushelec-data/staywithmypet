@@ -23,6 +23,7 @@ export function ForgotPasswordForm() {
       invalidCredentials: t.auth.invalidCredentials,
       emailAlreadyRegistered: t.auth.emailAlreadyRegistered,
       emailNotConfirmed: t.auth.emailNotConfirmed,
+      confirmationEmailFailed: t.auth.confirmationEmailFailed,
       weakPassword: t.auth.weakPassword,
       oauthFailed: t.auth.oauthFailed,
       profileCreateFailed: t.auth.profileCreateFailed,

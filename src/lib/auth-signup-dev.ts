@@ -17,6 +17,16 @@ export function isSignupDebugEnabled(): boolean {
   return process.env.NODE_ENV !== "production";
 }
 
+/** Temporary signup submit tracing — no secrets logged. */
+export function logSignupSubmitStep(
+  step: string,
+  detail?: Record<string, unknown>,
+): void {
+  if (typeof console !== "undefined") {
+    console.info("[auth:signup:submit]", step, detail ?? {});
+  }
+}
+
 export function buildSignupDebugSnapshot(
   data: { user: User | null; session: Session | null },
   error: AuthError | null,
