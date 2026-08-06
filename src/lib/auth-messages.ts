@@ -3,6 +3,7 @@ type AuthMessageKey =
   | "invalidCredentials"
   | "emailAlreadyRegistered"
   | "emailNotConfirmed"
+  | "confirmationEmailFailed"
   | "weakPassword"
   | "oauthFailed"
   | "profileCreateFailed";
@@ -30,6 +31,13 @@ export function formatAuthError(error: unknown, messages: AuthMessages): string 
   }
   if (msg.includes("user already registered") || msg.includes("already been registered")) {
     return messages.emailAlreadyRegistered;
+  }
+  if (
+    msg.includes("error sending confirmation email") ||
+    msg.includes("confirmation email") ||
+    msg.includes("smtp")
+  ) {
+    return messages.confirmationEmailFailed;
   }
   if (msg.includes("password") && (msg.includes("weak") || msg.includes("at least"))) {
     return messages.weakPassword;

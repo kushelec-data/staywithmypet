@@ -2312,6 +2312,8 @@ export const et = {
       "Kinnituse e-kiri saadeti. Kontrolli postkasti ja rämpsposti.",
     emailNotConfirmed:
       "E-post ei ole kinnitatud. Palun kinnita oma e-post või saada kinnituse e-kiri uuesti.",
+    confirmationEmailFailed:
+      "Kinnituse e-kirja ei õnnestunud saata, seega kontot ei loodud. Proovi mõne minuti pärast uuesti või kirjuta aadressile info@staywithmypet.ee, kui probleem püsib.",
     login: {
       title: "Tere tulemast tagasi",
       subtitle: "Logi sisse, et hallata lemmikuid ja broneeringuid.",
@@ -2428,6 +2430,8 @@ export const et = {
     },
     errors: {
       acceptanceRequired: "Jätkamiseks pead kasutustingimustega nõustuma.",
+      signupAcceptanceRequired:
+        "Konto loomiseks palun nõustu kasutustingimuste ja privaatsuspoliitikaga.",
       recordFailed: "Nõusolekut ei õnnestunud salvestada. Proovi uuesti.",
       schemaMissing:
         "Kasutustingimuste nõusolek pole veel seadistatud. Võta ühendust toe.",

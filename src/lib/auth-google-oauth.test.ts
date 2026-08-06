@@ -108,6 +108,7 @@ describe("Google OAuth", () => {
   it("keeps Google button enabled on login and gated by terms on signup only", () => {
     const source = readSource("src/components/auth/AuthForm.tsx");
     expect(source).toContain('disabled={loading || (isSignup && !termsAccepted)}');
+    expect(source).toMatch(/type="submit"[\s\S]*disabled=\{loading\}/);
     expect(source).toContain("{t.auth.continueWithGoogle}");
   });
 });

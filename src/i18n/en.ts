@@ -2305,6 +2305,8 @@ export const en = {
       "Verification email sent. Check your inbox and spam folder.",
     emailNotConfirmed:
       "Email not confirmed. Please verify your email or resend the verification email.",
+    confirmationEmailFailed:
+      "We could not send the verification email, so your account was not created. Please try again in a few minutes or contact us at info@staywithmypet.ee if this continues.",
     login: {
       title: "Welcome back",
       subtitle: "Log in to manage your pets and bookings.",
@@ -2421,6 +2423,8 @@ export const en = {
     },
     errors: {
       acceptanceRequired: "You must accept the Terms of Use to continue.",
+      signupAcceptanceRequired:
+        "Please accept the Terms of Service and Privacy Policy to create your account.",
       recordFailed: "Could not save your acceptance. Please try again.",
       schemaMissing: "Terms acceptance is not set up yet. Please contact support.",
       sessionInvalid: "We could not verify your session. Please sign in again.",
