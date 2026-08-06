@@ -98,10 +98,11 @@ describe("Google OAuth", () => {
 
   it("documents callback route and post-login routing", () => {
     const callbackSource = readSource("src/app/auth/callback/route.ts");
+    expect(callbackSource).toContain("createRouteHandlerClient");
     expect(callbackSource).toContain("exchangeCodeForSession");
     expect(callbackSource).toContain("ensureOAuthProfile");
     expect(callbackSource).toContain("resolvePostLoginPath");
-    expect(callbackSource).toContain('redirectTo(origin, "/login?error=auth")');
+    expect(callbackSource).toContain('redirectTo("/login?error=auth")');
   });
 
   it("keeps Google button enabled on login and gated by terms on signup only", () => {

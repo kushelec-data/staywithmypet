@@ -11,17 +11,12 @@ import {
   recordTermsAcceptance,
   SIGNUP_TERMS_COOKIE,
 } from "@/lib/terms-acceptance";
-import { createClient } from "@/lib/supabase/server";
+import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 
-function redirectTo(origin: string, path: string): NextResponse {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return NextResponse.redirect(`${origin}${normalized}`);
-}
-
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const requestedNext = searchParams.get("next");
   const oauthError = searchParams.get("error");
@@ -34,20 +29,21 @@ export async function GET(request: Request) {
     next: requestedNext ?? null,
   });
 
+  const { supabase, redirectTo } = createRouteHandlerClient(request);
+
   if (oauthError) {
     logAuthCallbackWarn("oauth provider error", {
       oauthError,
       oauthErrorDescription: oauthErrorDescription ?? null,
     });
-    return redirectTo(origin, "/login?error=auth");
+    return redirectTo("/login?error=auth");
   }
 
   if (!code) {
     logAuthCallbackWarn("missing authorization code");
-    return redirectTo(origin, "/login?error=auth");
+    return redirectTo("/login?error=auth");
   }
 
-  const supabase = await createClient();
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
   if (exchangeError) {
@@ -62,7 +58,7 @@ export async function GET(request: Request) {
     logAuthCallbackError("no authenticated user after retries", {
       exchangeFailed: Boolean(exchangeError),
     });
-    return redirectTo(origin, "/login?error=auth");
+    return redirectTo("/login?error=auth");
   }
 
   logAuthCallback("user present", { userId: user.id });
@@ -96,11 +92,15 @@ export async function GET(request: Request) {
       userId: user.id,
       profileId: profile.id,
     });
-    return redirectTo(origin, "/login?error=profile_session");
+    return redirectTo("/login?error=profile_session");
   }
 
   const destination = resolvePostLoginPath(profile, requestedNext);
   logAuthCallback("redirect", { destination, userId: user.id, hasProfile: Boolean(profile) });
 
-  return redirectTo(origin, destination);
+  const response = redirectTo(destination);
+  if (signupTermsCookie === CURRENT_TERMS_VERSION) {
+    response.cookies.set(SIGNUP_TERMS_COOKIE, "", { maxAge: 0, path: "/" });
+  }
+  return response;
 }
