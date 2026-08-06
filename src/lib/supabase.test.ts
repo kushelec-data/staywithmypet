@@ -25,6 +25,8 @@ describe("createClient browser singleton", () => {
   });
 
   it("returns one shared browser client across calls", async () => {
+    vi.stubGlobal("window", { location: { origin: "http://localhost:3000" } });
+
     const { createClient, __resetBrowserClientForTests } = await import("@/lib/supabase");
     __resetBrowserClientForTests();
 
@@ -33,5 +35,7 @@ describe("createClient browser singleton", () => {
 
     expect(first).toBe(second);
     expect(createBrowserClientMock).toHaveBeenCalledTimes(1);
+
+    vi.unstubAllGlobals();
   });
 });

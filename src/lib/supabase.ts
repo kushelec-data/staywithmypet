@@ -11,6 +11,12 @@ export function __resetBrowserClientForTests(): void {
 
 export function createClient() {
   const { url, anonKey } = assertSupabasePublicEnv();
+
+  // Never cache a client created during SSR — only reuse a browser singleton.
+  if (typeof window === "undefined") {
+    return createBrowserClient<Database>(url, anonKey);
+  }
+
   if (!browserClient) {
     browserClient = createBrowserClient<Database>(url, anonKey);
     if (
