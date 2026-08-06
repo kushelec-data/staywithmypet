@@ -2,7 +2,7 @@ import { publicProfileHref } from "@/lib/profile-completeness";
 import { publicPetHref } from "@/lib/public-pet";
 
 /** Last-resort production origin for server-rendered emails when env is unset. */
-const FALLBACK_PRODUCTION_ORIGIN = "https://www.staywithmypet.ee";
+const FALLBACK_PRODUCTION_ORIGIN = "https://staywithmypet.ee";
 
 function normalizeOrigin(origin: string): string {
   return origin.trim().replace(/\/$/, "");
