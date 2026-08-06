@@ -147,10 +147,20 @@ export function isDuplicateReviewError(error: unknown): boolean {
 
   const blob = `${error.message} ${error.details ?? ""} ${error.hint ?? ""}`;
   if (/reviews_one_per_reviewer_per_booking/i.test(blob)) return true;
+  if (/Key \(booking_id, reviewer_id\)/i.test(blob)) return true;
   if (error.code !== "23505") return false;
 
-  // Only treat unique violations on (booking_id, reviewer_id) as "you already reviewed".
   return /booking_id.*reviewer_id|reviewer_id.*booking_id/i.test(blob);
+}
+
+/** Whether the signed-in user may still leave a review for this booking. */
+export function userNeedsToReviewBooking(
+  booking: Pick<Booking, "petParentId" | "petFriendId" | "displayStatus">,
+  userId: string,
+  myReview: Pick<ReviewDisplay, "reviewerId"> | Pick<ReviewRow, "reviewer_id"> | null | undefined,
+): boolean {
+  if (myReview && isReviewAuthoredByUser(myReview, userId)) return false;
+  return reviewTypeForBookingParticipant(booking, userId) !== null;
 }
 
 /** True when the review row belongs to the signed-in user (not another participant). */

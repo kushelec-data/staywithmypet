@@ -1084,6 +1084,9 @@ export const et = {
   },
   reviews: {
     leaveReview: "Jäta arvustus",
+    reviewSubmitted: "Arvustus esitatud",
+    reviewedOn: "Arvustatud {date}",
+    loadingReviewStatus: "Kontrollin arvustust…",
     alreadySubmitted: "Arvustus saadetud — aitäh!",
     duplicateBookingReview: "Oled selle broneeringu kohta juba arvustuse esitanud.",
     modalTitleFriend: "Hinda lemmiku sõpra",

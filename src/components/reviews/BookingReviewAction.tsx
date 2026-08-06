@@ -13,6 +13,7 @@ import {
   reviewTypeForBookingParticipant,
   revieweeIdForType,
   submitReview,
+  userNeedsToReviewBooking,
   type ReviewDisplay,
 } from "@/lib/reviews";
 import { refreshStoredTrustScore } from "@/lib/trust-score-refresh";
@@ -25,7 +26,7 @@ type BookingReviewActionProps = {
   booking: Booking;
   userId: string;
   onSubmitted: () => void;
-  /** When already known (e.g. bookings list). */
+  /** Optional prefetch from list/dashboard queries; always verified on mount. */
   existingReview?: ReviewDisplay | null;
   /** Override default “Leave review” label. */
   buttonLabel?: string;
@@ -45,6 +46,7 @@ export function BookingReviewAction({
   const supabase = useMemo(() => createClient(), []);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingReview, setLoadingReview] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [existingReview, setExistingReview] = useState<ReviewDisplay | null>(() =>
     isReviewAuthoredByUser(existingReviewProp, userId) ? existingReviewProp ?? null : null,
@@ -66,18 +68,23 @@ export function BookingReviewAction({
   }, [supabase, userId, booking.id]);
 
   useEffect(() => {
-    if (existingReviewProp !== undefined) {
-      setExistingReview(
-        isReviewAuthoredByUser(existingReviewProp, userId) ? existingReviewProp : null,
-      );
-      return;
-    }
     let cancelled = false;
-    void fetchMyReviewDisplayForBooking(supabase, userId, booking.id).then((row) => {
-      if (!cancelled) {
-        setExistingReview(isReviewAuthoredByUser(row, userId) ? row : null);
-      }
-    });
+    setLoadingReview(true);
+
+    if (isReviewAuthoredByUser(existingReviewProp, userId)) {
+      setExistingReview(existingReviewProp ?? null);
+    }
+
+    void fetchMyReviewDisplayForBooking(supabase, userId, booking.id)
+      .then((row) => {
+        if (!cancelled) {
+          setExistingReview(isReviewAuthoredByUser(row, userId) ? row : null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingReview(false);
+      });
+
     return () => {
       cancelled = true;
     };
@@ -91,10 +98,7 @@ export function BookingReviewAction({
   async function handleOpen() {
     setError(null);
     const row = await loadExistingReview();
-    if (row) {
-      setError(r.duplicateBookingReview);
-      return;
-    }
+    if (row) return;
     setOpen(true);
   }
 
@@ -103,10 +107,7 @@ export function BookingReviewAction({
     setError(null);
     try {
       const row = await loadExistingReview();
-      if (row) {
-        setError(r.duplicateBookingReview);
-        return;
-      }
+      if (row) return;
 
       await submitReview(supabase, userId, {
         bookingId: booking.id,
@@ -131,7 +132,8 @@ export function BookingReviewAction({
       if (isDuplicateReviewError(err)) {
         const own = await loadExistingReview();
         if (own) {
-          setError(r.duplicateBookingReview);
+          setOpen(false);
+          setError(null);
         } else {
           setError(formatReviewError(err, { duplicateMessage: r.duplicateBookingReview }));
         }
@@ -143,8 +145,16 @@ export function BookingReviewAction({
     }
   }
 
+  if (loadingReview) {
+    return <p className="text-xs text-muted">{r.loadingReviewStatus}</p>;
+  }
+
   if (ownExistingReview) {
     return <SubmittedReviewCard review={ownExistingReview} compact />;
+  }
+
+  if (!userNeedsToReviewBooking(booking, userId, ownExistingReview)) {
+    return null;
   }
 
   return (

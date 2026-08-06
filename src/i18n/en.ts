@@ -1075,6 +1075,9 @@ export const en = {
   },
   reviews: {
     leaveReview: "Leave review",
+    reviewSubmitted: "Review submitted",
+    reviewedOn: "Reviewed on {date}",
+    loadingReviewStatus: "Checking review…",
     alreadySubmitted: "Review submitted — thank you!",
     duplicateBookingReview: "You have already submitted a review for this booking.",
     modalTitleFriend: "Review your Pet Friend",

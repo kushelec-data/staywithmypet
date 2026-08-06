@@ -7,7 +7,10 @@ import { notifyDashboardRefresh } from "@/lib/dashboard-refresh";
 import { formatBookingDatesForRow } from "@/lib/date-format";
 import type { Booking } from "@/lib/bookings";
 import { DASHBOARD_CALLOUT_CLASS } from "@/lib/dashboard-theme";
+import { fetchMyReviewForBooking } from "@/lib/reviews";
+import { createClient } from "@/lib/supabase";
 import { useProfile } from "@/context/ProfileContext";
+import { useEffect, useMemo, useState } from "react";
 
 type DashboardReviewPromptBannerProps = {
   booking: Booking;
@@ -21,6 +24,9 @@ export function DashboardReviewPromptBanner({
   const { t, locale } = useLanguage();
   const { user } = useAuth();
   const { refreshProfile } = useProfile();
+  const supabase = useMemo(() => createClient(), []);
+  const [checkingReview, setCheckingReview] = useState(true);
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
   const copy = t.dashboardHome;
   const dateLabel = formatBookingDatesForRow(
     {
@@ -31,9 +37,35 @@ export function DashboardReviewPromptBanner({
     { locale },
   );
 
-  if (!user) return null;
+  useEffect(() => {
+    if (!user?.id) {
+      setCheckingReview(false);
+      setAlreadyReviewed(false);
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingReview(true);
+    void fetchMyReviewForBooking(supabase, user.id, booking.id)
+      .then((review) => {
+        if (!cancelled) setAlreadyReviewed(Boolean(review));
+      })
+      .catch(() => {
+        if (!cancelled) setAlreadyReviewed(false);
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingReview(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, user?.id, booking.id]);
+
+  if (!user || checkingReview || alreadyReviewed) return null;
 
   function handleSubmitted() {
+    setAlreadyReviewed(true);
     void refreshProfile({ background: true });
     notifyDashboardRefresh();
     onReviewDone();
