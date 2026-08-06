@@ -9,34 +9,26 @@ type TehnopolAcceleratorBadgeProps = {
 
 export function TehnopolAcceleratorBadge({ className = "" }: TehnopolAcceleratorBadgeProps) {
   const { t } = useLanguage();
-  const copy = t.hero.tehnopolBadge;
+  const copy = t.hero.tehnopolBadge.primary;
 
   return (
     <div
-      className={`tehnopol-badge-in w-fit max-w-[680px] rounded-[15px] border border-brand-teal/10 bg-gradient-to-br from-mint/25 via-mint/10 to-lavender/15 px-3 py-2 sm:px-3.5 sm:py-2.5 ${className}`}
+      className={`tehnopol-badge-in w-fit max-w-[min(100%,34rem)] rounded-xl border border-brand-teal/15 bg-gradient-to-br from-mint/30 via-mint/15 to-brand-teal/5 px-2.5 py-1.5 sm:px-3 sm:py-2 ${className}`}
       role="note"
-      aria-label={`${copy.primary}. ${copy.secondary}`}
+      aria-label={copy}
     >
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-2.5">
         <Image
           src="/images/partners/tehnopol-logo.jpg"
-          alt="Tehnopol Startup Incubator"
+          alt="Tehnopol"
           width={120}
           height={30}
-          className="h-[26px] w-auto shrink-0 sm:h-[30px]"
+          className="h-[22px] w-auto shrink-0 sm:h-[24px]"
           priority
         />
-        <div className="min-w-0 text-left">
-          <p className="mb-0.5 text-[0.5625rem] font-semibold uppercase tracking-[0.16em] text-brand-teal/75">
-            {copy.label}
-          </p>
-          <p className="text-[0.8125rem] font-semibold leading-snug text-foreground sm:text-sm">
-            {copy.primary}
-          </p>
-          <p className="mt-0.5 text-[0.6875rem] leading-snug text-muted sm:text-xs">
-            {copy.secondary}
-          </p>
-        </div>
+        <p className="min-w-0 text-left text-[0.6875rem] font-medium leading-snug text-foreground/90 sm:text-xs">
+          {copy}
+        </p>
       </div>
     </div>
   );

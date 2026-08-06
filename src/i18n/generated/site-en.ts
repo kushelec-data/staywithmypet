@@ -27,10 +27,10 @@ export const siteEnPartial = {
     },
   },
   hero: {
-    eyebrow: "Built for Responsible Pet Sharing",
-    title: "Trusted local pet care for happier pets.",
+    eyebrow: "Estonia's first membership-based pet care platform.",
+    title: "Someone who'll care for your pet\nas much as you do.",
     subtitle:
-      "Connect with verified local Pet Friends for walks, companionship, and home-based pet care.",
+      "Find a trusted Pet Friend near you, so you can head out with peace of mind, knowing your pet is enjoying care, attention and companionship.",
   },
   faq: {
     badge: "FAQ",

@@ -141,10 +141,10 @@ export const et = {
     },
   },
   hero: {
-    eyebrow: "EESTI ESIMENE LEMMIKLOOMADE JAGAMISE KOGUKOND",
-    title: "Usaldusväärne kodune lemmiklooma hooldus sinu lähedal.",
+    eyebrow: "Eesti esimene liikmelisuspõhine lemmikloomahoiuplatvorm",
+    title: "Keegi, kes hoolib su lemmikust\nsama palju kui sina.",
     subtitle:
-      "Ühenda end kinnitatud kohalike loomasõpradega jalutuskäikudeks, seltsiks ja koduseks hoolduseks.",
+      "Leia usaldusväärne loomasõber oma kodu lähedalt, et saaksid rahuliku südamega ära käia, teades, et sinu lemmik saab samal ajal hoolt, tähelepanu ja seltsi.",
     findCareCta: "Leia lemmikuhoidja",
     becomeFriendCta: "Hakka loomasõbraks",
     trustCards: {
@@ -153,9 +153,7 @@ export const et = {
       safeChat: "Arvustused pärast hooldust",
     },
     tehnopolBadge: {
-      label: "VALITUD PROGRAMMI",
-      primary: "StayWithMyPet valiti Tehnopoli Startup Inkubaatorisse 2026",
-      secondary: "Oleme üks üheksast programmi valitud iduettevõttest.",
+      primary: "Valitud Tehnopol Kiirendisse 2026 – üks vaid 9 väljavalitud iduettevõttest.",
     },
     puppyWelcome: {
       ariaLabel: "Sõbralik kutsika abi",

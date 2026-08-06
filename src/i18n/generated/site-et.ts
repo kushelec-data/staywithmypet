@@ -27,10 +27,10 @@ export const siteEtPartial = {
     },
   },
   hero: {
-    eyebrow: "Loodud vastutustundlikuks lemmiklooma jagamiseks",
-    title: "Usaldusväärne kodune lemmiklooma hooldus sinu lähedal.",
+    eyebrow: "Eesti esimene liikmelisuspõhine lemmikloomahoiuplatvorm",
+    title: "Keegi, kes hoolib su lemmikust\nsama palju kui sina.",
     subtitle:
-      "Ühenda end kinnitatud kohalike loomasõpradega jalutuskäikudeks, seltsiks ja koduseks hoolduseks.",
+      "Leia usaldusväärne loomasõber oma kodu lähedalt, et saaksid rahuliku südamega ära käia, teades, et sinu lemmik saab samal ajal hoolt, tähelepanu ja seltsi.",
   },
   faq: {
     badge: "KKK",

@@ -65,23 +65,23 @@ export function HeroSection() {
               {t.hero.eyebrow}
             </p>
 
-            <TehnopolAcceleratorBadge className="mx-auto mt-4 mb-5 lg:mx-0" />
-
             <h1
               key={locale}
-              className={`${HEADING_HERO} mx-auto max-w-xl whitespace-pre-line lg:mx-0`}
+              className={`${HEADING_HERO} mx-auto mt-4 max-w-xl whitespace-pre-line sm:mt-5 lg:mx-0`}
             >
               {t.hero.title}
             </h1>
 
             <p
               key={`${locale}-subtitle`}
-              className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-muted sm:text-base lg:mx-0"
+              className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted sm:text-base lg:mx-0"
             >
               {t.hero.subtitle}
             </p>
 
-            <div className="mx-auto mt-6 flex w-full max-w-sm flex-col gap-3 sm:mt-7 sm:max-w-none sm:flex-row sm:justify-center lg:mx-0 lg:justify-start">
+            <TehnopolAcceleratorBadge className="mx-auto mt-4 sm:mt-5 lg:mx-0" />
+
+            <div className="mx-auto mt-5 flex w-full max-w-sm flex-col gap-3 sm:mt-6 sm:max-w-none sm:flex-row sm:justify-center lg:mx-0 lg:justify-start">
               <Button
                 href="/find-care"
                 size="lg"

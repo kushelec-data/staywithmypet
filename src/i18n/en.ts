@@ -141,10 +141,10 @@ export const en = {
     },
   },
   hero: {
-    eyebrow: "ESTONIA'S FIRST PET SHARING COMMUNITY",
-    title: "Trusted local pet care for happier pets.",
+    eyebrow: "Estonia's first membership-based pet care platform.",
+    title: "Someone who'll care for your pet\nas much as you do.",
     subtitle:
-      "Connect with verified local Pet Friends for walks, companionship, and home-based pet care.",
+      "Find a trusted Pet Friend near you, so you can head out with peace of mind, knowing your pet is enjoying care, attention and companionship.",
     findCareCta: "Find Pet Care",
     becomeFriendCta: "Become a Pet Friend",
     trustCards: {
@@ -153,9 +153,8 @@ export const en = {
       safeChat: "Reviews after completed care",
     },
     tehnopolBadge: {
-      label: "ACCELERATOR SELECTED",
-      primary: "Selected for the Tehnopol Startup Incubator 2026",
-      secondary: "StayWithMyPet is one of 9 startups selected for the programme.",
+      primary:
+        "Selected for the Tehnopol Accelerator 2026 — one of only 9 startups chosen.",
     },
     puppyWelcome: {
       ariaLabel: "Friendly puppy assistant",
