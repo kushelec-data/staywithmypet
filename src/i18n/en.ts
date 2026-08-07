@@ -2499,7 +2499,7 @@ export const en = {
     errors: {
       acceptanceRequired: "You must accept the Terms of Use to continue.",
       signupAcceptanceRequired:
-        "Please accept the Terms of Service and Privacy Policy to create your account.",
+        "Please accept the Terms of Service and Privacy Policy to continue.",
       recordFailed: "Could not save your acceptance. Please try again.",
       schemaMissing: "Terms acceptance is not set up yet. Please contact support.",
       sessionInvalid: "We could not verify your session. Please sign in again.",

@@ -530,6 +530,45 @@ select.input-field {
   }
 }
 
+@keyframes terms-acceptance-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.terms-acceptance-highlight {
+  box-sizing: border-box;
+  border: 2px solid rgb(220 38 38 / 0.85);
+  background-color: rgb(254 242 242);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .terms-acceptance-shake {
+    animation: terms-acceptance-shake 350ms ease-in-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terms-acceptance-shake {
+    animation: none;
+  }
+}
+
 .profile-edit-panel--editing button:not(:disabled):focus-visible,
 .profile-edit-panel--editing [role="radio"]:focus-visible {
   outline: 2px solid #2e6b3f;

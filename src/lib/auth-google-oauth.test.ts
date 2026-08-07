@@ -105,9 +105,11 @@ describe("Google OAuth", () => {
     expect(callbackSource).toContain('redirectTo("/login?error=auth")');
   });
 
-  it("keeps Google button enabled on login and gated by terms on signup only", () => {
+  it("keeps Google button enabled on signup until loading starts", () => {
     const source = readSource("src/components/auth/AuthForm.tsx");
-    expect(source).toContain('disabled={loading || (isSignup && !termsAccepted)}');
+    expect(source).toMatch(/onClick=\{handleGoogle\}/);
+    expect(source).toMatch(/disabled=\{loading\}/);
+    expect(source).not.toContain("disabled={loading || (isSignup && !termsAccepted)}");
     expect(source).toMatch(/type="submit"[\s\S]*disabled=\{loading\}/);
     expect(source).toContain("{t.auth.continueWithGoogle}");
   });

@@ -3,6 +3,11 @@
 import { TermsLegalLink } from "@/components/legal/TermsLegalLink";
 import { useLanguage } from "@/context/LanguageContext";
 import { PRIVACY_PATH, SAFETY_PATH, TERMS_PATH } from "@/lib/terms-acceptance";
+import {
+  TERMS_ACCEPTANCE_HIGHLIGHT_CLASS,
+  TERMS_ACCEPTANCE_SHAKE_CLASS,
+  TERMS_SHAKE_ANIMATION_NAME,
+} from "@/lib/signup-terms-validation";
 import type { RefObject } from "react";
 
 export type TermsAcceptanceVariant = "signup" | "membership" | "booking";
@@ -18,6 +23,11 @@ type TermsAcceptanceCheckboxProps = {
   error?: string | null;
   /** Highlights the checkbox when validation failed. */
   invalid?: boolean;
+  /** Red outline and background on the whole Terms block. */
+  highlighted?: boolean;
+  /** Runs the one-shot shake animation on the Terms block. */
+  shaking?: boolean;
+  onShakeEnd?: () => void;
   inputRef?: RefObject<HTMLInputElement | null>;
   containerRef?: RefObject<HTMLDivElement | null>;
   /** When false, terms are validated in app logic instead of HTML5 constraint validation. */
@@ -33,6 +43,9 @@ export function TermsAcceptanceCheckbox({
   className = "",
   error = null,
   invalid = false,
+  highlighted = false,
+  shaking = false,
+  onShakeEnd,
   inputRef,
   containerRef,
   required = true,
@@ -66,10 +79,27 @@ export function TermsAcceptanceCheckbox({
     );
 
   const showInvalid = invalid || Boolean(error);
+  const showHighlight = highlighted || showInvalid;
   const errorId = `${id}-error`;
 
   return (
-    <div ref={containerRef} className={`flex items-start gap-3 ${className}`.trim()}>
+    <div
+      ref={containerRef}
+      aria-describedby={error ? errorId : undefined}
+      onAnimationEnd={(event) => {
+        if (event.animationName === TERMS_SHAKE_ANIMATION_NAME) {
+          onShakeEnd?.();
+        }
+      }}
+      className={[
+        "flex min-w-0 items-start gap-3",
+        showHighlight ? TERMS_ACCEPTANCE_HIGHLIGHT_CLASS : "",
+        shaking ? TERMS_ACCEPTANCE_SHAKE_CLASS : "",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <input
         ref={inputRef}
         id={id}
@@ -77,7 +107,7 @@ export function TermsAcceptanceCheckbox({
         checked={checked}
         disabled={disabled}
         onChange={(event) => onCheckedChange(event.target.checked)}
-        aria-invalid={showInvalid}
+        aria-invalid={showInvalid || undefined}
         aria-describedby={error ? errorId : undefined}
         required={required}
         className={`mt-0.5 h-4 w-4 shrink-0 rounded text-brand-teal focus:ring-2 disabled:opacity-50 ${

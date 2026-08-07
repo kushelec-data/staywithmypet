@@ -2504,7 +2504,7 @@ export const et = {
     errors: {
       acceptanceRequired: "Jätkamiseks pead kasutustingimustega nõustuma.",
       signupAcceptanceRequired:
-        "Konto loomiseks palun nõustu kasutustingimuste ja privaatsuspoliitikaga.",
+        "Jätkamiseks nõustu palun kasutustingimuste ja privaatsuspoliitikaga.",
       recordFailed: "Nõusolekut ei õnnestunud salvestada. Proovi uuesti.",
       schemaMissing:
         "Kasutustingimuste nõusolek pole veel seadistatud. Võta ühendust toe.",

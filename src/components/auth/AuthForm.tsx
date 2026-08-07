@@ -27,6 +27,10 @@ import { rateLimitMessage, checkRateLimit } from "@/lib/security/rate-limit";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { TermsAcceptanceCheckbox } from "@/components/legal/TermsAcceptanceCheckbox";
 import { CURRENT_TERMS_VERSION, SIGNUP_TERMS_COOKIE } from "@/lib/terms-acceptance";
+import {
+  focusSignupTermsField,
+  shouldApplyTermsShake,
+} from "@/lib/signup-terms-validation";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -73,6 +77,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [resendError, setResendError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
+  const [termsShaking, setTermsShaking] = useState(false);
   const termsContainerRef = useRef<HTMLDivElement>(null);
   const termsCheckboxRef = useRef<HTMLInputElement>(null);
   const showSignupDebug = isSignupDebugEnabled();
@@ -82,17 +87,28 @@ export function AuthForm({ mode }: AuthFormProps) {
     [],
   );
 
-  const focusSignupTermsField = useCallback(() => {
-    termsContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const triggerTermsShake = useCallback(() => {
+    if (!shouldApplyTermsShake()) {
+      setTermsShaking(false);
+      return;
+    }
+    setTermsShaking(false);
     requestAnimationFrame(() => {
-      termsCheckboxRef.current?.focus({ preventScroll: true });
+      setTermsShaking(true);
     });
   }, []);
+
+  const blockSignupForMissingTerms = useCallback(() => {
+    setTermsError(t.termsAcceptance.errors.signupAcceptanceRequired);
+    focusSignupTermsField(termsContainerRef.current, termsCheckboxRef.current);
+    triggerTermsShake();
+  }, [t.termsAcceptance.errors.signupAcceptanceRequired, triggerTermsShake]);
 
   const handleTermsAcceptedChange = useCallback((checked: boolean) => {
     setTermsAccepted(checked);
     if (checked) {
       setTermsError(null);
+      setTermsShaking(false);
     }
   }, []);
 
@@ -203,14 +219,12 @@ export function AuthForm({ mode }: AuthFormProps) {
     const generation = ++submitGenerationRef.current;
 
     setError(null);
-    setTermsError(null);
     setSuccess(null);
     setInfo(null);
     setSignupDebug(null);
     setEmailNotConfirmed(false);
     setResendSuccess(null);
     setResendError(null);
-    setLoading(true);
 
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") ?? "").trim();
@@ -220,6 +234,17 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
     const passwordFromForm = String(form.get("password") ?? "");
     const passwordField = isSignup ? password || passwordFromForm : passwordFromForm;
+
+    if (isSignup && !termsAccepted) {
+      if (isSubmitActive(generation)) {
+        blockSignupForMissingTerms();
+      }
+      return;
+    }
+
+    setTermsError(null);
+    setTermsShaking(false);
+    setLoading(true);
 
     try {
       const rateAction = isSignup ? "auth_signup" : "auth_login";
@@ -232,13 +257,6 @@ export function AuthForm({ mode }: AuthFormProps) {
       }
 
       if (isSignup) {
-        if (!termsAccepted) {
-          if (isSubmitActive(generation)) {
-            setTermsError(t.termsAcceptance.errors.signupAcceptanceRequired);
-            focusSignupTermsField();
-          }
-          return;
-        }
         if (!passwordMeetsPolicy(passwordField)) {
           if (isSubmitActive(generation)) setError(t.auth.weakPassword);
           return;
@@ -344,15 +362,17 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError(null);
     setSuccess(null);
     setInfo(null);
-    setLoading(true);
 
     if (isSignup && !termsAccepted) {
       if (isSubmitActive(generation)) {
-        setError(t.termsAcceptance.errors.acceptanceRequired);
-        setLoading(false);
+        blockSignupForMissingTerms();
       }
       return;
     }
+
+    setTermsError(null);
+    setTermsShaking(false);
+    setLoading(true);
 
     const oauthReturn =
       resolveLoginReturnPath(searchParams.get("next")) ?? DASHBOARD_PATH;
@@ -438,7 +458,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             variant="secondary"
             className="w-full"
             size="lg"
-            disabled={loading || (isSignup && !termsAccepted)}
+            disabled={loading}
             onClick={handleGoogle}
           >
             {t.auth.continueWithGoogle}
@@ -533,6 +553,9 @@ export function AuthForm({ mode }: AuthFormProps) {
                 required={false}
                 error={termsError}
                 invalid={Boolean(termsError)}
+                highlighted={Boolean(termsError)}
+                shaking={termsShaking}
+                onShakeEnd={() => setTermsShaking(false)}
                 inputRef={termsCheckboxRef}
                 containerRef={termsContainerRef}
               />

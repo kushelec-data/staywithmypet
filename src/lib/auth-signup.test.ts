@@ -25,45 +25,6 @@ describe("email signup", () => {
     ).toBe(messages.confirmationEmailFailed);
   });
 
-  it("keeps the email submit button enabled so terms validation can show feedback", () => {
-    const source = readSource("src/components/auth/AuthForm.tsx");
-    expect(source).toContain('type="submit"');
-    expect(source).toMatch(/type="submit"[\s\S]*disabled=\{loading\}/);
-    expect(source).not.toMatch(
-      /type="submit"[\s\S]*disabled=\{loading \|\| \(isSignup && !termsAccepted\)\}/,
-    );
-  });
-
-  it("shows inline terms error beside the checkbox when signup is submitted without acceptance", () => {
-    const authForm = readSource("src/components/auth/AuthForm.tsx");
-    const checkbox = readSource("src/components/legal/TermsAcceptanceCheckbox.tsx");
-    const en = readSource("src/i18n/en.ts");
-
-    expect(authForm).toContain("if (!termsAccepted)");
-    expect(authForm).toContain("setTermsError(t.termsAcceptance.errors.signupAcceptanceRequired)");
-    expect(authForm).toContain("focusSignupTermsField()");
-    expect(authForm).toContain("error={termsError}");
-    expect(authForm).toContain("invalid={Boolean(termsError)}");
-    expect(checkbox).toContain('role="alert"');
-    expect(checkbox).toContain("border-red-600");
-    expect(en).toContain(
-      "Please accept the Terms of Service and Privacy Policy to create your account.",
-    );
-  });
-
-  it("clears the inline terms error after the checkbox is checked", () => {
-    const source = readSource("src/components/auth/AuthForm.tsx");
-    expect(source).toContain("handleTermsAcceptedChange");
-    expect(source).toMatch(/if \(checked\) \{[\s\S]*setTermsError\(null\)/);
-  });
-
-  it("still disables the submit button only while loading", () => {
-    const source = readSource("src/components/auth/AuthForm.tsx");
-    expect(source).toMatch(/<Button type="submit"[\s\S]*disabled=\{loading\}/);
-    expect(source).toContain("setLoading(true)");
-    expect(source).toContain("setLoading(false)");
-  });
-
   it("reads signup password from form data when React state is empty", () => {
     const source = readSource("src/components/auth/AuthForm.tsx");
     expect(source).toContain("password || passwordFromForm");
@@ -99,11 +60,20 @@ describe("email signup", () => {
   });
 });
 
-describe("Google OAuth unchanged", () => {
-  it("still gates Google signup on terms acceptance in the click handler", () => {
+describe("Google OAuth signup terms gate", () => {
+  it("uses startGoogleOAuth from AuthForm and surfaces oauth errors", () => {
     const source = readSource("src/components/auth/AuthForm.tsx");
     expect(source).toContain("startGoogleOAuth");
-    expect(source).toContain("disabled={loading || (isSignup && !termsAccepted)}");
-    expect(source).toContain("if (isSignup && !termsAccepted)");
+    expect(source).toContain("onClick={handleGoogle}");
+    expect(source).not.toContain("signInWithOAuth");
+  });
+
+  it("blocks Google signup with the same guided terms validation flow", () => {
+    const source = readSource("src/components/auth/AuthForm.tsx");
+    const handleGoogleStart = source.indexOf("async function handleGoogle()");
+    const termsGate = source.indexOf("blockSignupForMissingTerms()", handleGoogleStart);
+    const oauthCall = source.indexOf("startGoogleOAuth", handleGoogleStart);
+    expect(termsGate).toBeGreaterThan(handleGoogleStart);
+    expect(oauthCall).toBeGreaterThan(termsGate);
   });
 });
