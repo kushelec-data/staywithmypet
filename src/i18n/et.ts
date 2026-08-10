@@ -206,7 +206,7 @@ export const et = {
   search: {
     title: "Leia lemmikloom või loomasõber enda lähedalt",
     subtitle:
-      "Tutvu loomaomanike ja loomasõpradega enda piirkonnas. Tahad veeta aiga lemmikloomaga või otsid oma loomale hoolivat kaaslast? Esimene samm algab siit.",
+      "Tutvu loomaomanike ja loomasõpradega enda piirkonnas. Tahad veeta aega lemmikloomaga või otsid oma loomale hoolivat kaaslast? Esimene samm algab siit.",
     petFriend: {
       role: "Loomasõber",
       label: "Otsid lemmiklooma, kellega aega veeta?",
