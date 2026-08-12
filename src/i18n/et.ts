@@ -148,6 +148,10 @@ export const et = {
       "Stay With My Pet ühendab loomaomanikud usaldusväärsete loomasõpradega, kes pakuvad sinu lemmikule turvalist kodust hoolt, seltsi ja tuge just siis, kui seda kõige rohkem vaja on.",
     findCareCta: "Leia hoidja",
     becomeFriendCta: "Leia lemmik",
+    audienceChoices: {
+      petParent: "Mul on lemmikloom",
+      petFriend: "Soovin lemmikut hoida",
+    },
     trustCards: {
       verified: "Kinnitatud profiilid",
       reviews: "Arvustused ja hinnangud",

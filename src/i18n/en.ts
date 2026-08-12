@@ -147,6 +147,10 @@ export const en = {
       "Stay With My Pet connects Pet Parents with trusted animal lovers who provide safe, home-based care, companionship, and support when you need it most.",
     findCareCta: "Find Care",
     becomeFriendCta: "Find Pets",
+    audienceChoices: {
+      petParent: "I have a Pet",
+      petFriend: "I want to care for a Pet",
+    },
     trustCards: {
       verified: "Verified profiles",
       reviews: "Reviews & ratings",
