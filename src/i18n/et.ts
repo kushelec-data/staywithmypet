@@ -147,6 +147,10 @@ export const et = {
       "Leia usaldusväärne loomasõber oma kodu lähedalt, et saaksid rahuliku südamega ära käia, teades, et sinu lemmik saab samal ajal hoolt, tähelepanu ja seltsi.",
     findCareCta: "Leia lemmikuhoidja",
     becomeFriendCta: "Hakka loomasõbraks",
+    audienceChoices: {
+      petParent: "Mul on lemmikloom",
+      petFriend: "Soovin lemmikut hoida",
+    },
     trustCards: {
       verified: "Kinnitatud liikmeprofiilid",
       reviews: "Turvalised liikmelisuse maksed",

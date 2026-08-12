@@ -1,11 +1,41 @@
 "use client";
 
+import Link from "next/link";
 import { HeroPuppyAssistant } from "@/components/home/HeroPuppyAssistant";
 import { HeroStoryCarousel } from "@/components/home/HeroStoryCarousel";
 import { TehnopolAcceleratorBadge } from "@/components/home/TehnopolAcceleratorBadge";
-import { Button } from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { CONTENT_CONTAINER, HEADING_HERO } from "@/lib/layout";
+
+function HeroAudienceChoices({
+  petParentLabel,
+  petFriendLabel,
+}: {
+  petParentLabel: string;
+  petFriendLabel: string;
+}) {
+  const choiceClassName =
+    "btn-interactive flex min-h-[48px] w-full items-center justify-center rounded-2xl px-4 py-3 text-center text-sm font-semibold leading-snug shadow-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal sm:min-h-[52px] sm:px-5 sm:text-base";
+
+  return (
+    <div className="mx-auto mt-6 w-full max-w-sm sm:mt-7 sm:max-w-none lg:mx-0">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        <Link
+          href="/find-care"
+          className={`${choiceClassName} border-2 border-transparent bg-brand-teal text-white shadow-brand-teal/20 hover:bg-brand-teal-hover`}
+        >
+          <span className="min-w-0 text-balance">{petParentLabel}</span>
+        </Link>
+        <Link
+          href="/find-pets"
+          className={`${choiceClassName} border-2 border-brand-teal/20 bg-lavender text-foreground hover:border-brand-teal/35 hover:bg-pastel-blue/50`}
+        >
+          <span className="min-w-0 text-balance">{petFriendLabel}</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 const TRUST_CARD_KEYS = ["verified", "reviews", "safeChat"] as const;
 const TRUST_ICONS = ["✓", "★", "💬"] as const;
@@ -81,23 +111,10 @@ export function HeroSection() {
 
             <TehnopolAcceleratorBadge className="mx-auto mt-4 sm:mt-5 lg:mx-0" />
 
-            <div className="mx-auto mt-5 flex w-full max-w-sm flex-col gap-3 sm:mt-6 sm:max-w-none sm:flex-row sm:justify-center lg:mx-0 lg:justify-start">
-              <Button
-                href="/find-care"
-                size="lg"
-                className="shadow-lg shadow-brand-teal/25 sm:min-w-[11.5rem]"
-              >
-                {t.hero.findCareCta}
-              </Button>
-              <Button
-                href="/find-pets"
-                variant="outline"
-                size="lg"
-                className="border-border/80 bg-surface/60 font-medium text-muted shadow-none hover:bg-surface"
-              >
-                {t.hero.becomeFriendCta}
-              </Button>
-            </div>
+            <HeroAudienceChoices
+              petParentLabel={t.hero.audienceChoices.petParent}
+              petFriendLabel={t.hero.audienceChoices.petFriend}
+            />
           </div>
 
           <div className="mx-auto w-full min-w-0 max-w-md lg:max-w-none">

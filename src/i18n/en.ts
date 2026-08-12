@@ -147,6 +147,10 @@ export const en = {
       "Find a trusted Pet Friend near you, so you can head out with peace of mind, knowing your pet is enjoying care, attention and companionship.",
     findCareCta: "Find Pet Care",
     becomeFriendCta: "Become a Pet Friend",
+    audienceChoices: {
+      petParent: "I have a Pet",
+      petFriend: "I want to care for a Pet",
+    },
     trustCards: {
       verified: "Verified member profiles",
       reviews: "Secure membership payments",
