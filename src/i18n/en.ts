@@ -2436,6 +2436,7 @@ export const en = {
         "I own a pet and need care or companionship for them.",
       petFriendDescription:
         "I want to spend time with pets and help Pet Parents.",
+      selectionRequired: "Please choose how you'd like to use StayWithMyPet.",
       continue: "Continue to dashboard",
       saving: "Saving…",
       loading: "Loading…",

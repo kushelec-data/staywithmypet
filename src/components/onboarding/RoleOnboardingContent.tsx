@@ -8,19 +8,17 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
 import { DASHBOARD_PATH } from "@/lib/auth-routing";
-import { initialActiveModeForRole } from "@/lib/profile-mode";
-import { saveUserRole, type ProfileRole } from "@/lib/profile-setup";
+import { saveUserRole } from "@/lib/profile-setup";
 import { needsRoleOnboarding } from "@/lib/profile-utils";
+import {
+  canSaveOnboardingRole,
+  initialOnboardingRoleSelection,
+  onboardingSelectionFromProfile,
+  type OnboardingRole,
+} from "@/lib/role-onboarding";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-
-/** Roles offered during first-time onboarding (existing `both` profiles are unchanged). */
-type OnboardingRole = Exclude<ProfileRole, "both">;
-
-function isOnboardingRole(value: string | null | undefined): value is OnboardingRole {
-  return value === "pet_parent" || value === "pet_friend";
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function RoleOnboardingShell({ children }: { children: React.ReactNode }) {
   return (
@@ -40,9 +38,10 @@ export function RoleOnboardingContent() {
   const { profile, loading: profileLoading, refreshProfile, setProfileRow } = useProfile();
   const supabase = useMemo(() => createClient(), []);
 
-  const [role, setRole] = useState<OnboardingRole>("pet_friend");
+  const [role, setRole] = useState<OnboardingRole | null>(initialOnboardingRoleSelection());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const choicesRef = useRef<HTMLFieldSetElement>(null);
 
   const roleOptions: {
     value: OnboardingRole;
@@ -61,6 +60,11 @@ export function RoleOnboardingContent() {
     },
   ];
 
+  const handleRoleChange = useCallback((next: OnboardingRole) => {
+    setRole(next);
+    setError(null);
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -73,17 +77,23 @@ export function RoleOnboardingContent() {
   }, [authLoading, user, profile, profileLoading, router]);
 
   useEffect(() => {
-    if (!profile?.role || !needsRoleOnboarding(profile)) return;
-    if (isOnboardingRole(profile.role)) {
-      setRole(profile.role);
-      return;
+    const fromProfile = onboardingSelectionFromProfile(profile);
+    if (fromProfile) {
+      setRole(fromProfile);
     }
-    setRole(initialActiveModeForRole(profile.role));
   }, [profile]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
+
+    if (!canSaveOnboardingRole(role)) {
+      setError(t.onboarding.role.selectionRequired);
+      choicesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const firstChoice = choicesRef.current?.querySelector<HTMLInputElement>('input[type="radio"]');
+      firstChoice?.focus({ preventScroll: true });
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -123,6 +133,8 @@ export function RoleOnboardingContent() {
     );
   }
 
+  const showInvalid = Boolean(error);
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:py-14">
       <div className="mb-6 flex justify-center lg:mb-8">
@@ -143,16 +155,21 @@ export function RoleOnboardingContent() {
             </div>
 
             {error ? (
-              <p
-                className={STATUS_ALERT_ERROR_CLASS}
-                role="alert"
-              >
+              <p className={STATUS_ALERT_ERROR_CLASS} role="alert">
                 {error}
               </p>
             ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <fieldset>
+              <fieldset
+                ref={choicesRef}
+                aria-invalid={showInvalid || undefined}
+                className={
+                  showInvalid
+                    ? "rounded-2xl border-2 border-red-600 bg-red-50 p-3"
+                    : undefined
+                }
+              >
                 <legend className="sr-only">{t.onboarding.role.legend}</legend>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {roleOptions.map((option) => (
@@ -169,7 +186,7 @@ export function RoleOnboardingContent() {
                         name="role"
                         value={option.value}
                         checked={role === option.value}
-                        onChange={() => setRole(option.value)}
+                        onChange={() => handleRoleChange(option.value)}
                         className="sr-only"
                       />
                       <span className="font-heading text-sm font-semibold text-foreground">

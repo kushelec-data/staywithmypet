@@ -53,12 +53,15 @@ export function NavbarUserMenu({
   const pathname = usePathname();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { profile, displayName, loading: profileLoading } = useProfile();
+  const { profile, displayName, loading: profileLoading, needsRoleOnboarding: rolePending } =
+    useProfile();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const email = user?.email ?? null;
-  const menuLinks = getUserMenuLinks(t.navbar, profile);
+  const menuLinks = getUserMenuLinks(t.navbar, profile, {
+    hideDashboard: rolePending,
+  });
   const activeMode = profile ? resolveActiveMode(profile.role, profile.active_mode) : null;
   const secondaryMenuLinks = mobileAccountMenuSecondaryItemsForActiveMode(activeMode);
 

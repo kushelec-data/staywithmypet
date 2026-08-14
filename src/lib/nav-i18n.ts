@@ -58,14 +58,24 @@ export function requestsHrefForProfile(profile: ProfileRow | null): string {
   return mode === "pet_friend" ? "/requests?direction=outgoing" : "/requests?direction=incoming";
 }
 
-export function getUserMenuLinks(t: Dictionary["navbar"], profile: ProfileRow | null) {
-  return [
+export function getUserMenuLinks(
+  t: Dictionary["navbar"],
+  profile: ProfileRow | null,
+  options?: { hideDashboard?: boolean },
+) {
+  const links = [
     { href: "/dashboard", label: t.dashboard },
     { href: "/profile/edit", label: t.myProfile },
     { href: "/dashboard/bookings", label: t.bookings },
     { href: "/messages", label: t.messages },
     { href: requestsHrefForProfile(profile), label: t.requests },
   ] as const;
+
+  if (options?.hideDashboard) {
+    return links.filter((item) => item.href !== "/dashboard");
+  }
+
+  return links;
 }
 
 export function getAuthNavLinks(t: Dictionary["navbar"]) {

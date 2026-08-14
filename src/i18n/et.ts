@@ -2441,6 +2441,7 @@ export const et = {
         "Mul on lemmikloom ja vajan talle hooldust või seltsi.",
       petFriendDescription:
         "Tahan veeta aega lemmikloomadega ja aidata loomaomanikke.",
+      selectionRequired: "Palun vali, kuidas soovid StayWithMyPet'i kasutada.",
       continue: "Jätka juhtpaneelile",
       saving: "Salvestan…",
       loading: "Laadin…",
