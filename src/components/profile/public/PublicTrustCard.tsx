@@ -28,6 +28,7 @@ export function PublicTrustCard({
 }: PublicTrustCardProps) {
   const { t } = useLanguage();
   const ts = t.trustSafety;
+  const ui = t.publicProfileUi;
   const memberSince = formatMemberSince(profile.created_at);
   const hasReviews = reviewsCount > 0;
 
@@ -99,7 +100,7 @@ export function PublicTrustCard({
 
       {memberSince ? (
         <p className="mt-3 text-xs text-muted">
-          <span className="font-medium text-foreground">Member since</span> {memberSince}
+          <span className="font-medium text-foreground">{ui.memberSince}</span> {memberSince}
         </p>
       ) : null}
     </section>

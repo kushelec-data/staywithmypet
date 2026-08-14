@@ -1531,6 +1531,7 @@ export const et = {
     sendRequest: "Saada päring",
     logInToSendRequest: "Logi sisse päringu saatmiseks",
     thisIsYourProfile: "See on sinu profiil.",
+    contactStaysPrivate: "Täpne aadress, telefoninumber ja e-posti aadress jäävad privaatseks.",
     careAndHome: "Hooldus ja kodu",
     whatMemberOffers: "Mida see liige pakub",
     petCarePreferences: "Lemmikuhoolduse eelistused",

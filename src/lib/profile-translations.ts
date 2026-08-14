@@ -13,6 +13,7 @@
 import type { Locale } from "@/i18n/translations";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { getPetDisplayLabelEt, translatePetDisplayLabel } from "@/lib/pet-display-translations";
+import { formatPetTypeLabel, normalizePetTypeValue } from "@/lib/pet-type-options";
 
 type Pair = readonly [en: string, et: string];
 
@@ -160,15 +161,15 @@ const PROFILE_LABEL_PAIRS: Pair[] = [
   ["Comfortable with dogs", "Koerad sobivad"],
   ["Comfortable with cats", "Sobib kassidega"],
   ["Comfortable with fish", "Sobib kaladega"],
-  ["Comfortable with rabbit", "Sobib jänestega"],
+  ["Comfortable with rabbit", "Sobivad jänesed"],
   ["Comfortable with bird", "Sobib lindudega"],
-  ["Comfortable with rodent", "Sobib närilistega"],
+  ["Comfortable with rodent", "Sobivad närilised"],
   ["Comfortable with reptile", "Sobib roomajatega"],
   ["Comfortable with other pets", "Sobib teiste lemmikloomadega"],
   ["Small pets OK", "Väikesed lemmikud sobivad"],
   ["Senior pets OK", "Eakad lemmikud sobivad"],
   ["Puppy friendly", "Kutsikatele sobiv"],
-  ["Good with rabbit", "Sobib jänestega"],
+  ["Good with rabbit", "Sobivad jänesed"],
   ["Patient with quirks", "Kannatlik eripäradega"],
   ["Medical needs OK", "Tervise eripäradega sobiv"],
   ["View profile", "Vaata profiili"],
@@ -189,9 +190,9 @@ const PROFILE_LABEL_PAIRS: Pair[] = [
   ["Pet-friendly home", "Lemmikusõbralik kodu"],
   ["No children at home", "Ilma lasteta"],
   ["Yard or garden access", "Kas sul on privaatne aed või hoov?"],
-  ["Nearby park access", "Kas läheduses on park või roheala jalutamiseks ja mängimiseks?"],
-  ["Has pets at home", "Kas sul on kodus teisi lemmikuid?"],
-  ["No pets at home", "Kas sul on kodus teisi lemmikuid?"],
+  ["Nearby park access", "Läheduses on park või roheala"],
+  ["Has pets at home", "Kodus on teisi loomi"],
+  ["No pets at home", "Kodus pole teisi loomi"],
   ["Your living situation", "Sinu elukeskkond"],
   ["Save changes", "Salvesta ja jätka"],
   ["Breed", "Tõug (kui teada)"],
@@ -382,15 +383,15 @@ const PROFILE_OPTION_PAIRS: Pair[] = [
   ["Comfortable with dogs", "Koerad sobivad"],
   ["Comfortable with cats", "Sobib kassidega"],
   ["Comfortable with fish", "Sobib kaladega"],
-  ["Comfortable with rabbit", "Sobib jänestega"],
+  ["Comfortable with rabbit", "Sobivad jänesed"],
   ["Comfortable with bird", "Sobib lindudega"],
-  ["Comfortable with rodent", "Sobib närilistega"],
+  ["Comfortable with rodent", "Sobivad närilised"],
   ["Comfortable with reptile", "Sobib roomajatega"],
   ["Comfortable with other pets", "Sobib teiste lemmikloomadega"],
   ["Small pets OK", "Väikesed lemmikud sobivad"],
   ["Senior pets OK", "Eakad lemmikud sobivad"],
   ["Puppy friendly", "Kutsikatele sobiv"],
-  ["Good with rabbit", "Sobib jänestega"],
+  ["Good with rabbit", "Sobivad jänesed"],
   ["Patient with quirks", "Kannatlik eripäradega"],
   ["Medical needs OK", "Tervise eripäradega sobiv"],
   ["View profile", "Vaata profiili"],
@@ -499,9 +500,9 @@ const PROFILE_OPTION_PAIRS: Pair[] = [
   ["Home", "Millises elukeskkonnas sa elad?"],
   ["No children at home", "Ilma lasteta"],
   ["Yard or garden access", "Kas sul on privaatne aed või hoov?"],
-  ["Nearby park access", "Kas läheduses on park või roheala jalutamiseks ja mängimiseks?"],
-  ["Has pets at home", "Kas sul on kodus teisi lemmikuid?"],
-  ["No pets at home", "Kas sul on kodus teisi lemmikuid?"],
+  ["Nearby park access", "Läheduses on park või roheala"],
+  ["Has pets at home", "Kodus on teisi loomi"],
+  ["No pets at home", "Kodus pole teisi loomi"],
   ["Your living situation", "Sinu elukeskkond"],
   ["Pet Profile", "Lemmiku profiil"],
   ["Save changes", "Salvesta ja jätka"],
@@ -548,6 +549,27 @@ const PROFILE_HELPER_PAIRS: Pair[] = [
   ["The exact address will be only shown after booking. To all the platform browsers, approximate location (~1km radius) is shown!", "Täpne aadress kuvatakse alles pärast broneeringut. Enne seda kuvatakse ligikaudne asukoht (~1 km raadiuses)."],
 ];
 
+/** Public Pet Friend profile display labels (statements, not form questions). */
+const PUBLIC_PROFILE_DISPLAY_PAIRS: Pair[] = [
+  ["Comfortable with rabbit", "Sobivad jänesed"],
+  ["Comfortable with rodent", "Sobivad närilised"],
+  ["Good with rabbit", "Sobivad jänesed"],
+  ["Previously cared for dog", "Varem hoidnud koera"],
+  ["Previously cared for cat", "Varem hoidnud kassi"],
+  ["Previously cared for rabbit", "Varem hoidnud jänest"],
+  ["Previously cared for bird", "Varem hoidnud lindu"],
+  ["Previously cared for rodent", "Varem hoidnud närilist"],
+  ["Previously cared for fish", "Varem hoidnud kala"],
+  ["Previously cared for reptile", "Varem hoidnud roomajat"],
+  ["Previously cared for other", "Varem hoidnud teist lemmikut"],
+  ["Nearby park access", "Läheduses on park või roheala"],
+  ["Has pets at home", "Kodus on teisi loomi"],
+  ["No pets at home", "Kodus pole teisi loomi"],
+  ["Experience", "Kogemus"],
+  ["Children at home", "Kodus on lapsi"],
+  ["Has children at home", "Kodus on lapsi"],
+];
+
 function normalizeLookupKey(text: string): string {
   return text
     .trim()
@@ -566,10 +588,57 @@ function toLookupMap(pairs: Pair[]): Map<string, string> {
 const LABEL_LOOKUP = toLookupMap(PROFILE_LABEL_PAIRS);
 const OPTION_LOOKUP = toLookupMap(PROFILE_OPTION_PAIRS);
 const HELPER_LOOKUP = toLookupMap(PROFILE_HELPER_PAIRS);
+const PUBLIC_DISPLAY_LOOKUP = toLookupMap(PUBLIC_PROFILE_DISPLAY_PAIRS);
+
+const PREVIOUSLY_CARED_FOR_PREFIX = /^previously cared for (.+)$/i;
+const HAS_PETS_AT_HOME_NOTE = /^has pets at home \((.+)\)$/i;
+
+function translatePreviouslyCaredForEt(typeRaw: string): string | undefined {
+  const exact = PUBLIC_DISPLAY_LOOKUP.get(
+    normalizeLookupKey(`Previously cared for ${typeRaw}`),
+  );
+  if (exact) return exact;
+  const normalized = normalizePetTypeValue(typeRaw);
+  if (normalized) {
+    const byValue = PUBLIC_DISPLAY_LOOKUP.get(
+      normalizeLookupKey(`Previously cared for ${normalized}`),
+    );
+    if (byValue) return byValue;
+  }
+  const typeLabel = formatPetTypeLabel(typeRaw);
+  const byLabel = PUBLIC_DISPLAY_LOOKUP.get(
+    normalizeLookupKey(`Previously cared for ${typeLabel}`),
+  );
+  if (byLabel) return byLabel;
+  return undefined;
+}
+
+function lookupPublicDisplayEt(text: string): string | undefined {
+  const trimmed = text.trim();
+  const key = normalizeLookupKey(trimmed);
+  const direct = PUBLIC_DISPLAY_LOOKUP.get(key);
+  if (direct) return direct;
+
+  const previously = PREVIOUSLY_CARED_FOR_PREFIX.exec(trimmed);
+  if (previously?.[1]) {
+    return translatePreviouslyCaredForEt(previously[1].trim());
+  }
+
+  const petsNote = HAS_PETS_AT_HOME_NOTE.exec(trimmed);
+  if (petsNote?.[1]) {
+    const base =
+      PUBLIC_DISPLAY_LOOKUP.get(normalizeLookupKey("Has pets at home")) ??
+      lookupEt("Has pets at home");
+    if (base) return `${base} (${petsNote[1]})`;
+  }
+
+  return undefined;
+}
 
 function lookupEt(text: string): string | undefined {
   const key = normalizeLookupKey(text);
   return (
+    PUBLIC_DISPLAY_LOOKUP.get(key) ??
     LABEL_LOOKUP.get(key) ??
     OPTION_LOOKUP.get(key) ??
     HELPER_LOOKUP.get(key)
@@ -598,6 +667,8 @@ export function translateProfileLabel(text: string | null | undefined, locale: L
     return formatted;
   }
   return (
+    lookupPublicDisplayEt(trimmed) ??
+    lookupPublicDisplayEt(formatted) ??
     lookupEt(trimmed) ??
     lookupEt(formatted) ??
     translatePetDisplayLabel(trimmed, locale) ??
