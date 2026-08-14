@@ -1595,6 +1595,7 @@ export const en = {
     sendRequest: "Send request",
     logInToSendRequest: "Log in to send request",
     thisIsYourProfile: "This is your profile.",
+    contactStaysPrivate: "Exact address, phone, and email stay private.",
     careAndHome: "Care & home",
     whatMemberOffers: "What this member offers",
     petCarePreferences: "Pet care preferences",

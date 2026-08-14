@@ -152,7 +152,7 @@ export function MemberPublicTopCard({
         <div className="flex w-full min-w-0 max-w-full shrink-0 flex-col gap-2 rounded-2xl border border-brand-teal/10 bg-surface/80 p-4 lg:w-[220px]">
           {mainCta}
           <p className="text-center text-[0.65rem] leading-snug text-muted">
-            Exact address, phone, and email stay private.
+            {t.publicProfileUi.contactStaysPrivate}
           </p>
         </div>
       </div>
