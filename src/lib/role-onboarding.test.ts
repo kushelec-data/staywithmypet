@@ -125,6 +125,9 @@ describe("brand-new account role onboarding", () => {
       role: "pet_parent",
       active_mode: "pet_parent",
       role_chosen_at: "2026-01-01T00:00:00.000Z",
+      bio: "I care for my pets with help from trusted friends nearby.",
+      location: "Tallinn",
+      languages: ["en"],
     });
     expect(needsRoleOnboarding(row)).toBe(false);
     expect(accountPathForRoleState(row)).toBe(DASHBOARD_PATH);
@@ -136,6 +139,9 @@ describe("brand-new account role onboarding", () => {
       role: "pet_friend",
       active_mode: "pet_friend",
       role_chosen_at: "2026-01-01T00:00:00.000Z",
+      bio: "I spend time with animals and help pet parents nearby.",
+      location: "Tartu",
+      languages: ["et"],
     });
     expect(needsRoleOnboarding(row)).toBe(false);
     expect(accountPathForRoleState(row)).toBe(DASHBOARD_PATH);

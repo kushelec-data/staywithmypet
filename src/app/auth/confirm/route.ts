@@ -1,40 +1,29 @@
 import { PASSWORD_RESET_PATH } from "@/lib/auth-recovery";
 import { logRecoveryExchangeDev, recoveryTypeFromQuery } from "@/lib/auth-recovery-dev";
-import { syncProfileEmailVerified } from "@/lib/profile";
-import { createClient } from "@/lib/supabase/server";
-import type { EmailOtpType } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { ensureOAuthProfile, waitForAuthUser } from "@/lib/auth-callback";
+import { resolveConfirmRedirectPath } from "@/lib/auth-confirm-redirect";
+import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
+import type { EmailOtpType, SupabaseClient } from "@supabase/supabase-js";
+import { type NextRequest, type NextResponse } from "next/server";
 
-function redirectTo(origin: string, path: string): NextResponse {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return NextResponse.redirect(`${origin}${normalized}`);
-}
-
-function safeNextPath(value: string | null): string {
-  if (!value?.trim()) return PASSWORD_RESET_PATH;
-  const decoded = decodeURIComponent(value.trim());
-  if (!decoded.startsWith("/") || decoded.startsWith("//")) return PASSWORD_RESET_PATH;
-  return decoded;
-}
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const token_hash = url.searchParams.get("token_hash");
   const typeRaw = url.searchParams.get("type");
   const code = url.searchParams.get("code");
-  const next = safeNextPath(url.searchParams.get("next"));
+  const requestedNext = url.searchParams.get("next");
 
   if (process.env.NODE_ENV !== "production") {
     console.info("[auth:confirm] request", {
       hasCode: Boolean(code),
       hasTokenHash: Boolean(token_hash),
       type: typeRaw,
-      next,
+      next: requestedNext,
       pathname: url.pathname,
     });
   }
 
-  const supabase = await createClient();
+  const { supabase, redirectTo } = createRouteHandlerClient(request);
 
   if (token_hash && typeRaw) {
     const type = recoveryTypeFromQuery(typeRaw) ?? (typeRaw as EmailOtpType);
@@ -50,25 +39,11 @@ export async function GET(request: Request) {
 
     if (error) {
       return redirectTo(
-        url.origin,
         `${PASSWORD_RESET_PATH}?recovery_error=${encodeURIComponent(error.message)}`,
       );
     }
 
-    if (type === "signup" || type === "email_change" || type === "email") {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const newlyVerified = await syncProfileEmailVerified(supabase, user);
-        if (newlyVerified) {
-          const { sendEmailVerifiedEmailAction } = await import("@/app/actions/email-events");
-          await sendEmailVerifiedEmailAction();
-        }
-      }
-    }
-
-    return redirectTo(url.origin, next);
+    return finishConfirm(supabase, redirectTo, typeRaw, requestedNext);
   }
 
   if (code) {
@@ -81,27 +56,39 @@ export async function GET(request: Request) {
 
     if (error) {
       return redirectTo(
-        url.origin,
         `${PASSWORD_RESET_PATH}?recovery_error=${encodeURIComponent(error.message)}`,
       );
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email_confirmed_at) {
-      const newlyVerified = await syncProfileEmailVerified(supabase, user);
-      if (newlyVerified) {
-        const { sendEmailVerifiedEmailAction } = await import("@/app/actions/email-events");
-        await sendEmailVerifiedEmailAction();
-      }
-    }
-
-    return redirectTo(url.origin, next);
+    return finishConfirm(supabase, redirectTo, typeRaw, requestedNext);
   }
 
   return redirectTo(
-    url.origin,
     `${PASSWORD_RESET_PATH}?recovery_error=${encodeURIComponent("Missing recovery token.")}`,
   );
+}
+
+async function finishConfirm(
+  supabase: SupabaseClient,
+  redirectTo: (path: string) => NextResponse,
+  confirmType: string | null,
+  requestedNext: string | null,
+) {
+  const user = await waitForAuthUser(supabase);
+
+  if (!user) {
+    return redirectTo("/login?error=auth");
+  }
+
+  if (confirmType === "recovery") {
+    return redirectTo(resolveConfirmRedirectPath(null, requestedNext, confirmType));
+  }
+
+  const { profile } = await ensureOAuthProfile(supabase, user);
+
+  if (profile && profile.id !== user.id) {
+    return redirectTo("/login?error=profile_session");
+  }
+
+  return redirectTo(resolveConfirmRedirectPath(profile, requestedNext, confirmType));
 }

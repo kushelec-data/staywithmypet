@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { shouldForwardHomepageToAuthConfirm } from "@/lib/auth-confirm-redirect";
 import { assertSupabasePublicEnv } from "@/lib/supabase/env";
 
 const LOGIN_PATH = "/login";
@@ -18,6 +19,18 @@ function isProtectedPath(pathname: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (shouldForwardHomepageToAuthConfirm(pathname, request.nextUrl.searchParams)) {
+    const confirmUrl = request.nextUrl.clone();
+    confirmUrl.pathname = "/auth/confirm";
+    return NextResponse.redirect(confirmUrl);
+  }
+
+  if (!isProtectedPath(pathname)) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   let url: string;
@@ -49,8 +62,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
   if (!user && isProtectedPath(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = LOGIN_PATH;
@@ -63,6 +74,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/dashboard/:path*",
     "/profile/edit",
     "/profile/edit/:path*",

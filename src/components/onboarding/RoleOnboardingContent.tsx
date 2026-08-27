@@ -7,9 +7,9 @@ import { Logo } from "@/components/ui/Logo";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
-import { DASHBOARD_PATH } from "@/lib/auth-routing";
+import { DASHBOARD_PATH, PROFILE_SETUP_PATH } from "@/lib/auth-routing";
 import { saveUserRole } from "@/lib/profile-setup";
-import { needsRoleOnboarding } from "@/lib/profile-utils";
+import { isProfileIncomplete, needsRoleOnboarding } from "@/lib/profile-utils";
 import {
   canSaveOnboardingRole,
   initialOnboardingRoleSelection,
@@ -106,7 +106,7 @@ export function RoleOnboardingContent() {
       const { sendWelcomeEmailsAction } = await import("@/app/actions/email-events");
       void sendWelcomeEmailsAction(role);
       await refreshProfile();
-      router.push(DASHBOARD_PATH);
+      router.push(isProfileIncomplete(saved) ? PROFILE_SETUP_PATH : DASHBOARD_PATH);
       router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : t.onboarding.role.saveError;
