@@ -80,7 +80,7 @@ type PetFriendSearchRow = {
 };
 
 const PET_FRIEND_SEARCH_SELECT =
-  "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details";
+  "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details, is_public";
 
 const PET_FRIEND_SEARCH_SELECT_FALLBACKS = [
   "id, display_name, location, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",

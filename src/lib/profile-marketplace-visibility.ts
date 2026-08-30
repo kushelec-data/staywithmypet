@@ -1,9 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  profileMeetsAnyMarketplaceMinimum,
-} from "@/lib/profile-marketplace-eligibility";
 import { fetchUserProfile } from "@/lib/profile-load";
-import type { ProfileRole } from "@/lib/profile-setup";
 
 type PetVisibilityRow = {
   id: string;
@@ -51,9 +47,9 @@ async function fetchPetVisibilityRows(
 
 /**
  * Sync marketplace visibility flags without retroactively hiding legacy listings.
- * - Never sets profiles.is_public or pets.is_public to false.
- * - Heals profiles wrongly demoted to is_public=false when minimum eligibility is met.
- * - Pet Find Pets listing (pets.is_public) changes only via the owner listing toggle.
+ * - Never writes profiles.is_public (owner toggle only — do not auto-republish).
+ * - Never writes pets.is_public (owner listing toggle only).
+ * - May heal pets.is_active when it is not explicitly false.
  */
 export async function applyMarketplaceVisibility(
   supabase: SupabaseClient,
@@ -61,24 +57,6 @@ export async function applyMarketplaceVisibility(
 ): Promise<void> {
   const profile = await fetchUserProfile(supabase, userId);
   if (!profile) return;
-
-  const profileInput = {
-    display_name: profile.display_name,
-    bio: profile.bio,
-    location: profile.location,
-    public_location: profile.public_location,
-    city: profile.city,
-    country: profile.country,
-    google_place_id: profile.google_place_id,
-    latitude: profile.latitude,
-    longitude: profile.longitude,
-    is_public: profile.is_public,
-    role: profile.role as ProfileRole,
-  };
-
-  if (profile.is_public === false && profileMeetsAnyMarketplaceMinimum(profileInput)) {
-    await supabase.from("profiles").update({ is_public: true }).eq("id", userId);
-  }
 
   if (profile.role === "pet_friend") return;
 

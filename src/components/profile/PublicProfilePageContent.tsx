@@ -24,9 +24,9 @@ import {
   type PublicPetSummary as PublicPet,
   type PublicProfileView,
 } from "@/lib/public-profile";
-import { usersShareActiveRequest } from "@/lib/request-profile-access";
 import { resolvedAvailability } from "@/lib/profile-details";
 import { createClient } from "@/lib/supabase";
+import { canViewerSeePublicMemberProfile } from "@/lib/profile-visibility";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type PublicProfilePageContentProps = {
@@ -60,16 +60,11 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
           return;
         }
 
-        if (!row.is_public && user?.id !== profileId) {
-          const sharedRequest = user?.id
-            ? await usersShareActiveRequest(supabase, user.id, profileId)
-            : false;
-          if (!sharedRequest) {
-            setError(t.publicProfileUi.profileNotPublic);
-            setProfile(null);
-            setPets([]);
-            return;
-          }
+        if (!canViewerSeePublicMemberProfile(row.is_public, profileId, user?.id)) {
+          setError(t.publicProfileUi.profileNotPublic);
+          setProfile(null);
+          setPets([]);
+          return;
         }
 
         setProfile(row);
