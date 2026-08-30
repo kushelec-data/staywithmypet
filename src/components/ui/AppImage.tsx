@@ -4,7 +4,7 @@ import Image, { type ImageProps } from "next/image";
 import { useState } from "react";
 import { CaptionImagePlaceholder } from "@/components/ui/CaptionImagePlaceholder";
 import { PawPlaceholder } from "@/components/ui/PawPlaceholder";
-import { canUseNextImage } from "@/lib/remote-image";
+import { canUseNextImage, shouldBypassNextImageOptimization } from "@/lib/remote-image";
 
 type AppImageProps = Omit<ImageProps, "src" | "alt"> & {
   src: string;
@@ -26,10 +26,12 @@ export function AppImage({
   className = "object-cover",
   fill = true,
   style,
+  unoptimized,
   ...props
 }: AppImageProps) {
   const [failed, setFailed] = useState(false);
   const useNext = canUseNextImage(src);
+  const skipOptimizer = Boolean(unoptimized) || shouldBypassNextImageOptimization(src);
 
   const positionClass = fill ? "absolute inset-0 h-full w-full" : "h-full w-full";
 
@@ -78,6 +80,7 @@ export function AppImage({
       sizes={props.sizes ?? "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
       onError={() => setFailed(true)}
       {...props}
+      unoptimized={skipOptimizer}
     />
   );
 }
