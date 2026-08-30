@@ -1087,6 +1087,17 @@ export const en = {
     saveTrustSafetyError: "Could not save trust & safety.",
     saveFriendProfileError: "Could not save Pet Friend profile.",
     saveParentProfileError: "Could not save Pet Parent profile.",
+    visibility: {
+      title: "Profile visibility",
+      toggleLabel: "Show my profile publicly",
+      helper:
+        "When turned off, your profile will not appear in public search or marketplace results.",
+      statusPublic: "Public",
+      statusHidden: "Hidden",
+      updated: "Profile visibility updated.",
+      saving: "Updating visibility…",
+      error: "Could not update profile visibility.",
+    },
     wizard: {
       stepNumber: "Step {n}",
       statusCompleted: "Completed",

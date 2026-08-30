@@ -14,5 +14,7 @@ describe("applyMarketplaceVisibility pet listing policy", () => {
     );
     expect(file).not.toMatch(/updates\.is_public\s*=/);
     expect(file).toMatch(/is_active:\s*pet\.is_active/);
+    expect(file).not.toMatch(/from\("profiles"\)\.update\(\{\s*is_public:\s*true/);
+    expect(file).toContain("Never writes profiles.is_public");
   });
 });

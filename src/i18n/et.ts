@@ -1097,6 +1097,17 @@ export const et = {
     saveTrustSafetyError: "Usalduse ja turvalisuse salvestamine ebaõnnestus.",
     saveFriendProfileError: "Loomasõbra profiili salvestamine ebaõnnestus.",
     saveParentProfileError: "Loomaomaniku profiili salvestamine ebaõnnestus.",
+    visibility: {
+      title: "Profiili nähtavus",
+      toggleLabel: "Näita minu profiili avalikult",
+      helper:
+        "Kui see on välja lülitatud, ei kuvata sinu profiili avalikus otsingus ega turuplatsi tulemustes.",
+      statusPublic: "Avalik",
+      statusHidden: "Peidetud",
+      updated: "Profiili nähtavus on uuendatud.",
+      saving: "Uuendan nähtavust…",
+      error: "Profiili nähtavust ei õnnestunud uuendada.",
+    },
     wizard: {
       stepNumber: "Samm {n}",
       statusCompleted: "Täidetud",

@@ -4,6 +4,7 @@ import { AccountLayout } from "@/components/account/AccountLayout";
 import { ACCOUNT_BODY_TEXT } from "@/lib/account-ui";
 import { CopyPublicProfileLinkButton } from "@/components/profile/CopyPublicProfileLinkButton";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
+import { ProfileVisibilityControl } from "@/components/profile/ProfileVisibilityControl";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useProfile } from "@/context/ProfileContext";
@@ -45,6 +46,9 @@ export function ProfileEditPageContent() {
         {profile?.is_public ? (
           <CopyPublicProfileLinkButton profileId={profile.id} size="sm" />
         ) : null}
+      </div>
+      <div className="mb-6">
+        <ProfileVisibilityControl />
       </div>
       <ProfileEditForm />
     </AccountLayout>
