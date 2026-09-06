@@ -29,6 +29,7 @@ const AUTOMATED_EXCEL_E_EVENTS = new Set<EmailEventType>([
   "review_reminder_friend",
   "booking_starts_tomorrow_parent",
   "booking_starts_tomorrow_friend",
+  "match_digest",
 ]);
 
 export function buildEmailTemplate(
@@ -112,6 +113,8 @@ export function defaultUniqueKey(
       return `membership_expiry_${options?.requestId ?? userId}`;
     case "new_message":
       return `new_message_${options?.conversationId ?? "unknown"}_${options?.messageId ?? userId}`;
+    case "match_digest":
+      return `match_digest_${userId}`;
     default: {
       const _exhaustive: never = eventType;
       return _exhaustive;

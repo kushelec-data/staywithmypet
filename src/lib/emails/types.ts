@@ -20,7 +20,8 @@ export type EmailEventType =
   | "membership_expiry_reminder"
   | "booking_starts_tomorrow_parent"
   | "booking_starts_tomorrow_friend"
-  | "new_message";
+  | "new_message"
+  | "match_digest";
 
 export type EmailRecipientRole = "pet_parent" | "pet_friend";
 
@@ -49,6 +50,14 @@ export type EmailTemplateContext = {
   message?: string | null;
   senderName?: string;
   conversationId?: string;
+  matchDigestKind?: "parent" | "friend";
+  matchDigestItems?: Array<{
+    name: string;
+    location?: string | null;
+    reason?: string | null;
+    photoUrl?: string | null;
+    href: string;
+  }>;
 };
 
 export type EmailTemplate = {

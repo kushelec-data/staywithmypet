@@ -60,6 +60,8 @@ function actionLabel(kind: NotificationActionKind, n: Dictionary["notifications"
       return n.actionLeaveReview;
     case "view_membership":
       return n.actionViewMembership;
+    case "view_matches":
+      return n.actionViewMatches;
     case "view_request":
     default:
       return n.actionViewRequest;
@@ -76,6 +78,8 @@ function categoryLabel(category: NotificationCategory, n: Dictionary["notificati
       return n.groupReviews;
     case "membership":
       return n.groupMembership;
+    case "matches":
+      return n.groupMatches;
     case "requests":
     default:
       return n.groupRequests;

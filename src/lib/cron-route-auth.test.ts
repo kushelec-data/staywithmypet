@@ -8,9 +8,23 @@ vi.mock("@/lib/email-send", () => ({
   processDueScheduledEmails: vi.fn(async () => ({ processed: 0 })),
 }));
 
+vi.mock("@/lib/matchmaking/run-weekly", () => ({
+  runWeeklyMatchmaking: vi.fn(async () => ({
+    ok: true,
+    batchId: "batch",
+    expired: 0,
+    candidatesScored: 0,
+    inserted: 0,
+    emailsSent: 0,
+    notificationsCreated: 0,
+    skippedEmpty: true,
+  })),
+}));
+
 import { POST as bookingReviewPost } from "@/app/api/cron/booking-review-emails/route";
 import { POST as scheduledEmailsPost } from "@/app/api/cron/process-scheduled-emails/route";
 import { POST as emailSendPost } from "@/app/api/emails/send/route";
+import { POST as weeklyMatchPost } from "@/app/api/cron/weekly-matchmaking/route";
 
 describe("cron/internal route authorization", () => {
   const envBackup = { ...process.env };
@@ -64,6 +78,13 @@ describe("cron/internal route authorization", () => {
         },
         body: JSON.stringify({ event_type: "test", user_id: "user-1" }),
       }),
+    );
+    expect(response.status).toBe(401);
+  });
+
+  it("weekly-matchmaking returns 401 when secret is missing", async () => {
+    const response = await weeklyMatchPost(
+      new Request("https://example.com/api/cron/weekly-matchmaking", { method: "POST" }),
     );
     expect(response.status).toBe(401);
   });

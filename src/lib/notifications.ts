@@ -12,14 +12,16 @@ export type NotificationType =
   | "booking_review_friend"
   | "membership_activated"
   | "membership_expiry_reminder"
-  | "membership_renewal_reminder";
+  | "membership_renewal_reminder"
+  | "match_digest";
 
 export type NotificationCategory =
   | "requests"
   | "messages"
   | "bookings"
   | "reviews"
-  | "membership";
+  | "membership"
+  | "matches";
 
 const REQUEST_NOTIFICATION_TYPES: NotificationType[] = [
   "request_received",
@@ -42,12 +44,15 @@ const MEMBERSHIP_NOTIFICATION_TYPES: NotificationType[] = [
   "membership_renewal_reminder",
 ];
 
+const MATCH_NOTIFICATION_TYPES: NotificationType[] = ["match_digest"];
+
 export const NOTIFICATION_CATEGORY_ORDER: NotificationCategory[] = [
   "requests",
   "messages",
   "bookings",
   "reviews",
   "membership",
+  "matches",
 ];
 
 /** Legacy enum labels still present before migration is applied. */
@@ -134,6 +139,9 @@ export function notificationCategory(type: NotificationType): NotificationCatego
   if (MEMBERSHIP_NOTIFICATION_TYPES.includes(type) || type.startsWith("membership_")) {
     return "membership";
   }
+  if (MATCH_NOTIFICATION_TYPES.includes(type) || type === "match_digest") {
+    return "matches";
+  }
   return "requests";
 }
 
@@ -186,7 +194,8 @@ export type NotificationActionKind =
   | "open_message"
   | "view_booking"
   | "leave_review"
-  | "view_membership";
+  | "view_membership"
+  | "view_matches";
 
 export function notificationActionKind(notification: AppNotification): NotificationActionKind {
   switch (notification.type) {
@@ -201,6 +210,8 @@ export function notificationActionKind(notification: AppNotification): Notificat
     case "membership_expiry_reminder":
     case "membership_renewal_reminder":
       return "view_membership";
+    case "match_digest":
+      return "view_matches";
     case "request_received":
     case "request_accepted":
     case "request_declined":
@@ -231,6 +242,8 @@ export function notificationHref(notification: AppNotification): string {
     case "membership_expiry_reminder":
     case "membership_renewal_reminder":
       return "/membership";
+    case "match_digest":
+      return "/matches";
     default:
       return "/requests?direction=incoming";
   }

@@ -14,6 +14,7 @@ export function isMarketplaceNavHref(href: string): boolean {
 /** In-account sidebar links (dashboard area). */
 const accountSidebarItems: ModeNavItem[] = [
   { href: "/dashboard", label: "Dashboard", modes: ["pet_parent", "pet_friend"] },
+  { href: "/matches", label: "Matches", modes: ["pet_parent", "pet_friend"] },
   { href: "/dashboard/calendar", label: "Calendar", modes: ["pet_parent", "pet_friend"] },
   { href: "/pets", label: "My pets", modes: ["pet_parent"] },
   { href: "/pets/new", label: "Add pet", modes: ["pet_parent"] },
@@ -58,6 +59,7 @@ export function isSidebarLinkActive(
   const path = pathPart.split("#")[0];
 
   if (path === "/dashboard") return pathname === "/dashboard";
+  if (path === "/matches") return pathname === "/matches";
   if (path === "/dashboard/calendar") {
     return pathname === "/dashboard/calendar" || pathname.startsWith("/dashboard/calendar/");
   }

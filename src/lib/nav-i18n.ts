@@ -65,6 +65,7 @@ export function getUserMenuLinks(
 ) {
   const links = [
     { href: "/dashboard", label: t.dashboard },
+    { href: "/matches", label: t.matches },
     { href: "/profile/edit", label: t.myProfile },
     { href: "/dashboard/bookings", label: t.bookings },
     { href: "/messages", label: t.messages },
@@ -93,6 +94,7 @@ export function accountSidebarLabel(href: string, _fallbackLabel: string, t: Dic
 
   const byPath: Record<string, string> = {
     "/dashboard": nav.dashboard,
+    "/matches": nav.matches,
     "/dashboard/calendar": nav.calendar,
     "/dashboard/bookings": nav.bookings,
     "/messages": nav.messages,

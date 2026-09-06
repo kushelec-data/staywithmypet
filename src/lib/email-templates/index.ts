@@ -11,6 +11,7 @@ import {
   buildReviewReminderFriendEmail,
   buildReviewReminderParentEmail,
 } from "@/lib/email-templates/booking-emails";
+import { buildMatchDigestEmail } from "@/lib/email-templates/match-digest";
 import type { EmailLocale } from "@/lib/email-templates/locale";
 import {
   buildMembershipActivatedEmail,
@@ -59,6 +60,8 @@ export function buildAutomatedEmailTemplate(
       return buildBookingStartsTomorrowParentEmail(ctx, locale);
     case "booking_starts_tomorrow_friend":
       return buildBookingStartsTomorrowFriendEmail(ctx, locale);
+    case "match_digest":
+      return buildMatchDigestEmail(ctx, locale);
     default:
       throw new Error(`[email-templates] no automated template for event: ${eventType}`);
   }

@@ -12,6 +12,7 @@ import {
   PawPrint,
   Plus,
   Search,
+  Sparkles,
   User,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ function pathFromHref(href: string): string {
 
 const SIDEBAR_ICON_BY_PATH: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
+  "/matches": Sparkles,
   "/dashboard/calendar": Calendar,
   "/pets": PawPrint,
   "/pets/new": Plus,

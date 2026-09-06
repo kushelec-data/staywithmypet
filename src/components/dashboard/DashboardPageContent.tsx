@@ -12,6 +12,7 @@ import {
 import { DashboardProfileHero } from "@/components/dashboard/DashboardProfileHero";
 import { ExpandableBioText } from "@/components/profile/public/ExpandableBioText";
 import { DashboardReviewPromptBanner } from "@/components/dashboard/DashboardReviewPromptBanner";
+import { DashboardMatchBanner } from "@/components/dashboard/DashboardMatchBanner";
 import { NewMemberPromotionBanner } from "@/components/membership/NewMemberPromotionBanner";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/ui/Button";
@@ -276,6 +277,7 @@ export function DashboardPageContent() {
       rightAside={dashboardRightAside}
     >
       <ProfileCompleteEmailEffect percent={completeness.percent} />
+      <DashboardMatchBanner />
       <div className="mx-auto flex w-full min-w-0 flex-1 flex-col gap-4 sm:gap-5 lg:max-w-3xl xl:max-w-none">
         <section aria-label="Profile summary">
           <DashboardProfileHero
