@@ -1,4 +1,5 @@
 import type { PostgrestError, RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
+import { trackActivity } from "@/lib/activity/track";
 import { formatCareTypeLabel } from "@/lib/care-type-options";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { pickPrimaryPhotoUrl } from "@/lib/pet-photos";
@@ -1353,7 +1354,12 @@ export async function sendMessage(
     throw new ChatMessageSaveError(error.message || "Message could not be saved.");
   }
   const row = data as MessageRow;
-
+  void trackActivity(supabase, {
+    userId: senderId,
+    eventType: "message_sent",
+    entityType: "conversation",
+    entityId: conversationId,
+  });
   return mapMessageRow(row, senderId);
 }
 

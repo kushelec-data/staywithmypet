@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
+import { ProductActivityTracker } from "@/components/activity/ProductActivityTracker";
 import { ConsentAwareAnalytics } from "@/components/cookies/ConsentAwareAnalytics";
 import { ConsentAwareGoogleAnalytics } from "@/components/cookies/ConsentAwareGoogleAnalytics";
 import { ConsentAwareMetaPixel } from "@/components/cookies/ConsentAwareMetaPixel";
@@ -49,6 +50,7 @@ export default function RootLayout({
             <ProfileProvider>
               <FavoritesProvider>
                 <Navbar />
+                <ProductActivityTracker />
                 <main className="flex-1">{children}</main>
                 <Footer />
               </FavoritesProvider>

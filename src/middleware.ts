@@ -15,6 +15,7 @@ function isProtectedPath(pathname: string): boolean {
   if (pathname === "/messages" || pathname.startsWith("/messages/")) return true;
   if (pathname === "/requests" || pathname.startsWith("/requests/")) return true;
   if (pathname === "/bookings" || pathname.startsWith("/bookings/")) return true;
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
   return false;
 }
 
@@ -85,5 +86,7 @@ export const config = {
     "/bookings/:path*",
     "/pets/new",
     "/pets/:path*/edit",
+    "/admin",
+    "/admin/:path*",
   ],
 };

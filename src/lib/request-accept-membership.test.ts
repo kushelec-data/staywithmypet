@@ -51,6 +51,9 @@ function createSupabaseMock() {
 
   const client = {
     from: vi.fn((table: string) => {
+      if (table === "user_activity_events") {
+        return { insert: vi.fn(async () => ({ error: null })) };
+      }
       if (table !== "requests") {
         throw new Error(`Unexpected table ${table}`);
       }
@@ -61,9 +64,9 @@ function createSupabaseMock() {
               maybeSingle: vi.fn(async () => ({
                 data: {
                   status: state.status,
-                  date_from: "2026-08-01",
-                  date_to: "2026-08-03",
-                  requested_dates: ["2026-08-01", "2026-08-02", "2026-08-03"],
+                  date_from: "2026-12-01",
+                  date_to: "2026-12-03",
+                  requested_dates: ["2026-12-01", "2026-12-02", "2026-12-03"],
                   pet_parent_id: "parent-1",
                   pet_friend_id: "friend-1",
                 },

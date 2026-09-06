@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Pet } from "@/lib/pets";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { applyMarketplaceVisibility } from "@/lib/profile-marketplace-visibility";
+import { trackActivity } from "@/lib/activity/track";
 import { IMAGES, placeholderPetImage } from "@/lib/images";
 import { formatSupabaseError } from "@/lib/profile-load";
 import { resolveBreedFieldsForSave, resolvePetBreedDisplay } from "@/lib/pet-breeds";
@@ -267,6 +268,12 @@ export async function saveNewPet(
     throw new Error(formatSupabaseError(error));
   }
   if (!data) throw new Error("Could not save pet.");
+  void trackActivity(supabase, {
+    userId: ownerId,
+    eventType: "pet_created",
+    entityType: "pet",
+    entityId: data.id,
+  });
   await applyMarketplaceVisibility(supabase, ownerId);
   return data.id;
 }

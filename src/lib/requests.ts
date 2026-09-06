@@ -15,6 +15,7 @@ import {
   REQUEST_ACCESS_STATUSES,
 } from "@/lib/request-profile-access";
 import { speciesDisplayLabel } from "@/lib/pet-data";
+import { trackActivity } from "@/lib/activity/track";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import {
   parseProfileDetails,
@@ -818,6 +819,13 @@ export async function createCareRequest(
       status: payload.status,
     });
 
+    void trackActivity(supabase, {
+      userId: input.senderId,
+      eventType: "request_sent",
+      entityType: "request",
+      entityId: requestId,
+    });
+
     if (message) {
       try {
         await ensureConversationForRequest(supabase, requestId);
@@ -903,6 +911,12 @@ export async function respondToRequest(
       .eq("status", "pending");
 
     if (error) throw error;
+    void trackActivity(supabase, {
+      userId,
+      eventType: "request_declined",
+      entityType: "request",
+      entityId: requestId,
+    });
     return { conversationId: null };
   }
 
@@ -961,6 +975,19 @@ export async function respondToRequest(
       message: err instanceof Error ? err.message : String(err),
     });
   }
+
+  void trackActivity(supabase, {
+    userId,
+    eventType: "request_accepted",
+    entityType: "request",
+    entityId: requestId,
+  });
+  void trackActivity(supabase, {
+    userId,
+    eventType: "booking_created",
+    entityType: "request",
+    entityId: requestId,
+  });
 
   return { conversationId: resolvedConversationId };
 }

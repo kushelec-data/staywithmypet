@@ -18,6 +18,7 @@ import {
   ACCOUNT_SIDEBAR_MODE_SWITCH_ICON,
 } from "@/lib/account-sidebar-icons";
 import { mobileNavRowClass } from "@/components/navbar/mobile-nav-styles";
+import { AdminNavLink } from "@/components/admin/AdminNavLink";
 
 type NavbarUserMenuProps = {
   onLogout: () => void | Promise<void>;
@@ -189,6 +190,9 @@ export function NavbarUserMenu({
           </>
         ) : null}
         <li className="min-w-0 max-w-full">
+          <AdminNavLink className={mobileNavRowClass(pathname.startsWith("/admin"))} onClick={onNavigate} />
+        </li>
+        <li className="min-w-0 max-w-full">
           <button
             type="button"
             disabled={loggingOut}
@@ -259,6 +263,14 @@ export function NavbarUserMenu({
               {link.label}
             </Link>
           ))}
+          <AdminNavLink
+            className={`block px-4 py-2.5 text-sm font-medium transition-colors ${
+              pathname.startsWith("/admin")
+                ? "bg-brand-pink-muted text-brand-pink"
+                : "text-foreground/90 hover:bg-mint/40"
+            }`}
+            onClick={close}
+          />
           <div className="my-1 border-t border-border" />
           <button
             type="button"
