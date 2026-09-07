@@ -72,13 +72,13 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
       .select(
         "id, display_name, role, active_mode, role_chosen_at, is_public, created_at, avatar_url, bio, location, public_location, city, country, google_place_id, latitude, longitude, phone, phone_e164, languages, details",
       ),
-    admin.from("pets").select("id, owner_id, name"),
+    admin.from("pets").select("id, owner_id, name, created_at"),
     admin
       .from("requests")
-      .select("id, pet_id, pet_parent_id, pet_friend_id, sender_id, receiver_id, status, created_at, updated_at, date_from, date_to, requested_dates"),
+      .select("id, pet_id, pet_parent_id, pet_friend_id, sender_id, receiver_id, status, created_at, updated_at, date_from, date_to, requested_dates, responded_at"),
     admin
       .from("bookings")
-      .select("id, request_id, pet_id, pet_parent_id, pet_friend_id, status, created_at, start_date, end_date, completed_at"),
+      .select("id, request_id, pet_id, pet_parent_id, pet_friend_id, status, created_at, start_date, end_date, completed_at, cancelled_at"),
     admin.from("conversations").select("id, request_id, created_at"),
     admin.from("messages").select("id, conversation_id, sender_id, created_at"),
     admin
@@ -118,6 +118,7 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
       id: String(row.id),
       owner_id: String(row.owner_id),
       name: String(row.name ?? ""),
+      created_at: row.created_at ? String(row.created_at) : undefined,
     })),
     requests: (requestsRes.data ?? []) as AdminRequestLite[],
     bookings: (bookingsRes.data ?? []) as AdminBookingLite[],
@@ -140,6 +141,24 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
     favorites: (favoritesRes.data ?? []) as AdminCatalog["favorites"],
     notifications: (notificationsRes.data ?? []) as AdminCatalog["notifications"],
   };
+}
+
+export async function loadActivityEventsInRange() {
+  const admin = createAdminClient();
+  if (!admin) return [];
+  const { data } = await admin
+    .from("user_activity_events")
+    .select("user_id, event_type, entity_type, entity_id, page_path, created_at")
+    .order("created_at", { ascending: false })
+    .limit(8000);
+  return (data ?? []).map((row) => ({
+    user_id: (row.user_id as string | null) ?? null,
+    event_type: String(row.event_type),
+    entity_type: (row.entity_type as string | null) ?? null,
+    entity_id: (row.entity_id as string | null) ?? null,
+    page_path: (row.page_path as string | null) ?? null,
+    created_at: String(row.created_at),
+  }));
 }
 
 export async function loadActivityEvents(page: number, pageSize: number) {

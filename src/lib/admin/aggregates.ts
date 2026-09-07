@@ -51,6 +51,7 @@ export type AdminRequestLite = {
   date_from?: string | null;
   date_to?: string | null;
   requested_dates?: string[] | null;
+  responded_at?: string | null;
 };
 
 export type AdminBookingLite = {
@@ -64,6 +65,7 @@ export type AdminBookingLite = {
   start_date: string | null;
   end_date: string | null;
   completed_at: string | null;
+  cancelled_at?: string | null;
 };
 
 export type AdminConversationLite = {
@@ -105,6 +107,7 @@ export type AdminPetLite = {
   id: string;
   owner_id: string;
   name: string;
+  created_at?: string;
 };
 
 export type AdminUserRow = {

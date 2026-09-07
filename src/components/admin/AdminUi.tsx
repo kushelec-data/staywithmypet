@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ChartNoAxesCombined } from "lucide-react";
 import { ADMIN_NAV } from "@/lib/admin/nav";
 import {
   ACCOUNT_CARD_CLASS,
@@ -33,8 +34,11 @@ export function AdminShell({
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3 py-1.5 text-sm font-semibold ${active ? ACCOUNT_NAV_ACTIVE_CLASS : ACCOUNT_NAV_INACTIVE_CLASS}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold ${active ? ACCOUNT_NAV_ACTIVE_CLASS : ACCOUNT_NAV_INACTIVE_CLASS}`}
             >
+              {item.href === "/admin/analytics" ? (
+                <ChartNoAxesCombined className="h-4 w-4 shrink-0" aria-hidden />
+              ) : null}
               {item.label}
             </Link>
           );
