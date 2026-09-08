@@ -1,16 +1,25 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
+  CARE_LOCATION_PREFERENCE_OPTIONS,
+  CARE_LOCATION_QUERY_KEY,
+  applyCareLocationToSearchParams,
   matchesCareLocationPreferenceFilter,
   normalizeCareLocationPreference,
   parseCareLocationQuery,
 } from "@/lib/care-location-preference";
 import { mergePetFriendIntoDetails, petFriendFormFromDetailsRaw } from "@/lib/profile-friend-form";
 import { mergePetParentIntoDetails, petParentFormFromDetailsRaw } from "@/lib/profile-parent-form";
-import { filterPetFriendSearchProfiles } from "@/lib/pet-friend-search";
+import { emptyPetFriendSearchFilters, filterPetFriendSearchProfiles } from "@/lib/pet-friend-search";
 import { petMatchesCareLocation, type PetSearchFilterable } from "@/lib/pet-search-match";
+import { petFriendSearchCareLocationOptions } from "@/lib/pet-friend-search-filter-config";
+import { petSearchCareLocationOptions } from "@/lib/pet-search-filter-config";
 import { getTranslations } from "@/i18n/translations";
 import { translateProfileHelper, translateProfileLabel } from "@/lib/profile-translations";
 import { DEFAULT_PHOTO_POSITION } from "@/lib/photo-position";
+import type { SearchProfile } from "@/lib/search-profiles";
+import { filterOptionDisplayLabel } from "@/lib/filter-option-labels";
 
 function friendProfile(preference: string | null): SearchProfile {
   return {
@@ -123,6 +132,7 @@ describe("care location labels", () => {
     expect(translateProfileLabel("Either / Flexible", "en")).toBe("Either / Flexible");
     expect(translateProfileLabel("Care location", "en")).toBe("Care location");
     expect(getTranslations("en").searchFilters.careLocation).toBe("Care location");
+    expect(getTranslations("en").searchFilters.careLocationSelect).toBe("Select care location");
   });
 
   it("uses ET labels", () => {
@@ -137,6 +147,7 @@ describe("care location labels", () => {
     expect(translateProfileLabel("Either / Flexible", "et")).toBe("Paindlik / mõlemad sobivad");
     expect(translateProfileLabel("Care location", "et")).toBe("Hoolduse asukoht");
     expect(getTranslations("et").searchFilters.careLocation).toBe("Hoolduse asukoht");
+    expect(getTranslations("et").searchFilters.careLocationSelect).toBe("Vali hoolduse asukoht");
   });
 });
 
@@ -148,17 +159,7 @@ describe("care location filters", () => {
       friendProfile("pet_owner_home"),
       friendProfile(null),
     ];
-    const unfiltered = filterPetFriendSearchProfiles(profiles, {
-      location: "",
-      petTypesAccepted: [],
-      careTypesOffered: [],
-      availabilityDates: [],
-      experienceLevels: [],
-      homeSuitability: [],
-      languages: [],
-      verifiedOnly: false,
-      careLocation: "",
-    });
+    const unfiltered = filterPetFriendSearchProfiles(profiles, emptyPetFriendSearchFilters());
     expect(unfiltered).toHaveLength(4);
 
     const filtered = filterPetFriendSearchProfiles(profiles, {
@@ -196,6 +197,47 @@ describe("care location filters", () => {
 
   it("ignores invalid query params", () => {
     expect(parseCareLocationQuery("not-a-place")).toBe("");
+    expect(parseCareLocationQuery("any")).toBe("");
     expect(parseCareLocationQuery("pet_friend_home")).toBe("pet_friend_home");
+  });
+
+  it("clearing the filter removes careLocation from the URL", () => {
+    const withFilter = new URLSearchParams("careTypes=walks&careLocation=pet_friend_home");
+    const cleared = applyCareLocationToSearchParams(withFilter, "");
+    expect(cleared.get(CARE_LOCATION_QUERY_KEY)).toBeNull();
+    expect(cleared.get("careTypes")).toBe("walks");
+    const setAgain = applyCareLocationToSearchParams(cleared, "flexible");
+    expect(setAgain.get(CARE_LOCATION_QUERY_KEY)).toBe("flexible");
+  });
+
+  it("does not show an Any option in Find Care or Find Pets filters", () => {
+    const friendUi = readFileSync(
+      join(process.cwd(), "src/components/search/PetFriendSearchFilters.tsx"),
+      "utf8",
+    );
+    const petUi = readFileSync(
+      join(process.cwd(), "src/components/search/PetSearchFilters.tsx"),
+      "utf8",
+    );
+    expect(friendUi).not.toMatch(/careLocationAny/);
+    expect(petUi).not.toMatch(/careLocationAny/);
+    expect(friendUi).not.toMatch(/label: f\.careLocationAny/);
+    expect(petUi).not.toMatch(/label: f\.careLocationAny/);
+
+    const values = CARE_LOCATION_PREFERENCE_OPTIONS.map((o) => o.value);
+    expect(values).toEqual(["pet_friend_home", "pet_owner_home", "flexible"]);
+    expect(petFriendSearchCareLocationOptions.map((o) => o.value)).toEqual(values);
+    expect(petSearchCareLocationOptions.map((o) => o.value)).toEqual(values);
+
+    expect(petSearchCareLocationOptions.map((o) => filterOptionDisplayLabel(o, "en"))).toEqual([
+      "At Pet Friend's home",
+      "At Pet Owner's home",
+      "Either / Flexible",
+    ]);
+    expect(petSearchCareLocationOptions.map((o) => filterOptionDisplayLabel(o, "et"))).toEqual([
+      "Loomasõbra juures",
+      "Loomaomaniku juures",
+      "Paindlik / mõlemad sobivad",
+    ]);
   });
 });

@@ -99,13 +99,8 @@ export function PetFriendSearchFilters({
   );
 
   const careLocationCards = useMemo(
-    () => [
-      {
-        value: "",
-        label: f.careLocationAny,
-        icon: <LocationFlexibleIcon />,
-      },
-      ...petFriendSearchCareLocationOptions.map((opt) => ({
+    () =>
+      petFriendSearchCareLocationOptions.map((opt) => ({
         value: opt.value,
         label: filterOptionDisplayLabel(opt, locale),
         icon:
@@ -117,8 +112,7 @@ export function PetFriendSearchFilters({
             <LocationFlexibleIcon />
           ),
       })),
-    ],
-    [f, locale],
+    [locale],
   );
 
   function handleClear() {
@@ -179,11 +173,14 @@ export function PetFriendSearchFilters({
       </FilterSection>
 
       <FilterSection title={f.careLocation} id="filter-friend-care-location">
+        {!filters.careLocation ? (
+          <p className="mb-2 text-xs text-muted">{f.careLocationSelect}</p>
+        ) : null}
         <FilterOptionCards
           ariaLabelledBy="filter-friend-care-location"
           options={careLocationCards}
           value={filters.careLocation}
-          allowEmpty={false}
+          allowEmpty
           onChange={(careLocation) => onChange({ ...filters, careLocation })}
         />
       </FilterSection>

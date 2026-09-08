@@ -118,19 +118,13 @@ export function PetSearchFilters({
   const showBreedFilter = breedOptions.length > 0;
 
   const careLocationCards = useMemo(
-    () => [
-      {
-        value: "",
-        label: f.careLocationAny,
-        icon: <LocationFlexibleIcon />,
-      },
-      ...petSearchCareLocationOptions.map((opt) => ({
+    () =>
+      petSearchCareLocationOptions.map((opt) => ({
         value: opt.value,
         label: filterOptionDisplayLabel(opt, locale),
         icon: CARE_LOCATION_ICONS[opt.value] ?? <LocationFlexibleIcon />,
       })),
-    ],
-    [f, locale],
+    [locale],
   );
 
   const careTypeChips = useMemo(
@@ -244,11 +238,14 @@ export function PetSearchFilters({
       </FilterSection>
 
       <FilterSection title={f.careLocation} id="filter-care-location">
+        {!filters.careLocation ? (
+          <p className="mb-2 text-xs text-muted">{f.careLocationSelect}</p>
+        ) : null}
         <FilterOptionCards
           ariaLabelledBy="filter-care-location"
           options={careLocationCards}
           value={filters.careLocation}
-          allowEmpty={false}
+          allowEmpty
           onChange={(careLocation) => onChange({ ...filters, careLocation })}
         />
       </FilterSection>

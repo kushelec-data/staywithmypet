@@ -88,6 +88,18 @@ export function parseCareLocationQuery(
   return normalizeCareLocationPreference(value) ?? "";
 }
 
+/** Write or remove `careLocation` on a query string. Empty/invalid → param omitted. */
+export function applyCareLocationToSearchParams(
+  params: URLSearchParams,
+  selected: string | null | undefined,
+): URLSearchParams {
+  const next = new URLSearchParams(params.toString());
+  const value = parseCareLocationQuery(selected);
+  if (!value) next.delete(CARE_LOCATION_QUERY_KEY);
+  else next.set(CARE_LOCATION_QUERY_KEY, value);
+  return next;
+}
+
 /**
  * Marketplace filter:
  * - empty filter → all profiles (including null/unknown)

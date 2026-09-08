@@ -36,7 +36,7 @@ import type { Pet } from "@/lib/pets";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
 import { createClient } from "@/lib/supabase";
 import type { Dictionary } from "@/i18n/translations";
-import { CARE_LOCATION_QUERY_KEY, parseCareLocationQuery } from "@/lib/care-location-preference";
+import { CARE_LOCATION_QUERY_KEY, applyCareLocationToSearchParams, parseCareLocationQuery } from "@/lib/care-location-preference";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -437,11 +437,9 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
   useEffect(() => {
     const selected = isPets ? appliedPetFilters.careLocation : appliedFriendFilters.careLocation;
     const next = parseCareLocationQuery(selected);
-    const params = new URLSearchParams(searchParams.toString());
-    const current = parseCareLocationQuery(params.get(CARE_LOCATION_QUERY_KEY));
+    const params = applyCareLocationToSearchParams(searchParams, next);
+    const current = parseCareLocationQuery(searchParams.get(CARE_LOCATION_QUERY_KEY));
     if ((current || "") === (next || "")) return;
-    if (!next) params.delete(CARE_LOCATION_QUERY_KEY);
-    else params.set(CARE_LOCATION_QUERY_KEY, next);
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [
@@ -491,7 +489,14 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
     <PetSearchFilters
       searchMode="pets"
       filters={petFilters}
-      onChange={setPetFilters}
+      onChange={(next) => {
+        setPetFilters(next);
+        if (!next.careLocation) {
+          setAppliedPetFilters((prev) =>
+            prev.careLocation ? { ...prev, careLocation: "" } : prev,
+          );
+        }
+      }}
       onApply={() => {
         setAppliedPetFilters({ ...petFilters });
         void trackMarketplaceSearch("pets");
@@ -505,7 +510,14 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
   ) : (
     <PetFriendSearchFilters
       filters={friendFilters}
-      onChange={setFriendFilters}
+      onChange={(next) => {
+        setFriendFilters(next);
+        if (!next.careLocation) {
+          setAppliedFriendFilters((prev) =>
+            prev.careLocation ? { ...prev, careLocation: "" } : prev,
+          );
+        }
+      }}
       onApply={() => {
         setAppliedFriendFilters({ ...friendFilters });
         void trackMarketplaceSearch("care");

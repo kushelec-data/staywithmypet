@@ -2344,7 +2344,7 @@ export const et = {
     temperament: "Iseloom",
     activityNeeds: "Liikumisvajadus",
     careLocation: "Hoolduse asukoht",
-    careLocationAny: "Kõik",
+    careLocationSelect: "Vali hoolduse asukoht",
     careType: "Hoiutüüp",
     verification: "Kinnitamine",
     verifiedOnly: "Näita ainult kontrollitud profiile",

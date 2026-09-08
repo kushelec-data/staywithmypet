@@ -2339,7 +2339,7 @@ export const en = {
     temperament: "Temperament",
     activityNeeds: "Activity Needs",
     careLocation: "Care location",
-    careLocationAny: "Any",
+    careLocationSelect: "Select care location",
     careType: "Care Type",
     verification: "Verification",
     verifiedOnly: "Verified profiles only",
