@@ -1,0 +1,218 @@
+import { escapeHtml } from "@/lib/emails/layout";
+import { eventButtonLabel, type CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
+
+export const TRACK_PLACEHOLDER_PREFIX = "https://swmp.invalid/track/click/";
+export const OPEN_PIXEL_PLACEHOLDER = "https://swmp.invalid/track/open/PLACEHOLDER";
+
+export function clickPlaceholder(linkKey: string): string {
+  return `${TRACK_PLACEHOLDER_PREFIX}${linkKey}`;
+}
+
+/** Email-client compatible button: whole cell is the clickable <a>. Destination URL is never printed. */
+export function tableEventButton(label: string, href: string): string {
+  const safeHref = escapeHtml(href);
+  const safeLabel = escapeHtml(label);
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 4px;">
+  <tr>
+    <td align="center" bgcolor="#1a6b5c" style="background-color:#1a6b5c;border-radius:8px;mso-padding-alt:12px 28px;">
+      <a href="${safeHref}" target="_blank" style="display:inline-block;padding:12px 28px;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:18px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.02em;">${safeLabel}</a>
+    </td>
+  </tr>
+</table>`;
+}
+
+function eventCard(
+  language: CampaignLanguage,
+  link: (typeof SEPTEMBER_EVENT_LINKS)[number],
+  href: string,
+): string {
+  const date = language === "et" ? link.dateLabelEt : link.dateLabelEn;
+  const time = language === "et" ? link.timeEt : link.timeEn;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;background-color:#f7f5f0;border:1px solid #e8e2d6;border-radius:12px;">
+  <tr>
+    <td style="padding:18px 20px;">
+      <p style="margin:0 0 6px;font-size:14px;line-height:1.4;color:#1a6b5c;font-weight:700;">${escapeHtml(date)}</p>
+      <p style="margin:0 0 4px;font-size:18px;line-height:1.35;color:#1a1a1a;font-weight:700;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(link.title)}</p>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:#555555;">${escapeHtml(time)}</p>
+      ${tableEventButton(eventButtonLabel(language), href)}
+    </td>
+  </tr>
+</table>`;
+}
+
+function enBody(clickHrefs: Record<string, string>): string {
+  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("en", link, clickHrefs[link.key] ?? clickPlaceholder(link.key))).join("");
+  return `
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Hi!</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">This September, we’re bringing the Stay With My Pet community together in real life for the very first time. 🐾</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">We’re hosting three free community events at Restaurant Moon, all about making life with pets better – for both animals and the people who love them.</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">We’ve invited experts from different fields to share practical knowledge about pet health, behaviour and wellbeing. Across the three events, we’ll cover topics ranging from pet first aid and dental care to canine movement and behaviour. We’ll also look at the relationship from the other side – how pets can positively influence our own mental wellbeing.</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#333333;">This time, the main focus will be on dogs, but all Pet Parents and Pet Friends are warmly welcome. Friendly, well-behaved dogs are very welcome to join with their humans too. 🐶</p>
+<p style="margin:0 0 12px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">Choose the event that suits you:</p>
+${cards}
+<p style="margin:8px 0 16px;font-size:15px;line-height:1.65;color:#333333;">📍 All three events will take place at <strong>Restaurant Moon in Telliskivi</strong>, and <strong>attendance is free</strong>.</p>
+<p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">There’s more to look forward to than just the talks</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">YOOK will welcome us with a refreshing drink, while Gelato Ladies will bring along their ice cream cart with something delicious for both people and dogs – including a special dog-friendly ice cream created especially for our events. 🍦🐶</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Drinks and light snacks will be available to purchase from Moon throughout the event, and from 13:00 the kitchen will also be open if you’d like something more substantial.</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Every guest will also receive a small goodie bag put together with the help of our wonderful partners</strong>, filled with surprises, especially for our canine guests. 🎁</p>
+<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">A big thank you to our event partners and supporters:</p>
+<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1a6b5c;font-weight:600;">PetCity · Platinum · ViWell · Semu · YOOK · Gelato Ladies · Moon 🤍</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>If you’re planning to join us, please mark “Going” on the relevant Facebook event</strong>, so we can get a better idea of how many guests to expect.</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.</p>
+<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">See you at Moon! 🐾</p>
+<p style="margin:0;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; the Stay With My Pet team</p>`;
+}
+
+function etBody(clickHrefs: Record<string, string>): string {
+  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("et", link, clickHrefs[link.key] ?? clickPlaceholder(link.key))).join("");
+  return `
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Tere!</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Septembris toome Stay With My Peti kogukonna esimest korda kokku ka päriselus. 🐾</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Korraldame restoranis Moon kolm tasuta kogukonnaüritust, kus räägime sellest, kuidas muuta elu koos lemmikuga paremaks – nii loomade kui ka inimeste jaoks.</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Oleme kokku kutsunud erinevate valdkondade eksperdid, kes jagavad praktilisi teadmisi loomade tervisest, käitumisest ja heaolust. Ürituste jooksul räägime muu hulgas lemmikute esmaabist ja suuhügieenist, koerte liikumisest ja käitumisest ning vaatame ka teisele poole – kuidas mõjutavad lemmikloomad meie enda vaimset heaolu.</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#333333;">Seekord on suurem tähelepanu koertel, kuid osalema on oodatud kõik loomaomanikud ja loomasõbrad. Ka sõbralikud ja hästi käituvad koerad on koos oma inimestega väga oodatud. 🐶</p>
+<p style="margin:0 0 12px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">Vali endale sobiv sündmus:</p>
+${cards}
+<p style="margin:8px 0 16px;font-size:15px;line-height:1.65;color:#333333;">📍 Kõik kolm sündmust toimuvad <strong>restoranis Moon, Telliskivis</strong> ning <strong>osalemine on tasuta</strong>.</p>
+<p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">Lisaks loengutele ootab sind kohapeal veel nii mõndagi</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Tervitusjoogiga kostitab meid YOOK ning Gelato Ladies toob kohale oma jäätisekäru, kust leiab midagi head nii inimestele kui ka koertele – spetsiaalselt meie sündmuste jaoks valmib ka koertele mõeldud jäätis. 🍦🐶</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alates kella 13st on avatud ka köök toekamaks kehakinnituseks.</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott</strong>, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁</p>
+<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Suur aitäh meie sündmuste headele partneritele ja toetajatele:</p>
+<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1a6b5c;font-weight:600;">PetCity · Platinum · ViWell · Semu · YOOK · Gelato Ladies · Moon 🤍</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“</strong>, et oskaksime külaliste arvuga võimalikult hästi arvestada.</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.</p>
+<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Kohtumiseni Moonis! 🐾</p>
+<p style="margin:0;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; Stay With My Peti tiim</p>`;
+}
+
+export function wrapCampaignEmail(opts: {
+  language: CampaignLanguage;
+  headline: string;
+  preheader: string;
+  innerHtml: string;
+  logoUrl: string;
+  openPixelUrl: string;
+}): string {
+  const headline = escapeHtml(opts.headline);
+  const preheader = escapeHtml(opts.preheader);
+  const logo = escapeHtml(opts.logoUrl);
+  const pixel = escapeHtml(opts.openPixelUrl);
+  return `<!DOCTYPE html>
+<html lang="${opts.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>${headline}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f7f5f0;">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${preheader}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f5f0;">
+    <tr>
+      <td align="center" style="padding:28px 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+          <tr>
+            <td style="padding:0 0 16px;text-align:center;">
+              <img src="${logo}" alt="Stay With My Pet" width="140" style="display:inline-block;max-width:140px;height:auto;border:0;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e8e2d6;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#1a6b5c;padding:22px 28px;">
+                    <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#d4ede4;font-weight:700;">Stay With My Pet</p>
+                    <h1 style="margin:0;font-size:22px;line-height:1.35;color:#ffffff;font-weight:700;font-family:Georgia,'Times New Roman',serif;">${headline}</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:28px 28px 8px;background-color:#ffffff;">
+                    ${opts.innerHtml}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 28px 28px;background-color:#ffffff;">
+                    <p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#888888;">Stay With My Pet · Tallinn</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <img src="${pixel}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;" />
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+const PREHEADER_EN = "Free talks, practical tips and great company – choose the event that suits you best.";
+const PREHEADER_ET = "Tasuta loengud, praktilised teadmised ja mõnus seltskond – vali endale sobiv sündmus.";
+const HEADLINE_EN = "🐾 Join us for a relaxed and inspiring Sunday all about life with pets!";
+const HEADLINE_ET = "🐾 Tule veeda üks mõnus ja sisukas pühapäev koos teiste loomasõpradega!";
+
+export function renderSeptemberCampaignHtml(opts: {
+  language: CampaignLanguage;
+  logoUrl: string;
+  openPixelUrl: string;
+  clickHrefs: Record<string, string>;
+}): string {
+  const inner = opts.language === "et" ? etBody(opts.clickHrefs) : enBody(opts.clickHrefs);
+  return wrapCampaignEmail({
+    language: opts.language,
+    headline: opts.language === "et" ? HEADLINE_ET : HEADLINE_EN,
+    preheader: opts.language === "et" ? PREHEADER_ET : PREHEADER_EN,
+    innerHtml: inner,
+    logoUrl: opts.logoUrl,
+    openPixelUrl: opts.openPixelUrl,
+  });
+}
+
+export function defaultSeptemberBodies(logoUrl: string): { htmlEn: string; htmlEt: string } {
+  const clickHrefs = Object.fromEntries(
+    SEPTEMBER_EVENT_LINKS.map((link) => [link.key, clickPlaceholder(link.key)]),
+  );
+  return {
+    htmlEn: renderSeptemberCampaignHtml({
+      language: "en",
+      logoUrl,
+      openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
+      clickHrefs,
+    }),
+    htmlEt: renderSeptemberCampaignHtml({
+      language: "et",
+      logoUrl,
+      openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
+      clickHrefs,
+    }),
+  };
+}
+
+export function applyTrackingToHtml(
+  html: string,
+  opts: { openPixelUrl: string; clickUrls: Record<string, string> },
+): string {
+  let next = html.replaceAll(OPEN_PIXEL_PLACEHOLDER, opts.openPixelUrl);
+  for (const [key, url] of Object.entries(opts.clickUrls)) {
+    next = next.replaceAll(clickPlaceholder(key), url);
+  }
+  return next;
+}
+
+export function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function hrefsInHtml(html: string): string[] {
+  return [...html.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
+}

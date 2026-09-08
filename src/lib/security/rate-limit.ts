@@ -14,6 +14,7 @@ export type RateLimitAction =
   | "file_upload"
   | "contact_form"
   | "newsletter_signup"
+  | "email_campaign_track"
   | "api_default";
 
 const LIMITS: Record<RateLimitAction, { max: number; windowMs: number }> = {
@@ -25,6 +26,7 @@ const LIMITS: Record<RateLimitAction, { max: number; windowMs: number }> = {
   file_upload: { max: 30, windowMs: 60 * 60 * 1000 },
   contact_form: { max: 5, windowMs: 60 * 60 * 1000 },
   newsletter_signup: { max: 10, windowMs: 60 * 60 * 1000 },
+  email_campaign_track: { max: 120, windowMs: 60 * 1000 },
   api_default: { max: 120, windowMs: 60 * 1000 },
 };
 

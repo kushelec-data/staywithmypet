@@ -8,4 +8,5 @@ export const ADMIN_NAV = [
   { href: "/admin/conversations", label: "Conversations" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/matches", label: "Matches" },
+  { href: "/admin/email-campaigns", label: "Email campaigns" },
 ] as const;

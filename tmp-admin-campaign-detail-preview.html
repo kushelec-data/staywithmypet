@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin · Campaign detail</title>
+  <style>
+    body { margin:0; background:#F8F6F1; font-family: system-ui, sans-serif; color:#1a1a1a; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
+    .eyebrow { color:#2E6B3F; font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:8px 0 8px; font-size:26px; }
+    .muted { color:#666; font-size:14px; }
+    .kpis { display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; margin:20px 0; }
+    .kpi { background:#F8F6F1; border:1px solid #E5E2D8; border-radius:20px; padding:16px; }
+    .kpi p { margin:0; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#2E6B3F; }
+    .kpi strong { display:block; margin-top:6px; font-size:26px; }
+    table { width:100%; border-collapse:collapse; border:1px solid #E5E2D8; border-radius:20px; overflow:hidden; }
+    th { background:#DDEEDF; color:#2E6B3F; font-size:11px; text-transform:uppercase; text-align:left; padding:10px 12px; }
+    td { padding:10px 12px; border-top:1px solid #E5E2D8; font-size:14px; }
+    .locked { background:#E5E2D8; color:#888; border:0; border-radius:999px; padding:8px 16px; font-weight:700; }
+    .btn2 { background:transparent; color:#2E6B3F; border:1px solid #2E6B3F; border-radius:999px; padding:8px 16px; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Internal</p>
+    <h1>September community events (test)</h1>
+    <p class="muted">From: Stay With My Pet &lt;info@staywithmypet.ee&gt; · Status: draft</p>
+    <div class="kpis">
+      <div class="kpi"><p>Recipients</p><strong>2</strong></div>
+      <div class="kpi"><p>Sent</p><strong>0</strong></div>
+      <div class="kpi"><p>Opened</p><strong>0</strong></div>
+      <div class="kpi"><p>Unique clicks</p><strong>0</strong></div>
+      <div class="kpi"><p>Failed</p><strong>0</strong></div>
+    </div>
+    <p class="muted" style="font-size:12px;">Open tracking is approximate. Many mail clients block, cache, or preload images, so opens can be missing or inflated.</p>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Language</th><th>Sent</th><th>Opened</th><th>Clicked</th><th>Last activity</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Gerly Kullamaa</td><td>gerlykullamaa@gmail.com</td><td>EN</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Pending</td></tr>
+        <tr><td>Kush Chadha</td><td>kusheducation@gmail.com</td><td>EN</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Pending</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:20px;"><button class="btn2">Send test</button> <button class="locked">Send campaign (locked)</button></p>
+  </div>
+</body>
+</html>
