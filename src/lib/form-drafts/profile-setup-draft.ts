@@ -5,6 +5,11 @@ import {
   petFriendFormFromDetailsRaw,
   type PetFriendProfileFormInput,
 } from "@/lib/profile-friend-form";
+import {
+  emptyPetParentProfileForm,
+  petParentFormFromDetailsRaw,
+  type PetParentProfileFormInput,
+} from "@/lib/profile-parent-form";
 import { profileLocationFromRow, EMPTY_PROFILE_LOCATION_FORM } from "@/lib/profile-location";
 import type { ProfileRow } from "@/lib/profile-utils";
 import { parseEmergencyContactFromProfile } from "@/lib/trust-safety";
@@ -23,6 +28,7 @@ export type ProfileSetupDraftData = {
   bio: string;
   trustSafety: TrustSafetyFormValues;
   petFriendForm: PetFriendProfileFormInput;
+  petParentForm: PetParentProfileFormInput;
 };
 
 function trustSafetyFromProfile(profile: ProfileRow): TrustSafetyFormValues {
@@ -56,6 +62,7 @@ export function buildProfileSetupDraftFromProfile(profile: ProfileRow): ProfileS
       profile.details,
       normalizeAvailabilityDates(sched?.selected_dates ?? []),
     ),
+    petParentForm: petParentFormFromDetailsRaw(profile.details),
   };
 }
 
@@ -70,5 +77,6 @@ export function emptyProfileSetupDraft(): ProfileSetupDraftData {
     bio: "",
     trustSafety: emptyTrustSafetyFormValues,
     petFriendForm: emptyPetFriendProfileForm(),
+    petParentForm: emptyPetParentProfileForm(),
   };
 }

@@ -8,9 +8,9 @@ import {
   ProfileChipSingleSelect,
   ProfileYesNoToggle,
 } from "@/components/profile/form/ProfileFormFields";
+import { CareLocationPreferenceField } from "@/components/profile/form/CareLocationPreferenceField";
 import {
   experienceLevelOptions,
-  preferredCareLocationOptions,
 } from "@/lib/pet-care-labels";
 import type { PetFriendProfileFormInput } from "@/lib/profile-friend-form";
 import {
@@ -31,7 +31,7 @@ import {
 import { translateProfileHelper, translateProfileLabel } from "@/lib/profile-translations";
 import type { ProfileRequiredFieldId } from "@/lib/profile-required-fields";
 import { FormFieldError } from "@/components/forms/RequiredFieldLabel";
-import { ArrowLeftRight, Dog, Heart, Home, MapPin, Sparkles } from "lucide-react";
+import { Dog, Heart, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
 type PetFriendProfileFormSectionsProps = {
@@ -113,22 +113,6 @@ export function PetFriendProfileFormSections({
       })),
     [locale],
   );
-  const careLocationChipOptions = useMemo(
-    () =>
-      preferredCareLocationOptions.map((o) => ({
-        ...o,
-        label: pl(o.label),
-        icon:
-          o.value === "at_my_home" ? (
-            <Home className="h-3.5 w-3.5" />
-          ) : o.value === "at_pet_parent_home" ? (
-            <MapPin className="h-3.5 w-3.5" />
-          ) : (
-            <ArrowLeftRight className="h-3.5 w-3.5" />
-          ),
-      })),
-    [locale],
-  );
   const livingTypeSelectOptions = useMemo(
     () => toProfileStringChipOptions(livingTypeOptions, locale),
     [locale],
@@ -205,9 +189,8 @@ export function PetFriendProfileFormSections({
             fieldId="friend-experience-level"
             error={fieldErrors?.experience}
           />
-          <ProfileChipSingleSelect
-            label={pl("Preferred care location")}
-            options={careLocationChipOptions}
+          <CareLocationPreferenceField
+            name="pet-friend-care-location-preference"
             value={form.preferredCareLocation}
             onChange={(preferredCareLocation) => patch(form, onChange, { preferredCareLocation })}
             disabled={disabled}

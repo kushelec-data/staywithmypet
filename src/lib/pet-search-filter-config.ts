@@ -1,5 +1,6 @@
 /** Pet search filter options (from “Pet search filters” spec). */
 
+import { CARE_LOCATION_PREFERENCE_OPTIONS } from "@/lib/care-location-preference";
 import { CARE_TYPE_FILTER_OPTIONS } from "@/lib/care-type-options";
 import { buildLocalizedFilterOption, type LocalizedFilterOption } from "@/lib/filter-option-labels";
 
@@ -45,17 +46,10 @@ export const petSearchActivityOptions: LocalizedFilterOption[] = [
   buildLocalizedFilterOption("Outdoor play", "Outdoor play"),
 ];
 
-export const petSearchCareLocationOptions: LocalizedFilterOption[] = [
-  buildLocalizedFilterOption("At pet friend's home", "At pet borrower's home", [
-    "At pet friend's home",
-  ]),
-  buildLocalizedFilterOption("At pet owner's home", "At pet owner's home", [
-    "At pet parent's home",
-  ]),
-  buildLocalizedFilterOption("Either / flexible", "Either / flexible", [
-    "Flexible — either home works",
-  ]),
-];
+export const petSearchCareLocationOptions: LocalizedFilterOption[] =
+  CARE_LOCATION_PREFERENCE_OPTIONS.map((opt) =>
+    buildLocalizedFilterOption(opt.value, opt.label),
+  );
 
 export const petSearchCareTypeOptions: LocalizedFilterOption[] = CARE_TYPE_FILTER_OPTIONS.map(
   (opt) => buildLocalizedFilterOption(opt.value, opt.label, opt.aliases),

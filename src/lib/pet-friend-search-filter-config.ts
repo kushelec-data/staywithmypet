@@ -1,5 +1,6 @@
 /** Find Care / Pet Friend search filter options. */
 
+import { CARE_LOCATION_PREFERENCE_OPTIONS } from "@/lib/care-location-preference";
 import { CARE_TYPE_FILTER_OPTIONS } from "@/lib/care-type-options";
 import {
   buildLocalizedFilterOption,
@@ -56,6 +57,11 @@ export const petFriendSearchHomeOptions: LocalizedFilterOption[] = [
   buildLocalizedFilterOption("children_at_home", "Children at home", ["Kids"], "petFriend"),
   buildLocalizedFilterOption("smoke_free", "Smoke-free home", undefined, "petFriend"),
 ];
+
+export const petFriendSearchCareLocationOptions: LocalizedFilterOption[] =
+  CARE_LOCATION_PREFERENCE_OPTIONS.map((opt) =>
+    buildLocalizedFilterOption(opt.value, opt.label, undefined, "petFriend"),
+  );
 
 export const petFriendSearchLanguageOptions: LocalizedFilterOption[] = [
   buildLocalizedFilterOption("English", "English", undefined, "petFriend"),

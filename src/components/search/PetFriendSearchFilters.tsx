@@ -4,11 +4,18 @@ import { GooglePlacesInput } from "@/components/location/GooglePlacesInput";
 import { ActiveFilterChips } from "@/components/search/ActiveFilterChips";
 import { AvailabilityDatePicker } from "@/components/search/AvailabilityDatePicker";
 import { FilterChipGroup } from "@/components/search/FilterChipGroup";
+import { FilterOptionCards } from "@/components/search/FilterOptionCards";
 import { FilterSection, SearchFilterPanel } from "@/components/search/SearchFilterPanel";
-import { careTypeIconForValue } from "@/components/search/filter-icons";
-import { useLanguage } from "@/context/LanguageContext";
-import { toFilterChipOptions } from "@/lib/filter-option-labels";
 import {
+  careTypeIconForValue,
+  LocationFlexibleIcon,
+  LocationFriendHomeIcon,
+  LocationParentHomeIcon,
+} from "@/components/search/filter-icons";
+import { useLanguage } from "@/context/LanguageContext";
+import { toFilterChipOptions, filterOptionDisplayLabel } from "@/lib/filter-option-labels";
+import {
+  petFriendSearchCareLocationOptions,
   petFriendSearchCareTypeOptions,
   petFriendSearchExperienceOptions,
   petFriendSearchHomeOptions,
@@ -91,6 +98,29 @@ export function PetFriendSearchFilters({
     [locale],
   );
 
+  const careLocationCards = useMemo(
+    () => [
+      {
+        value: "",
+        label: f.careLocationAny,
+        icon: <LocationFlexibleIcon />,
+      },
+      ...petFriendSearchCareLocationOptions.map((opt) => ({
+        value: opt.value,
+        label: filterOptionDisplayLabel(opt, locale),
+        icon:
+          opt.value === "pet_friend_home" ? (
+            <LocationFriendHomeIcon />
+          ) : opt.value === "pet_owner_home" ? (
+            <LocationParentHomeIcon />
+          ) : (
+            <LocationFlexibleIcon />
+          ),
+      })),
+    ],
+    [f, locale],
+  );
+
   function handleClear() {
     const empty = emptyPetFriendSearchFilters();
     onChange(empty);
@@ -145,6 +175,16 @@ export function PetFriendSearchFilters({
           options={careTypeChips}
           selected={filters.careTypesOffered}
           onChange={(careTypesOffered) => onChange({ ...filters, careTypesOffered })}
+        />
+      </FilterSection>
+
+      <FilterSection title={f.careLocation} id="filter-friend-care-location">
+        <FilterOptionCards
+          ariaLabelledBy="filter-friend-care-location"
+          options={careLocationCards}
+          value={filters.careLocation}
+          allowEmpty={false}
+          onChange={(careLocation) => onChange({ ...filters, careLocation })}
         />
       </FilterSection>
 

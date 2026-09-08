@@ -12,6 +12,7 @@ import {
 import type { Locale } from "@/i18n/translations";
 import { getTranslations } from "@/i18n/translations";
 import {
+  petFriendSearchCareLocationOptions,
   petFriendSearchCareTypeOptions,
   petFriendSearchExperienceOptions,
   petFriendSearchHomeOptions,
@@ -122,7 +123,7 @@ export function buildPetSearchActiveChips(
   if (filters.careLocation) {
     chips.push({
       id: "care-location",
-      label: localizedLabelForValue(petSearchCareLocationOptions, filters.careLocation, locale),
+      label: `${getTranslations(locale).searchFilters.careLocation}: ${localizedLabelForValue(petSearchCareLocationOptions, filters.careLocation, locale)}`,
       onRemove: () => onChange({ ...filters, careLocation: "" }),
     });
   }
@@ -203,6 +204,14 @@ export function buildPetFriendSearchActiveChips(
         }),
     ),
   );
+
+  if (filters.careLocation) {
+    chips.push({
+      id: "care-location",
+      label: `${getTranslations(locale).searchFilters.careLocation}: ${localizedLabelForValue(petFriendSearchCareLocationOptions, filters.careLocation, locale)}`,
+      onRemove: () => onChange({ ...filters, careLocation: "" }),
+    });
+  }
   chips.push(
     ...multiChipsLocalized(
       "experience",

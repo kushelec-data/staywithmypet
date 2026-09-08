@@ -14,6 +14,7 @@ import { ProfileGalleryUpload } from "@/components/profile/ProfileGalleryUpload"
 import { ProfileRoleStatusCard } from "@/components/profile/ProfileRoleStatusCard";
 import { AvailabilityCalendar } from "@/components/calendar/AvailabilityCalendar";
 import { PetFriendProfileFormSections } from "@/components/profile/PetFriendProfileFormSections";
+import { PetParentProfileFormSection } from "@/components/profile/PetParentProfileFormSection";
 import { ProfileCollapsibleSection } from "@/components/profile/ProfileCollapsibleSection";
 import {
   PreferredVetClinicFormSection,
@@ -38,6 +39,11 @@ import {
   petFriendFormFromDetailsRaw,
   type PetFriendProfileFormInput,
 } from "@/lib/profile-friend-form";
+import {
+  emptyPetParentProfileForm,
+  petParentFormFromDetailsRaw,
+  type PetParentProfileFormInput,
+} from "@/lib/profile-parent-form";
 import { saveUserProfile, saveUserActiveMode, type ProfileRole, type ProfileSetupInput } from "@/lib/profile-setup";
 import { createClient } from "@/lib/supabase";
 import { availabilityUxForProfile } from "@/lib/availability-ux";
@@ -184,6 +190,9 @@ export function ProfileSetupForm({
   const [petFriendForm, setPetFriendForm] = useState<PetFriendProfileFormInput>(
     emptyPetFriendProfileForm,
   );
+  const [petParentForm, setPetParentForm] = useState<PetParentProfileFormInput>(
+    emptyPetParentProfileForm,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -206,6 +215,7 @@ export function ProfileSetupForm({
       bio,
       trustSafety,
       petFriendForm,
+      petParentForm,
     }),
     [
       displayName,
@@ -217,6 +227,7 @@ export function ProfileSetupForm({
       bio,
       trustSafety,
       petFriendForm,
+      petParentForm,
     ],
   );
 
@@ -230,6 +241,7 @@ export function ProfileSetupForm({
     setBio(draft.bio);
     setTrustSafety(draft.trustSafety);
     setPetFriendForm(draft.petFriendForm);
+    setPetParentForm(draft.petParentForm ?? emptyPetParentProfileForm());
   }, []);
 
   const { draftStatus, clearDraft, markHydratedFromServer } = useFormDraftStorage({
@@ -363,6 +375,7 @@ export function ProfileSetupForm({
             ),
           ),
         );
+        setPetParentForm(petParentFormFromDetailsRaw(profile.details));
         if (!profile.display_name?.trim() && user) {
           setDisplayName(resolveProfileDisplayName(user, null));
         }
@@ -393,6 +406,7 @@ export function ProfileSetupForm({
       setTrustSafety(emptyTrustSafetyFormValues);
       setAvatarUrl(null);
       setPetFriendForm(emptyPetFriendProfileForm());
+      setPetParentForm(emptyPetParentProfileForm());
     }
   }, [profile, profileLoading, user, setters, markHydratedFromServer, enablingSecondRole, enableMode]);
 
@@ -471,6 +485,7 @@ export function ProfileSetupForm({
             ),
           }
         : null,
+      petParent: showParentProfileSections ? petParentForm : null,
     };
 
     setSaving(true);
@@ -702,6 +717,26 @@ export function ProfileSetupForm({
             values={preferredVet}
             onChange={setPreferredVet}
             disabled={saving}
+          />
+        ) : null}
+
+        {showParentProfileSections ? (
+          <PetParentProfileFormSection
+            form={petParentForm}
+            onChange={setPetParentForm}
+            disabled={saving}
+            labels={{
+              ownPetsSummary: t.profileEdit.petParent.ownPetsSummary,
+              ownPetsSummaryPlaceholder: t.profileEdit.petParent.ownPetsSummaryPlaceholder,
+              careNeeds: t.profileEdit.petParent.careNeeds,
+              careNeedsPlaceholder: t.profileEdit.petParent.careNeedsPlaceholder,
+              homeLocationNotes: t.profileEdit.petParent.homeLocationNotes,
+              homeLocationNotesPlaceholder: t.profileEdit.petParent.homeLocationNotesPlaceholder,
+              preferredPetTypes: t.profileEdit.petParent.preferredPetTypes,
+              preferredCareTypes: t.profileEdit.petParent.preferredCareTypes,
+              petsLinkHint: t.profileEdit.petParent.petsLinkHint,
+              petsLinkLabel: t.profileEdit.petParent.petsLinkLabel,
+            }}
           />
         ) : null}
 

@@ -6,6 +6,7 @@ import { PageMain } from "@/components/layout/PageMain";
 import { RoleModeSearchGuard } from "@/components/role-mode/RoleModeSearchGuard";
 import { SearchPageContent } from "@/components/search/SearchPageContent";
 import { useLanguage } from "@/context/LanguageContext";
+import { Suspense } from "react";
 
 export function FindPetsPageClient() {
   const { t } = useLanguage();
@@ -21,7 +22,9 @@ export function FindPetsPageClient() {
 
       <PageMain>
         <RoleModeSearchGuard page="pets">
-          <SearchPageContent mode="pets" />
+          <Suspense fallback={null}>
+            <SearchPageContent mode="pets" />
+          </Suspense>
         </RoleModeSearchGuard>
       </PageMain>
 

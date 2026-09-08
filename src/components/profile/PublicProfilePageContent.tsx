@@ -6,6 +6,7 @@ import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { PublicApproximateMapCard } from "@/components/profile/public/PublicApproximateMapCard";
 import { MemberPublicTopCard } from "@/components/profile/public/MemberPublicTopCard";
 import { PublicMemberCareCard } from "@/components/profile/public/PublicMemberCareCard";
+import { PublicCareLocationCard } from "@/components/profile/public/PublicCareLocationCard";
 import { PublicMemberLivingCard } from "@/components/profile/public/PublicMemberLivingCard";
 import { PublicPetSummary } from "@/components/profile/public/PublicPetSummary";
 import { PublicProfileGallery } from "@/components/profile/public/PublicProfileGallery";
@@ -153,7 +154,9 @@ export function PublicProfilePageContent({ profileId }: PublicProfilePageContent
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
           <div className="min-w-0 space-y-4">
             {showPublicPetsSection(pets) ? <PublicPetSummary pets={pets} /> : null}
-            {showFriendSections ? <PublicMemberCareCard profile={profile} /> : null}
+            {showFriendSections ? <PublicMemberCareCard profile={profile} /> : (
+              <PublicCareLocationCard profile={profile} />
+            )}
             {showFriendSections ? <PublicMemberLivingCard profile={profile} /> : null}
             <PublicCompactReviewsCard
               reviews={reviews}

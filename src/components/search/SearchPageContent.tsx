@@ -5,6 +5,7 @@ import { PetAvailabilityModal } from "@/components/pets/PetAvailabilityModal";
 import { PetCard } from "@/components/pets/PetCard";
 import { OwnerCard } from "@/components/owners/OwnerCard";
 import { CareSearchParamsSync } from "@/components/search/CareSearchParamsSync";
+import { CareLocationParamsSync } from "@/components/search/CareLocationParamsSync";
 import { SearchLocationParamsSync } from "@/components/search/SearchLocationParamsSync";
 import { PetFriendSearchFilters } from "@/components/search/PetFriendSearchFilters";
 import { PetSearchFilters } from "@/components/search/PetSearchFilters";
@@ -35,8 +36,9 @@ import type { Pet } from "@/lib/pets";
 import type { SearchAvailabilityItem } from "@/lib/search-availability";
 import { createClient } from "@/lib/supabase";
 import type { Dictionary } from "@/i18n/translations";
+import { CARE_LOCATION_QUERY_KEY, parseCareLocationQuery } from "@/lib/care-location-preference";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type SearchPageMode = "pets" | "care";
@@ -264,6 +266,8 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = useMemo(() => createClient(), []);
   const isPets = mode === "pets";
 
@@ -417,6 +421,38 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
     [isPets],
   );
 
+  const applyCareLocationFromUrl = useCallback(
+    (careLocation: string) => {
+      if (isPets) {
+        setPetFilters((prev) => ({ ...prev, careLocation }));
+        setAppliedPetFilters((prev) => ({ ...prev, careLocation }));
+      } else {
+        setFriendFilters((prev) => ({ ...prev, careLocation }));
+        setAppliedFriendFilters((prev) => ({ ...prev, careLocation }));
+      }
+    },
+    [isPets],
+  );
+
+  useEffect(() => {
+    const selected = isPets ? appliedPetFilters.careLocation : appliedFriendFilters.careLocation;
+    const next = parseCareLocationQuery(selected);
+    const params = new URLSearchParams(searchParams.toString());
+    const current = parseCareLocationQuery(params.get(CARE_LOCATION_QUERY_KEY));
+    if ((current || "") === (next || "")) return;
+    if (!next) params.delete(CARE_LOCATION_QUERY_KEY);
+    else params.set(CARE_LOCATION_QUERY_KEY, next);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [
+    appliedFriendFilters.careLocation,
+    appliedPetFilters.careLocation,
+    isPets,
+    pathname,
+    router,
+    searchParams,
+  ]);
+
   useEffect(() => {
     setViewMode("list");
     setSelectedId(null);
@@ -492,6 +528,7 @@ export function SearchPageContent({ mode }: SearchPageContentProps) {
     >
       {!isPets ? <CareSearchParamsSync enabled onCareTypes={applyCareTypesFromUrl} /> : null}
       <SearchLocationParamsSync onLocation={applyLocationFromUrl} />
+      <CareLocationParamsSync onCareLocation={applyCareLocationFromUrl} />
 
       {/* Filters — desktop column; mobile list = inline, mobile map = sheet */}
       <div

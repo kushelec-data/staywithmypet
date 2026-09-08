@@ -59,9 +59,9 @@ function ToggleRow({
 }
 
 const CARE_LOCATION_ICONS: Record<string, ReactNode> = {
-  "At pet friend's home": <LocationFriendHomeIcon />,
-  "At pet owner's home": <LocationParentHomeIcon />,
-  "Either / flexible": <LocationFlexibleIcon />,
+  pet_friend_home: <LocationFriendHomeIcon />,
+  pet_owner_home: <LocationParentHomeIcon />,
+  flexible: <LocationFlexibleIcon />,
 };
 
 type PetSearchFiltersProps = {
@@ -118,18 +118,18 @@ export function PetSearchFilters({
   const showBreedFilter = breedOptions.length > 0;
 
   const careLocationCards = useMemo(
-    () =>
-      petSearchCareLocationOptions.map((opt) => ({
+    () => [
+      {
+        value: "",
+        label: f.careLocationAny,
+        icon: <LocationFlexibleIcon />,
+      },
+      ...petSearchCareLocationOptions.map((opt) => ({
         value: opt.value,
         label: filterOptionDisplayLabel(opt, locale),
-        description:
-          opt.value.includes("friend")
-            ? f.careLocationFriendHint
-            : opt.value.includes("owner")
-              ? f.careLocationParentHint
-              : f.careLocationFlexibleHint,
         icon: CARE_LOCATION_ICONS[opt.value] ?? <LocationFlexibleIcon />,
       })),
+    ],
     [f, locale],
   );
 
@@ -248,6 +248,7 @@ export function PetSearchFilters({
           ariaLabelledBy="filter-care-location"
           options={careLocationCards}
           value={filters.careLocation}
+          allowEmpty={false}
           onChange={(careLocation) => onChange({ ...filters, careLocation })}
         />
       </FilterSection>

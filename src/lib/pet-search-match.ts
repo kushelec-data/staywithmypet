@@ -1,3 +1,4 @@
+import { matchesCareLocationPreferenceFilter } from "@/lib/care-location-preference";
 import { isStandardBreedForSpecies, resolvePetBreedDisplay } from "@/lib/pet-breeds";
 import { careTypeFilterMatchVariants } from "@/lib/care-type-options";
 import { petSearchTemperamentOptions } from "@/lib/pet-search-filter-config";
@@ -17,6 +18,7 @@ export type PetSearchFilterable = {
   requiresMedication: boolean | null;
   walkNeeds: string | null;
   careLocation: string | null;
+  ownerCareLocationPreference: string | null;
   careTypes: string[];
   availabilityDates: string[];
   locationArea: string | null;
@@ -113,19 +115,8 @@ export function petMatchesActivity(pet: PetSearchFilterable, activities: string[
 
 export function petMatchesCareLocation(pet: PetSearchFilterable, locations: string[]): boolean {
   if (!locations.length) return true;
-  const loc = norm(pet.careLocation ?? "");
-  if (!loc) return false;
-  return locations.some((l) => {
-    const n = norm(l);
-    if (n.includes("flexible") || n.includes("either")) {
-      return loc.includes("flexible") || loc.includes("either");
-    }
-    if (n.includes("friend")) return loc.includes("friend");
-    if (n.includes("parent") || n.includes("owner")) {
-      return loc.includes("owner") || loc.includes("parent");
-    }
-    return loc.includes(n);
-  });
+  const selected = locations.find(Boolean) ?? "";
+  return matchesCareLocationPreferenceFilter(pet.ownerCareLocationPreference, selected);
 }
 
 export function petMatchesCareTypes(pet: PetSearchFilterable, types: string[]): boolean {

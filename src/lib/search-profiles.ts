@@ -15,6 +15,7 @@ import type { ProfileDetails } from "@/lib/profile-details";
 import {
   parseProfileDetails,
   resolvedAvailability,
+  resolvedCareLocationPreference,
   resolvedLivingSituation,
   resolvedPetCarePreferences,
 } from "@/lib/profile-details";
@@ -169,6 +170,7 @@ export function mapPetFriendSearchRow(row: PetFriendSearchRow): SearchProfile {
     availabilityDates: availability.selected_dates ?? [],
     locationHaystack: [rawLocation, row.display_name, bio].filter(Boolean).join(" ").toLowerCase(),
     bioHaystack: bio.toLowerCase(),
+    careLocationPreference: resolvedCareLocationPreference(details),
   };
 }
 

@@ -1,4 +1,7 @@
-import { parseProfileDetails, type ProfileDetails } from "@/lib/profile-details";
+import { parseProfileDetails, resolvedCareLocationPreference, type ProfileDetails } from "@/lib/profile-details";
+import {
+  applyCareLocationPreferenceToDetails,
+} from "@/lib/care-location-preference";
 import { normalizePetTypeList } from "@/lib/pet-type-options";
 import { strFromOtherField } from "@/lib/other-option";
 
@@ -21,6 +24,7 @@ export type PetParentProfileFormInput = {
   preferredPetTypesOther: string;
   preferredCareTypes: string[];
   preferredCareTypesOther: string;
+  careLocationPreference: string;
 };
 
 export const emptyPetParentProfileForm = (): PetParentProfileFormInput => ({
@@ -31,6 +35,7 @@ export const emptyPetParentProfileForm = (): PetParentProfileFormInput => ({
   preferredPetTypesOther: "",
   preferredCareTypes: [],
   preferredCareTypesOther: "",
+  careLocationPreference: "",
 });
 
 function strFrom(value: unknown): string {
@@ -83,6 +88,7 @@ export function petParentFormFromDetails(details: ProfileDetails): PetParentProf
     preferredPetTypesOther: parent?.preferred_pet_types_other ?? "",
     preferredCareTypes: [...(parent?.preferred_care_types ?? [])],
     preferredCareTypesOther: parent?.preferred_care_types_other ?? "",
+    careLocationPreference: resolvedCareLocationPreference(details) ?? "",
   };
 }
 
@@ -130,6 +136,8 @@ export function mergePetParentIntoDetails(
   } else {
     delete base.pet_parent_profile;
   }
+
+  applyCareLocationPreferenceToDetails(base, input.careLocationPreference);
 
   return base;
 }

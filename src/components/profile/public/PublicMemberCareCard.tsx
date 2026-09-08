@@ -32,6 +32,12 @@ export function PublicMemberCareCard({ profile }: PublicMemberCareCardProps) {
         items: groups.careTypes.map((item) => pl(item)),
       });
     }
+    if (groups.careLocation) {
+      out.push({
+        label: pl("Care location"),
+        items: [pl(groups.careLocation)],
+      });
+    }
     if (groups.experience.length) {
       out.push({
         label: pl("Experience"),

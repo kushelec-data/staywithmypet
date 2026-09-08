@@ -70,6 +70,11 @@ const PROFILE_LABEL_PAIRS: Pair[] = [
   ["Pet Friend Requirements", "Nõuded loomasõbrale"],
   ["Save and Continue", "Salvesta ja jätka"],
   ["Care Location Preference", "Hoolduse asukoha eelistus"],
+  ["Choose what suits your lifestyle and space", "Vali, mis sobib sinu eluviisi ja võimalustega"],
+  ["At Pet Friend's home", "Loomasõbra juures"],
+  ["At Pet Owner's home", "Loomaomaniku juures"],
+  ["Either / Flexible", "Paindlik / mõlemad sobivad"],
+  ["Care location", "Hoolduse asukoht"],
   ["Care Type Needed", "Vajalik hoolduse tüüp"],
   ["Address", "Aadress"],
   ["Save My Pet’s Profile", "Salvesta lemmiku profiil"],
@@ -541,7 +546,7 @@ const PROFILE_OPTION_PAIRS: Pair[] = [
 ];
 
 const PROFILE_HELPER_PAIRS: Pair[] = [
-  ["e.g. Flexible evenings, school holidays", "nt paindlikud õhtud, koolivaheajad"],
+  ["Choose what suits your lifestyle and space", "Vali, mis sobib sinu eluviisi ja võimalustega"],
   ["e.g. 1 friendly cat", "nt 1 sõbralik kass"],
   ["The full name will be only shown after booking. To all the platform browsers, first name is shown!", "Täisnimi kuvatakse alles pärast broneeringut. Platvormi külastajatele on nähtav ainult eesnimi."],
   ["The exact address will be only shown after booking. To all the platform browsers, approximate location (~1km radius) is shown!", "Täpne aadress kuvatakse alles pärast broneeringut. Enne seda kuvatakse ligikaudne asukoht (~1 km raadiuses)."],

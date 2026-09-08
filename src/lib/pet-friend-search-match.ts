@@ -1,3 +1,4 @@
+import { matchesCareLocationPreferenceFilter } from "@/lib/care-location-preference";
 import {
   petFriendSearchCareTypeOptions,
   petFriendSearchExperienceOptions,
@@ -18,6 +19,7 @@ export type PetFriendSearchFilterable = {
   availabilityDates: string[];
   locationHaystack: string;
   bioHaystack: string;
+  careLocationPreference: string | null;
 };
 
 function norm(s: string): string {
@@ -143,4 +145,11 @@ export function friendMatchesLocation(
   const loc = location.trim().toLowerCase();
   if (!loc) return true;
   return profile.locationHaystack.includes(loc);
+}
+
+export function friendMatchesCareLocation(
+  profile: PetFriendSearchFilterable,
+  selected: string,
+): boolean {
+  return matchesCareLocationPreferenceFilter(profile.careLocationPreference, selected);
 }

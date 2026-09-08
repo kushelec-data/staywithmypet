@@ -1,6 +1,7 @@
 "use client";
 
 import { ProfileChipMultiSelect } from "@/components/profile/form/ProfileFormFields";
+import { CareLocationPreferenceField } from "@/components/profile/form/CareLocationPreferenceField";
 import { AutoResizeTextarea } from "@/components/ui/AutoResizeTextarea";
 import { FormFieldHelper } from "@/components/forms/RequiredFieldLabel";
 import { useLanguage } from "@/context/LanguageContext";
@@ -97,6 +98,14 @@ export function PetParentProfileFormSection({
           className="input-field mt-1"
         />
       </div>
+
+      <CareLocationPreferenceField
+        name="pet-parent-care-location-preference"
+        value={form.careLocationPreference}
+        onChange={(careLocationPreference) => patch(form, onChange, { careLocationPreference })}
+        disabled={disabled}
+        fieldId="parent-care-location-preference"
+      />
 
       <div>
         <label htmlFor="home_location_notes" className="form-field-label">

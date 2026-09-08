@@ -4,24 +4,26 @@ import {
   mergeDetailsSelectedAvailabilityDates,
   parseProfileDetails,
   resolvedAvailability,
+  resolvedCareLocationPreference,
   type PetCarePreferences,
   type ProfileAvailabilityDetails,
   type ProfileDetails,
   type LivingSituationDetails,
 } from "@/lib/profile-details";
 import { normalizeAvailabilityDates } from "@/lib/pet-availability";
-import { strFromOtherField } from "@/lib/other-option";
 import { normalizePreferredPetSizesList } from "@/lib/pet-weight";
 import {
   normalizeExperienceLevelValue,
-  normalizePreferredCareLocationValue,
 } from "@/lib/pet-care-labels";
+import {
+  applyCareLocationPreferenceToDetails,
+  normalizeCareLocationPreference,
+} from "@/lib/care-location-preference";
 import {
   durationOfCareOptions,
   experienceLevelOptions,
   livingTypeOptions,
   normalizeLivingTypeValue,
-  preferredCareLocationOptions,
   preferredDaysTimesOptions,
 } from "@/lib/profile-friend-options";
 
@@ -65,7 +67,7 @@ export const emptyPetFriendProfileForm = (): PetFriendProfileFormInput => ({
   willingPuppiesKittens: null,
   availableCareTypes: [],
   availableCareTypesOther: "",
-  preferredCareLocation: preferredCareLocationOptions[2].value,
+  preferredCareLocation: "",
   preferredDaysTimes: [],
   durationOfCarePreferred: durationOfCareOptions[durationOfCareOptions.length - 1],
   availabilityNotes: "",
@@ -120,8 +122,7 @@ export function petFriendFormFromDetails(
     availableCareTypes: [...(care?.available_care_types ?? [])],
     availableCareTypesOther: care?.available_care_types_other ?? "",
     preferredCareLocation:
-      normalizePreferredCareLocationValue(care?.preferred_care_location) ??
-      preferredCareLocationOptions[2].value,
+      resolvedCareLocationPreference({ ...details, pet_care_preferences: care }) ?? "",
     preferredDaysTimes: parseDaysTimes(avail ?? {}),
     durationOfCarePreferred:
       avail?.duration_of_care_preferred ?? durationOfCareOptions[durationOfCareOptions.length - 1],
@@ -158,7 +159,7 @@ function buildPetCarePreferences(input: PetFriendProfileFormInput): PetCarePrefe
     willing_puppies_kittens: input.willingPuppiesKittens,
     available_care_types: input.availableCareTypes,
     available_care_types_other: input.availableCareTypesOther.trim() || null,
-    preferred_care_location: input.preferredCareLocation.trim() || null,
+    preferred_care_location: normalizeCareLocationPreference(input.preferredCareLocation),
   };
 }
 
@@ -199,6 +200,7 @@ export function mergePetFriendIntoDetails(
   base = mergeDetailsAvailabilityBlock(base, schedule);
   base.pet_care_preferences = buildPetCarePreferences(input);
   base.living_situation = buildLivingSituation(input);
+  applyCareLocationPreferenceToDetails(base, input.preferredCareLocation);
 
   delete base.care_preferences;
 

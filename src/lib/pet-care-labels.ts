@@ -1,3 +1,8 @@
+import {
+  CARE_LOCATION_PREFERENCE_OPTIONS,
+  formatCareLocationPreferenceLabel,
+  normalizeCareLocationPreference,
+} from "@/lib/care-location-preference";
 import { formatPetTypeLabel, normalizePetTypeValue } from "@/lib/pet-type-options";
 import { isOtherOptionValue } from "@/lib/other-option";
 
@@ -15,12 +20,8 @@ export const experienceLevelOptions = [
 /** Retired `experience_level` values — kept for DB reads; never shown or offered in UI. */
 const DEPRECATED_EXPERIENCE_LEVELS = new Set(["seniors", "puppies_kittens", "energetic"]);
 
-/** Stored in `profiles.details.pet_care_preferences.preferred_care_location`. */
-export const preferredCareLocationOptions = [
-  { value: "at_my_home", label: "At my home" },
-  { value: "at_pet_parent_home", label: "At pet parent's home" },
-  { value: "flexible", label: "Flexible — either home works" },
-] as const satisfies readonly LabeledOption[];
+/** Canonical values: `pet_friend_home` | `pet_owner_home` | `flexible`. */
+export const preferredCareLocationOptions = CARE_LOCATION_PREFERENCE_OPTIONS;
 
 const EXPERIENCE_BY_VALUE = new Map<string, string>(
   experienceLevelOptions.map((o) => [o.value, o.label]),
@@ -38,21 +39,6 @@ const EXPERIENCE_LEGACY_TO_VALUE: Record<string, string> = {
   "Experienced with pets": "experienced",
   Experienced: "experienced",
   "Very experienced": "experienced",
-};
-
-const CARE_LOCATION_BY_VALUE = new Map<string, string>(
-  preferredCareLocationOptions.map((o) => [o.value, o.label]),
-);
-
-const CARE_LOCATION_LEGACY_TO_VALUE: Record<string, string> = {
-  Either: "flexible",
-  either: "flexible",
-  "Either / flexible": "flexible",
-  "Flexible — either home works": "flexible",
-  Flexible: "flexible",
-  "At my home": "at_my_home",
-  "At pet parent's home": "at_pet_parent_home",
-  "At pet parent home": "at_pet_parent_home",
 };
 
 function normKey(s: string): string {
@@ -86,20 +72,11 @@ export function formatExperienceLevelLabel(raw: string | null | undefined): stri
 export function normalizePreferredCareLocationValue(
   raw: string | null | undefined,
 ): string | null {
-  if (!raw?.trim()) return null;
-  const t = raw.trim();
-  if (CARE_LOCATION_BY_VALUE.has(t)) return t;
-  if (CARE_LOCATION_LEGACY_TO_VALUE[t]) return CARE_LOCATION_LEGACY_TO_VALUE[t];
-  const byNorm = preferredCareLocationOptions.find((o) => normKey(o.label) === normKey(t));
-  if (byNorm) return byNorm.value;
-  return t;
+  return normalizeCareLocationPreference(raw);
 }
 
 export function formatPreferredCareLocationLabel(raw: string | null | undefined): string | null {
-  if (!raw?.trim()) return null;
-  const value = normalizePreferredCareLocationValue(raw);
-  if (value && CARE_LOCATION_BY_VALUE.has(value)) return CARE_LOCATION_BY_VALUE.get(value)!;
-  return raw.trim();
+  return formatCareLocationPreferenceLabel(raw);
 }
 
 /** Human-friendly chips for `pet_types_willing_to_care_for`. */
@@ -158,6 +135,11 @@ export const experienceLevelValueToLabel: Record<string, string> = {
 /** Value → display label map for care location (includes legacy DB values). */
 export const preferredCareLocationValueToLabel: Record<string, string> = {
   ...Object.fromEntries(preferredCareLocationOptions.map((o) => [o.value, o.label])),
-  Either: "Flexible — either home works",
-  "Either / flexible": "Flexible — either home works",
+  at_my_home: "At Pet Friend's home",
+  at_pet_parent_home: "At Pet Owner's home",
+  Either: "Either / Flexible",
+  "Either / flexible": "Either / Flexible",
+  "At my home": "At Pet Friend's home",
+  "At pet parent's home": "At Pet Owner's home",
+  "Flexible — either home works": "Either / Flexible",
 };

@@ -71,6 +71,7 @@ export type ProfileSetupInput = {
   preferredVet?: PreferredVetClinicFormValues | null;
   availabilitySelectedDates: string[];
   petFriend?: PetFriendProfileFormInput | null;
+  petParent?: PetParentProfileFormInput | null;
 };
 
 export type ProfileSaveContext = {
@@ -282,6 +283,14 @@ export async function saveUserProfile(
       detailsMerged,
       normalizeAvailabilityDates(input.availabilitySelectedDates),
     );
+  }
+
+  if (input.petParent) {
+    const parentInput = { ...input.petParent };
+    if (!parentInput.careLocationPreference.trim() && input.petFriend?.preferredCareLocation) {
+      parentInput.careLocationPreference = input.petFriend.preferredCareLocation;
+    }
+    detailsMerged = mergePetParentIntoDetails(detailsMerged, parentInput);
   }
 
   const phoneNationalNorm = normalizeNationalDigits(input.phoneNational ?? "");

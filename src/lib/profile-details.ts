@@ -21,6 +21,10 @@ import {
   formatPetTypesWillingComfort,
   formatPreferredCareLocationLabel,
 } from "@/lib/pet-care-labels";
+import {
+  normalizeCareLocationPreference,
+  type CareLocationPreference,
+} from "@/lib/care-location-preference";
 import { formatPreferredPetWeightSizes } from "@/lib/pet-weight";
 import {
   formatListWithOtherDisplay,
@@ -104,6 +108,8 @@ export type ProfileDetails = {
   /** Gallery focal points keyed by public URL. */
   profile_photo_positions?: Record<string, import("@/lib/photo-position").PhotoObjectPosition>;
   pet_care_preferences?: PetCarePreferences;
+  /** Nested Pet Parent notes (`profiles.details.pet_parent_profile`). */
+  pet_parent_profile?: unknown;
   availability?: ProfileAvailabilityDetails;
   living_situation?: LivingSituationDetails;
   /** @deprecated parsed schedule alias */
@@ -113,6 +119,8 @@ export type ProfileDetails = {
   availability_legacy?: string | null;
   /** @deprecated */
   care_preferences?: CarePreferences;
+  /** Canonical: `profiles.details.care_location_preference`. */
+  care_location_preference?: string | null;
   care_location?: string | null;
   pet_types?: string[];
   pet_sizes?: string[];
@@ -289,12 +297,14 @@ export function parseProfileDetails(raw: unknown): ProfileDetails {
     avatar_position,
     profile_photo_positions,
     pet_care_preferences,
+    pet_parent_profile: o.pet_parent_profile,
     availability,
     availability_schedule: availability,
     living_situation,
     availability_notes: strFrom(o.availability_notes),
     availability_legacy: typeof o.availability === "string" ? strFrom(o.availability) : null,
     care_preferences: undefined,
+    care_location_preference: strFrom(o.care_location_preference),
     care_location: strFrom(o.care_location),
     pet_types: strArrFrom(o.pet_types),
     pet_sizes: strArrFrom(o.pet_sizes),
@@ -331,8 +341,22 @@ export function resolvedPetCarePreferences(details: ProfileDetails): PetCarePref
       nested?.available_care_types?.length ? nested.available_care_types : details.care_types ?? [],
     available_care_types_other: nested?.available_care_types_other ?? null,
     preferred_care_location:
-      nested?.preferred_care_location ?? details.care_location ?? null,
+      resolvedCareLocationPreference(details) ??
+      nested?.preferred_care_location ??
+      details.care_location ??
+      null,
   };
+}
+
+/** Canonical preference, or null when never set (existing users). */
+export function resolvedCareLocationPreference(
+  details: ProfileDetails,
+): CareLocationPreference | null {
+  return normalizeCareLocationPreference(
+    details.care_location_preference ??
+      details.pet_care_preferences?.preferred_care_location ??
+      details.care_location,
+  );
 }
 
 export function resolvedLivingSituation(details: ProfileDetails): LivingSituationDetails {
@@ -542,13 +566,15 @@ export function carePreferenceDisplayGroups(details: ProfileDetails): {
   careTypes: string[];
   petSizes: string[];
   experience: string[];
+  careLocation: string | null;
 } {
   const care = resolvedPetCarePreferences(details);
   const experience: string[] = [];
   const experienceLabel = formatExperienceLevelLabel(care.experience_level);
   if (experienceLabel) experience.push(experienceLabel);
-  const locationLabel = formatPreferredCareLocationLabel(care.preferred_care_location);
-  if (locationLabel) experience.push(locationLabel);
+  const careLocation = formatPreferredCareLocationLabel(
+    resolvedCareLocationPreference(details) ?? care.preferred_care_location,
+  );
   for (const t of care.pet_types_previously_borrowed ?? []) {
     if (typeof t !== "string" || !t.trim()) continue;
     const label = formatPetTypeLabel(t, care.pet_types_previously_borrowed_other);
@@ -566,6 +592,7 @@ export function carePreferenceDisplayGroups(details: ProfileDetails): {
     ),
     petSizes: formatPreferredPetWeightSizes(care.preferred_pet_sizes ?? []),
     experience,
+    careLocation,
   };
 }
 
@@ -576,7 +603,7 @@ export function hasCarePreferences(details: ProfileDetails): boolean {
     groups.careTypes.length > 0 ||
     groups.petSizes.length > 0 ||
     groups.experience.length > 0 ||
-    Boolean(resolvedPetCarePreferences(details).preferred_care_location)
+    Boolean(resolvedCareLocationPreference(details))
   );
 }
 

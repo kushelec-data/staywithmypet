@@ -8,6 +8,7 @@ import {
   friendMatchesLocation,
   friendMatchesPetTypes,
   friendMatchesVerified,
+  friendMatchesCareLocation,
 } from "@/lib/pet-friend-search-match";
 
 export type PetFriendSearchFilterState = {
@@ -19,6 +20,7 @@ export type PetFriendSearchFilterState = {
   homeSuitability: string[];
   languages: string[];
   verifiedOnly: boolean;
+  careLocation: string;
 };
 
 export const emptyPetFriendSearchFilters = (): PetFriendSearchFilterState => ({
@@ -30,6 +32,7 @@ export const emptyPetFriendSearchFilters = (): PetFriendSearchFilterState => ({
   homeSuitability: [],
   languages: [],
   verifiedOnly: false,
+  careLocation: "",
 });
 
 export function filterPetFriendSearchProfiles(
@@ -44,6 +47,7 @@ export function filterPetFriendSearchProfiles(
     if (!friendMatchesHomeSuitability(profile, filters.homeSuitability)) return false;
     if (!friendMatchesLanguages(profile, filters.languages)) return false;
     if (!friendMatchesVerified(profile, filters.verifiedOnly)) return false;
+    if (!friendMatchesCareLocation(profile, filters.careLocation)) return false;
     if (
       !friendMatchesAvailability(profile, filters.availabilityDates)
     ) {

@@ -1,4 +1,5 @@
 import { formatCareTypeLabels } from "@/lib/care-type-options";
+import { parseProfileDetails, resolvedCareLocationPreference } from "@/lib/profile-details";
 import { excludeMarketplaceOwnPets } from "@/lib/marketplace-membership";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { resolveCityCenter } from "@/lib/estonia-city-coords";
@@ -297,6 +298,9 @@ function mapRowToPublicSearchPet(
     strFrom(row.care_location) ??
     strFrom(details.care_location) ??
     null;
+  const ownerCareLocationPreference = resolvedCareLocationPreference(
+    parseProfileDetails(owner.details),
+  );
 
   const petId = String(row.id ?? "");
 
@@ -312,6 +316,7 @@ function mapRowToPublicSearchPet(
     requiresMedication: pickMedicationFlag(row.requires_medication, details, "requires_medication"),
     walkNeeds: strFrom(row.walk_needs) ?? strFrom(details.walk_needs),
     careLocation,
+    ownerCareLocationPreference,
     careTypes: pickCareTypesFromRow(row, details),
     careTypesOther: strFrom(details.care_types_other),
     availabilityDates: dates,
