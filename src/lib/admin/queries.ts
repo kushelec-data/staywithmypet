@@ -246,3 +246,62 @@ export async function loadActivityEvents(page: number, pageSize: number) {
     .range(from, to);
   return { items: data ?? [], total: count ?? 0 };
 }
+
+export type AdminBookingsBundle = {
+  bookings: AdminBookingLite[];
+  requests: Array<{
+    id: string;
+    pet_id: string;
+    pet_parent_id: string;
+    pet_friend_id: string;
+    status: string;
+    created_at: string;
+  }>;
+  conversations: Array<{ id: string; request_id: string }>;
+  profiles: Array<{ id: string; display_name: string }>;
+  pets: Array<{ id: string; owner_id: string; name: string }>;
+  authUsers: AdminAuthUser[];
+};
+
+/** Bookings dashboard facts only — no messages, addresses, or membership rows. */
+export async function loadAdminBookingsBundle(): Promise<AdminBookingsBundle | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+
+  const [bookingsRes, requestsRes, conversationsRes, profilesRes, petsRes, authUsers] = await Promise.all([
+    admin
+      .from("bookings")
+      .select("id, request_id, pet_id, pet_parent_id, pet_friend_id, status, created_at, start_date, end_date, completed_at, cancelled_at"),
+    admin.from("requests").select("id, pet_id, pet_parent_id, pet_friend_id, status, created_at"),
+    admin.from("conversations").select("id, request_id"),
+    admin.from("profiles").select("id, display_name"),
+    admin.from("pets").select("id, owner_id, name"),
+    listAuthUsers(admin),
+  ]);
+
+  return {
+    bookings: (bookingsRes.data ?? []) as AdminBookingLite[],
+    requests: (requestsRes.data ?? []).map((row) => ({
+      id: String(row.id),
+      pet_id: String(row.pet_id),
+      pet_parent_id: String(row.pet_parent_id),
+      pet_friend_id: String(row.pet_friend_id),
+      status: String(row.status),
+      created_at: String(row.created_at),
+    })),
+    conversations: (conversationsRes.data ?? []).map((row) => ({
+      id: String(row.id),
+      request_id: String(row.request_id),
+    })),
+    profiles: (profilesRes.data ?? []).map((row) => ({
+      id: String(row.id),
+      display_name: String(row.display_name ?? ""),
+    })),
+    pets: (petsRes.data ?? []).map((row) => ({
+      id: String(row.id),
+      owner_id: String(row.owner_id),
+      name: String(row.name ?? ""),
+    })),
+    authUsers,
+  };
+}

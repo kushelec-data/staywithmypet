@@ -258,6 +258,10 @@ describe("admin security sources", () => {
     const queries = readFileSync(join(process.cwd(), "src/lib/admin/queries.ts"), "utf8");
     expect(queries).toContain('.from("messages").select("id, conversation_id, sender_id, created_at")');
     expect(queries).not.toMatch(/from\("messages"\)\.select\([^)]*body/);
+    expect(queries).toContain('admin.from("messages").select("id, conversation_id, sender_id, created_at")');
+    expect(queries).toContain("loadAdminBookingsBundle");
+    expect(queries).toMatch(/loadAdminBookingsBundle[\s\S]*from\("bookings"\)/);
+    expect(queries).not.toMatch(/loadAdminBookingsBundle[\s\S]*from\("messages"\)/);
     expect(queries).not.toMatch(/from\("requests"\)[\s\S]*message,/);
   });
 
