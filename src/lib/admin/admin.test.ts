@@ -285,6 +285,7 @@ vi.mock("@/lib/admin/queries", () => ({
     messages: [],
     matches: [],
     memberships: [],
+    accessCodeRedemptions: [],
     favorites: [],
     notifications: [],
   })),

@@ -1,8 +1,10 @@
 import { deriveAdminFunnelStage, deriveInteractionLevel, type AdminFunnelStage, type InteractionLevel } from "@/lib/admin/metrics";
+import { classifyAvailabilityDates } from "@/lib/admin/overview";
 import { isProfileIncomplete } from "@/lib/profile-utils";
 import { computeProfileCompleteness } from "@/lib/profile-completeness";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { resolveActiveMode, type ProfileActiveMode } from "@/lib/profile-mode";
+import { parseProfileDetails, profileCalendarSelectedDates } from "@/lib/profile-details";
 import type { ProfileRow } from "@/lib/profile-utils";
 
 export const ADMIN_PAGE_SIZE = 50;
@@ -100,7 +102,14 @@ export type AdminMembershipLite = {
   role: string;
   status: string;
   plan_id: string | null;
+  plan_name?: string | null;
   end_date: string | null;
+  start_date?: string | null;
+  source?: string | null;
+  auto_renew?: boolean | null;
+  stripe_subscription_id?: string | null;
+  stripe_checkout_session_id?: string | null;
+  consumed_at?: string | null;
 };
 
 export type AdminPetLite = {
@@ -108,6 +117,7 @@ export type AdminPetLite = {
   owner_id: string;
   name: string;
   created_at?: string;
+  availability_dates?: string[];
 };
 
 export type AdminUserRow = {
@@ -133,6 +143,7 @@ export type AdminUserRow = {
   matchesReceived: number;
   lastMeaningfulActivity: string | null;
   funnelStage: AdminFunnelStage;
+  availabilityStatus: "future" | "expired" | "missing" | "n/a";
 };
 
 export type AdminUserListFilters = {
@@ -148,6 +159,8 @@ export type AdminUserListFilters = {
   signupTo?: string;
   lastActiveFrom?: string;
   lastActiveTo?: string;
+  readyNoRequest?: boolean;
+  availability?: "future" | "expired" | "missing";
 };
 
 function countBy(ids: string[]): Map<string, number> {
@@ -267,6 +280,13 @@ export function buildAdminUserRows(input: {
       ...input.messages.filter((m) => m.sender_id === profile.id).map((m) => m.created_at),
       ...userBookings.map((b) => b.created_at),
     ]);
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const friendDates = profileCalendarSelectedDates(parseProfileDetails(profile.details));
+    const ownedPetDates = input.pets.filter((p) => p.owner_id === profile.id).flatMap((p) => p.availability_dates ?? []);
+    const availabilityDates =
+      profile.role === "pet_parent" ? ownedPetDates : profile.role === "both" ? [...friendDates, ...ownedPetDates] : friendDates;
+    const availabilityStatus =
+      profile.role == null ? ("n/a" as const) : classifyAvailabilityDates(availabilityDates, todayIso);
     const funnelStage = deriveAdminFunnelStage({
       emailConfirmed: auth?.emailConfirmed ?? false,
       roleChosen,
@@ -304,6 +324,7 @@ export function buildAdminUserRows(input: {
       matchesReceived: matchesByUser.get(profile.id) ?? 0,
       lastMeaningfulActivity,
       funnelStage,
+      availabilityStatus,
     };
   });
 }
@@ -330,6 +351,8 @@ export function filterAdminUserRows(rows: AdminUserRow[], filters: AdminUserList
     if (filters.signupTo && (row.signupDate ?? "") > `${filters.signupTo}T23:59:59`) return false;
     if (filters.lastActiveFrom && (row.lastMeaningfulActivity ?? "") < filters.lastActiveFrom) return false;
     if (filters.lastActiveTo && (row.lastMeaningfulActivity ?? "") > `${filters.lastActiveTo}T23:59:59`) return false;
+    if (filters.readyNoRequest && !(row.marketplaceReady && row.requestsSent === 0)) return false;
+    if (filters.availability && row.availabilityStatus !== filters.availability) return false;
     return true;
   });
 }

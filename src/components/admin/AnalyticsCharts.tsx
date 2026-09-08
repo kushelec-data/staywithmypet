@@ -2,14 +2,16 @@ import type { ReactNode } from "react";
 
 export function AnalyticsLineChart({
   points,
+  previousPoints,
 }: {
   points: Array<{ bucket: string; value: number }>;
+  previousPoints?: Array<{ bucket: string; value: number }>;
 }) {
   const width = 720;
   const height = 240;
   const padX = 36;
   const padY = 28;
-  const max = Math.max(1, ...points.map((p) => p.value));
+  const max = Math.max(1, ...points.map((p) => p.value), ...(previousPoints ?? []).map((p) => p.value));
   const innerW = width - padX * 2;
   const innerH = height - padY * 2;
   const denom = Math.max(1, points.length - 1);
@@ -18,7 +20,13 @@ export function AnalyticsLineChart({
     const y = padY + innerH - (p.value / max) * innerH;
     return { x, y, ...p };
   });
+  const prevCoords = (previousPoints ?? []).slice(0, points.length).map((p, i) => {
+    const x = padX + (i / denom) * innerW;
+    const y = padY + innerH - (p.value / max) * innerH;
+    return { x, y };
+  });
   const polyline = coords.map((c) => `${c.x},${c.y}`).join(" ");
+  const prevLine = prevCoords.map((c) => `${c.x},${c.y}`).join(" ");
   const area = `${padX},${padY + innerH} ${polyline} ${padX + innerW},${padY + innerH}`;
   const labels = coords.filter((_, i) => i === 0 || i === coords.length - 1 || i === Math.floor(coords.length / 2));
 
@@ -40,9 +48,14 @@ export function AnalyticsLineChart({
         />
       ))}
       <polygon points={area} fill="rgba(195,232,210,0.16)" />
+      {prevLine ? (
+        <polyline fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth={1.5} strokeDasharray="5 4" points={prevLine} />
+      ) : null}
       <polyline fill="none" stroke="#C3E8D2" strokeWidth={2.5} points={polyline} />
       {coords.map((c) => (
-        <circle key={c.bucket} cx={c.x} cy={c.y} r={3} fill="#C3E8D2" />
+        <circle key={c.bucket} cx={c.x} cy={c.y} r={3} fill="#C3E8D2">
+          <title>{`${c.bucket}: ${c.value}`}</title>
+        </circle>
       ))}
       {labels.map((c) => (
         <text key={`l-${c.bucket}`} x={c.x} y={height - 8} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize={10}>

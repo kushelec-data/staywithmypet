@@ -15,18 +15,25 @@ export function AdminShell({
   title,
   description,
   pathname,
+  actions,
   children,
 }: {
   title: string;
   description?: string;
   pathname: string;
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className={`${ACCOUNT_LAYOUT_SHELL} py-8`}>
-      <p className="text-sm font-semibold uppercase tracking-wider text-[#2E6B3F]">Internal</p>
-      <h1 className={ACCOUNT_PAGE_TITLE}>{title}</h1>
-      {description ? <p className={ACCOUNT_PAGE_DESCRIPTION}>{description}</p> : null}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#2E6B3F]">Internal</p>
+          <h1 className={ACCOUNT_PAGE_TITLE}>{title}</h1>
+          {description ? <p className={ACCOUNT_PAGE_DESCRIPTION}>{description}</p> : null}
+        </div>
+        {actions}
+      </div>
       <nav className="mt-6 flex flex-wrap gap-2" aria-label="Admin">
         {ADMIN_NAV.map((item) => {
           const active = item.href === "/admin" ? pathname === "/admin" : pathname === item.href || pathname.startsWith(`${item.href}/`);

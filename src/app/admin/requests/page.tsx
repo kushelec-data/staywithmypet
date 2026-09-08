@@ -7,9 +7,9 @@ const STATUSES = ["pending", "accepted", "declined", "cancelled", "completed", "
 export default async function AdminRequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; stale?: string }>;
 }) {
-  const { status } = await searchParams;
+  const { status, stale } = await searchParams;
   const catalog = await loadAdminCatalog();
   if (!catalog) {
     return <AdminShell title="Requests" pathname="/admin/requests"><p>Unavailable.</p></AdminShell>;
@@ -27,8 +27,13 @@ export default async function AdminRequestsPage({
       requested_dates: req.requested_dates ?? [],
     });
     const display = expired && req.status === "pending" ? "expired" : req.status;
-    if (!status) return true;
-    return display === status;
+    if (status && display !== status) return false;
+    if (stale === "1") {
+      if (req.status !== "pending") return false;
+      const ageMs = Date.now() - new Date(req.created_at).getTime();
+      return ageMs > 3 * 24 * 60 * 60 * 1000;
+    }
+    return true;
   });
 
   return (

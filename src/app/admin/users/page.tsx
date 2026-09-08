@@ -26,6 +26,10 @@ function parseFilters(sp: Record<string, string | undefined>): AdminUserListFilt
     signupTo: sp.signupTo,
     lastActiveFrom: sp.lastActiveFrom,
     lastActiveTo: sp.lastActiveTo,
+    readyNoRequest: sp.readyNoRequest === "yes",
+    availability: (["future", "expired", "missing"] as const).includes(sp.availability as never)
+      ? (sp.availability as "future" | "expired" | "missing")
+      : undefined,
   };
 }
 

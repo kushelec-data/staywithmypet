@@ -10,9 +10,12 @@ import type {
   AdminProfileLite,
   AdminRequestLite,
 } from "@/lib/admin/aggregates";
+import type { AccessCodeRedemptionLite } from "@/lib/admin/overview";
+import { normalizeAvailabilityDates } from "@/lib/pet-availability";
 import type { ProfileRole } from "@/lib/profile-setup";
 import type { ProfileActiveMode } from "@/lib/profile-mode";
 import type { ProfileRow } from "@/lib/profile-utils";
+import { isMissingColumnError, isMissingRelationError, isPostgrestError } from "@/lib/supabase-errors";
 
 export type AdminCatalog = {
   profiles: AdminProfileLite[];
@@ -24,6 +27,7 @@ export type AdminCatalog = {
   messages: AdminMessageLite[];
   matches: AdminMatchLite[];
   memberships: AdminMembershipLite[];
+  accessCodeRedemptions: AccessCodeRedemptionLite[];
   favorites: Array<{ id: string; user_id: string; pet_id: string | null; friend_profile_id: string | null; created_at: string }>;
   notifications: Array<{ id: string; user_id: string; type: string; created_at: string; read_at: string | null }>;
 };
@@ -50,19 +54,69 @@ async function listAuthUsers(admin: NonNullable<ReturnType<typeof createAdminCli
   return users;
 }
 
+const MEMBERSHIP_OVERVIEW_SELECT =
+  "user_id, role, status, plan_id, plan_name, end_date, start_date, source, auto_renew, stripe_subscription_id, stripe_checkout_session_id, consumed_at";
+const MEMBERSHIP_CORE_SELECT = "user_id, role, status, plan_id, end_date";
+
+async function loadMembershipRows(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+): Promise<Record<string, unknown>[]> {
+  const extended = await admin.from("user_memberships").select(MEMBERSHIP_OVERVIEW_SELECT);
+  if (!extended.error) return (extended.data ?? []) as Record<string, unknown>[];
+  if (isPostgrestError(extended.error) && isMissingColumnError(extended.error)) {
+    const core = await admin.from("user_memberships").select(MEMBERSHIP_CORE_SELECT);
+    return (core.data ?? []) as Record<string, unknown>[];
+  }
+  return (extended.data ?? []) as Record<string, unknown>[];
+}
+
+async function loadPets(admin: NonNullable<ReturnType<typeof createAdminClient>>) {
+  const withDates = await admin.from("pets").select("id, owner_id, name, created_at, availability_dates");
+  if (!withDates.error) return withDates.data ?? [];
+  if (isPostgrestError(withDates.error) && isMissingColumnError(withDates.error, "availability_dates")) {
+    const core = await admin.from("pets").select("id, owner_id, name, created_at");
+    return core.data ?? [];
+  }
+  return withDates.data ?? [];
+}
+
+async function loadAccessCodeRedemptions(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+): Promise<AccessCodeRedemptionLite[]> {
+  const [redemptionsRes, codesRes] = await Promise.all([
+    admin.from("platform_access_code_redemptions").select("user_id, membership_role, plan_id, redeemed_at, code_id"),
+    admin.from("platform_access_codes").select("id, code_normalized"),
+  ]);
+  if (redemptionsRes.error) {
+    if (isPostgrestError(redemptionsRes.error) && isMissingRelationError(redemptionsRes.error)) return [];
+    return [];
+  }
+  const codes = new Map(
+    (codesRes.data ?? []).map((row) => [String(row.id), String(row.code_normalized ?? "")]),
+  );
+  return (redemptionsRes.data ?? []).map((row) => ({
+    user_id: String(row.user_id),
+    membership_role: String(row.membership_role),
+    plan_id: String(row.plan_id ?? ""),
+    redeemed_at: String(row.redeemed_at),
+    code_normalized: codes.get(String(row.code_id)) || null,
+  }));
+}
+
 export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
   const admin = createAdminClient();
   if (!admin) return null;
 
   const [
     profilesRes,
-    petsRes,
+    petsRows,
     requestsRes,
     bookingsRes,
     conversationsRes,
     messagesRes,
     matchesRes,
-    membershipsRes,
+    membershipRows,
+    accessCodeRedemptions,
     favoritesRes,
     notificationsRes,
     authUsers,
@@ -72,7 +126,7 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
       .select(
         "id, display_name, role, active_mode, role_chosen_at, is_public, created_at, avatar_url, bio, location, public_location, city, country, google_place_id, latitude, longitude, phone, phone_e164, languages, details",
       ),
-    admin.from("pets").select("id, owner_id, name, created_at"),
+    loadPets(admin),
     admin
       .from("requests")
       .select("id, pet_id, pet_parent_id, pet_friend_id, sender_id, receiver_id, status, created_at, updated_at, date_from, date_to, requested_dates, responded_at"),
@@ -84,7 +138,8 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
     admin
       .from("match_suggestions")
       .select("id, pet_parent_id, pet_friend_id, pet_id, score, reasons, status, created_at, viewed_at, clicked_at, emailed_at"),
-    admin.from("user_memberships").select("user_id, role, status, plan_id, end_date"),
+    loadMembershipRows(admin),
+    loadAccessCodeRedemptions(admin),
     admin.from("favorites").select("id, user_id, pet_id, friend_profile_id, created_at"),
     admin.from("notifications").select("id, user_id, type, created_at, read_at"),
     listAuthUsers(admin),
@@ -114,11 +169,14 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
       details: (row.details as ProfileRow["details"] | null) ?? null,
     })),
     authUsers,
-    pets: (petsRes.data ?? []).map((row) => ({
+    pets: petsRows.map((row) => ({
       id: String(row.id),
       owner_id: String(row.owner_id),
       name: String(row.name ?? ""),
       created_at: row.created_at ? String(row.created_at) : undefined,
+      availability_dates: normalizeAvailabilityDates(
+        (row as { availability_dates?: unknown }).availability_dates,
+      ),
     })),
     requests: (requestsRes.data ?? []) as AdminRequestLite[],
     bookings: (bookingsRes.data ?? []) as AdminBookingLite[],
@@ -137,7 +195,22 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
       clicked_at: (row.clicked_at as string | null) ?? null,
       emailed_at: (row.emailed_at as string | null) ?? null,
     })),
-    memberships: (membershipsRes.data ?? []) as AdminMembershipLite[],
+    memberships: membershipRows.map((row) => ({
+      user_id: String(row.user_id),
+      role: String(row.role),
+      status: String(row.status),
+      plan_id: row.plan_id == null ? null : String(row.plan_id),
+      plan_name: row.plan_name == null ? null : String(row.plan_name),
+      end_date: row.end_date == null ? null : String(row.end_date),
+      start_date: row.start_date == null ? null : String(row.start_date),
+      source: row.source == null ? null : String(row.source),
+      auto_renew: typeof row.auto_renew === "boolean" ? row.auto_renew : null,
+      stripe_subscription_id: row.stripe_subscription_id == null ? null : String(row.stripe_subscription_id),
+      stripe_checkout_session_id:
+        row.stripe_checkout_session_id == null ? null : String(row.stripe_checkout_session_id),
+      consumed_at: row.consumed_at == null ? null : String(row.consumed_at),
+    })),
+    accessCodeRedemptions,
     favorites: (favoritesRes.data ?? []) as AdminCatalog["favorites"],
     notifications: (notificationsRes.data ?? []) as AdminCatalog["notifications"],
   };
