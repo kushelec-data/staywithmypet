@@ -73,6 +73,25 @@ export const DEFAULT_PREHEADER_EN =
 export const DEFAULT_PREHEADER_ET =
   "Tasuta loengud, praktilised teadmised ja mõnus seltskond – vali endale sobiv sündmus.";
 
+export const DEFAULT_CAMPAIGN_CLOSING_EN = `If you’re planning to join us, please mark “Going” on the relevant Facebook event, so we can get a better idea of how many guests to expect.
+
+Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.
+
+See you at Moon!🐾
+
+Gerly & the Stay With My Pet team`;
+
+export const DEFAULT_CAMPAIGN_CLOSING_ET = `Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“, et oskaksime külaliste arvuga võimalikult hästi arvestada.
+
+Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.
+
+Kohtumiseni Moonis! 🐾
+
+Gerly & Stay With My Peti tiim`;
+
+export const EN_CLOSING_START = "If you’re planning to join us, please mark";
+export const ET_CLOSING_START = "Kui oled tulemas, märgi palun";
+
 export const DEFAULT_CAMPAIGN_BODY_EN = `Hi!
 
 This September, we’re bringing the Stay With My Pet community together in real life for the very first time. 🐾
@@ -93,13 +112,7 @@ Drinks and light snacks will be available to purchase from Moon throughout the e
 
 Every guest will also receive a small goodie bag put together with the help of our wonderful partners, filled with surprises, especially for our canine guests. 🎁
 
-If you’re planning to join us, please mark “Going” on the relevant Facebook event, so we can get a better idea of how many guests to expect.
-
-Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.
-
-See you at Moon! 🐾
-
-Gerly & the Stay With My Pet team`;
+${DEFAULT_CAMPAIGN_CLOSING_EN}`;
 
 export const DEFAULT_CAMPAIGN_BODY_ET = `Tere!
 
@@ -121,13 +134,29 @@ Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alat
 
 Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁
 
-Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“, et oskaksime külaliste arvuga võimalikult hästi arvestada.
+${DEFAULT_CAMPAIGN_CLOSING_ET}`;
 
-Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.
+function closingLeadBold(language: CampaignLanguage): string {
+  return language === "et"
+    ? "Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“"
+    : "If you’re planning to join us, please mark “Going” on the relevant Facebook event,";
+}
 
-Kohtumiseni Moonis! 🐾
-
-Gerly & Stay With My Peti tiim`;
+export function splitCampaignBodyForEvents(
+  bodyText: string,
+  language: CampaignLanguage,
+): { intro: string; closing: string } {
+  const start = language === "et" ? ET_CLOSING_START : EN_CLOSING_START;
+  const fallback = language === "et" ? DEFAULT_CAMPAIGN_CLOSING_ET : DEFAULT_CAMPAIGN_CLOSING_EN;
+  const index = bodyText.indexOf(start);
+  if (index < 0) {
+    return { intro: bodyText.trim(), closing: fallback };
+  }
+  return {
+    intro: bodyText.slice(0, index).trim(),
+    closing: bodyText.slice(index).trim() || fallback,
+  };
+}
 
 /** Convert pasted/written campaign copy into email paragraphs. Not raw HTML. */
 export function campaignBodyTextToHtml(text: string): string {
@@ -145,6 +174,26 @@ export function campaignBodyTextToHtml(text: string): string {
     .join("\n");
 }
 
+export function campaignClosingTextToHtml(text: string, language: CampaignLanguage): string {
+  const blocks = text
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const boldLead = escapeHtml(closingLeadBold(language));
+  return blocks
+    .map((block, index) => {
+      let html = escapeHtml(block).replace(/\n/g, "<br>");
+      if (html.startsWith(boldLead)) {
+        html = `<strong>${boldLead}</strong>${html.slice(boldLead.length)}`;
+      }
+      const margin =
+        index === blocks.length - 1 ? "margin:0" : index === blocks.length - 2 ? "margin:0 0 8px" : "margin:0 0 16px";
+      return `<p style="${margin};font-size:15px;line-height:1.65;color:#333333;">${html}</p>`;
+    })
+    .join("\n");
+}
+
 export function assembleCampaignInnerHtml(
   language: CampaignLanguage,
   bodyText: string,
@@ -153,15 +202,17 @@ export function assembleCampaignInnerHtml(
 ): string {
   const hrefs = { ...defaultClickHrefs(config), ...clickHrefs };
   const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard(language, link, hrefs[link.key])).join("");
+  const { intro, closing } = splitCampaignBodyForEvents(bodyText, language);
   const choose = language === "et" ? "Vali endale sobiv sündmus:" : "Choose the event that suits you:";
   const thanks =
     language === "et"
       ? "Suur aitäh meie sündmuste headele partneritele ja toetajatele:"
       : "A big thank you to our event partners and supporters:";
   return `
-${campaignBodyTextToHtml(bodyText)}
+${campaignBodyTextToHtml(intro)}
 <p ${HEADING_P}>${escapeHtml(choose)}</p>
 ${cards}
+${campaignClosingTextToHtml(closing, language)}
 <p ${BODY_P}>${escapeHtml(thanks)}</p>
 ${sponsorLine(hrefs, config)}`;
 }

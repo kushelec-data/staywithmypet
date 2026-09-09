@@ -17,6 +17,10 @@ import {
   applyTrackingToHtml,
   clickPlaceholder,
   campaignBodyTextToHtml,
+  DEFAULT_CAMPAIGN_BODY_EN,
+  DEFAULT_CAMPAIGN_BODY_ET,
+  DEFAULT_CAMPAIGN_CLOSING_EN,
+  DEFAULT_CAMPAIGN_CLOSING_ET,
   defaultSeptemberBodies,
   hrefsInHtml,
   OPEN_PIXEL_PLACEHOLDER,
@@ -181,6 +185,29 @@ describe("september HTML", () => {
     expect(htmlEt).toContain("Tasuta loengud, praktilised teadmised ja mõnus seltskond – vali endale sobiv sündmus.");
     expect(htmlEt.match(/VAATA SÜNDMUST →/g)?.length).toBe(3);
     expect(htmlEt).not.toContain("VIEW EVENT");
+  });
+
+  it("places EN and ET closing after events and before sponsors", () => {
+    expect(DEFAULT_CAMPAIGN_BODY_EN).toContain(DEFAULT_CAMPAIGN_CLOSING_EN);
+    expect(DEFAULT_CAMPAIGN_BODY_ET).toContain(DEFAULT_CAMPAIGN_CLOSING_ET);
+    const view = htmlEn.lastIndexOf("VIEW EVENT");
+    const going = htmlEn.indexOf("If you’re planning to join us");
+    const thanks = htmlEn.indexOf("A big thank you to our event partners");
+    expect(going).toBeGreaterThan(view);
+    expect(thanks).toBeGreaterThan(going);
+    expect(htmlEn).toContain(
+      "<strong>If you’re planning to join us, please mark “Going” on the relevant Facebook event,</strong>",
+    );
+    expect(htmlEn).toContain("See you at Moon!🐾");
+    expect(htmlEn).toContain("Gerly &amp; the Stay With My Pet team");
+
+    const vaata = htmlEt.lastIndexOf("VAATA SÜNDMUST");
+    const osalen = htmlEt.indexOf("Kui oled tulemas");
+    const aitah = htmlEt.indexOf("Suur aitäh meie sündmuste headele partneritele");
+    expect(osalen).toBeGreaterThan(vaata);
+    expect(aitah).toBeGreaterThan(osalen);
+    expect(htmlEt).toContain("<strong>Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“</strong>");
+    expect(htmlEt).toContain("Kohtumiseni Moonis! 🐾");
   });
 
   it("does not print Facebook URLs in the email", () => {
@@ -431,6 +458,7 @@ describe("tokens and from address", () => {
     });
     expect(custom).toContain("Custom intro for our community.");
     expect(custom).toContain("VIEW EVENT");
+    expect(custom).toContain("If you’re planning to join us");
     expect(custom).toContain(">Semu</a>");
   });
 });

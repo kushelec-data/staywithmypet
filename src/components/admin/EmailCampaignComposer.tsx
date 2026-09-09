@@ -182,12 +182,12 @@ export function EmailCampaignComposer() {
           <textarea
             value={bodyEn}
             onChange={(e) => setBodyEn(e.target.value)}
-            rows={8}
+            rows={12}
             className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
           />
         </label>
         <p className="mt-1 text-xs text-muted">
-          Paste or write the main email content here. Event buttons and sponsor links are added automatically below.
+          Paste or write the main email content here. Keep the closing paragraphs in this field — they are placed after the event buttons. Sponsor links are added below that.
         </p>
 
         <h3 className="mt-5 font-heading text-base font-semibold">Estonian email</h3>
@@ -204,12 +204,12 @@ export function EmailCampaignComposer() {
           <textarea
             value={bodyEt}
             onChange={(e) => setBodyEt(e.target.value)}
-            rows={8}
+            rows={12}
             className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
           />
         </label>
         <p className="mt-1 text-xs text-muted">
-          Paste or write the main email content here. Event buttons and sponsor links are added automatically below.
+          Paste or write the main email content here. Keep the closing paragraphs in this field — they are placed after the event buttons. Sponsor links are added below that.
         </p>
       </AdminCard>
 
