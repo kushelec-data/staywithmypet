@@ -1,14 +1,28 @@
-import { getSiteOrigin } from "@/lib/site-url";
-import { applyTrackingToHtml, htmlToPlainText } from "@/lib/email-campaigns/html";
+import {
+  CANONICAL_CAMPAIGN_EMAIL_ORIGIN,
+  requireCampaignEmailOrigin,
+} from "@/lib/email-campaigns/public-base";
+import { applyTrackingToHtml, clickPlaceholder, htmlToPlainText } from "@/lib/email-campaigns/html";
 import type { CampaignLanguage } from "@/lib/email-campaigns/locale";
-import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
+import { CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
 
-export function openTrackingUrl(token: string, origin = getSiteOrigin()): string {
-  return `${origin}/api/email/track/open/${token}`;
+function trackingOrigin(origin?: string): string {
+  if (origin) {
+    const required = requireCampaignEmailOrigin({ EMAIL_PUBLIC_BASE_URL: origin });
+    if (!required.ok) {
+      throw new Error(required.reason);
+    }
+    return required.origin;
+  }
+  return CANONICAL_CAMPAIGN_EMAIL_ORIGIN;
 }
 
-export function clickTrackingUrl(token: string, origin = getSiteOrigin()): string {
-  return `${origin}/api/email/track/click/${token}`;
+export function openTrackingUrl(token: string, origin?: string): string {
+  return `${trackingOrigin(origin)}/api/email/track/open/${token}`;
+}
+
+export function clickTrackingUrl(token: string, origin?: string): string {
+  return `${trackingOrigin(origin)}/api/email/track/click/${token}`;
 }
 
 export function personalizeCampaignHtml(input: {
@@ -19,15 +33,16 @@ export function personalizeCampaignHtml(input: {
   clickTokens: Record<string, string>;
   origin?: string;
 }): { html: string; text: string } {
-  const origin = input.origin ?? getSiteOrigin();
-  const base = input.language === "et" ? input.htmlEt : input.htmlEn;
+  const origin = trackingOrigin(input.origin);
+  const template = input.language === "et" ? input.htmlEt : input.htmlEn;
   const clickUrls = Object.fromEntries(
-    SEPTEMBER_EVENT_LINKS.map((link) => [
-      link.key,
-      clickTrackingUrl(input.clickTokens[link.key] ?? "", origin),
-    ]),
+    CAMPAIGN_TRACKED_LINKS.map((link) => {
+      const token = input.clickTokens[link.key];
+      if (!token) return [link.key, clickPlaceholder(link.key)];
+      return [link.key, clickTrackingUrl(token, origin)];
+    }),
   );
-  const html = applyTrackingToHtml(base, {
+  const html = applyTrackingToHtml(template, {
     openPixelUrl: openTrackingUrl(input.openToken, origin),
     clickUrls,
   });

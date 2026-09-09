@@ -7,6 +7,7 @@ import {
   markCampaignStatus,
   recordSendResult,
 } from "@/lib/email-campaigns/store";
+import { htmlContainsEphemeralTrackingHost, requireCampaignEmailOrigin } from "@/lib/email-campaigns/public-base";
 import type { CampaignLanguage } from "@/lib/email-campaigns/locale";
 
 export { CAMPAIGN_BATCH_PAUSE_MS, CAMPAIGN_BATCH_SIZE };
@@ -15,14 +16,44 @@ export async function sendToRecipient(recipientId: string): Promise<{ ok: boolea
   const packed = await loadRecipientForSend(recipientId);
   if (!packed) return { ok: false, reason: "recipient_not_found" };
 
+  const origin = requireCampaignEmailOrigin();
+  if (!origin.ok) {
+    await recordSendResult({
+      campaignId: packed.campaign.id as string,
+      recipientId,
+      ok: false,
+      reason: origin.reason,
+    });
+    return { ok: false, reason: origin.reason };
+  }
+
   const language = packed.recipient.language as CampaignLanguage;
+  if (!packed.destinationsOk.ok) {
+    await recordSendResult({
+      campaignId: packed.campaign.id as string,
+      recipientId,
+      ok: false,
+      reason: `destination_mismatch:${packed.destinationsOk.errors.join(",")}`,
+    });
+    return { ok: false, reason: "destination_mismatch" };
+  }
   const { html, text } = personalizeCampaignHtml({
     htmlEn: packed.campaign.html_en as string,
     htmlEt: packed.campaign.html_et as string,
     language,
     openToken: packed.recipient.open_token as string,
     clickTokens: packed.clickTokens,
+    origin: origin.origin,
   });
+  if (htmlContainsEphemeralTrackingHost(html)) {
+    await recordSendResult({
+      campaignId: packed.campaign.id as string,
+      recipientId,
+      ok: false,
+      reason: "ephemeral_tracking_url",
+    });
+    return { ok: false, reason: "ephemeral_tracking_url" };
+  }
   const subject = language === "et" ? (packed.campaign.subject_et as string) : (packed.campaign.subject_en as string);
   const result = await sendCampaignSmtpEmail({
     to: packed.recipient.email as string,

@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { campaignLanguageFromPreferredLocale, eventButtonLabel } from "@/lib/email-campaigns/locale";
-import { destinationForLinkKey, SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
+import {
+  CAMPAIGN_TRACKED_LINKS,
+  destinationForLinkKey,
+  EVENT_13_SEP_URL,
+  EVENT_20_SEP_URL,
+  EVENT_27_SEP_URL,
+  SEPTEMBER_EVENT_LINKS,
+  SEPTEMBER_SPONSOR_LINKS,
+  UNLINKED_SPONSORS,
+} from "@/lib/email-campaigns/events";
+import { clickRedirectFromTokenRow, clickTokensMatchCatalog } from "@/lib/email-campaigns/destinations";
 import {
   applyTrackingToHtml,
   clickPlaceholder,
@@ -9,7 +19,12 @@ import {
   OPEN_PIXEL_PLACEHOLDER,
   renderSeptemberCampaignHtml,
 } from "@/lib/email-campaigns/html";
-import { personalizeCampaignHtml } from "@/lib/email-campaigns/personalize";
+import { personalizeCampaignHtml, clickTrackingUrl, openTrackingUrl } from "@/lib/email-campaigns/personalize";
+import {
+  isEphemeralOrLocalEmailOrigin,
+  requireCampaignEmailOrigin,
+  resolveCampaignEmailOrigin,
+} from "@/lib/email-campaigns/public-base";
 import { applyOpenTracking, applyClickTracking, sendOutcomeUpdate, summarizeCampaignRecipients } from "@/lib/email-campaigns/tracking";
 import { trackingUrlContainsIdentityLeak, createOpaqueToken, isOpaqueTokenShape } from "@/lib/email-campaigns/tokens";
 import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
@@ -60,11 +75,23 @@ describe("september HTML", () => {
     expect(htmlEn).not.toContain("fb.me");
     expect(htmlEt).not.toContain("fb.me");
     expect(htmlEn).not.toContain("facebook.com");
+    expect(htmlEn).not.toContain("petcity.ee");
+    expect(htmlEn).not.toContain("gelatoladies.ee");
+    expect(htmlEn).not.toContain("restoranmoon.ee");
+    expect(htmlEn).toContain(">PetCity</a>");
+    expect(htmlEn).toContain(">Gelato Ladies</a>");
+    expect(htmlEn).toContain(">Moon</a>");
+    expect(htmlEn).toContain("Platinum");
+    expect(htmlEn).toContain("ViWell");
+    expect(htmlEn).toContain("Semu");
+    expect(htmlEn).toContain("YOOK");
+    expect(UNLINKED_SPONSORS).toEqual(["Platinum", "ViWell", "Semu", "YOOK"]);
+    expect(SEPTEMBER_SPONSOR_LINKS).toHaveLength(3);
   });
 
   it("personalizes with tracking URLs and no identity leak", () => {
     const openToken = createOpaqueToken();
-    const clickTokens = Object.fromEntries(SEPTEMBER_EVENT_LINKS.map((l) => [l.key, createOpaqueToken()]));
+    const clickTokens = Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((l) => [l.key, createOpaqueToken()]));
     const { html } = personalizeCampaignHtml({
       htmlEn,
       htmlEt,
@@ -75,9 +102,11 @@ describe("september HTML", () => {
     });
     const hrefs = hrefsInHtml(html);
     const buttonHrefs = hrefs.filter((href) => href.includes("/api/email/track/click/"));
-    expect(buttonHrefs).toHaveLength(3);
+    expect(buttonHrefs).toHaveLength(CAMPAIGN_TRACKED_LINKS.length);
     expect(html).toContain(`/api/email/track/open/${openToken}`);
     expect(html).not.toContain("fb.me");
+    expect(html).not.toContain("facebook.com/events");
+    expect(html).not.toContain("petcity.ee");
     expect(trackingUrlContainsIdentityLeak(html, "gerlykullamaa@gmail.com", "0979d7ef-8766-4a0c-847c-9825516a7360")).toBe(false);
     for (const href of buttonHrefs) {
       expect(href).toMatch(/^https:\/\/www\.staywithmypet\.ee\/api\/email\/track\/click\/[A-Za-z0-9_-]{40,64}$/);
@@ -121,9 +150,36 @@ describe("tracking state", () => {
     );
     expect(after.click_count).toBe(1);
     expect(after.last_clicked_link_key).toBe("event_20_sep");
-    expect(destinationForLinkKey("event_13_sep")).toBe("https://fb.me/e/bYV5xoYCJ");
-    expect(destinationForLinkKey("event_20_sep")).toBe("https://fb.me/e/6lnf7O3Sh");
-    expect(destinationForLinkKey("event_27_sep")).toBe("https://fb.me/e/75Aq16Q0F");
+    expect(destinationForLinkKey("event_13_sep")).toBe(EVENT_13_SEP_URL);
+    expect(destinationForLinkKey("event_20_sep")).toBe(EVENT_20_SEP_URL);
+    expect(destinationForLinkKey("event_27_sep")).toBe(EVENT_27_SEP_URL);
+    expect(destinationForLinkKey("sponsor_petcity")).toBe("https://www.petcity.ee/");
+  });
+
+  it("does not let recipient identity change click destinations", () => {
+    const token1 = { destination_url: EVENT_13_SEP_URL, link_key: "event_13_sep" };
+    const token2 = { destination_url: EVENT_20_SEP_URL, link_key: "event_20_sep" };
+    const token3 = { destination_url: EVENT_27_SEP_URL, link_key: "event_27_sep" };
+    const gerly = { email: "gerlykullamaa@gmail.com", user_id: "gerly-uuid", display_name: "Gerly Kullamaa" };
+    const kush = { email: "kusheducation@gmail.com", user_id: "kush-uuid", display_name: "Kush Chadha" };
+    expect(clickRedirectFromTokenRow(token1, gerly)).toBe(EVENT_13_SEP_URL);
+    expect(clickRedirectFromTokenRow(token1, kush)).toBe(EVENT_13_SEP_URL);
+    expect(clickRedirectFromTokenRow(token2, gerly)).toBe(EVENT_20_SEP_URL);
+    expect(clickRedirectFromTokenRow(token3, gerly)).toBe(EVENT_27_SEP_URL);
+    expect(clickRedirectFromTokenRow({ destination_url: "https://www.facebook.com/gerly.kullamaa", link_key: "event_13_sep" }, gerly)).toBeNull();
+  });
+
+  it("validates each event token against the catalog before send", () => {
+    const rows = CAMPAIGN_TRACKED_LINKS.map((link) => ({
+      link_key: link.key,
+      destination_url: link.destinationUrl,
+      token: "t".repeat(43),
+    }));
+    expect(clickTokensMatchCatalog(rows).ok).toBe(true);
+    const broken = rows.map((row) =>
+      row.link_key === "event_13_sep" ? { ...row, destination_url: "https://www.facebook.com/gerly.kullamaa" } : row,
+    );
+    expect(clickTokensMatchCatalog(broken).ok).toBe(false);
   });
 
   it("records send failures without treating them as sent", () => {
@@ -182,5 +238,39 @@ describe("tokens and from address", () => {
     });
     expect(htmlEn).toContain(OPEN_PIXEL_PLACEHOLDER);
     expect(tracked).toContain("/api/email/track/open/abc");
+  });
+});
+
+describe("campaign email public base URL", () => {
+  it("builds production tracking URLs on www.staywithmypet.ee", () => {
+    const token = createOpaqueToken();
+    expect(clickTrackingUrl(token)).toBe(`https://www.staywithmypet.ee/api/email/track/click/${token}`);
+    expect(openTrackingUrl(token)).toBe(`https://www.staywithmypet.ee/api/email/track/open/${token}`);
+    expect(clickTrackingUrl(token).startsWith("https://www.staywithmypet.ee/")).toBe(true);
+    expect(openTrackingUrl(token).startsWith("https://www.staywithmypet.ee/")).toBe(true);
+  });
+
+  it("rejects preview Vercel domains for real sends", () => {
+    expect(
+      requireCampaignEmailOrigin({
+        EMAIL_PUBLIC_BASE_URL: "https://staywithmypet-git-development-kushelec-datas-projects.vercel.app",
+      }).ok,
+    ).toBe(false);
+    expect(isEphemeralOrLocalEmailOrigin("https://something.vercel.app")).toBe(true);
+    expect(() => clickTrackingUrl("token", "https://something.vercel.app")).toThrow();
+  });
+
+  it("rejects localhost for real sends", () => {
+    expect(requireCampaignEmailOrigin({ EMAIL_PUBLIC_BASE_URL: "http://localhost:3000" }).ok).toBe(false);
+    expect(isEphemeralOrLocalEmailOrigin("http://localhost:3000")).toBe(true);
+    expect(isEphemeralOrLocalEmailOrigin("https://www.staywithmypet.ee")).toBe(false);
+  });
+
+  it("ignores NEXT_PUBLIC_SITE_URL when it is a Vercel deployment", () => {
+    const resolved = resolveCampaignEmailOrigin({
+      NEXT_PUBLIC_SITE_URL: "https://staywithmypet-abc123.vercel.app",
+    });
+    expect(resolved.ok).toBe(true);
+    if (resolved.ok) expect(resolved.origin).toBe("https://www.staywithmypet.ee");
   });
 });

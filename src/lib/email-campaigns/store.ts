@@ -3,14 +3,15 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import {
+  CAMPAIGN_TRACKED_LINKS,
   DEFAULT_TEST_RECIPIENTS,
-  SEPTEMBER_EVENT_LINKS,
+  RESEND_TEST_RECIPIENTS,
   SEPTEMBER_SUBJECT_EN,
   SEPTEMBER_SUBJECT_ET,
   SEPTEMBER_TEMPLATE_KEY,
 } from "@/lib/email-campaigns/events";
 import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
-import { absoluteUrl } from "@/lib/emails/layout";
+import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
 import { createOpaqueToken } from "@/lib/email-campaigns/tokens";
 import {
   applyClickTracking,
@@ -18,6 +19,7 @@ import {
   sendOutcomeUpdate,
   summarizeCampaignRecipients,
 } from "@/lib/email-campaigns/tracking";
+import { clickRedirectFromTokenRow, clickTokensMatchCatalog } from "@/lib/email-campaigns/destinations";
 import { toRecipientDto, type CampaignEventDto, type CampaignListItemDto, type CampaignRecipientDto } from "@/lib/email-campaigns/dto";
 
 type AdminDb = NonNullable<ReturnType<typeof createAdminClient>>;
@@ -146,19 +148,30 @@ export async function getRecipientActivity(
     .maybeSingle();
   if (!recipient) return null;
 
-  const { data: events } = await admin
+  let eventsQuery: { data: Array<Record<string, unknown>> | null; error: { message: string } | null };
+  eventsQuery = await admin
     .from("email_campaign_events")
-    .select("id, event_type, link_key, created_at")
+    .select("id, event_type, link_key, link_type, link_label, created_at")
     .eq("recipient_id", recipientId)
     .order("created_at", { ascending: true });
+  if (eventsQuery.error) {
+    eventsQuery = await admin
+      .from("email_campaign_events")
+      .select("id, event_type, link_key, created_at")
+      .eq("recipient_id", recipientId)
+      .order("created_at", { ascending: true });
+  }
+  const events = eventsQuery.data;
 
   return {
     recipient: toRecipientDto(recipient as Parameters<typeof toRecipientDto>[0]),
     events: (events ?? []).map((event) => ({
-      id: event.id as string,
-      type: event.event_type as string,
-      at: event.created_at as string,
+      id: String(event.id),
+      type: String(event.event_type),
+      at: String(event.created_at),
       linkKey: (event.link_key as string | null) ?? null,
+      linkType: (event.link_type as string | null) ?? null,
+      linkLabel: (event.link_label as string | null) ?? null,
     })),
   };
 }
@@ -184,14 +197,20 @@ async function insertRecipientWithTokens(
     .single();
   if (error || !inserted) throw new Error(error?.message ?? "recipient_insert_failed");
 
-  const clickRows = SEPTEMBER_EVENT_LINKS.map((link) => ({
+  const clickRows = CAMPAIGN_TRACKED_LINKS.map((link) => ({
     token: createOpaqueToken(),
     recipient_id: inserted.id as string,
     link_key: link.key,
+    link_type: link.type,
+    label: link.label,
     destination_url: link.destinationUrl,
   }));
   const { error: clickError } = await admin.from("email_campaign_click_tokens").insert(clickRows);
-  if (clickError) throw new Error(clickError.message);
+  if (clickError) {
+    const fallback = clickRows.map(({ link_type: _t, label: _l, ...row }) => row);
+    const retry = await admin.from("email_campaign_click_tokens").insert(fallback);
+    if (retry.error) throw new Error(retry.error.message);
+  }
   return inserted.id as string;
 }
 
@@ -238,7 +257,7 @@ export async function createCampaign(input: {
 }
 
 export async function createSeptemberTestDraft(createdBy: string): Promise<{ id: string } | { error: string }> {
-  const bodies = defaultSeptemberBodies(absoluteUrl("/logo.png"));
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"));
   return createCampaign({
     name: "September community events (test)",
     subjectEn: SEPTEMBER_SUBJECT_EN,
@@ -248,6 +267,24 @@ export async function createSeptemberTestDraft(createdBy: string): Promise<{ id:
     createdBy,
     templateKey: SEPTEMBER_TEMPLATE_KEY,
     recipients: DEFAULT_TEST_RECIPIENTS.map((row) => ({
+      displayName: row.displayName,
+      email: row.email,
+      language: row.language,
+    })),
+  });
+}
+
+export async function createSeptemberResendTest(createdBy: string): Promise<{ id: string } | { error: string }> {
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"));
+  return createCampaign({
+    name: "September community events (resend test)",
+    subjectEn: SEPTEMBER_SUBJECT_EN,
+    subjectEt: SEPTEMBER_SUBJECT_ET,
+    htmlEn: bodies.htmlEn,
+    htmlEt: bodies.htmlEt,
+    createdBy,
+    templateKey: SEPTEMBER_TEMPLATE_KEY,
+    recipients: RESEND_TEST_RECIPIENTS.map((row) => ({
       displayName: row.displayName,
       email: row.email,
       language: row.language,
@@ -298,15 +335,32 @@ export async function loadRecipientForSend(recipientId: string) {
     .maybeSingle();
   if (!campaign) return null;
 
-  const { data: clicks } = await admin
+  let clickQuery: { data: Array<Record<string, unknown>> | null; error: { message: string } | null };
+  clickQuery = await admin
     .from("email_campaign_click_tokens")
-    .select("token, link_key")
+    .select("token, link_key, destination_url, link_type, label")
     .eq("recipient_id", recipientId);
+  if (clickQuery.error) {
+    clickQuery = await admin
+      .from("email_campaign_click_tokens")
+      .select("token, link_key, destination_url")
+      .eq("recipient_id", recipientId);
+  }
+
+  const clicks = clickQuery.data;
+  const clickRows = (clicks ?? []).map((row) => ({
+    token: row.token as string,
+    link_key: row.link_key as string,
+    destination_url: row.destination_url as string,
+  }));
+  const destinationsOk = clickTokensMatchCatalog(clickRows);
 
   return {
     recipient,
     campaign,
-    clickTokens: Object.fromEntries((clicks ?? []).map((row) => [row.link_key as string, row.token as string])),
+    clickTokens: Object.fromEntries(clickRows.map((row) => [row.link_key, row.token])),
+    clickRows,
+    destinationsOk,
   };
 }
 
@@ -380,15 +434,29 @@ export async function recordOpenByToken(token: string): Promise<boolean> {
   return true;
 }
 
-export async function recordClickByToken(token: string): Promise<{ destinationUrl: string } | null> {
+export async function recordClickByToken(token: string): Promise<{ destinationUrl: string; linkType: string | null; linkLabel: string | null } | null> {
   const admin = db();
   if (!admin) return null;
-  const { data: click } = await admin
+  let clickLookup = await admin
     .from("email_campaign_click_tokens")
-    .select("recipient_id, link_key, destination_url")
+    .select("recipient_id, link_key, destination_url, link_type, label")
     .eq("token", token)
     .maybeSingle();
+  if (clickLookup.error) {
+    clickLookup = await admin
+      .from("email_campaign_click_tokens")
+      .select("recipient_id, link_key, destination_url")
+      .eq("token", token)
+      .maybeSingle();
+  }
+  const click = clickLookup.data;
   if (!click) return null;
+
+  const destinationUrl = clickRedirectFromTokenRow(
+    { destination_url: click.destination_url as string, link_key: click.link_key as string },
+    null,
+  );
+  if (!destinationUrl) return null;
 
   const { data: recipient } = await admin
     .from("email_campaign_recipients")
@@ -411,12 +479,27 @@ export async function recordClickByToken(token: string): Promise<{ destinationUr
     click.link_key as string,
   );
   await admin.from("email_campaign_recipients").update(next).eq("id", recipient.id);
-  await admin.from("email_campaign_events").insert({
+  const eventInsert = await admin.from("email_campaign_events").insert({
     campaign_id: recipient.campaign_id,
     recipient_id: recipient.id,
     event_type: "clicked",
     link_key: click.link_key,
-    destination_url: click.destination_url,
+    link_type: "link_type" in click ? (click.link_type as string | null) ?? null : null,
+    link_label: "label" in click ? (click.label as string | null) ?? null : null,
+    destination_url: destinationUrl,
   });
-  return { destinationUrl: click.destination_url as string };
+  if (eventInsert.error) {
+    await admin.from("email_campaign_events").insert({
+      campaign_id: recipient.campaign_id,
+      recipient_id: recipient.id,
+      event_type: "clicked",
+      link_key: click.link_key,
+      destination_url: destinationUrl,
+    });
+  }
+  return {
+    destinationUrl,
+    linkType: "link_type" in click ? ((click.link_type as string | null) ?? null) : null,
+    linkLabel: "label" in click ? ((click.label as string | null) ?? null) : null,
+  };
 }

@@ -45,6 +45,8 @@ export type CampaignEventDto = {
   type: string;
   at: string;
   linkKey: string | null;
+  linkType?: string | null;
+  linkLabel?: string | null;
 };
 
 export function toRecipientDto(row: {

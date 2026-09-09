@@ -1,6 +1,6 @@
 import { escapeHtml } from "@/lib/emails/layout";
 import { eventButtonLabel, type CampaignLanguage } from "@/lib/email-campaigns/locale";
-import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
+import { SEPTEMBER_EVENT_LINKS, SEPTEMBER_SPONSOR_LINKS, type SeptemberEventCard } from "@/lib/email-campaigns/events";
 
 export const TRACK_PLACEHOLDER_PREFIX = "https://swmp.invalid/track/click/";
 export const OPEN_PIXEL_PLACEHOLDER = "https://swmp.invalid/track/open/PLACEHOLDER";
@@ -22,11 +22,7 @@ export function tableEventButton(label: string, href: string): string {
 </table>`;
 }
 
-function eventCard(
-  language: CampaignLanguage,
-  link: (typeof SEPTEMBER_EVENT_LINKS)[number],
-  href: string,
-): string {
+function eventCard(language: CampaignLanguage, link: SeptemberEventCard, href: string): string {
   const date = language === "et" ? link.dateLabelEt : link.dateLabelEn;
   const time = language === "et" ? link.timeEt : link.timeEn;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;background-color:#f7f5f0;border:1px solid #e8e2d6;border-radius:12px;">
@@ -41,8 +37,33 @@ function eventCard(
 </table>`;
 }
 
+function sponsorLine(clickHrefs: Record<string, string>): string {
+  const parts = [
+    sponsorAnchor("PetCity", "sponsor_petcity", clickHrefs),
+    "Platinum",
+    "ViWell",
+    "Semu",
+    "YOOK",
+    sponsorAnchor("Gelato Ladies", "sponsor_gelato_ladies", clickHrefs),
+    sponsorAnchor("Moon", "sponsor_moon", clickHrefs),
+  ];
+  return `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1a6b5c;font-weight:600;">${parts.join(" · ")} 🤍</p>`;
+}
+
+function sponsorAnchor(label: string, key: string, clickHrefs: Record<string, string>): string {
+  const href = clickHrefs[key] ?? clickPlaceholder(key);
+  return `<a href="${escapeHtml(href)}" target="_blank" style="color:#1a6b5c;font-weight:700;text-decoration:underline;">${escapeHtml(label)}</a>`;
+}
+
+function defaultClickHrefs(): Record<string, string> {
+  return Object.fromEntries(
+    [...SEPTEMBER_EVENT_LINKS, ...SEPTEMBER_SPONSOR_LINKS].map((link) => [link.key, clickPlaceholder(link.key)]),
+  );
+}
+
 function enBody(clickHrefs: Record<string, string>): string {
-  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("en", link, clickHrefs[link.key] ?? clickPlaceholder(link.key))).join("");
+  const hrefs = { ...defaultClickHrefs(), ...clickHrefs };
+  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("en", link, hrefs[link.key])).join("");
   return `
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Hi!</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">This September, we’re bringing the Stay With My Pet community together in real life for the very first time. 🐾</p>
@@ -57,7 +78,7 @@ ${cards}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Drinks and light snacks will be available to purchase from Moon throughout the event, and from 13:00 the kitchen will also be open if you’d like something more substantial.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Every guest will also receive a small goodie bag put together with the help of our wonderful partners</strong>, filled with surprises, especially for our canine guests. 🎁</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">A big thank you to our event partners and supporters:</p>
-<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1a6b5c;font-weight:600;">PetCity · Platinum · ViWell · Semu · YOOK · Gelato Ladies · Moon 🤍</p>
+${sponsorLine(hrefs)}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>If you’re planning to join us, please mark “Going” on the relevant Facebook event</strong>, so we can get a better idea of how many guests to expect.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">See you at Moon! 🐾</p>
@@ -65,7 +86,8 @@ ${cards}
 }
 
 function etBody(clickHrefs: Record<string, string>): string {
-  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("et", link, clickHrefs[link.key] ?? clickPlaceholder(link.key))).join("");
+  const hrefs = { ...defaultClickHrefs(), ...clickHrefs };
+  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("et", link, hrefs[link.key])).join("");
   return `
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Tere!</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Septembris toome Stay With My Peti kogukonna esimest korda kokku ka päriselus. 🐾</p>
@@ -80,7 +102,7 @@ ${cards}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alates kella 13st on avatud ka köök toekamaks kehakinnituseks.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott</strong>, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Suur aitäh meie sündmuste headele partneritele ja toetajatele:</p>
-<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1a6b5c;font-weight:600;">PetCity · Platinum · ViWell · Semu · YOOK · Gelato Ladies · Moon 🤍</p>
+${sponsorLine(hrefs)}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“</strong>, et oskaksime külaliste arvuga võimalikult hästi arvestada.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Kohtumiseni Moonis! 🐾</p>
@@ -172,9 +194,7 @@ export function renderSeptemberCampaignHtml(opts: {
 }
 
 export function defaultSeptemberBodies(logoUrl: string): { htmlEn: string; htmlEt: string } {
-  const clickHrefs = Object.fromEntries(
-    SEPTEMBER_EVENT_LINKS.map((link) => [link.key, clickPlaceholder(link.key)]),
-  );
+  const clickHrefs = defaultClickHrefs();
   return {
     htmlEn: renderSeptemberCampaignHtml({
       language: "en",

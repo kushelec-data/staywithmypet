@@ -109,7 +109,15 @@ export function EmailCampaignDetailClient({
             {activity.events.length === 0 ? <li>No events yet.</li> : null}
             {activity.events.map((event, index) => (
               <li key={`${event.at}-${index}`}>
-                {event.type === "sent" ? "Email sent" : event.type === "opened" ? "Email opened" : event.type === "clicked" ? "Event button clicked" : "Send failed"}
+                {event.type === "sent"
+                  ? "Email sent"
+                  : event.type === "opened"
+                    ? "Email opened"
+                    : event.type === "clicked"
+                      ? event.linkType === "sponsor"
+                        ? `Sponsor clicked: ${event.linkLabel ?? event.linkKey}`
+                        : `Event button clicked${event.linkLabel ? `: ${event.linkLabel}` : ""}`
+                      : "Send failed"}
                 {event.linkKey ? ` (${event.linkKey})` : ""} · {new Date(event.at).toLocaleString()}
               </li>
             ))}

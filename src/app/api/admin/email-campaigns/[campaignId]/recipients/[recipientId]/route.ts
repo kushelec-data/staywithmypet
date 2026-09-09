@@ -18,6 +18,8 @@ export async function GET(_request: Request, context: RouteContext) {
       type: event.type,
       at: event.at,
       linkKey: event.linkKey,
+      linkType: event.linkType ?? null,
+      linkLabel: event.linkLabel ?? null,
     })),
   });
 }
