@@ -8,6 +8,7 @@ import {
 
 export const TRACK_PLACEHOLDER_PREFIX = "https://swmp.invalid/track/click/";
 export const OPEN_PIXEL_PLACEHOLDER = "https://swmp.invalid/track/open/PLACEHOLDER";
+export const UNSUBSCRIBE_PLACEHOLDER = "https://swmp.invalid/track/unsub/PLACEHOLDER";
 
 export function clickPlaceholder(linkKey: string): string {
   return `${TRACK_PLACEHOLDER_PREFIX}${linkKey}`;
@@ -117,11 +118,14 @@ export function wrapCampaignEmail(opts: {
   innerHtml: string;
   logoUrl: string;
   openPixelUrl: string;
+  unsubscribeUrl?: string;
 }): string {
   const headline = escapeHtml(opts.headline);
   const preheader = escapeHtml(opts.preheader);
   const logo = escapeHtml(opts.logoUrl);
   const pixel = escapeHtml(opts.openPixelUrl);
+  const unsub = escapeHtml(opts.unsubscribeUrl ?? UNSUBSCRIBE_PLACEHOLDER);
+  const unsubLabel = opts.language === "et" ? "Loobu turunduskirjadest" : "Unsubscribe from marketing emails";
   return `<!DOCTYPE html>
 <html lang="${opts.language}">
 <head>
@@ -158,6 +162,7 @@ export function wrapCampaignEmail(opts: {
                 <tr>
                   <td style="padding:8px 28px 28px;background-color:#ffffff;">
                     <p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#888888;">Stay With My Pet · Tallinn</p>
+                    <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:#888888;"><a href="${unsub}" style="color:#888888;text-decoration:underline;">${unsubLabel}</a></p>
                   </td>
                 </tr>
               </table>
@@ -221,9 +226,12 @@ export function defaultSeptemberBodies(
 
 export function applyTrackingToHtml(
   html: string,
-  opts: { openPixelUrl: string; clickUrls: Record<string, string> },
+  opts: { openPixelUrl: string; clickUrls: Record<string, string>; unsubscribeUrl?: string },
 ): string {
   let next = html.replaceAll(OPEN_PIXEL_PLACEHOLDER, opts.openPixelUrl);
+  if (opts.unsubscribeUrl) {
+    next = next.replaceAll(UNSUBSCRIBE_PLACEHOLDER, opts.unsubscribeUrl);
+  }
   for (const [key, url] of Object.entries(opts.clickUrls)) {
     next = next.replaceAll(clickPlaceholder(key), url);
   }

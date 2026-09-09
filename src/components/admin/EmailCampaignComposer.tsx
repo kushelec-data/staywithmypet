@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard } from "@/components/admin/AdminUi";
 import { DEFAULT_TEST_RECIPIENTS, ESTONIAN_TEST_RECIPIENTS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE, type CampaignTemplateConfig } from "@/lib/email-campaigns/template-config";
+import { parseCampaignCsv } from "@/lib/email-campaigns/csv-import";
 
 export function EmailCampaignComposer() {
   const router = useRouter();
@@ -15,9 +16,38 @@ export function EmailCampaignComposer() {
   const [previewHtml, setPreviewHtml] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [csvText, setCsvText] = useState("");
+  const [registeredFilter, setRegisteredFilter] = useState<"none" | "all" | "et" | "en">("none");
+  const [audience, setAudience] = useState<{
+    all: number;
+    estonian: number;
+    english: number;
+    selected: number;
+    selectedConsented: number;
+  } | null>(null);
+
+  const csvPreview = useMemo(() => (csvText.trim() ? parseCampaignCsv(csvText) : null), [csvText]);
   const [sponsorUrls, setSponsorUrls] = useState<Record<string, string>>(() =>
     Object.fromEntries(SEPTEMBER_SPONSOR_LINE.map((item) => [item.key, item.destinationUrl ?? ""])),
   );
+
+  useEffect(() => {
+    const filter = registeredFilter === "none" ? "all" : registeredFilter;
+    void fetch(`/api/admin/email-campaigns/audience?filter=${filter}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.all != null) {
+          setAudience({
+            all: json.all,
+            estonian: json.estonian,
+            english: json.english,
+            selected: json.selected,
+            selectedConsented: json.selectedConsented,
+          });
+        }
+      })
+      .catch(() => undefined);
+  }, [registeredFilter]);
 
   const templateConfig: CampaignTemplateConfig = useMemo(
     () => ({
@@ -77,6 +107,31 @@ export function EmailCampaignComposer() {
     setBusy(false);
     if (!res.ok) {
       setError(json.error ?? "Could not create campaign");
+      return;
+    }
+    router.push(`/admin/email-campaigns/${json.id}`);
+    router.refresh();
+  }
+
+  async function createFromImport() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/email-campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        subjectEn,
+        subjectEt,
+        templateConfig,
+        csvText: csvText.trim() || undefined,
+        registeredFilter: registeredFilter === "none" ? undefined : registeredFilter,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(json.error ?? "Could not save campaign");
       return;
     }
     router.push(`/admin/email-campaigns/${json.id}`);
@@ -143,6 +198,43 @@ export function EmailCampaignComposer() {
           </li>
         ))}
       </ul>
+      <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Recipients</p>
+      <p className="mt-1 text-xs text-muted">Import does not send email. Language uses stored locale for registered users (swmp_locale), or CSV Keel.</p>
+      <label className="mt-3 block text-sm">
+        Import CSV (First Name, Last Name, E-mail address, Keel)
+        <textarea
+          value={csvText}
+          onChange={(e) => setCsvText(e.target.value)}
+          rows={6}
+          className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 font-mono text-xs"
+          placeholder={"Kush,Chadha,kusheducation@gmail.com,Estonian"}
+        />
+      </label>
+      {csvPreview ? (
+        <p className="mt-2 text-sm">
+          Recipients: {csvPreview.recipients.length} · Estonian: {csvPreview.estonian} · English: {csvPreview.english} · Invalid:{" "}
+          {csvPreview.invalid.length} · Duplicates removed: {csvPreview.duplicatesRemoved}
+        </p>
+      ) : null}
+      <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Add registered users</p>
+      <div className="mt-2 flex flex-wrap gap-4 text-sm">
+        {(["all", "et", "en"] as const).map((value) => (
+          <label key={value} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={registeredFilter === value}
+              onChange={() => setRegisteredFilter((current) => (current === value ? "none" : value))}
+            />
+            {value === "all" ? "All registered users" : value === "et" ? "Estonian" : "English"}
+          </label>
+        ))}
+      </div>
+      {audience ? (
+        <p className="mt-2 text-sm">
+          Registered on platform: {audience.all} (ET {audience.estonian} / EN {audience.english}). Before adding this selection: {audience.selected}{" "}
+          recipients ({audience.selectedConsented} with newsletter consent).
+        </p>
+      ) : null}
       <p className="mt-3 text-xs text-muted">
         Registered users can be added later by explicit selection. Locale ET uses the Estonian template; anything else uses English.
       </p>
@@ -150,6 +242,9 @@ export function EmailCampaignComposer() {
       <div className="mt-4 flex flex-wrap gap-3">
         <button type="button" onClick={() => void preview()} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
           Preview
+        </button>
+        <button type="button" onClick={() => void createFromImport()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
+          Save campaign with imported recipients (no send)
         </button>
         <button type="button" onClick={() => void createDraft()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
           Save English test campaign (no send)

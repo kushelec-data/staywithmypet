@@ -37,7 +37,9 @@ export type CampaignRecipientDto = {
   clickedLinkKey: string | null;
   lastActivityAt: string | null;
   status: string;
+  activityLabel: string;
   failureReason: string | null;
+  consented?: boolean;
 };
 
 export type CampaignEventDto = {
@@ -73,7 +75,8 @@ export function toRecipientDto(row: {
     clicked: Boolean(row.first_clicked_at),
     clickedLinkKey: row.last_clicked_link_key,
     lastActivityAt: lastActivityAt(row),
-    status: recipientDisplayStatus(row),
+    status: row.status,
+    activityLabel: recipientDisplayStatus(row),
     failureReason: row.failure_reason,
   };
 }

@@ -9,11 +9,9 @@ export type CampaignSendResult =
   | { ok: false; reason: "smtp_not_configured" | "send_failed"; detail?: string };
 
 /**
- * SpaceMail (Spaceship) documented mailbox limits — not stored in our env:
- * trial 20/hour/mailbox, paid 500/hour/mailbox, max 50 recipients per message.
- * Campaigns send one recipient per message. Large sends must batch below 500/hour.
+ * SpaceMail mailbox hourly limits are a provider constraint, not a campaign business rule.
+ * Tune EMAIL_CAMPAIGN_BATCH_SIZE and EMAIL_CAMPAIGN_BATCH_DELAY_MS instead of hard-coding a cap.
  */
-export const SPACEMAIL_PAID_HOURLY_LIMIT = 500;
 export const CAMPAIGN_BATCH_SIZE = 10;
 export const CAMPAIGN_BATCH_PAUSE_MS = 80_000;
 

@@ -1,8 +1,11 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { personalizeCampaignHtml } from "@/lib/email-campaigns/personalize";
-import { sendCampaignSmtpEmail, CAMPAIGN_BATCH_PAUSE_MS, CAMPAIGN_BATCH_SIZE } from "@/lib/email-campaigns/smtp";
+import { sendCampaignSmtpEmail } from "@/lib/email-campaigns/smtp";
+import { campaignBatchConfig, chunkIds } from "@/lib/email-campaigns/batch-config";
 import {
+  ensureUnsubscribeToken,
   loadRecipientForSend,
   markCampaignStatus,
   recordSendResult,
@@ -10,8 +13,22 @@ import {
 } from "@/lib/email-campaigns/store";
 import { htmlContainsBrokenCampaignTracking, requireCampaignEmailOrigin } from "@/lib/email-campaigns/public-base";
 import { planRecipientSend, selectCampaignContent, type RecipientSendPlan } from "@/lib/email-campaigns/locale";
+import { bulkSendConsentGate, hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
+import { runSequentialSends, type SendMode } from "@/lib/email-campaigns/send-queue";
+import {
+  claimCampaignSendLease,
+  claimRecipientForSend,
+  finalizeBulkCampaignStatus,
+  listCampaignDeliveryRows,
+  loadMarketingConsentMap,
+  refreshCampaignSendLease,
+  releaseCampaignSendLease,
+  resetStaleSendingRecipients,
+  sendableRecipientIds,
+} from "@/lib/email-campaigns/store-bulk";
 
-export { CAMPAIGN_BATCH_PAUSE_MS, CAMPAIGN_BATCH_SIZE, planRecipientSend };
+export { campaignBatchConfig };
+export { planRecipientSend };
 export type { RecipientSendPlan };
 
 function smtpFailureReason(result: { ok: false; reason: string; detail?: string }): string {
@@ -20,15 +37,49 @@ function smtpFailureReason(result: { ok: false; reason: string; detail?: string 
   return `${result.reason}:${detail.slice(0, 180)}`;
 }
 
-export async function sendToRecipient(recipientId: string): Promise<{
+export async function sendToRecipient(
+  recipientId: string,
+  options?: { skipIfAlreadySent?: boolean; enforceMarketingConsent?: boolean },
+): Promise<{
   ok: boolean;
   reason?: string;
   email?: string;
   smtpCalled: boolean;
+  skipped?: boolean;
   plan?: RecipientSendPlan;
 }> {
   let packed = await loadRecipientForSend(recipientId);
   if (!packed) return { ok: false, reason: "recipient_not_found", smtpCalled: false };
+
+  if (options?.skipIfAlreadySent && packed.recipient.status === "sent") {
+    return {
+      ok: true,
+      skipped: true,
+      reason: "already_sent",
+      email: packed.recipient.email as string,
+      smtpCalled: false,
+    };
+  }
+
+  if (options?.enforceMarketingConsent) {
+    const consent = await loadMarketingConsentMap([packed.recipient.email as string]);
+    const key = String(packed.recipient.email).trim().toLowerCase();
+    const entry = consent.get(key) ?? { newsletterSubscribed: false, unsubscribed: false };
+    if (!hasMarketingEmailConsent({ email: packed.recipient.email as string, ...entry })) {
+      await recordSendResult({
+        campaignId: packed.campaign.id as string,
+        recipientId,
+        ok: false,
+        reason: "marketing_consent_missing",
+      });
+      return {
+        ok: false,
+        reason: "marketing_consent_missing",
+        email: packed.recipient.email as string,
+        smtpCalled: false,
+      };
+    }
+  }
 
   if (!packed.destinationsOk.ok) {
     const reminted = await remintClickTokensIfInvalid(recipientId);
@@ -74,6 +125,8 @@ export async function sendToRecipient(recipientId: string): Promise<{
     htmlEn: packed.campaign.html_en as string,
     htmlEt: packed.campaign.html_et as string,
   });
+  const unsubscribeToken =
+    (packed.recipient.unsubscribe_token as string | null | undefined) ?? (await ensureUnsubscribeToken(recipientId));
   const { html, text } = personalizeCampaignHtml({
     htmlEn: packed.campaign.html_en as string,
     htmlEt: packed.campaign.html_et as string,
@@ -81,6 +134,7 @@ export async function sendToRecipient(recipientId: string): Promise<{
     openToken: packed.recipient.open_token as string,
     clickTokens: packed.clickTokens,
     origin: origin.origin,
+    unsubscribeToken,
   });
   const expectedMarker = selected.template === "ET" ? "VAATA SÜNDMUST" : "VIEW EVENT";
   const wrongMarker = selected.template === "ET" ? "VIEW EVENT" : "VAATA SÜNDMUST";
@@ -146,16 +200,121 @@ export async function sendTestCampaign(campaignId: string, recipientIds: string[
   return { ok: sent > 0, sent, failed, failures };
 }
 
-export async function sendCampaignBatched(campaignId: string, recipientIds: string[]): Promise<void> {
-  await markCampaignStatus(campaignId, "sending");
-  for (let i = 0; i < recipientIds.length; i += CAMPAIGN_BATCH_SIZE) {
-    const batch = recipientIds.slice(i, i + CAMPAIGN_BATCH_SIZE);
-    for (const id of batch) {
-      await sendToRecipient(id);
+async function sendClaimedRecipient(recipientId: string): Promise<"sent" | "failed" | "skipped"> {
+  const claim = await claimRecipientForSend(recipientId);
+  if (claim === "skip_sent") return "skipped";
+  if (claim === "missing") return "failed";
+  const result = await sendToRecipient(recipientId, { skipIfAlreadySent: true, enforceMarketingConsent: true });
+  if (result.skipped) return "skipped";
+  return result.ok ? "sent" : "failed";
+}
+
+export async function sendCampaignNextBatch(input: {
+  campaignId: string;
+  mode: SendMode;
+  confirm: boolean;
+  continueExisting?: boolean;
+  leaseId?: string;
+}): Promise<{
+  ok: boolean;
+  blocked?: string;
+  leaseId?: string;
+  done: boolean;
+  delayMs: number;
+  batchSize: number;
+  remaining: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  campaignStatus?: string;
+}> {
+  const config = campaignBatchConfig();
+  if (!input.confirm && !input.continueExisting) {
+    return { ok: false, blocked: "Bulk send requires explicit confirmation.", done: true, delayMs: config.delayMs, batchSize: config.size, remaining: 0, sent: 0, failed: 0, skipped: 0 };
+  }
+
+  const leaseId = input.leaseId ?? randomUUID();
+  if (!input.continueExisting) {
+    const claimed = await claimCampaignSendLease(input.campaignId, leaseId);
+    if (!claimed.ok) {
+      return { ok: false, blocked: claimed.reason, done: true, delayMs: config.delayMs, batchSize: config.size, remaining: 0, sent: 0, failed: 0, skipped: 0 };
     }
-    if (i + CAMPAIGN_BATCH_SIZE < recipientIds.length) {
-      await new Promise((resolve) => setTimeout(resolve, CAMPAIGN_BATCH_PAUSE_MS));
+    if (input.mode === "resume") {
+      await resetStaleSendingRecipients(input.campaignId);
+    }
+  } else {
+    const claimed = await claimCampaignSendLease(input.campaignId, leaseId);
+    if (!claimed.ok) {
+      return { ok: false, blocked: claimed.reason, done: true, delayMs: config.delayMs, batchSize: config.size, remaining: 0, sent: 0, failed: 0, skipped: 0 };
     }
   }
-  await markCampaignStatus(campaignId, "sent");
+
+  await refreshCampaignSendLease(input.campaignId, leaseId);
+  const ids = await sendableRecipientIds(input.campaignId, input.mode);
+  if (ids.length === 0) {
+    const campaignStatus = await finalizeBulkCampaignStatus(input.campaignId);
+    await releaseCampaignSendLease(input.campaignId, leaseId);
+    return { ok: true, leaseId, done: true, delayMs: config.delayMs, batchSize: config.size, remaining: 0, sent: 0, failed: 0, skipped: 0, campaignStatus };
+  }
+
+  const deliveryRows = await listCampaignDeliveryRows(input.campaignId);
+  const sendable = new Set(ids);
+  const emails = deliveryRows
+    .filter((row) => sendable.has(row.id as string))
+    .map((row) => String(row.email));
+  const consentMap = await loadMarketingConsentMap(emails);
+  const gate = bulkSendConsentGate(
+    emails.map((email) => {
+      const entry = consentMap.get(email.trim().toLowerCase()) ?? { newsletterSubscribed: false, unsubscribed: false };
+      return { email, consented: hasMarketingEmailConsent({ email, ...entry }) };
+    }),
+  );
+  if (!gate.allowed) {
+    await finalizeBulkCampaignStatus(input.campaignId);
+    await releaseCampaignSendLease(input.campaignId, leaseId);
+    return {
+      ok: false,
+      blocked: `Bulk marketing send is locked: ${gate.missingConsent} pending recipient(s) lack newsletter consent or have unsubscribed.`,
+      done: true,
+      delayMs: config.delayMs,
+      batchSize: config.size,
+      remaining: ids.length,
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+    };
+  }
+
+  const batch = chunkIds(ids, config.size)[0] ?? [];
+  const stats = await runSequentialSends(batch, sendClaimedRecipient);
+  const remainingIds = await sendableRecipientIds(input.campaignId, input.mode);
+  if (remainingIds.length === 0) {
+    const campaignStatus = await finalizeBulkCampaignStatus(input.campaignId);
+    await releaseCampaignSendLease(input.campaignId, leaseId);
+    return { ok: true, leaseId, done: true, delayMs: config.delayMs, batchSize: config.size, remaining: 0, ...stats, campaignStatus };
+  }
+
+  await refreshCampaignSendLease(input.campaignId, leaseId);
+  return {
+    ok: true,
+    leaseId,
+    done: false,
+    delayMs: config.delayMs,
+    batchSize: config.size,
+    remaining: remainingIds.length,
+    ...stats,
+    campaignStatus: "sending",
+  };
+}
+
+export async function sendCampaignBatched(campaignId: string, recipientIds: string[]): Promise<void> {
+  const config = campaignBatchConfig();
+  for (const batch of chunkIds(recipientIds, config.size)) {
+    await runSequentialSends(batch, async (id) => {
+      const result = await sendToRecipient(id, { skipIfAlreadySent: true });
+      if (result.skipped) return "skipped";
+      return result.ok ? "sent" : "failed";
+    });
+  }
+  await finalizeBulkCampaignStatus(campaignId);
 }

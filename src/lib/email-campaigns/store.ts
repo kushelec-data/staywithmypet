@@ -191,7 +191,8 @@ async function insertRecipientWithTokens(
 ) {
   const language = recipient.language ?? "en";
   const openToken = createOpaqueToken();
-  const { data: inserted, error } = await admin
+  const unsubscribeToken = createOpaqueToken();
+  let insert = await admin
     .from("email_campaign_recipients")
     .insert({
       campaign_id: campaignId,
@@ -200,9 +201,25 @@ async function insertRecipientWithTokens(
       email: recipient.email.trim().toLowerCase(),
       language,
       open_token: openToken,
+      unsubscribe_token: unsubscribeToken,
     })
     .select("id")
     .single();
+  if (insert.error && /unsubscribe_token/i.test(insert.error.message)) {
+    insert = await admin
+      .from("email_campaign_recipients")
+      .insert({
+        campaign_id: campaignId,
+        user_id: recipient.userId ?? null,
+        display_name: recipient.displayName.trim(),
+        email: recipient.email.trim().toLowerCase(),
+        language,
+        open_token: openToken,
+      })
+      .select("id")
+      .single();
+  }
+  const { data: inserted, error } = insert;
   if (error || !inserted) throw new Error(error?.message ?? "recipient_insert_failed");
 
   const clickRows = trackedLinks.map((link) => ({
@@ -220,6 +237,15 @@ async function insertRecipientWithTokens(
     if (retry.error) throw new Error(retry.error.message);
   }
   return inserted.id as string;
+}
+
+export async function addCampaignRecipientWithTokens(
+  admin: AdminDb,
+  campaignId: string,
+  recipient: NewRecipientInput,
+  trackedLinks: CampaignTrackedLink[],
+) {
+  return insertRecipientWithTokens(admin, campaignId, recipient, trackedLinks);
 }
 
 export async function createCampaign(input: {
@@ -378,7 +404,7 @@ export async function loadRecipientForSend(recipientId: string) {
   if (!admin) return null;
   const { data: recipient } = await admin
     .from("email_campaign_recipients")
-    .select("id, campaign_id, email, display_name, language, open_token, status")
+    .select("id, campaign_id, email, display_name, language, open_token, unsubscribe_token, status, sent_at")
     .eq("id", recipientId)
     .maybeSingle();
   if (!recipient) return null;
@@ -430,6 +456,18 @@ export async function loadRecipientForSend(recipientId: string) {
   };
 }
 
+export async function ensureUnsubscribeToken(recipientId: string): Promise<string | null> {
+  const packed = await loadRecipientForSend(recipientId);
+  const existing = packed?.recipient.unsubscribe_token as string | null | undefined;
+  if (existing) return existing;
+  const admin = db();
+  if (!admin) return null;
+  const token = createOpaqueToken();
+  const { error } = await admin.from("email_campaign_recipients").update({ unsubscribe_token: token }).eq("id", recipientId);
+  if (error) return null;
+  return token;
+}
+
 export async function remintClickTokensIfInvalid(recipientId: string): Promise<boolean> {
   const packed = await loadRecipientForSend(recipientId);
   if (!packed) return false;
@@ -471,8 +509,9 @@ export async function recordSendResult(input: {
   if (input.ok) {
     await admin
       .from("email_campaign_recipients")
-      .update({ status: outcome.status, sent_at: now, failure_reason: null })
-      .eq("id", input.recipientId);
+      .update({ status: outcome.status, sent_at: now, failure_reason: null, failed_at: null })
+      .eq("id", input.recipientId)
+      .neq("status", "sent");
     await admin.from("email_campaign_events").insert({
       campaign_id: input.campaignId,
       recipient_id: input.recipientId,
@@ -482,8 +521,9 @@ export async function recordSendResult(input: {
   }
   await admin
     .from("email_campaign_recipients")
-    .update({ status: outcome.status, failure_reason: outcome.failure_reason })
-    .eq("id", input.recipientId);
+    .update({ status: outcome.status, failure_reason: outcome.failure_reason, failed_at: now })
+    .eq("id", input.recipientId)
+    .neq("status", "sent");
   await admin.from("email_campaign_events").insert({
     campaign_id: input.campaignId,
     recipient_id: input.recipientId,

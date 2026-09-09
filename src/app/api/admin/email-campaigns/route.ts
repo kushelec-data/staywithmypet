@@ -3,8 +3,18 @@ import { requireAdminApi } from "@/lib/admin/require-api";
 import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
 import { OPEN_TRACKING_DISCLAIMER } from "@/lib/email-campaigns/dto";
 import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
-import { createCampaign, createSeptemberEstonianDraft, createSeptemberTestDraft, listCampaignSummaries, resolveRegisteredUserRecipients } from "@/lib/email-campaigns/store";
+import {
+  createCampaign,
+  createSeptemberEstonianDraft,
+  createSeptemberTestDraft,
+  listCampaignSummaries,
+  resolveRegisteredUserRecipients,
+} from "@/lib/email-campaigns/store";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { parseCampaignCsv } from "@/lib/email-campaigns/csv-import";
+import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
+import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
+import { listRegisteredCampaignAudience, recipientsForRegisteredFilter } from "@/lib/email-campaigns/store-bulk";
 
 export async function GET() {
   const gate = await requireAdminApi();
@@ -58,21 +68,53 @@ export async function POST(request: Request) {
         .filter((row) => row.email.includes("@") && row.displayName)
     : [];
 
-  const recipients = [...manual, ...fromUsers];
+  const fromCsv =
+    typeof body.csvText === "string" && body.csvText.trim()
+      ? parseCampaignCsv(body.csvText).recipients.map((row) => ({
+          displayName: row.displayName,
+          email: row.email,
+          language: row.language,
+        }))
+      : [];
+
+  let fromAudience: typeof manual = [];
+  const filter = body.registeredFilter;
+  if (filter === "all" || filter === "et" || filter === "en") {
+    const audience = await listRegisteredCampaignAudience();
+    if (audience) {
+      fromAudience = recipientsForRegisteredFilter(audience.all, filter).map((row) => ({
+        displayName: row.displayName,
+        email: row.email,
+        language: row.language,
+        userId: row.userId,
+      }));
+    }
+  }
+
+  const seen = new Set<string>();
+  const recipients = [...manual, ...fromUsers, ...fromCsv, ...fromAudience].filter((row) => {
+    const email = row.email.trim().toLowerCase();
+    if (!email.includes("@") || seen.has(email)) return false;
+    seen.add(email);
+    return true;
+  });
   if (recipients.length === 0) {
     return NextResponse.json({ error: "Select at least one recipient" }, { status: 400 });
   }
+
+  const templateConfig = mergeSeptemberTemplateConfig(body.templateConfig);
+  const defaults = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig);
   const created = await createCampaign({
     name: String(body.name ?? "").trim() || "Untitled campaign",
     subjectEn: String(body.subjectEn ?? ""),
     subjectEt: String(body.subjectEt ?? ""),
-    htmlEn: String(body.htmlEn ?? ""),
-    htmlEt: String(body.htmlEt ?? ""),
+    htmlEn: String(body.htmlEn ?? "") || defaults.htmlEn,
+    htmlEt: String(body.htmlEt ?? "") || defaults.htmlEt,
     createdBy: gate.session.userId,
     recipients,
     templateKey: typeof body.templateKey === "string" ? body.templateKey : undefined,
-    templateConfig: mergeSeptemberTemplateConfig(body.templateConfig),
+    templateConfig,
   });
   if ("error" in created) return NextResponse.json({ error: created.error }, { status: 400 });
-  return NextResponse.json({ id: created.id });
+  return NextResponse.json({ id: created.id, sent: false });
 }

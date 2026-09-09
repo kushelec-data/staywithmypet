@@ -3,6 +3,7 @@ import { AdminShell } from "@/components/admin/AdminUi";
 import { EmailCampaignDetailClient } from "@/components/admin/EmailCampaignDetailClient";
 import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
 import { getCampaignDetail } from "@/lib/email-campaigns/store";
+import { attachRecipientConsent } from "@/lib/email-campaigns/store-bulk";
 
 export default async function AdminEmailCampaignDetailPage({
   params,
@@ -10,7 +11,8 @@ export default async function AdminEmailCampaignDetailPage({
   params: Promise<{ campaignId: string }>;
 }) {
   const { campaignId } = await params;
-  const detail = await getCampaignDetail(campaignId);
+  const loaded = await getCampaignDetail(campaignId);
+  const detail = loaded ? await attachRecipientConsent(loaded) : null;
 
   if (!detail) {
     return (

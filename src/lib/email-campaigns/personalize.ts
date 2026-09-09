@@ -24,6 +24,10 @@ export function clickTrackingUrl(token: string, origin?: string): string {
   return `${trackingOrigin(origin)}/api/email/track/click/${token}`;
 }
 
+export function unsubscribeUrl(token: string, origin?: string): string {
+  return `${trackingOrigin(origin)}/email/unsubscribe/${token}`;
+}
+
 export function personalizeCampaignHtml(input: {
   htmlEn: string;
   htmlEt: string;
@@ -31,6 +35,7 @@ export function personalizeCampaignHtml(input: {
   openToken: string;
   clickTokens: Record<string, string>;
   origin?: string;
+  unsubscribeToken?: string | null;
 }): { html: string; text: string; language: CampaignLanguage } {
   const origin = trackingOrigin(input.origin);
   const selected = selectCampaignContent(input.language, {
@@ -45,6 +50,7 @@ export function personalizeCampaignHtml(input: {
   const html = applyTrackingToHtml(selected.html, {
     openPixelUrl: openTrackingUrl(input.openToken, origin),
     clickUrls,
+    unsubscribeUrl: input.unsubscribeToken ? unsubscribeUrl(input.unsubscribeToken, origin) : undefined,
   });
   return { html, text: htmlToPlainText(html), language: selected.language };
 }
