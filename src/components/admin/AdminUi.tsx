@@ -4,11 +4,8 @@ import { ChartNoAxesCombined } from "lucide-react";
 import { ADMIN_NAV } from "@/lib/admin/nav";
 import {
   ACCOUNT_CARD_CLASS,
-  ACCOUNT_LAYOUT_SHELL,
   ACCOUNT_NAV_ACTIVE_CLASS,
   ACCOUNT_NAV_INACTIVE_CLASS,
-  ACCOUNT_PAGE_DESCRIPTION,
-  ACCOUNT_PAGE_TITLE,
 } from "@/lib/account-ui";
 
 export function AdminShell({
@@ -17,49 +14,43 @@ export function AdminShell({
   pathname,
   actions,
   children,
-  compact = false,
 }: {
   title: string;
   description?: string;
   pathname: string;
   actions?: ReactNode;
   children: ReactNode;
-  compact?: boolean;
 }) {
-  const shell = compact
-    ? "account-area mx-auto w-full min-w-0 max-w-4xl px-4 sm:px-6 py-6"
-    : `${ACCOUNT_LAYOUT_SHELL} py-8`;
-  const nav = (
-    <nav className={`flex flex-wrap gap-1.5 ${compact ? "" : "mt-6 gap-2"}`} aria-label="Admin">
-      {ADMIN_NAV.map((item) => {
-        const active = item.href === "/admin" ? pathname === "/admin" : pathname === item.href || pathname.startsWith(`${item.href}/`);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-semibold ${compact ? "px-2.5 py-1" : "px-3 py-1.5"} ${active ? ACCOUNT_NAV_ACTIVE_CLASS : ACCOUNT_NAV_INACTIVE_CLASS}`}
-          >
-            {item.href === "/admin/analytics" ? (
-              <ChartNoAxesCombined className="h-4 w-4 shrink-0" aria-hidden />
-            ) : null}
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
   return (
-    <div className={shell}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <div className="account-area mx-auto w-full min-w-0 max-w-4xl px-4 py-4 sm:px-6">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-[#2E6B3F]">Internal</p>
-          <h1 className={compact ? "font-heading text-2xl font-semibold text-foreground" : ACCOUNT_PAGE_TITLE}>{title}</h1>
-          {description ? <p className={compact ? "mt-1 max-w-xl text-sm text-muted" : ACCOUNT_PAGE_DESCRIPTION}>{description}</p> : null}
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#2E6B3F]">Internal</p>
+          <h1 className="font-heading text-xl font-semibold text-foreground sm:text-2xl">{title}</h1>
+          {description ? <p className="mt-1 max-w-xl text-sm text-muted">{description}</p> : null}
         </div>
         {actions}
       </div>
-      {compact ? <div className={`${ACCOUNT_CARD_CLASS} mt-4 p-3`}>{nav}</div> : nav}
-      <div className={compact ? "mt-5 space-y-4" : "mt-8"}>{children}</div>
+      <div className={`${ACCOUNT_CARD_CLASS} mt-3 p-2`}>
+        <nav className="flex flex-wrap gap-1" aria-label="Admin">
+          {ADMIN_NAV.map((item) => {
+            const active = item.href === "/admin" ? pathname === "/admin" : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 text-sm font-semibold ${active ? ACCOUNT_NAV_ACTIVE_CLASS : ACCOUNT_NAV_INACTIVE_CLASS}`}
+              >
+                {item.href === "/admin/analytics" ? (
+                  <ChartNoAxesCombined className="h-4 w-4 shrink-0" aria-hidden />
+                ) : null}
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+      <div className="mt-4 space-y-4">{children}</div>
     </div>
   );
 }

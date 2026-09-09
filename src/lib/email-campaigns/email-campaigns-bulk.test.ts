@@ -123,7 +123,7 @@ describe("language via selectCampaignContent", () => {
     });
     expect(etPlan.template).toBe("ET");
     expect(etPlan.eventTokens).toBe(3);
-    expect(etPlan.sponsorTokens).toBe(6);
+    expect(etPlan.sponsorTokens).toBe(7);
   });
 });
 

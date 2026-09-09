@@ -63,52 +63,107 @@ function defaultClickHrefs(config: CampaignTemplateConfig): Record<string, strin
   return Object.fromEntries(trackedLinksFromTemplateConfig(config).map((link) => [link.key, clickPlaceholder(link.key)]));
 }
 
-function enBody(clickHrefs: Record<string, string>, config: CampaignTemplateConfig): string {
-  const hrefs = { ...defaultClickHrefs(config), ...clickHrefs };
-  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("en", link, hrefs[link.key])).join("");
-  return `
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Hi!</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">This September, we’re bringing the Stay With My Pet community together in real life for the very first time. 🐾</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">We’re hosting three free community events at Restaurant Moon, all about making life with pets better – for both animals and the people who love them.</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">We’ve invited experts from different fields to share practical knowledge about pet health, behaviour and wellbeing. Across the three events, we’ll cover topics ranging from pet first aid and dental care to canine movement and behaviour. We’ll also look at the relationship from the other side – how pets can positively influence our own mental wellbeing.</p>
-<p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#333333;">This time, the main focus will be on dogs, but all Pet Parents and Pet Friends are warmly welcome. Friendly, well-behaved dogs are very welcome to join with their humans too. 🐶</p>
-<p style="margin:0 0 12px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">Choose the event that suits you:</p>
-${cards}
-<p style="margin:8px 0 16px;font-size:15px;line-height:1.65;color:#333333;">📍 All three events will take place at <strong>Restaurant Moon in Telliskivi</strong>, and <strong>attendance is free</strong>.</p>
-<p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">There’s more to look forward to than just the talks</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">YOOK will welcome us with a refreshing drink, while Gelato Ladies will bring along their ice cream cart with something delicious for both people and dogs – including a special dog-friendly ice cream created especially for our events. 🍦🐶</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Drinks and light snacks will be available to purchase from Moon throughout the event, and from 13:00 the kitchen will also be open if you’d like something more substantial.</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Every guest will also receive a small goodie bag put together with the help of our wonderful partners</strong>, filled with surprises, especially for our canine guests. 🎁</p>
-<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">A big thank you to our event partners and supporters:</p>
-${sponsorLine(hrefs, config)}
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>If you’re planning to join us, please mark “Going” on the relevant Facebook event</strong>, so we can get a better idea of how many guests to expect.</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.</p>
-<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">See you at Moon! 🐾</p>
-<p style="margin:0;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; the Stay With My Pet team</p>`;
+const BODY_P =
+  'style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"';
+const HEADING_P =
+  'style="margin:0 0 12px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;"';
+
+export const DEFAULT_PREHEADER_EN =
+  "Free talks, practical tips and great company – choose the event that suits you best.";
+export const DEFAULT_PREHEADER_ET =
+  "Tasuta loengud, praktilised teadmised ja mõnus seltskond – vali endale sobiv sündmus.";
+
+export const DEFAULT_CAMPAIGN_BODY_EN = `Hi!
+
+This September, we’re bringing the Stay With My Pet community together in real life for the very first time. 🐾
+
+We’re hosting three free community events at Restaurant Moon, all about making life with pets better – for both animals and the people who love them.
+
+We’ve invited experts from different fields to share practical knowledge about pet health, behaviour and wellbeing. Across the three events, we’ll cover topics ranging from pet first aid and dental care to canine movement and behaviour. We’ll also look at the relationship from the other side – how pets can positively influence our own mental wellbeing.
+
+This time, the main focus will be on dogs, but all Pet Parents and Pet Friends are warmly welcome. Friendly, well-behaved dogs are very welcome to join with their humans too. 🐶
+
+📍 All three events will take place at Restaurant Moon in Telliskivi, and attendance is free.
+
+There’s more to look forward to than just the talks
+
+YOOK will welcome us with a refreshing drink, while Gelato Ladies will bring along their ice cream cart with something delicious for both people and dogs – including a special dog-friendly ice cream created especially for our events. 🍦🐶
+
+Drinks and light snacks will be available to purchase from Moon throughout the event, and from 13:00 the kitchen will also be open if you’d like something more substantial.
+
+Every guest will also receive a small goodie bag put together with the help of our wonderful partners, filled with surprises, especially for our canine guests. 🎁
+
+If you’re planning to join us, please mark “Going” on the relevant Facebook event, so we can get a better idea of how many guests to expect.
+
+Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.
+
+See you at Moon! 🐾
+
+Gerly & the Stay With My Pet team`;
+
+export const DEFAULT_CAMPAIGN_BODY_ET = `Tere!
+
+Septembris toome Stay With My Peti kogukonna esimest korda kokku ka päriselus. 🐾
+
+Korraldame restoranis Moon kolm tasuta kogukonnaüritust, kus räägime sellest, kuidas muuta elu koos lemmikuga paremaks – nii loomade kui ka inimeste jaoks.
+
+Oleme kokku kutsunud erinevate valdkondade eksperdid, kes jagavad praktilisi teadmisi loomade tervisest, käitumisest ja heaolust. Ürituste jooksul räägime muu hulgas lemmikute esmaabist ja suuhügieenist, koerte liikumisest ja käitumisest ning vaatame ka teisele poole – kuidas mõjutavad lemmikloomad meie enda vaimset heaolu.
+
+Seekord on suurem tähelepanu koertel, kuid osalema on oodatud kõik loomaomanikud ja loomasõbrad. Ka sõbralikud ja hästi käituvad koerad on koos oma inimestega väga oodatud. 🐶
+
+📍 Kõik kolm sündmust toimuvad restoranis Moon, Telliskivis ning osalemine on tasuta.
+
+Lisaks loengutele ootab sind kohapeal veel nii mõndagi
+
+Tervitusjoogiga kostitab meid YOOK ning Gelato Ladies toob kohale oma jäätisekäru, kust leiab midagi head nii inimestele kui ka koertele – spetsiaalselt meie sündmuste jaoks valmib ka koertele mõeldud jäätis. 🍦🐶
+
+Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alates kella 13st on avatud ka köök toekamaks kehakinnituseks.
+
+Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁
+
+Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“, et oskaksime külaliste arvuga võimalikult hästi arvestada.
+
+Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.
+
+Kohtumiseni Moonis! 🐾
+
+Gerly & Stay With My Peti tiim`;
+
+/** Convert pasted/written campaign copy into email paragraphs. Not raw HTML. */
+export function campaignBodyTextToHtml(text: string): string {
+  const blocks = text
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  if (blocks.length === 0) return "";
+  return blocks
+    .map((block) => {
+      const html = escapeHtml(block).replace(/\n/g, "<br>");
+      return `<p ${BODY_P}>${html}</p>`;
+    })
+    .join("\n");
 }
 
-function etBody(clickHrefs: Record<string, string>, config: CampaignTemplateConfig): string {
+export function assembleCampaignInnerHtml(
+  language: CampaignLanguage,
+  bodyText: string,
+  clickHrefs: Record<string, string>,
+  config: CampaignTemplateConfig,
+): string {
   const hrefs = { ...defaultClickHrefs(config), ...clickHrefs };
-  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("et", link, hrefs[link.key])).join("");
+  const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard(language, link, hrefs[link.key])).join("");
+  const choose = language === "et" ? "Vali endale sobiv sündmus:" : "Choose the event that suits you:";
+  const thanks =
+    language === "et"
+      ? "Suur aitäh meie sündmuste headele partneritele ja toetajatele:"
+      : "A big thank you to our event partners and supporters:";
   return `
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Tere!</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Septembris toome Stay With My Peti kogukonna esimest korda kokku ka päriselus. 🐾</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Korraldame restoranis Moon kolm tasuta kogukonnaüritust, kus räägime sellest, kuidas muuta elu koos lemmikuga paremaks – nii loomade kui ka inimeste jaoks.</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Oleme kokku kutsunud erinevate valdkondade eksperdid, kes jagavad praktilisi teadmisi loomade tervisest, käitumisest ja heaolust. Ürituste jooksul räägime muu hulgas lemmikute esmaabist ja suuhügieenist, koerte liikumisest ja käitumisest ning vaatame ka teisele poole – kuidas mõjutavad lemmikloomad meie enda vaimset heaolu.</p>
-<p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#333333;">Seekord on suurem tähelepanu koertel, kuid osalema on oodatud kõik loomaomanikud ja loomasõbrad. Ka sõbralikud ja hästi käituvad koerad on koos oma inimestega väga oodatud. 🐶</p>
-<p style="margin:0 0 12px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">Vali endale sobiv sündmus:</p>
+${campaignBodyTextToHtml(bodyText)}
+<p ${HEADING_P}>${escapeHtml(choose)}</p>
 ${cards}
-<p style="margin:8px 0 16px;font-size:15px;line-height:1.65;color:#333333;">📍 Kõik kolm sündmust toimuvad <strong>restoranis Moon, Telliskivis</strong> ning <strong>osalemine on tasuta</strong>.</p>
-<p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#1a6b5c;font-weight:700;">Lisaks loengutele ootab sind kohapeal veel nii mõndagi</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Tervitusjoogiga kostitab meid YOOK ning Gelato Ladies toob kohale oma jäätisekäru, kust leiab midagi head nii inimestele kui ka koertele – spetsiaalselt meie sündmuste jaoks valmib ka koertele mõeldud jäätis. 🍦🐶</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alates kella 13st on avatud ka köök toekamaks kehakinnituseks.</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott</strong>, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁</p>
-<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Suur aitäh meie sündmuste headele partneritele ja toetajatele:</p>
-${sponsorLine(hrefs, config)}
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“</strong>, et oskaksime külaliste arvuga võimalikult hästi arvestada.</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.</p>
-<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Kohtumiseni Moonis! 🐾</p>
-<p style="margin:0;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; Stay With My Peti tiim</p>`;
+<p ${BODY_P}>${escapeHtml(thanks)}</p>
+${sponsorLine(hrefs, config)}`;
 }
 
 export function wrapCampaignEmail(opts: {
@@ -177,8 +232,6 @@ export function wrapCampaignEmail(opts: {
 </html>`;
 }
 
-const PREHEADER_EN = "Free talks, practical tips and great company – choose the event that suits you best.";
-const PREHEADER_ET = "Tasuta loengud, praktilised teadmised ja mõnus seltskond – vali endale sobiv sündmus.";
 const HEADLINE_EN = "🐾 Join us for a relaxed and inspiring Sunday all about life with pets!";
 const HEADLINE_ET = "🐾 Tule veeda üks mõnus ja sisukas pühapäev koos teiste loomasõpradega!";
 
@@ -188,13 +241,18 @@ export function renderSeptemberCampaignHtml(opts: {
   openPixelUrl: string;
   clickHrefs: Record<string, string>;
   templateConfig?: CampaignTemplateConfig;
+  bodyText?: string;
+  preheader?: string;
+  headline?: string;
 }): string {
   const config = opts.templateConfig ?? defaultSeptemberTemplateConfig();
-  const inner = opts.language === "et" ? etBody(opts.clickHrefs, config) : enBody(opts.clickHrefs, config);
+  const bodyText =
+    opts.bodyText ?? (opts.language === "et" ? DEFAULT_CAMPAIGN_BODY_ET : DEFAULT_CAMPAIGN_BODY_EN);
+  const inner = assembleCampaignInnerHtml(opts.language, bodyText, opts.clickHrefs, config);
   return wrapCampaignEmail({
     language: opts.language,
-    headline: opts.language === "et" ? HEADLINE_ET : HEADLINE_EN,
-    preheader: opts.language === "et" ? PREHEADER_ET : PREHEADER_EN,
+    headline: opts.headline ?? (opts.language === "et" ? HEADLINE_ET : HEADLINE_EN),
+    preheader: opts.preheader ?? (opts.language === "et" ? DEFAULT_PREHEADER_ET : DEFAULT_PREHEADER_EN),
     innerHtml: inner,
     logoUrl: opts.logoUrl,
     openPixelUrl: opts.openPixelUrl,
@@ -204,6 +262,14 @@ export function renderSeptemberCampaignHtml(opts: {
 export function defaultSeptemberBodies(
   logoUrl: string,
   templateConfig: CampaignTemplateConfig = defaultSeptemberTemplateConfig(),
+  copy?: {
+    bodyEn?: string;
+    bodyEt?: string;
+    preheaderEn?: string;
+    preheaderEt?: string;
+    subjectEn?: string;
+    subjectEt?: string;
+  },
 ): { htmlEn: string; htmlEt: string } {
   const clickHrefs = defaultClickHrefs(templateConfig);
   return {
@@ -213,6 +279,9 @@ export function defaultSeptemberBodies(
       openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
       clickHrefs,
       templateConfig,
+      bodyText: copy?.bodyEn,
+      preheader: copy?.preheaderEn,
+      headline: copy?.subjectEn,
     }),
     htmlEt: renderSeptemberCampaignHtml({
       language: "et",
@@ -220,6 +289,9 @@ export function defaultSeptemberBodies(
       openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
       clickHrefs,
       templateConfig,
+      bodyText: copy?.bodyEt,
+      preheader: copy?.preheaderEt,
+      headline: copy?.subjectEt,
     }),
   };
 }

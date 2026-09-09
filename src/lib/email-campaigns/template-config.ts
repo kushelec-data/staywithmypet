@@ -9,7 +9,7 @@ export const SEPTEMBER_SPONSOR_LINE: SponsorLineItem[] = [
   { key: "sponsor_petcity", label: "PetCity", destinationUrl: "https://www.petcity.ee/" },
   { key: "sponsor_platinum", label: "Platinum", destinationUrl: "https://www.koeratoit.ee/" },
   { key: "sponsor_viwell", label: "ViWell", destinationUrl: "https://viwelldrinks.com/" },
-  { key: "sponsor_semu", label: "Semu", destinationUrl: null },
+  { key: "sponsor_semu", label: "Semu", destinationUrl: "https://semujuice.eu/en" },
   { key: "sponsor_yook", label: "YOOK", destinationUrl: "https://yook.eu/" },
   { key: "sponsor_gelato_ladies", label: "Gelato Ladies", destinationUrl: "https://www.gelatoladies.ee/" },
   { key: "sponsor_moon", label: "Moon", destinationUrl: "https://restoranmoon.ee/" },

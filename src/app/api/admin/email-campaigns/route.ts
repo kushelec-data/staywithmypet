@@ -103,7 +103,14 @@ export async function POST(request: Request) {
   }
 
   const templateConfig = mergeSeptemberTemplateConfig(body.templateConfig);
-  const defaults = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig);
+  const defaults = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
+    bodyEn: typeof body.bodyEn === "string" ? body.bodyEn : undefined,
+    bodyEt: typeof body.bodyEt === "string" ? body.bodyEt : undefined,
+    preheaderEn: typeof body.preheaderEn === "string" ? body.preheaderEn : undefined,
+    preheaderEt: typeof body.preheaderEt === "string" ? body.preheaderEt : undefined,
+    subjectEn: String(body.subjectEn ?? "") || undefined,
+    subjectEt: String(body.subjectEt ?? "") || undefined,
+  });
   const created = await createCampaign({
     name: String(body.name ?? "").trim() || "Untitled campaign",
     subjectEn: String(body.subjectEn ?? ""),

@@ -23,7 +23,7 @@ export function CampaignCsvImport({
 
   return (
     <div>
-      <p className="text-xs text-muted">[ Upload CSV ] or paste below. Import does not send email.</p>
+      <p className="text-xs text-muted">Upload a CSV exported from Excel or Supabase. Import does not send email.</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <input
           ref={inputRef}
@@ -43,7 +43,6 @@ export function CampaignCsvImport({
         >
           Upload CSV
         </button>
-        <span className="text-sm text-muted">or paste below</span>
       </div>
       {fileName ? <p className="mt-2 text-sm">Selected file: {fileName}</p> : null}
       {preview ? (

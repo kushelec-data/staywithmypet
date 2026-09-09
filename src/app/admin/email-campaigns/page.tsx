@@ -13,7 +13,6 @@ export default async function AdminEmailCampaignsPage() {
       title="Email campaigns"
       pathname="/admin/email-campaigns"
       description="Create, test and send community email campaigns through SpaceMail."
-      compact
     >
       <p className="text-sm text-muted">From: {CAMPAIGN_FROM_HEADER}</p>
       <p className="text-xs text-muted">{OPEN_TRACKING_DISCLAIMER}</p>

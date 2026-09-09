@@ -16,7 +16,16 @@ export async function POST(request: Request, context: RouteContext) {
   if (gate.response) return gate.response;
 
   const { campaignId } = await context.params;
-  const body = (await request.json().catch(() => ({}))) as { language?: string; templateConfig?: unknown };
+  const body = (await request.json().catch(() => ({}))) as {
+    language?: string;
+    templateConfig?: unknown;
+    bodyEn?: string;
+    bodyEt?: string;
+    preheaderEn?: string;
+    preheaderEt?: string;
+    subjectEn?: string;
+    subjectEt?: string;
+  };
   const templateConfig = mergeSeptemberTemplateConfig(body.templateConfig);
 
   const origin = CANONICAL_CAMPAIGN_EMAIL_ORIGIN;
@@ -26,10 +35,17 @@ export async function POST(request: Request, context: RouteContext) {
   const openPixelUrl = openTrackingUrl("preview-open", origin);
 
   if (campaignId === "new") {
-    const bodies = defaultSeptemberBodies(`${CANONICAL_CAMPAIGN_EMAIL_ORIGIN}/logo.png`, templateConfig);
+    const bodies = defaultSeptemberBodies(`${CANONICAL_CAMPAIGN_EMAIL_ORIGIN}/logo.png`, templateConfig, {
+      bodyEn: body.bodyEn,
+      bodyEt: body.bodyEt,
+      preheaderEn: body.preheaderEn,
+      preheaderEt: body.preheaderEt,
+      subjectEn: body.subjectEn ?? SEPTEMBER_SUBJECT_EN,
+      subjectEt: body.subjectEt ?? SEPTEMBER_SUBJECT_ET,
+    });
     const selected = selectCampaignContent(body.language, {
-      subjectEn: SEPTEMBER_SUBJECT_EN,
-      subjectEt: SEPTEMBER_SUBJECT_ET,
+      subjectEn: body.subjectEn ?? SEPTEMBER_SUBJECT_EN,
+      subjectEt: body.subjectEt ?? SEPTEMBER_SUBJECT_ET,
       htmlEn: bodies.htmlEn,
       htmlEt: bodies.htmlEt,
     });

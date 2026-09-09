@@ -6,12 +6,22 @@ import { AdminCard } from "@/components/admin/AdminUi";
 import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { DEFAULT_TEST_RECIPIENTS, ESTONIAN_TEST_RECIPIENTS, SEPTEMBER_EVENT_LINKS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE, type CampaignTemplateConfig } from "@/lib/email-campaigns/template-config";
+import {
+  DEFAULT_CAMPAIGN_BODY_EN,
+  DEFAULT_CAMPAIGN_BODY_ET,
+  DEFAULT_PREHEADER_EN,
+  DEFAULT_PREHEADER_ET,
+} from "@/lib/email-campaigns/html";
 
 export function EmailCampaignComposer() {
   const router = useRouter();
   const [name, setName] = useState("September community events (test)");
   const [subjectEn, setSubjectEn] = useState(SEPTEMBER_SUBJECT_EN);
   const [subjectEt, setSubjectEt] = useState(SEPTEMBER_SUBJECT_ET);
+  const [preheaderEn, setPreheaderEn] = useState(DEFAULT_PREHEADER_EN);
+  const [preheaderEt, setPreheaderEt] = useState(DEFAULT_PREHEADER_ET);
+  const [bodyEn, setBodyEn] = useState(DEFAULT_CAMPAIGN_BODY_EN);
+  const [bodyEt, setBodyEt] = useState(DEFAULT_CAMPAIGN_BODY_ET);
   const [language, setLanguage] = useState<"en" | "et">("en");
   const [previewHtml, setPreviewHtml] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +74,16 @@ export function EmailCampaignComposer() {
     const res = await fetch("/api/admin/email-campaigns/new/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language, templateConfig }),
+      body: JSON.stringify({
+        language,
+        templateConfig,
+        bodyEn,
+        bodyEt,
+        preheaderEn,
+        preheaderEt,
+        subjectEn,
+        subjectEt,
+      }),
     });
     const json = await res.json().catch(() => ({}));
     setBusy(false);
@@ -121,6 +140,10 @@ export function EmailCampaignComposer() {
         name,
         subjectEn,
         subjectEt,
+        preheaderEn,
+        preheaderEt,
+        bodyEn,
+        bodyEt,
         templateConfig,
         csvText: csvText.trim() || undefined,
         registeredFilter: registeredFilter === "none" ? undefined : registeredFilter,
@@ -140,28 +163,54 @@ export function EmailCampaignComposer() {
     <div className="space-y-4">
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Campaign details</h2>
-        <div className="mt-3 grid gap-3">
-          <label className="text-sm">
-            Campaign name
-            <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
-          </label>
-          <label className="text-sm">
-            Subject EN
-            <input value={subjectEn} onChange={(e) => setSubjectEn(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
-          </label>
-          <label className="text-sm">
-            Preview language
-            <select value={language} onChange={(e) => setLanguage(e.target.value as "en" | "et")} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2">
-              <option value="en">English body</option>
-              <option value="et">Estonian body</option>
-            </select>
-          </label>
-          <label className="text-sm">
-            Subject ET
-            <input value={subjectEt} onChange={(e) => setSubjectEt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
-          </label>
-          <p className="text-xs text-muted">EN/ET bodies use the September community template. Preview below to review the body copy.</p>
-        </div>
+        <label className="mt-3 block text-sm">
+          Campaign name
+          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
+        </label>
+
+        <h3 className="mt-5 font-heading text-base font-semibold">English email</h3>
+        <label className="mt-2 block text-sm">
+          Subject
+          <input value={subjectEn} onChange={(e) => setSubjectEn(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
+        </label>
+        <label className="mt-2 block text-sm">
+          Preview text
+          <input value={preheaderEn} onChange={(e) => setPreheaderEn(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
+        </label>
+        <label className="mt-2 block text-sm">
+          Email body
+          <textarea
+            value={bodyEn}
+            onChange={(e) => setBodyEn(e.target.value)}
+            rows={8}
+            className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
+          />
+        </label>
+        <p className="mt-1 text-xs text-muted">
+          Paste or write the main email content here. Event buttons and sponsor links are added automatically below.
+        </p>
+
+        <h3 className="mt-5 font-heading text-base font-semibold">Estonian email</h3>
+        <label className="mt-2 block text-sm">
+          Subject
+          <input value={subjectEt} onChange={(e) => setSubjectEt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
+        </label>
+        <label className="mt-2 block text-sm">
+          Preview text
+          <input value={preheaderEt} onChange={(e) => setPreheaderEt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
+        </label>
+        <label className="mt-2 block text-sm">
+          Email body
+          <textarea
+            value={bodyEt}
+            onChange={(e) => setBodyEt(e.target.value)}
+            rows={8}
+            className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
+          />
+        </label>
+        <p className="mt-1 text-xs text-muted">
+          Paste or write the main email content here. Event buttons and sponsor links are added automatically below.
+        </p>
       </AdminCard>
 
       <AdminCard>
@@ -206,7 +255,7 @@ export function EmailCampaignComposer() {
 
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Sponsor links</h2>
-        <p className="mt-1 text-xs text-muted">Used for click tracking. Leave Semu empty until a URL is confirmed.</p>
+        <p className="mt-1 text-xs text-muted">Used for click tracking. New campaigns load these URLs automatically.</p>
         <div className="mt-3 grid gap-2">
           {SEPTEMBER_SPONSOR_LINE.map((item) => (
             <label key={item.key} className="text-sm">
@@ -225,6 +274,13 @@ export function EmailCampaignComposer() {
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Send / test</h2>
         <p className="mt-1 text-xs text-muted">Saving a draft does not send email.</p>
+        <label className="mt-2 block text-sm">
+          Preview language
+          <select value={language} onChange={(e) => setLanguage(e.target.value as "en" | "et")} className="mt-1 w-full max-w-xs rounded-xl border border-[#E5E2D8] px-3 py-2">
+            <option value="en">English</option>
+            <option value="et">Estonian</option>
+          </select>
+        </label>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" onClick={() => void preview()} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">

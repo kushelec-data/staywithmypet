@@ -16,7 +16,7 @@ export default async function AdminEmailCampaignDetailPage({
 
   if (!detail) {
     return (
-      <AdminShell title="Email campaign" pathname="/admin/email-campaigns" compact>
+      <AdminShell title="Email campaign" pathname="/admin/email-campaigns">
         <p>Campaign not found.</p>
         <Link href="/admin/email-campaigns" className="mt-3 inline-block font-semibold text-[#2E6B3F]">
           Back to campaigns
@@ -30,7 +30,6 @@ export default async function AdminEmailCampaignDetailPage({
       title={detail.name}
       pathname="/admin/email-campaigns"
       description="Recipient tracking for this campaign only. Open counts are approximate."
-      compact
       actions={
         <Link href="/admin/email-campaigns" className="text-sm font-semibold text-[#2E6B3F]">
           All campaigns
