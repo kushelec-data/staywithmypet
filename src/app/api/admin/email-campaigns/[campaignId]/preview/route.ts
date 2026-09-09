@@ -4,9 +4,10 @@ import { applyTrackingToHtml, defaultSeptemberBodies } from "@/lib/email-campaig
 import { clickTrackingUrl, openTrackingUrl } from "@/lib/email-campaigns/personalize";
 import { trackedLinksFromTemplateConfig } from "@/lib/email-campaigns/events";
 import { getCampaignDetail } from "@/lib/email-campaigns/store";
-import type { CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { selectCampaignContent } from "@/lib/email-campaigns/locale";
 import { CANONICAL_CAMPAIGN_EMAIL_ORIGIN } from "@/lib/email-campaigns/public-base";
 import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
+import { SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
 
 type RouteContext = { params: Promise<{ campaignId: string }> };
 
@@ -16,7 +17,6 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { campaignId } = await context.params;
   const body = (await request.json().catch(() => ({}))) as { language?: string; templateConfig?: unknown };
-  const language: CampaignLanguage = body.language === "et" ? "et" : "en";
   const templateConfig = mergeSeptemberTemplateConfig(body.templateConfig);
 
   const origin = CANONICAL_CAMPAIGN_EMAIL_ORIGIN;
@@ -27,18 +27,30 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (campaignId === "new") {
     const bodies = defaultSeptemberBodies(`${CANONICAL_CAMPAIGN_EMAIL_ORIGIN}/logo.png`, templateConfig);
-    const html = applyTrackingToHtml(language === "et" ? bodies.htmlEt : bodies.htmlEn, {
+    const selected = selectCampaignContent(body.language, {
+      subjectEn: SEPTEMBER_SUBJECT_EN,
+      subjectEt: SEPTEMBER_SUBJECT_ET,
+      htmlEn: bodies.htmlEn,
+      htmlEt: bodies.htmlEt,
+    });
+    const html = applyTrackingToHtml(selected.html, {
       openPixelUrl,
       clickUrls,
     });
-    return NextResponse.json({ language, html, templateConfig });
+    return NextResponse.json({ language: selected.language, html, templateConfig, subject: selected.subject });
   }
 
   const detail = await getCampaignDetail(campaignId);
   if (!detail) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const html = applyTrackingToHtml(language === "et" ? detail.htmlEt : detail.htmlEn, {
+  const selected = selectCampaignContent(body.language, {
+    subjectEn: detail.subjectEn,
+    subjectEt: detail.subjectEt,
+    htmlEn: detail.htmlEn,
+    htmlEt: detail.htmlEt,
+  });
+  const html = applyTrackingToHtml(selected.html, {
     openPixelUrl,
     clickUrls,
   });
-  return NextResponse.json({ language, html, subject: language === "et" ? detail.subjectEt : detail.subjectEn });
+  return NextResponse.json({ language: selected.language, html, subject: selected.subject });
 }

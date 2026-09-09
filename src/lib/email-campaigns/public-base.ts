@@ -92,3 +92,7 @@ export function campaignEmailAssetUrl(path: string, origin = CANONICAL_CAMPAIGN_
 export function htmlContainsEphemeralTrackingHost(html: string): boolean {
   return /https?:\/\/[^"'>\s]*(localhost|127\.0\.0\.1|vercel\.app|vercel\.live)/i.test(html);
 }
+
+export function htmlContainsBrokenCampaignTracking(html: string): boolean {
+  return htmlContainsEphemeralTrackingHost(html) || html.includes("swmp.invalid");
+}

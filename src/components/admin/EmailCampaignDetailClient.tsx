@@ -32,7 +32,9 @@ export function EmailCampaignDetailClient({
   htmlEn: string;
   htmlEt: string;
 }) {
-  const [previewLang, setPreviewLang] = useState<"en" | "et">("en");
+  const [previewLang, setPreviewLang] = useState<"en" | "et">(() =>
+    recipients.length > 0 && recipients.every((row) => row.language.toLowerCase() === "et") ? "et" : "en",
+  );
   const [activity, setActivity] = useState<{ recipient: CampaignRecipientDto; events: CampaignEventDto[] } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -58,7 +60,11 @@ export function EmailCampaignDetailClient({
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setMessage(json.error ?? "Send test failed");
+      const blocked = json.blocked ? ` ${json.blocked}` : "";
+      const failures = Array.isArray(json.failures)
+        ? json.failures.map((row: { email?: string; reason?: string }) => `${row.email ?? "recipient"}: ${row.reason ?? "failed"}`).join("; ")
+        : "";
+      setMessage(`${json.error ?? "Send test failed."}${blocked}${failures ? ` ${failures}` : ""}`);
       return;
     }
     setMessage(`Send test finished. Sent ${json.sent}, failed ${json.failed}. Refresh to see status.`);
@@ -85,7 +91,7 @@ export function EmailCampaignDetailClient({
       </div>
       <p className="text-xs text-muted">{OPEN_TRACKING_DISCLAIMER}</p>
       <AdminTable
-        headers={["Name", "Email", "Language", "Sent", "Opened", "Clicked", "Last activity", "Status", ""]}
+        headers={["Name", "Email", "Language", "Sent", "Opened", "Clicked", "Last activity", "Status", "Failure", ""]}
         empty="No recipients yet."
         rows={recipients.map((row) => [
           row.name,
@@ -96,6 +102,7 @@ export function EmailCampaignDetailClient({
           row.clicked ? `✓${row.clickedLinkKey ? ` ${row.clickedLinkKey.replace("event_", "").replace("_", " ")}` : ""}` : "—",
           row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : "—",
           row.status,
+          row.failureReason ?? "—",
           <button key={row.id} type="button" className="font-semibold text-[#2E6B3F]" onClick={() => void loadActivity(row.id)}>
             Activity
           </button>,
@@ -139,7 +146,7 @@ export function EmailCampaignDetailClient({
           </button>
         </div>
         <p className="mt-2 text-xs text-muted">
-          Send campaign stays locked until you approve a real send after this preview. Send test asks for confirmation and then uses SpaceMail.
+          Send test uses each recipient&apos;s saved language (`et` → Estonian, anything else → English). Draft and previous test sends can be resent after confirmation. Status `sending` is blocked so two runs cannot overlap.
         </p>
         {message ? <p className="mt-2 text-sm">{message}</p> : null}
         <iframe title="Campaign preview" className="mt-4 h-[720px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={previewLang === "et" ? htmlEt : htmlEn} />

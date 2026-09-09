@@ -3,7 +3,7 @@ import { requireAdminApi } from "@/lib/admin/require-api";
 import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
 import { OPEN_TRACKING_DISCLAIMER } from "@/lib/email-campaigns/dto";
 import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
-import { createCampaign, createSeptemberTestDraft, listCampaignSummaries, resolveRegisteredUserRecipients } from "@/lib/email-campaigns/store";
+import { createCampaign, createSeptemberEstonianDraft, createSeptemberTestDraft, listCampaignSummaries, resolveRegisteredUserRecipients } from "@/lib/email-campaigns/store";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 
 export async function GET() {
@@ -32,6 +32,15 @@ export async function POST(request: Request) {
     const created = await createSeptemberTestDraft(gate.session.userId, mergeSeptemberTemplateConfig(body.templateConfig));
     if ("error" in created) return NextResponse.json({ error: created.error }, { status: 400 });
     return NextResponse.json({ id: created.id });
+  }
+
+  if (body.seedSeptemberEstonianTest === true) {
+    const created = await createSeptemberEstonianDraft(
+      gate.session.userId,
+      mergeSeptemberTemplateConfig(body.templateConfig),
+    );
+    if ("error" in created) return NextResponse.json({ error: created.error }, { status: 400 });
+    return NextResponse.json({ id: created.id, language: "et" });
   }
 
   const registeredIds = Array.isArray(body.registeredUserIds)

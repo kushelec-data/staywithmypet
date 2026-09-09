@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard } from "@/components/admin/AdminUi";
-import { DEFAULT_TEST_RECIPIENTS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
+import { DEFAULT_TEST_RECIPIENTS, ESTONIAN_TEST_RECIPIENTS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE, type CampaignTemplateConfig } from "@/lib/email-campaigns/template-config";
 
 export function EmailCampaignComposer() {
@@ -45,6 +45,24 @@ export function EmailCampaignComposer() {
       return;
     }
     setPreviewHtml(json.html ?? "");
+  }
+
+  async function createEstonianDraft() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/email-campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seedSeptemberEstonianTest: true, templateConfig }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(json.error ?? "Could not create Estonian campaign");
+      return;
+    }
+    router.push(`/admin/email-campaigns/${json.id}`);
+    router.refresh();
   }
 
   async function createDraft() {
@@ -109,10 +127,18 @@ export function EmailCampaignComposer() {
           </label>
         ))}
       </div>
-      <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Test recipients</p>
+      <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">English test recipients</p>
       <ul className="mt-1 text-sm text-foreground">
         {DEFAULT_TEST_RECIPIENTS.map((row) => (
-          <li key={row.email}>
+          <li key={`en-${row.email}`}>
+            {row.displayName} · {row.email} · {row.language.toUpperCase()}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Estonian test recipients</p>
+      <ul className="mt-1 text-sm text-foreground">
+        {ESTONIAN_TEST_RECIPIENTS.map((row) => (
+          <li key={`et-${row.email}`}>
             {row.displayName} · {row.email} · {row.language.toUpperCase()}
           </li>
         ))}
@@ -126,7 +152,10 @@ export function EmailCampaignComposer() {
           Preview
         </button>
         <button type="button" onClick={() => void createDraft()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
-          Save test campaign (no send)
+          Save English test campaign (no send)
+        </button>
+        <button type="button" onClick={() => void createEstonianDraft()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
+          Save Estonian test campaign (no send)
         </button>
       </div>
       {previewHtml ? (

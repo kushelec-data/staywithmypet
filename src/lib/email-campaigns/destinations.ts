@@ -78,6 +78,12 @@ export function clickTokensMatchCatalog(
       errors.push(`unexpected token for ${row.link_key}`);
     }
   }
+  if (catalog.length === 0) {
+    errors.push("empty catalog");
+  }
+  if (rows.length === 0) {
+    errors.push("no click tokens");
+  }
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
 }
 

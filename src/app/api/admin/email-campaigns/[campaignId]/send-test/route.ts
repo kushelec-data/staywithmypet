@@ -25,5 +25,11 @@ export async function POST(request: Request, context: RouteContext) {
     campaignId,
     detail.recipients.map((row) => row.id),
   );
-  return NextResponse.json({ ok: true, ...result });
+  if (result.blocked) {
+    return NextResponse.json({ ...result, ok: false }, { status: 409 });
+  }
+  if (!result.ok) {
+    return NextResponse.json({ ...result, ok: false }, { status: 422 });
+  }
+  return NextResponse.json({ ...result, ok: true });
 }

@@ -7,6 +7,7 @@ vi.mock("@/lib/admin/auth", () => ({
 vi.mock("@/lib/email-campaigns/store", () => ({
   listCampaignSummaries: vi.fn(async () => []),
   createSeptemberTestDraft: vi.fn(),
+  createSeptemberEstonianDraft: vi.fn(),
   createCampaign: vi.fn(),
   resolveRegisteredUserRecipients: vi.fn(async () => []),
   getCampaignDetail: vi.fn(),

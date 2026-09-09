@@ -3,7 +3,7 @@ import {
   requireCampaignEmailOrigin,
 } from "@/lib/email-campaigns/public-base";
 import { applyTrackingToHtml, htmlToPlainText } from "@/lib/email-campaigns/html";
-import type { CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { selectCampaignContent, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 
 function trackingOrigin(origin?: string): string {
   if (origin) {
@@ -27,19 +27,24 @@ export function clickTrackingUrl(token: string, origin?: string): string {
 export function personalizeCampaignHtml(input: {
   htmlEn: string;
   htmlEt: string;
-  language: CampaignLanguage;
+  language: string | null | undefined;
   openToken: string;
   clickTokens: Record<string, string>;
   origin?: string;
-}): { html: string; text: string } {
+}): { html: string; text: string; language: CampaignLanguage } {
   const origin = trackingOrigin(input.origin);
-  const template = input.language === "et" ? input.htmlEt : input.htmlEn;
+  const selected = selectCampaignContent(input.language, {
+    subjectEn: "",
+    subjectEt: "",
+    htmlEn: input.htmlEn,
+    htmlEt: input.htmlEt,
+  });
   const clickUrls = Object.fromEntries(
     Object.entries(input.clickTokens).map(([key, token]) => [key, clickTrackingUrl(token, origin)]),
   );
-  const html = applyTrackingToHtml(template, {
+  const html = applyTrackingToHtml(selected.html, {
     openPixelUrl: openTrackingUrl(input.openToken, origin),
     clickUrls,
   });
-  return { html, text: htmlToPlainText(html) };
+  return { html, text: htmlToPlainText(html), language: selected.language };
 }

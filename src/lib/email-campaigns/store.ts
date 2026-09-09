@@ -4,7 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import {
   DEFAULT_TEST_RECIPIENTS,
+  ESTONIAN_TEST_RECIPIENTS,
   RESEND_TEST_RECIPIENTS,
+  SEPTEMBER_ESTONIAN_CAMPAIGN_NAME,
   SEPTEMBER_SUBJECT_EN,
   SEPTEMBER_SUBJECT_ET,
   SEPTEMBER_TEMPLATE_KEY,
@@ -299,6 +301,29 @@ export async function createSeptemberTestDraft(
   });
 }
 
+export async function createSeptemberEstonianDraft(
+  createdBy: string,
+  templateConfig?: CampaignTemplateConfig,
+): Promise<{ id: string } | { error: string }> {
+  const config = mergeSeptemberTemplateConfig(templateConfig);
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config);
+  return createCampaign({
+    name: SEPTEMBER_ESTONIAN_CAMPAIGN_NAME,
+    subjectEn: SEPTEMBER_SUBJECT_EN,
+    subjectEt: SEPTEMBER_SUBJECT_ET,
+    htmlEn: bodies.htmlEn,
+    htmlEt: bodies.htmlEt,
+    createdBy,
+    templateKey: SEPTEMBER_TEMPLATE_KEY,
+    templateConfig: config,
+    recipients: ESTONIAN_TEST_RECIPIENTS.map((row) => ({
+      displayName: row.displayName,
+      email: row.email,
+      language: row.language,
+    })),
+  });
+}
+
 export async function createSeptemberResendTest(
   createdBy: string,
   templateConfig?: CampaignTemplateConfig,
@@ -403,6 +428,34 @@ export async function loadRecipientForSend(recipientId: string) {
     clickRows,
     destinationsOk,
   };
+}
+
+export async function remintClickTokensIfInvalid(recipientId: string): Promise<boolean> {
+  const packed = await loadRecipientForSend(recipientId);
+  if (!packed) return false;
+  if (packed.destinationsOk.ok) return false;
+  const admin = db();
+  if (!admin) return false;
+  const templateConfig = mergeSeptemberTemplateConfig(
+    "template_config" in packed.campaign ? packed.campaign.template_config : undefined,
+  );
+  const trackedLinks = trackedLinksFromTemplateConfig(templateConfig);
+  await admin.from("email_campaign_click_tokens").delete().eq("recipient_id", recipientId);
+  const clickRows = trackedLinks.map((link) => ({
+    token: createOpaqueToken(),
+    recipient_id: recipientId,
+    link_key: link.key,
+    link_type: link.type,
+    label: link.label,
+    destination_url: link.destinationUrl,
+  }));
+  const { error: clickError } = await admin.from("email_campaign_click_tokens").insert(clickRows);
+  if (clickError) {
+    const fallback = clickRows.map(({ link_type: _t, label: _l, ...row }) => row);
+    const retry = await admin.from("email_campaign_click_tokens").insert(fallback);
+    if (retry.error) return false;
+  }
+  return true;
 }
 
 export async function recordSendResult(input: {

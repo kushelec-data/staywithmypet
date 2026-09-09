@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { campaignLanguageFromPreferredLocale, eventButtonLabel } from "@/lib/email-campaigns/locale";
+import { campaignLanguageFromPreferredLocale, eventButtonLabel, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
 import {
   CAMPAIGN_TRACKED_LINKS,
+  DEFAULT_TEST_RECIPIENTS,
   destinationForLinkKey,
+  ESTONIAN_TEST_RECIPIENTS,
   EVENT_13_SEP_URL,
   EVENT_20_SEP_URL,
   EVENT_27_SEP_URL,
@@ -44,6 +46,97 @@ describe("campaign language", () => {
     expect(eventButtonLabel("en")).toBe("VIEW EVENT →");
     expect(eventButtonLabel("et")).toBe("VAATA SÜNDMUST →");
   });
+
+  it("selects ET subject and body for et and EN for everything else", () => {
+    const fields = {
+      subjectEn: "English subject",
+      subjectEt: "Estonian subject",
+      htmlEn: "<p>VIEW EVENT</p>",
+      htmlEt: "<p>VAATA SÜNDMUST</p>",
+    };
+    expect(selectCampaignContent("et", fields)).toMatchObject({ language: "et", subject: "Estonian subject", template: "ET" });
+    expect(selectCampaignContent("ET", fields).html).toContain("VAATA SÜNDMUST");
+    expect(selectCampaignContent("en", fields)).toMatchObject({ language: "en", subject: "English subject", template: "EN" });
+    expect(selectCampaignContent("ru", fields).template).toBe("EN");
+    expect(selectCampaignContent(null, fields).template).toBe("EN");
+  });
+
+  it("uses the same selector for preview and SMTP personalization", () => {
+    const { htmlEn, htmlEt } = defaultSeptemberBodies("https://www.staywithmypet.ee/logo.png");
+    const fields = {
+      subjectEn: "🐾 Join us for a relaxed and inspiring Sunday all about life with pets!",
+      subjectEt: "🐾 Tule veeda üks mõnus ja sisukas pühapäev koos teiste loomasõpradega!",
+      htmlEn,
+      htmlEt,
+    };
+    const et = selectCampaignContent("et", fields);
+    const personalized = personalizeCampaignHtml({
+      htmlEn,
+      htmlEt,
+      language: "et",
+      openToken: createOpaqueToken(),
+      clickTokens: Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((link) => [link.key, createOpaqueToken()])),
+      origin: "https://www.staywithmypet.ee",
+    });
+    expect(et.subject).toBe(fields.subjectEt);
+    expect(personalized.language).toBe("et");
+    expect(personalized.html).toContain("VAATA SÜNDMUST →");
+    expect(personalized.html).not.toContain("VIEW EVENT");
+    const en = personalizeCampaignHtml({
+      htmlEn,
+      htmlEt,
+      language: "en",
+      openToken: createOpaqueToken(),
+      clickTokens: Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((link) => [link.key, createOpaqueToken()])),
+      origin: "https://www.staywithmypet.ee",
+    });
+    expect(en.html).toContain("VIEW EVENT →");
+    expect(en.html).not.toContain("VAATA SÜNDMUST");
+  });
+
+  it("plans an Estonian test send without calling SMTP", () => {
+    const { htmlEn, htmlEt } = defaultSeptemberBodies("https://www.staywithmypet.ee/logo.png");
+    const keys = CAMPAIGN_TRACKED_LINKS.map((link) => link.key);
+    const gerly = planRecipientSend({
+      email: "gerlykullamaa@gmail.com",
+      language: "et",
+      subjectEn: "EN subject",
+      subjectEt: "ET subject",
+      htmlEn,
+      htmlEt,
+      linkKeys: keys,
+      destinationsOk: true,
+    });
+    const kush = planRecipientSend({
+      email: "kusheducation@gmail.com",
+      language: "et",
+      subjectEn: "EN subject",
+      subjectEt: "ET subject",
+      htmlEn,
+      htmlEt,
+      linkKeys: keys,
+      destinationsOk: true,
+    });
+    expect(gerly).toMatchObject({
+      language: "et",
+      subject: "ET subject",
+      template: "ET",
+      trackingBase: "https://www.staywithmypet.ee",
+      eventTokens: 3,
+      sponsorTokens: 5,
+      smtpReady: true,
+    });
+    expect(kush).toMatchObject({
+      language: "et",
+      template: "ET",
+      eventTokens: 3,
+      sponsorTokens: 5,
+    });
+  });
+
+  it("refuses an empty token set instead of treating it as a valid catalog match", () => {
+    expect(clickTokensMatchCatalog([], CAMPAIGN_TRACKED_LINKS).ok).toBe(false);
+  });
 });
 
 describe("september HTML", () => {
@@ -60,14 +153,31 @@ describe("september HTML", () => {
     clickHrefs: Object.fromEntries(SEPTEMBER_EVENT_LINKS.map((l) => [l.key, clickPlaceholder(l.key)])),
   });
 
+  it("uses Estonian language for the Estonian campaign recipients without changing English recipients", () => {
+    expect(ESTONIAN_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["et", "et"]);
+    expect(DEFAULT_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["en", "en"]);
+  });
+
   it("preserves English wording and three VIEW EVENT buttons", () => {
     expect(htmlEn).toContain("This September, we’re bringing the Stay With My Pet community together");
     expect(htmlEn.match(/VIEW EVENT →/g)?.length).toBe(3);
     expect(htmlEn).not.toContain("VAATA SÜNDMUST");
   });
 
-  it("preserves Estonian wording and ET buttons", () => {
-    expect(htmlEt).toContain("Septembris toome Stay With My Peti kogukonna");
+  it("preserves Estonian wording from Emails for users.docx and ET buttons", () => {
+    expect(htmlEt).toContain("Septembris toome Stay With My Peti kogukonna esimest korda kokku ka päriselus.");
+    expect(htmlEt).toContain("Korraldame restoranis Moon kolm tasuta kogukonnaüritust");
+    expect(htmlEt).toContain("Vali endale sobiv sündmus:");
+    expect(htmlEt).toContain("13. september – eesti keeles");
+    expect(htmlEt).toContain("Hea elu koos lemmikuga");
+    expect(htmlEt).toContain("11.30 kogunemine | 12.00–14.00 programm");
+    expect(htmlEt).toContain("Living Well With Pets");
+    expect(htmlEt).toContain("Счастливая жизнь с питомцем");
+    expect(htmlEt).toContain("Lisaks loengutele ootab sind kohapeal veel nii mõndagi");
+    expect(htmlEt).toContain("Kohtumiseni Moonis!");
+    expect(htmlEt).toContain("Gerly &amp; Stay With My Peti tiim");
+    expect(htmlEt).toContain("Tule veeda üks mõnus ja sisukas pühapäev koos teiste loomasõpradega!");
+    expect(htmlEt).toContain("Tasuta loengud, praktilised teadmised ja mõnus seltskond – vali endale sobiv sündmus.");
     expect(htmlEt.match(/VAATA SÜNDMUST →/g)?.length).toBe(3);
     expect(htmlEt).not.toContain("VIEW EVENT");
   });
