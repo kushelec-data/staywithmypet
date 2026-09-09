@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AdminCard, AdminTable } from "@/components/admin/AdminUi";
 import { OPEN_TRACKING_DISCLAIMER } from "@/lib/email-campaigns/dto";
 import type { CampaignEventDto, CampaignRecipientDto } from "@/lib/email-campaigns/dto";
-import { parseCampaignCsv } from "@/lib/email-campaigns/csv-import";
+import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { bulkSendConsentGate } from "@/lib/email-campaigns/marketing-consent";
 
 type Summary = {
@@ -69,7 +69,6 @@ export function EmailCampaignDetailClient({
   const [leaseId, setLeaseId] = useState<string | null>(null);
   const [sendingLive, setSendingLive] = useState(false);
 
-  const csvPreview = useMemo(() => (csvText.trim() ? parseCampaignCsv(csvText) : null), [csvText]);
   const languageCounts = useMemo(() => {
     const estonian = recipients.filter((row) => row.language.toLowerCase() === "et").length;
     return { estonian, english: recipients.length - estonian };
@@ -257,7 +256,7 @@ export function EmailCampaignDetailClient({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <p className="text-sm text-muted">From: {from} · Status: {live?.status ?? status}</p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map(([label, value]) => (
@@ -309,21 +308,10 @@ export function EmailCampaignDetailClient({
         </AdminCard>
       ) : null}
       <AdminCard>
-        <p className="font-semibold">Add recipients</p>
-        <textarea
-          value={csvText}
-          onChange={(e) => setCsvText(e.target.value)}
-          rows={4}
-          className="mt-2 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 font-mono text-xs"
-          placeholder="First Name,Last Name,E-mail address,Keel"
-        />
-        {csvPreview ? (
-          <p className="mt-2 text-sm">
-            Recipients: {csvPreview.recipients.length} · Estonian: {csvPreview.estonian} · English: {csvPreview.english} · Invalid:{" "}
-            {csvPreview.invalid.length} · Duplicates removed: {csvPreview.duplicatesRemoved}
-          </p>
-        ) : null}
-        <div className="mt-3 flex flex-wrap gap-4 text-sm">
+        <h2 className="font-heading text-lg font-semibold">Recipients</h2>
+        <CampaignCsvImport csvText={csvText} onCsvTextChange={setCsvText} />
+        <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Add registered users</p>
+        <div className="mt-2 flex flex-wrap gap-4 text-sm">
           {(["all", "et", "en"] as const).map((value) => (
             <label key={value} className="flex items-center gap-2">
               <input
@@ -466,7 +454,7 @@ export function EmailCampaignDetailClient({
           Send test is separate from marketing bulk send. Preview uses `selectCampaignContent()` the same way SMTP does. Tracking origin is https://www.staywithmypet.ee.
         </p>
         {message ? <p className="mt-2 text-sm">{message}</p> : null}
-        <iframe title="Campaign preview" className="mt-4 h-[720px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={previewLang === "et" ? htmlEt : htmlEn} />
+        <iframe title="Campaign preview" className="mt-4 h-[480px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={previewLang === "et" ? htmlEt : htmlEn} />
       </AdminCard>
       {confirmOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

@@ -12,10 +12,11 @@ export default async function AdminEmailCampaignsPage() {
     <AdminShell
       title="Email campaigns"
       pathname="/admin/email-campaigns"
-      description="Admin-only community emails via SpaceMail. Recipients are selected explicitly; nothing is sent until you confirm Send test."
+      description="Create, test and send community email campaigns through SpaceMail."
+      compact
     >
-      <p className="mb-4 text-sm text-muted">From: {CAMPAIGN_FROM_HEADER}</p>
-      <p className="mb-6 text-xs text-muted">{OPEN_TRACKING_DISCLAIMER}</p>
+      <p className="text-sm text-muted">From: {CAMPAIGN_FROM_HEADER}</p>
+      <p className="text-xs text-muted">{OPEN_TRACKING_DISCLAIMER}</p>
       <AdminTable
         headers={["Campaign", "Recipients", "Sent", "Opened", "Clicked", "Failed", "Created", "Status"]}
         empty={campaigns === null ? "Campaign data unavailable (admin database client missing)." : "No campaigns yet."}
@@ -32,12 +33,10 @@ export default async function AdminEmailCampaignsPage() {
           row.status,
         ])}
       />
-      <div className="mt-8">
-        <EmailCampaignComposer />
-      </div>
-      <AdminCard className="mt-6">
+      <EmailCampaignComposer />
+      <AdminCard>
         <p className="text-sm text-muted">
-          Bulk send is not automatic. SpaceMail paid mailboxes are limited to 500 outgoing messages per hour (trial: 20/hour). Future large campaigns will send in batches of 10 with a pause so we stay under that cap.
+          Bulk send is not automatic. Tune EMAIL_CAMPAIGN_BATCH_SIZE and EMAIL_CAMPAIGN_BATCH_DELAY_MS so sending stays comfortably below your mailbox hourly limit.
         </p>
       </AdminCard>
     </AdminShell>

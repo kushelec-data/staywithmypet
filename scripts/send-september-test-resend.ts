@@ -66,7 +66,8 @@ async function main() {
     if (byKey.sponsor_yook !== "https://yook.eu/") throw new Error("YOOK destination mismatch");
     if (byKey.sponsor_gelato_ladies !== "https://www.gelatoladies.ee/") throw new Error("Gelato destination mismatch");
     if (byKey.sponsor_moon !== "https://restoranmoon.ee/") throw new Error("Moon destination mismatch");
-    if (byKey.sponsor_viwell) throw new Error("ViWell must not have a click token");
+    if (byKey.sponsor_viwell !== "https://viwelldrinks.com/") throw new Error("ViWell destination mismatch");
+    if (byKey.sponsor_semu) throw new Error("Semu must not have a click token");
     const catalogCheck = clickTokensMatchCatalog(packed.clickRows);
     if (!catalogCheck.ok) throw new Error(catalogCheck.errors.join("; "));
 
