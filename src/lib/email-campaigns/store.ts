@@ -3,12 +3,13 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import {
-  CAMPAIGN_TRACKED_LINKS,
   DEFAULT_TEST_RECIPIENTS,
   RESEND_TEST_RECIPIENTS,
   SEPTEMBER_SUBJECT_EN,
   SEPTEMBER_SUBJECT_ET,
   SEPTEMBER_TEMPLATE_KEY,
+  trackedLinksFromTemplateConfig,
+  type CampaignTrackedLink,
 } from "@/lib/email-campaigns/events";
 import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
 import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
@@ -19,8 +20,12 @@ import {
   sendOutcomeUpdate,
   summarizeCampaignRecipients,
 } from "@/lib/email-campaigns/tracking";
-import { clickRedirectFromTokenRow, clickTokensMatchCatalog } from "@/lib/email-campaigns/destinations";
+import { clickRedirectFromTokenRow, clickTokensMatchCatalog, isSafeCampaignDestination } from "@/lib/email-campaigns/destinations";
 import { toRecipientDto, type CampaignEventDto, type CampaignListItemDto, type CampaignRecipientDto } from "@/lib/email-campaigns/dto";
+import {
+  mergeSeptemberTemplateConfig,
+  type CampaignTemplateConfig,
+} from "@/lib/email-campaigns/template-config";
 
 type AdminDb = NonNullable<ReturnType<typeof createAdminClient>>;
 
@@ -180,6 +185,7 @@ async function insertRecipientWithTokens(
   admin: AdminDb,
   campaignId: string,
   recipient: NewRecipientInput,
+  trackedLinks: CampaignTrackedLink[],
 ) {
   const language = recipient.language ?? "en";
   const openToken = createOpaqueToken();
@@ -197,7 +203,7 @@ async function insertRecipientWithTokens(
     .single();
   if (error || !inserted) throw new Error(error?.message ?? "recipient_insert_failed");
 
-  const clickRows = CAMPAIGN_TRACKED_LINKS.map((link) => ({
+  const clickRows = trackedLinks.map((link) => ({
     token: createOpaqueToken(),
     recipient_id: inserted.id as string,
     link_key: link.key,
@@ -223,30 +229,44 @@ export async function createCampaign(input: {
   createdBy: string;
   recipients: NewRecipientInput[];
   templateKey?: string;
+  templateConfig?: CampaignTemplateConfig;
 }): Promise<{ id: string } | { error: string }> {
   const admin = db();
   if (!admin) return { error: "Unavailable" };
   if (input.recipients.length === 0) return { error: "Select at least one recipient" };
 
-  const { data: campaign, error } = await admin
-    .from("email_campaigns")
-    .insert({
-      name: input.name.trim(),
-      subject_en: input.subjectEn,
-      subject_et: input.subjectEt,
-      html_en: input.htmlEn,
-      html_et: input.htmlEt,
-      template_key: input.templateKey ?? null,
-      created_by: input.createdBy,
-      status: "draft",
-    })
-    .select("id")
-    .single();
+  const templateConfig = mergeSeptemberTemplateConfig(input.templateConfig);
+  for (const sponsor of templateConfig.sponsors) {
+    if (sponsor.destinationUrl && !isSafeCampaignDestination(sponsor.destinationUrl)) {
+      return { error: `Unsafe sponsor URL for ${sponsor.label}` };
+    }
+  }
+  const trackedLinks = trackedLinksFromTemplateConfig(templateConfig);
+
+  const payload: Record<string, unknown> = {
+    name: input.name.trim(),
+    subject_en: input.subjectEn,
+    subject_et: input.subjectEt,
+    html_en: input.htmlEn,
+    html_et: input.htmlEt,
+    template_key: input.templateKey ?? null,
+    created_by: input.createdBy,
+    status: "draft",
+    template_config: templateConfig,
+  };
+
+  let campaignInsert = await admin.from("email_campaigns").insert(payload).select("id").single();
+  if (campaignInsert.error && /template_config/i.test(campaignInsert.error.message)) {
+    const { template_config: _omit, ...withoutConfig } = payload;
+    void _omit;
+    campaignInsert = await admin.from("email_campaigns").insert(withoutConfig).select("id").single();
+  }
+  const { data: campaign, error } = campaignInsert;
   if (error || !campaign) return { error: error?.message ?? "create_failed" };
 
   try {
     for (const recipient of input.recipients) {
-      await insertRecipientWithTokens(admin, campaign.id as string, recipient);
+      await insertRecipientWithTokens(admin, campaign.id as string, recipient, trackedLinks);
     }
   } catch (error) {
     await admin.from("email_campaigns").delete().eq("id", campaign.id);
@@ -256,8 +276,12 @@ export async function createCampaign(input: {
   return { id: campaign.id as string };
 }
 
-export async function createSeptemberTestDraft(createdBy: string): Promise<{ id: string } | { error: string }> {
-  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"));
+export async function createSeptemberTestDraft(
+  createdBy: string,
+  templateConfig?: CampaignTemplateConfig,
+): Promise<{ id: string } | { error: string }> {
+  const config = mergeSeptemberTemplateConfig(templateConfig);
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config);
   return createCampaign({
     name: "September community events (test)",
     subjectEn: SEPTEMBER_SUBJECT_EN,
@@ -266,6 +290,7 @@ export async function createSeptemberTestDraft(createdBy: string): Promise<{ id:
     htmlEt: bodies.htmlEt,
     createdBy,
     templateKey: SEPTEMBER_TEMPLATE_KEY,
+    templateConfig: config,
     recipients: DEFAULT_TEST_RECIPIENTS.map((row) => ({
       displayName: row.displayName,
       email: row.email,
@@ -274,8 +299,12 @@ export async function createSeptemberTestDraft(createdBy: string): Promise<{ id:
   });
 }
 
-export async function createSeptemberResendTest(createdBy: string): Promise<{ id: string } | { error: string }> {
-  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"));
+export async function createSeptemberResendTest(
+  createdBy: string,
+  templateConfig?: CampaignTemplateConfig,
+): Promise<{ id: string } | { error: string }> {
+  const config = mergeSeptemberTemplateConfig(templateConfig);
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config);
   return createCampaign({
     name: "September community events (resend test)",
     subjectEn: SEPTEMBER_SUBJECT_EN,
@@ -284,6 +313,7 @@ export async function createSeptemberResendTest(createdBy: string): Promise<{ id
     htmlEt: bodies.htmlEt,
     createdBy,
     templateKey: SEPTEMBER_TEMPLATE_KEY,
+    templateConfig: config,
     recipients: RESEND_TEST_RECIPIENTS.map((row) => ({
       displayName: row.displayName,
       email: row.email,
@@ -328,12 +358,23 @@ export async function loadRecipientForSend(recipientId: string) {
     .maybeSingle();
   if (!recipient) return null;
 
-  const { data: campaign } = await admin
+  let campaignQuery = await admin
     .from("email_campaigns")
-    .select("id, subject_en, subject_et, html_en, html_et, status")
+    .select("id, subject_en, subject_et, html_en, html_et, status, template_config")
     .eq("id", recipient.campaign_id)
     .maybeSingle();
+  if (campaignQuery.error) {
+    campaignQuery = await admin
+      .from("email_campaigns")
+      .select("id, subject_en, subject_et, html_en, html_et, status")
+      .eq("id", recipient.campaign_id)
+      .maybeSingle();
+  }
+  const campaign = campaignQuery.data;
   if (!campaign) return null;
+  const catalog = trackedLinksFromTemplateConfig(
+    mergeSeptemberTemplateConfig("template_config" in campaign ? campaign.template_config : undefined),
+  );
 
   let clickQuery: { data: Array<Record<string, unknown>> | null; error: { message: string } | null };
   clickQuery = await admin
@@ -353,7 +394,7 @@ export async function loadRecipientForSend(recipientId: string) {
     link_key: row.link_key as string,
     destination_url: row.destination_url as string,
   }));
-  const destinationsOk = clickTokensMatchCatalog(clickRows);
+  const destinationsOk = clickTokensMatchCatalog(clickRows, catalog);
 
   return {
     recipient,

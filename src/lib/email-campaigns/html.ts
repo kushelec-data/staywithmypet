@@ -1,6 +1,10 @@
 import { escapeHtml } from "@/lib/emails/layout";
 import { eventButtonLabel, type CampaignLanguage } from "@/lib/email-campaigns/locale";
-import { SEPTEMBER_EVENT_LINKS, SEPTEMBER_SPONSOR_LINKS, type SeptemberEventCard } from "@/lib/email-campaigns/events";
+import { SEPTEMBER_EVENT_LINKS, trackedLinksFromTemplateConfig, type SeptemberEventCard } from "@/lib/email-campaigns/events";
+import {
+  defaultSeptemberTemplateConfig,
+  type CampaignTemplateConfig,
+} from "@/lib/email-campaigns/template-config";
 
 export const TRACK_PLACEHOLDER_PREFIX = "https://swmp.invalid/track/click/";
 export const OPEN_PIXEL_PLACEHOLDER = "https://swmp.invalid/track/open/PLACEHOLDER";
@@ -37,32 +41,29 @@ function eventCard(language: CampaignLanguage, link: SeptemberEventCard, href: s
 </table>`;
 }
 
-function sponsorLine(clickHrefs: Record<string, string>): string {
-  const parts = [
-    sponsorAnchor("PetCity", "sponsor_petcity", clickHrefs),
-    "Platinum",
-    "ViWell",
-    "Semu",
-    "YOOK",
-    sponsorAnchor("Gelato Ladies", "sponsor_gelato_ladies", clickHrefs),
-    sponsorAnchor("Moon", "sponsor_moon", clickHrefs),
-  ];
+const SPONSOR_LINK_STYLE =
+  "color:#1a6b5c;font-weight:600;text-decoration:none;cursor:pointer;";
+
+function sponsorLine(clickHrefs: Record<string, string>, config: CampaignTemplateConfig): string {
+  const parts = config.sponsors.map((item) =>
+    item.destinationUrl
+      ? sponsorAnchor(item.label, item.key, clickHrefs)
+      : escapeHtml(item.label),
+  );
   return `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#1a6b5c;font-weight:600;">${parts.join(" · ")} 🤍</p>`;
 }
 
 function sponsorAnchor(label: string, key: string, clickHrefs: Record<string, string>): string {
   const href = clickHrefs[key] ?? clickPlaceholder(key);
-  return `<a href="${escapeHtml(href)}" target="_blank" style="color:#1a6b5c;font-weight:700;text-decoration:underline;">${escapeHtml(label)}</a>`;
+  return `<a href="${escapeHtml(href)}" target="_blank" style="${SPONSOR_LINK_STYLE}">${escapeHtml(label)}</a>`;
 }
 
-function defaultClickHrefs(): Record<string, string> {
-  return Object.fromEntries(
-    [...SEPTEMBER_EVENT_LINKS, ...SEPTEMBER_SPONSOR_LINKS].map((link) => [link.key, clickPlaceholder(link.key)]),
-  );
+function defaultClickHrefs(config: CampaignTemplateConfig): Record<string, string> {
+  return Object.fromEntries(trackedLinksFromTemplateConfig(config).map((link) => [link.key, clickPlaceholder(link.key)]));
 }
 
-function enBody(clickHrefs: Record<string, string>): string {
-  const hrefs = { ...defaultClickHrefs(), ...clickHrefs };
+function enBody(clickHrefs: Record<string, string>, config: CampaignTemplateConfig): string {
+  const hrefs = { ...defaultClickHrefs(config), ...clickHrefs };
   const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("en", link, hrefs[link.key])).join("");
   return `
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Hi!</p>
@@ -78,15 +79,15 @@ ${cards}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Drinks and light snacks will be available to purchase from Moon throughout the event, and from 13:00 the kitchen will also be open if you’d like something more substantial.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Every guest will also receive a small goodie bag put together with the help of our wonderful partners</strong>, filled with surprises, especially for our canine guests. 🎁</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">A big thank you to our event partners and supporters:</p>
-${sponsorLine(hrefs)}
+${sponsorLine(hrefs, config)}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>If you’re planning to join us, please mark “Going” on the relevant Facebook event</strong>, so we can get a better idea of how many guests to expect.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">See you at Moon! 🐾</p>
 <p style="margin:0;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; the Stay With My Pet team</p>`;
 }
 
-function etBody(clickHrefs: Record<string, string>): string {
-  const hrefs = { ...defaultClickHrefs(), ...clickHrefs };
+function etBody(clickHrefs: Record<string, string>, config: CampaignTemplateConfig): string {
+  const hrefs = { ...defaultClickHrefs(config), ...clickHrefs };
   const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard("et", link, hrefs[link.key])).join("");
   return `
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Tere!</p>
@@ -102,7 +103,7 @@ ${cards}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alates kella 13st on avatud ka köök toekamaks kehakinnituseks.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott</strong>, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Suur aitäh meie sündmuste headele partneritele ja toetajatele:</p>
-${sponsorLine(hrefs)}
+${sponsorLine(hrefs, config)}
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;"><strong>Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“</strong>, et oskaksime külaliste arvuga võimalikult hästi arvestada.</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#333333;">Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.</p>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Kohtumiseni Moonis! 🐾</p>
@@ -181,8 +182,10 @@ export function renderSeptemberCampaignHtml(opts: {
   logoUrl: string;
   openPixelUrl: string;
   clickHrefs: Record<string, string>;
+  templateConfig?: CampaignTemplateConfig;
 }): string {
-  const inner = opts.language === "et" ? etBody(opts.clickHrefs) : enBody(opts.clickHrefs);
+  const config = opts.templateConfig ?? defaultSeptemberTemplateConfig();
+  const inner = opts.language === "et" ? etBody(opts.clickHrefs, config) : enBody(opts.clickHrefs, config);
   return wrapCampaignEmail({
     language: opts.language,
     headline: opts.language === "et" ? HEADLINE_ET : HEADLINE_EN,
@@ -193,20 +196,25 @@ export function renderSeptemberCampaignHtml(opts: {
   });
 }
 
-export function defaultSeptemberBodies(logoUrl: string): { htmlEn: string; htmlEt: string } {
-  const clickHrefs = defaultClickHrefs();
+export function defaultSeptemberBodies(
+  logoUrl: string,
+  templateConfig: CampaignTemplateConfig = defaultSeptemberTemplateConfig(),
+): { htmlEn: string; htmlEt: string } {
+  const clickHrefs = defaultClickHrefs(templateConfig);
   return {
     htmlEn: renderSeptemberCampaignHtml({
       language: "en",
       logoUrl,
       openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
       clickHrefs,
+      templateConfig,
     }),
     htmlEt: renderSeptemberCampaignHtml({
       language: "et",
       logoUrl,
       openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
       clickHrefs,
+      templateConfig,
     }),
   };
 }

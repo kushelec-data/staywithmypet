@@ -26,6 +26,7 @@ import {
   resolveCampaignEmailOrigin,
 } from "@/lib/email-campaigns/public-base";
 import { applyOpenTracking, applyClickTracking, sendOutcomeUpdate, summarizeCampaignRecipients } from "@/lib/email-campaigns/tracking";
+import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
 import { trackingUrlContainsIdentityLeak, createOpaqueToken, isOpaqueTokenShape } from "@/lib/email-campaigns/tokens";
 import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
 import { toRecipientDto } from "@/lib/email-campaigns/dto";
@@ -78,15 +79,31 @@ describe("september HTML", () => {
     expect(htmlEn).not.toContain("petcity.ee");
     expect(htmlEn).not.toContain("gelatoladies.ee");
     expect(htmlEn).not.toContain("restoranmoon.ee");
+    expect(htmlEn).not.toContain("koeratoit.ee");
+    expect(htmlEn).not.toContain("yook.eu");
     expect(htmlEn).toContain(">PetCity</a>");
+    expect(htmlEn).toContain(">Platinum</a>");
+    expect(htmlEn).toContain(">YOOK</a>");
     expect(htmlEn).toContain(">Gelato Ladies</a>");
     expect(htmlEn).toContain(">Moon</a>");
-    expect(htmlEn).toContain("Platinum");
+    expect(htmlEn).not.toMatch(/<a[^>]*>ViWell<\/a>/);
+    expect(htmlEn).not.toMatch(/<a[^>]*>Semu<\/a>/);
     expect(htmlEn).toContain("ViWell");
     expect(htmlEn).toContain("Semu");
-    expect(htmlEn).toContain("YOOK");
-    expect(UNLINKED_SPONSORS).toEqual(["Platinum", "ViWell", "Semu", "YOOK"]);
-    expect(SEPTEMBER_SPONSOR_LINKS).toHaveLength(3);
+    expect(htmlEn).toContain("PetCity");
+    expect(htmlEn).toMatch(/PetCity[\s\S]*Platinum[\s\S]*ViWell[\s\S]*Semu[\s\S]*YOOK[\s\S]*Gelato Ladies[\s\S]*Moon/);
+    expect(htmlEn).toContain("text-decoration:none;cursor:pointer;");
+    expect(UNLINKED_SPONSORS).toEqual(["ViWell", "Semu"]);
+    expect(SEPTEMBER_SPONSOR_LINKS).toHaveLength(5);
+    expect(SEPTEMBER_SPONSOR_LINKS.map((l) => l.label)).toEqual([
+      "PetCity",
+      "Platinum",
+      "YOOK",
+      "Gelato Ladies",
+      "Moon",
+    ]);
+    expect(CAMPAIGN_TRACKED_LINKS.filter((l) => l.type === "event")).toHaveLength(3);
+    expect(CAMPAIGN_TRACKED_LINKS.filter((l) => l.type === "sponsor")).toHaveLength(5);
   });
 
   it("personalizes with tracking URLs and no identity leak", () => {
@@ -111,6 +128,13 @@ describe("september HTML", () => {
     for (const href of buttonHrefs) {
       expect(href).toMatch(/^https:\/\/www\.staywithmypet\.ee\/api\/email\/track\/click\/[A-Za-z0-9_-]{40,64}$/);
     }
+    const gerlyTokens = Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((l) => [l.key, createOpaqueToken()]));
+    const kushTokens = Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((l) => [l.key, createOpaqueToken()]));
+    for (const link of CAMPAIGN_TRACKED_LINKS) {
+      expect(gerlyTokens[link.key]).not.toBe(kushTokens[link.key]);
+    }
+    expect(gerlyTokens.sponsor_petcity).not.toBe(gerlyTokens.event_13_sep);
+    expect(gerlyTokens.sponsor_platinum).not.toBe(gerlyTokens.sponsor_yook);
   });
 });
 
@@ -154,6 +178,11 @@ describe("tracking state", () => {
     expect(destinationForLinkKey("event_20_sep")).toBe(EVENT_20_SEP_URL);
     expect(destinationForLinkKey("event_27_sep")).toBe(EVENT_27_SEP_URL);
     expect(destinationForLinkKey("sponsor_petcity")).toBe("https://www.petcity.ee/");
+    expect(destinationForLinkKey("sponsor_platinum")).toBe("https://www.koeratoit.ee/");
+    expect(destinationForLinkKey("sponsor_yook")).toBe("https://yook.eu/");
+    expect(destinationForLinkKey("sponsor_gelato_ladies")).toBe("https://www.gelatoladies.ee/");
+    expect(destinationForLinkKey("sponsor_moon")).toBe("https://restoranmoon.ee/");
+    expect(destinationForLinkKey("sponsor_viwell")).toBeNull();
   });
 
   it("does not let recipient identity change click destinations", () => {
@@ -166,7 +195,32 @@ describe("tracking state", () => {
     expect(clickRedirectFromTokenRow(token1, kush)).toBe(EVENT_13_SEP_URL);
     expect(clickRedirectFromTokenRow(token2, gerly)).toBe(EVENT_20_SEP_URL);
     expect(clickRedirectFromTokenRow(token3, gerly)).toBe(EVENT_27_SEP_URL);
+    expect(clickRedirectFromTokenRow({ destination_url: "https://www.koeratoit.ee/", link_key: "sponsor_platinum" }, gerly)).toBe(
+      "https://www.koeratoit.ee/",
+    );
+    expect(clickRedirectFromTokenRow({ destination_url: "https://yook.eu/", link_key: "sponsor_yook" }, kush)).toBe("https://yook.eu/");
     expect(clickRedirectFromTokenRow({ destination_url: "https://www.facebook.com/gerly.kullamaa", link_key: "event_13_sep" }, gerly)).toBeNull();
+  });
+
+  it("redirects each confirmed sponsor homepage from the stored token URL", () => {
+    const destinations = [
+      ["sponsor_petcity", "https://www.petcity.ee/"],
+      ["sponsor_platinum", "https://www.koeratoit.ee/"],
+      ["sponsor_yook", "https://yook.eu/"],
+      ["sponsor_gelato_ladies", "https://www.gelatoladies.ee/"],
+      ["sponsor_moon", "https://restoranmoon.ee/"],
+    ] as const;
+    for (const [key, url] of destinations) {
+      expect(clickRedirectFromTokenRow({ destination_url: url, link_key: key }, null)).toBe(url);
+    }
+  });
+
+  it("lets composer overlay change a sponsor URL without changing HTML placeholders", () => {
+    const overlay = mergeSeptemberTemplateConfig({
+      sponsors: [{ key: "sponsor_moon", label: "Moon", destinationUrl: "https://restoranmoon.ee/" }],
+    });
+    expect(overlay.sponsors.find((s) => s.key === "sponsor_viwell")?.destinationUrl).toBeNull();
+    expect(overlay.sponsors.find((s) => s.key === "sponsor_platinum")?.destinationUrl).toBe("https://www.koeratoit.ee/");
   });
 
   it("validates each event token against the catalog before send", () => {

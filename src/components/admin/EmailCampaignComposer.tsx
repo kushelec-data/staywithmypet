@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard } from "@/components/admin/AdminUi";
 import { DEFAULT_TEST_RECIPIENTS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
+import { SEPTEMBER_SPONSOR_LINE, type CampaignTemplateConfig } from "@/lib/email-campaigns/template-config";
 
 export function EmailCampaignComposer() {
   const router = useRouter();
@@ -14,6 +15,20 @@ export function EmailCampaignComposer() {
   const [previewHtml, setPreviewHtml] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sponsorUrls, setSponsorUrls] = useState<Record<string, string>>(() =>
+    Object.fromEntries(SEPTEMBER_SPONSOR_LINE.map((item) => [item.key, item.destinationUrl ?? ""])),
+  );
+
+  const templateConfig: CampaignTemplateConfig = useMemo(
+    () => ({
+      sponsors: SEPTEMBER_SPONSOR_LINE.map((item) => ({
+        key: item.key,
+        label: item.label,
+        destinationUrl: sponsorUrls[item.key]?.trim() || null,
+      })),
+    }),
+    [sponsorUrls],
+  );
 
   async function preview() {
     setBusy(true);
@@ -21,7 +36,7 @@ export function EmailCampaignComposer() {
     const res = await fetch("/api/admin/email-campaigns/new/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language }),
+      body: JSON.stringify({ language, templateConfig }),
     });
     const json = await res.json().catch(() => ({}));
     setBusy(false);
@@ -38,7 +53,7 @@ export function EmailCampaignComposer() {
     const res = await fetch("/api/admin/email-campaigns", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seedSeptemberTest: true }),
+      body: JSON.stringify({ seedSeptemberTest: true, templateConfig }),
     });
     const json = await res.json().catch(() => ({}));
     setBusy(false);
@@ -76,6 +91,23 @@ export function EmailCampaignComposer() {
           Subject ET
           <input value={subjectEt} onChange={(e) => setSubjectEt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
         </label>
+      </div>
+      <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Sponsor homepages</p>
+      <p className="mt-1 text-xs text-muted">
+        Names stay in the email; URLs are stored on the campaign and used only for click tracking. Leave ViWell and Semu empty until official URLs are confirmed.
+      </p>
+      <div className="mt-3 grid gap-3">
+        {SEPTEMBER_SPONSOR_LINE.map((item) => (
+          <label key={item.key} className="text-sm">
+            {item.label}
+            <input
+              value={sponsorUrls[item.key] ?? ""}
+              onChange={(e) => setSponsorUrls((prev) => ({ ...prev, [item.key]: e.target.value }))}
+              placeholder={item.destinationUrl ? item.destinationUrl : "URL not confirmed"}
+              className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+            />
+          </label>
+        ))}
       </div>
       <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Test recipients</p>
       <ul className="mt-1 text-sm text-foreground">

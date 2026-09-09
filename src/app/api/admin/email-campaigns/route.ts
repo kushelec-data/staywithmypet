@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/require-api";
 import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
 import { OPEN_TRACKING_DISCLAIMER } from "@/lib/email-campaigns/dto";
+import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
 import { createCampaign, createSeptemberTestDraft, listCampaignSummaries, resolveRegisteredUserRecipients } from "@/lib/email-campaigns/store";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
   if (body.seedSeptemberTest === true) {
-    const created = await createSeptemberTestDraft(gate.session.userId);
+    const created = await createSeptemberTestDraft(gate.session.userId, mergeSeptemberTemplateConfig(body.templateConfig));
     if ("error" in created) return NextResponse.json({ error: created.error }, { status: 400 });
     return NextResponse.json({ id: created.id });
   }
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
     createdBy: gate.session.userId,
     recipients,
     templateKey: typeof body.templateKey === "string" ? body.templateKey : undefined,
+    templateConfig: mergeSeptemberTemplateConfig(body.templateConfig),
   });
   if ("error" in created) return NextResponse.json({ error: created.error }, { status: 400 });
   return NextResponse.json({ id: created.id });

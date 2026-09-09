@@ -1,3 +1,10 @@
+import {
+  defaultSeptemberTemplateConfig,
+  trackedSponsorsFromConfig,
+  unlinkedSponsorLabels,
+  type CampaignTemplateConfig,
+} from "@/lib/email-campaigns/template-config";
+
 export type CampaignLinkType = "event" | "sponsor";
 
 export type CampaignTrackedLink = {
@@ -61,24 +68,23 @@ export const SEPTEMBER_EVENT_LINKS: SeptemberEventCard[] = [
   },
 ];
 
-export const SEPTEMBER_SPONSOR_LINKS: CampaignTrackedLink[] = [
-  { key: "sponsor_petcity", type: "sponsor", label: "PetCity", destinationUrl: "https://www.petcity.ee/" },
-  { key: "sponsor_gelato_ladies", type: "sponsor", label: "Gelato Ladies", destinationUrl: "https://www.gelatoladies.ee/" },
-  { key: "sponsor_moon", type: "sponsor", label: "Moon", destinationUrl: "https://restoranmoon.ee/" },
-];
+export function trackedLinksFromTemplateConfig(
+  config: CampaignTemplateConfig = defaultSeptemberTemplateConfig(),
+): CampaignTrackedLink[] {
+  return [
+    ...SEPTEMBER_EVENT_LINKS.map(({ key, type, label, destinationUrl }) => ({
+      key,
+      type,
+      label,
+      destinationUrl,
+    })),
+    ...trackedSponsorsFromConfig(config),
+  ];
+}
 
-/** No approved partner URL found in the repo for these names. */
-export const UNLINKED_SPONSORS = ["Platinum", "ViWell", "Semu", "YOOK"] as const;
-
-export const CAMPAIGN_TRACKED_LINKS: CampaignTrackedLink[] = [
-  ...SEPTEMBER_EVENT_LINKS.map(({ key, type, label, destinationUrl }) => ({
-    key,
-    type,
-    label,
-    destinationUrl,
-  })),
-  ...SEPTEMBER_SPONSOR_LINKS,
-];
+export const CAMPAIGN_TRACKED_LINKS = trackedLinksFromTemplateConfig();
+export const SEPTEMBER_SPONSOR_LINKS = trackedSponsorsFromConfig(defaultSeptemberTemplateConfig());
+export const UNLINKED_SPONSORS = unlinkedSponsorLabels();
 
 export function destinationForLinkKey(linkKey: string): string | null {
   return CAMPAIGN_TRACKED_LINKS.find((link) => link.key === linkKey)?.destinationUrl ?? null;

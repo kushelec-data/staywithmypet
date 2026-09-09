@@ -1,6 +1,5 @@
-import { catalogLinkByKey, CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
-
-const ALLOWED_SPONSOR_HOSTS = new Set(["petcity.ee", "www.petcity.ee", "gelatoladies.ee", "www.gelatoladies.ee", "restoranmoon.ee", "www.restoranmoon.ee"]);
+import { CAMPAIGN_TRACKED_LINKS, catalogLinkByKey, type CampaignTrackedLink } from "@/lib/email-campaigns/events";
+import { defaultSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
 
 function hostnameOf(url: string): string | null {
   try {
@@ -8,6 +7,20 @@ function hostnameOf(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+function isFacebookHost(host: string): boolean {
+  return host === "facebook.com" || host === "www.facebook.com" || host === "m.facebook.com" || host === "fb.me" || host === "www.fb.me";
+}
+
+function isBlockedPublicHost(host: string): boolean {
+  return (
+    host === "localhost" ||
+    host.endsWith(".local") ||
+    host.endsWith(".vercel.app") ||
+    host === "127.0.0.1" ||
+    host === "::1"
+  );
 }
 
 /** Destinations come only from the click-token row, never from recipient/profile data. */
@@ -29,19 +42,22 @@ export function isSafeCampaignDestination(url: string): boolean {
     return false;
   }
   if (parsed.protocol !== "https:") return false;
+  if (parsed.username || parsed.password) return false;
   const host = parsed.hostname.toLowerCase();
-  if (host === "facebook.com" || host === "www.facebook.com" || host === "m.facebook.com" || host === "fb.me" || host === "www.fb.me") {
+  if (isBlockedPublicHost(host) || !host.includes(".")) return false;
+  if (isFacebookHost(host)) {
     return parsed.pathname.includes("/events/") || parsed.pathname.startsWith("/e/") || parsed.pathname.startsWith("/event_invite/");
   }
-  return ALLOWED_SPONSOR_HOSTS.has(host);
+  return true;
 }
 
 export function clickTokensMatchCatalog(
   rows: Array<{ link_key: string; destination_url: string; token: string }>,
+  catalog: CampaignTrackedLink[] = CAMPAIGN_TRACKED_LINKS,
 ): { ok: true } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   const byKey = new Map(rows.map((row) => [row.link_key, row]));
-  for (const link of CAMPAIGN_TRACKED_LINKS) {
+  for (const link of catalog) {
     const row = byKey.get(link.key);
     if (!row) {
       errors.push(`missing token for ${link.key}`);
@@ -50,8 +66,16 @@ export function clickTokensMatchCatalog(
     if (row.destination_url !== link.destinationUrl) {
       errors.push(`destination mismatch for ${link.key}`);
     }
+    if (!isSafeCampaignDestination(row.destination_url)) {
+      errors.push(`unsafe destination for ${link.key}`);
+    }
     if (!row.token || row.token.length < 40) {
       errors.push(`weak token for ${link.key}`);
+    }
+  }
+  for (const row of rows) {
+    if (!catalog.some((link) => link.key === row.link_key)) {
+      errors.push(`unexpected token for ${row.link_key}`);
     }
   }
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
@@ -61,6 +85,10 @@ export function describeClickLink(linkKey: string | null): { type: string; label
   if (!linkKey) return { type: "unknown", label: "Unknown link" };
   const catalog = catalogLinkByKey(linkKey);
   if (catalog) return { type: catalog.type, label: catalog.label };
+  const fromConfig = defaultSeptemberTemplateConfig().sponsors.find((item) => item.key === linkKey);
+  if (fromConfig) return { type: "sponsor", label: fromConfig.label };
   if (linkKey.startsWith("sponsor_")) return { type: "sponsor", label: linkKey };
   return { type: "event", label: linkKey };
 }
+
+export { hostnameOf };

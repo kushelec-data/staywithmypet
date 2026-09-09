@@ -2,9 +2,8 @@ import {
   CANONICAL_CAMPAIGN_EMAIL_ORIGIN,
   requireCampaignEmailOrigin,
 } from "@/lib/email-campaigns/public-base";
-import { applyTrackingToHtml, clickPlaceholder, htmlToPlainText } from "@/lib/email-campaigns/html";
+import { applyTrackingToHtml, htmlToPlainText } from "@/lib/email-campaigns/html";
 import type { CampaignLanguage } from "@/lib/email-campaigns/locale";
-import { CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
 
 function trackingOrigin(origin?: string): string {
   if (origin) {
@@ -36,11 +35,7 @@ export function personalizeCampaignHtml(input: {
   const origin = trackingOrigin(input.origin);
   const template = input.language === "et" ? input.htmlEt : input.htmlEn;
   const clickUrls = Object.fromEntries(
-    CAMPAIGN_TRACKED_LINKS.map((link) => {
-      const token = input.clickTokens[link.key];
-      if (!token) return [link.key, clickPlaceholder(link.key)];
-      return [link.key, clickTrackingUrl(token, origin)];
-    }),
+    Object.entries(input.clickTokens).map(([key, token]) => [key, clickTrackingUrl(token, origin)]),
   );
   const html = applyTrackingToHtml(template, {
     openPixelUrl: openTrackingUrl(input.openToken, origin),
