@@ -77,7 +77,7 @@ export const DEFAULT_CAMPAIGN_CLOSING_EN = `If you’re planning to join us, ple
 
 Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.
 
-See you at Moon!🐾
+See you at Moon! 🐾
 
 Gerly & the Stay With My Pet team`;
 
@@ -92,7 +92,14 @@ Gerly & Stay With My Peti tiim`;
 export const EN_CLOSING_START = "If you’re planning to join us, please mark";
 export const ET_CLOSING_START = "Kui oled tulemas, märgi palun";
 
-export const DEFAULT_CAMPAIGN_BODY_EN = `Hi!
+export const DEFAULT_THANKS_EN = "A big thank you to our event partners and supporters:";
+export const DEFAULT_THANKS_ET = "Suur aitäh meie sündmuste headele partneritele ja toetajatele:";
+export const EVENT_INTRO_EN = "Choose the event that suits you:";
+export const EVENT_INTRO_ET = "Vali endale sobiv sündmus:";
+export const AFTER_EVENTS_START_EN = "📍 All three events will take place at Restaurant Moon";
+export const AFTER_EVENTS_START_ET = "📍 Kõik kolm sündmust toimuvad restoranis Moon";
+
+export const DEFAULT_BODY_BEFORE_EN = `Hi!
 
 This September, we’re bringing the Stay With My Pet community together in real life for the very first time. 🐾
 
@@ -102,7 +109,9 @@ We’ve invited experts from different fields to share practical knowledge about
 
 This time, the main focus will be on dogs, but all Pet Parents and Pet Friends are warmly welcome. Friendly, well-behaved dogs are very welcome to join with their humans too. 🐶
 
-📍 All three events will take place at Restaurant Moon in Telliskivi, and attendance is free.
+${EVENT_INTRO_EN}`;
+
+export const DEFAULT_BODY_AFTER_EN = `📍 All three events will take place at Restaurant Moon in Telliskivi, and attendance is free.
 
 There’s more to look forward to than just the talks
 
@@ -112,9 +121,11 @@ Drinks and light snacks will be available to purchase from Moon throughout the e
 
 Every guest will also receive a small goodie bag put together with the help of our wonderful partners, filled with surprises, especially for our canine guests. 🎁
 
+${DEFAULT_THANKS_EN}
+
 ${DEFAULT_CAMPAIGN_CLOSING_EN}`;
 
-export const DEFAULT_CAMPAIGN_BODY_ET = `Tere!
+export const DEFAULT_BODY_BEFORE_ET = `Tere!
 
 Septembris toome Stay With My Peti kogukonna esimest korda kokku ka päriselus. 🐾
 
@@ -124,7 +135,9 @@ Oleme kokku kutsunud erinevate valdkondade eksperdid, kes jagavad praktilisi tea
 
 Seekord on suurem tähelepanu koertel, kuid osalema on oodatud kõik loomaomanikud ja loomasõbrad. Ka sõbralikud ja hästi käituvad koerad on koos oma inimestega väga oodatud. 🐶
 
-📍 Kõik kolm sündmust toimuvad restoranis Moon, Telliskivis ning osalemine on tasuta.
+${EVENT_INTRO_ET}`;
+
+export const DEFAULT_BODY_AFTER_ET = `📍 Kõik kolm sündmust toimuvad restoranis Moon, Telliskivis ning osalemine on tasuta.
 
 Lisaks loengutele ootab sind kohapeal veel nii mõndagi
 
@@ -134,7 +147,37 @@ Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alat
 
 Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁
 
+${DEFAULT_THANKS_ET}
+
 ${DEFAULT_CAMPAIGN_CLOSING_ET}`;
+
+export const DEFAULT_CAMPAIGN_BODY_EN = `${DEFAULT_BODY_BEFORE_EN}
+
+${DEFAULT_BODY_AFTER_EN}`;
+
+export const DEFAULT_CAMPAIGN_BODY_ET = `${DEFAULT_BODY_BEFORE_ET}
+
+${DEFAULT_BODY_AFTER_ET}`;
+
+export type CampaignCopyFields = {
+  preheaderEn: string;
+  preheaderEt: string;
+  bodyBeforeEn: string;
+  bodyAfterEn: string;
+  bodyBeforeEt: string;
+  bodyAfterEt: string;
+};
+
+export function defaultCampaignCopy(): CampaignCopyFields {
+  return {
+    preheaderEn: DEFAULT_PREHEADER_EN,
+    preheaderEt: DEFAULT_PREHEADER_ET,
+    bodyBeforeEn: DEFAULT_BODY_BEFORE_EN,
+    bodyAfterEn: DEFAULT_BODY_AFTER_EN,
+    bodyBeforeEt: DEFAULT_BODY_BEFORE_ET,
+    bodyAfterEt: DEFAULT_BODY_AFTER_ET,
+  };
+}
 
 function closingLeadBold(language: CampaignLanguage): string {
   return language === "et"
@@ -156,6 +199,55 @@ export function splitCampaignBodyForEvents(
     intro: bodyText.slice(0, index).trim(),
     closing: bodyText.slice(index).trim() || fallback,
   };
+}
+
+export function splitSeptemberBodyAroundEvents(
+  bodyText: string,
+  language: CampaignLanguage,
+): { before: string; after: string } {
+  const marker = language === "et" ? AFTER_EVENTS_START_ET : AFTER_EVENTS_START_EN;
+  const index = bodyText.indexOf(marker);
+  if (index >= 0) {
+    return { before: bodyText.slice(0, index).trim(), after: bodyText.slice(index).trim() };
+  }
+  const split = splitCampaignBodyForEvents(bodyText, language);
+  return { before: split.intro, after: split.closing };
+}
+
+function bodyBlocksToHtml(text: string, language: CampaignLanguage): string {
+  const intro = language === "et" ? EVENT_INTRO_ET : EVENT_INTRO_EN;
+  const thanks = language === "et" ? DEFAULT_THANKS_ET : DEFAULT_THANKS_EN;
+  const boldLead = escapeHtml(closingLeadBold(language));
+  const blocks = text
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  return blocks
+    .map((block) => {
+      let html = escapeHtml(block).replace(/\n/g, "<br>");
+      if (html.startsWith(boldLead)) {
+        html = `<strong>${boldLead}</strong>${html.slice(boldLead.length)}`;
+      }
+      const attr = block === intro || block === thanks ? HEADING_P : BODY_P;
+      return `<p ${attr}>${html}</p>`;
+    })
+    .join("\n");
+}
+
+export function injectSponsorLineAfterThanks(
+  afterHtml: string,
+  language: CampaignLanguage,
+  sponsorHtml: string,
+): string {
+  const thanks = escapeHtml(language === "et" ? DEFAULT_THANKS_ET : DEFAULT_THANKS_EN);
+  const needle = `>${thanks}</p>`;
+  const at = afterHtml.indexOf(needle);
+  if (at >= 0) {
+    const insertAt = at + needle.length;
+    return `${afterHtml.slice(0, insertAt)}\n${sponsorHtml}${afterHtml.slice(insertAt)}`;
+  }
+  return `${afterHtml}\n<p ${HEADING_P}>${thanks}</p>\n${sponsorHtml}`;
 }
 
 /** Convert pasted/written campaign copy into email paragraphs. Not raw HTML. */
@@ -199,22 +291,22 @@ export function assembleCampaignInnerHtml(
   bodyText: string,
   clickHrefs: Record<string, string>,
   config: CampaignTemplateConfig,
+  sections?: { before?: string; after?: string },
 ): string {
   const hrefs = { ...defaultClickHrefs(config), ...clickHrefs };
   const cards = SEPTEMBER_EVENT_LINKS.map((link) => eventCard(language, link, hrefs[link.key])).join("");
-  const { intro, closing } = splitCampaignBodyForEvents(bodyText, language);
-  const choose = language === "et" ? "Vali endale sobiv sündmus:" : "Choose the event that suits you:";
-  const thanks =
-    language === "et"
-      ? "Suur aitäh meie sündmuste headele partneritele ja toetajatele:"
-      : "A big thank you to our event partners and supporters:";
+  const split = splitSeptemberBodyAroundEvents(bodyText, language);
+  const before = (sections?.before ?? split.before).trim();
+  const after = (sections?.after ?? split.after).trim();
+  const afterHtml = injectSponsorLineAfterThanks(
+    bodyBlocksToHtml(after, language),
+    language,
+    sponsorLine(hrefs, config),
+  );
   return `
-${campaignBodyTextToHtml(intro)}
-<p ${HEADING_P}>${escapeHtml(choose)}</p>
+${bodyBlocksToHtml(before, language)}
 ${cards}
-${campaignClosingTextToHtml(closing, language)}
-<p ${BODY_P}>${escapeHtml(thanks)}</p>
-${sponsorLine(hrefs, config)}`;
+${afterHtml}`;
 }
 
 export function wrapCampaignEmail(opts: {
@@ -293,13 +385,18 @@ export function renderSeptemberCampaignHtml(opts: {
   clickHrefs: Record<string, string>;
   templateConfig?: CampaignTemplateConfig;
   bodyText?: string;
+  bodyBefore?: string;
+  bodyAfter?: string;
   preheader?: string;
   headline?: string;
 }): string {
   const config = opts.templateConfig ?? defaultSeptemberTemplateConfig();
-  const bodyText =
-    opts.bodyText ?? (opts.language === "et" ? DEFAULT_CAMPAIGN_BODY_ET : DEFAULT_CAMPAIGN_BODY_EN);
-  const inner = assembleCampaignInnerHtml(opts.language, bodyText, opts.clickHrefs, config);
+  const defaults = opts.language === "et" ? DEFAULT_CAMPAIGN_BODY_ET : DEFAULT_CAMPAIGN_BODY_EN;
+  const bodyText = opts.bodyText ?? defaults;
+  const inner = assembleCampaignInnerHtml(opts.language, bodyText, opts.clickHrefs, config, {
+    before: opts.bodyBefore,
+    after: opts.bodyAfter,
+  });
   return wrapCampaignEmail({
     language: opts.language,
     headline: opts.headline ?? (opts.language === "et" ? HEADLINE_ET : HEADLINE_EN),
@@ -310,19 +407,36 @@ export function renderSeptemberCampaignHtml(opts: {
   });
 }
 
+export function resolveCampaignCopy(copy?: Partial<CampaignCopyFields> & {
+  bodyEn?: string;
+  bodyEt?: string;
+}): CampaignCopyFields {
+  const defaults = defaultCampaignCopy();
+  const en = copy?.bodyEn ? splitSeptemberBodyAroundEvents(copy.bodyEn, "en") : null;
+  const et = copy?.bodyEt ? splitSeptemberBodyAroundEvents(copy.bodyEt, "et") : null;
+  const pick = (value: string | undefined, fallback: string) => (value && value.trim() ? value : fallback);
+  return {
+    preheaderEn: pick(copy?.preheaderEn, defaults.preheaderEn),
+    preheaderEt: pick(copy?.preheaderEt, defaults.preheaderEt),
+    bodyBeforeEn: pick(copy?.bodyBeforeEn, en?.before ?? defaults.bodyBeforeEn),
+    bodyAfterEn: pick(copy?.bodyAfterEn, en?.after ?? defaults.bodyAfterEn),
+    bodyBeforeEt: pick(copy?.bodyBeforeEt, et?.before ?? defaults.bodyBeforeEt),
+    bodyAfterEt: pick(copy?.bodyAfterEt, et?.after ?? defaults.bodyAfterEt),
+  };
+}
+
 export function defaultSeptemberBodies(
   logoUrl: string,
   templateConfig: CampaignTemplateConfig = defaultSeptemberTemplateConfig(),
-  copy?: {
+  copy?: Partial<CampaignCopyFields> & {
     bodyEn?: string;
     bodyEt?: string;
-    preheaderEn?: string;
-    preheaderEt?: string;
     subjectEn?: string;
     subjectEt?: string;
   },
 ): { htmlEn: string; htmlEt: string } {
   const clickHrefs = defaultClickHrefs(templateConfig);
+  const resolved = resolveCampaignCopy(copy);
   return {
     htmlEn: renderSeptemberCampaignHtml({
       language: "en",
@@ -330,8 +444,9 @@ export function defaultSeptemberBodies(
       openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
       clickHrefs,
       templateConfig,
-      bodyText: copy?.bodyEn,
-      preheader: copy?.preheaderEn,
+      bodyBefore: resolved.bodyBeforeEn,
+      bodyAfter: resolved.bodyAfterEn,
+      preheader: resolved.preheaderEn,
       headline: copy?.subjectEn,
     }),
     htmlEt: renderSeptemberCampaignHtml({
@@ -340,8 +455,9 @@ export function defaultSeptemberBodies(
       openPixelUrl: OPEN_PIXEL_PLACEHOLDER,
       clickHrefs,
       templateConfig,
-      bodyText: copy?.bodyEt,
-      preheader: copy?.preheaderEt,
+      bodyBefore: resolved.bodyBeforeEt,
+      bodyAfter: resolved.bodyAfterEt,
+      preheader: resolved.preheaderEt,
       headline: copy?.subjectEt,
     }),
   };
@@ -365,11 +481,80 @@ export function htmlToPlainText(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<[^>]+>/g, " ")
+    .replace(/<[^>]+>/g, "")
     .replace(/&amp;/g, "&")
     .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** Complete EN/ET paragraphs from Emails for users (1).docx, excluding Facebook URLs. */
+export const DOCX_EN_REQUIRED_PARAGRAPHS = [
+  "🐾 Join us for a relaxed and inspiring Sunday all about life with pets!",
+  "Free talks, practical tips and great company – choose the event that suits you best.",
+  "Hi!",
+  "This September, we’re bringing the Stay With My Pet community together in real life for the very first time. 🐾",
+  "We’re hosting three free community events at Restaurant Moon, all about making life with pets better – for both animals and the people who love them.",
+  "We’ve invited experts from different fields to share practical knowledge about pet health, behaviour and wellbeing. Across the three events, we’ll cover topics ranging from pet first aid and dental care to canine movement and behaviour. We’ll also look at the relationship from the other side – how pets can positively influence our own mental wellbeing.",
+  "This time, the main focus will be on dogs, but all Pet Parents and Pet Friends are warmly welcome. Friendly, well-behaved dogs are very welcome to join with their humans too. 🐶",
+  "Choose the event that suits you:",
+  "13 September – in Estonian",
+  "Hea elu koos lemmikuga",
+  "11:30 arrival | 12:00–14:00 programme",
+  "20 September – in English",
+  "Living Well With Pets",
+  "27 September – in Russian",
+  "Счастливая жизнь с питомцем",
+  "📍 All three events will take place at Restaurant Moon in Telliskivi, and attendance is free.",
+  "There’s more to look forward to than just the talks",
+  "YOOK will welcome us with a refreshing drink, while Gelato Ladies will bring along their ice cream cart with something delicious for both people and dogs – including a special dog-friendly ice cream created especially for our events. 🍦🐶",
+  "Drinks and light snacks will be available to purchase from Moon throughout the event, and from 13:00 the kitchen will also be open if you’d like something more substantial.",
+  "Every guest will also receive a small goodie bag put together with the help of our wonderful partners, filled with surprises, especially for our canine guests. 🎁",
+  "A big thank you to our event partners and supporters:",
+  "PetCity",
+  "Platinum",
+  "ViWell",
+  "Semu",
+  "YOOK",
+  "Gelato Ladies",
+  "Moon",
+  "If you’re planning to join us, please mark “Going” on the relevant Facebook event, so we can get a better idea of how many guests to expect.",
+  "Bring a friend, a family member or your dog – or simply come on your own. All you need is an interest in animals and in making life with them even better.",
+  "See you at Moon! 🐾",
+  "Gerly & the Stay With My Pet team",
+];
+
+export const DOCX_ET_REQUIRED_PARAGRAPHS = [
+  "🐾 Tule veeda üks mõnus ja sisukas pühapäev koos teiste loomasõpradega!",
+  "Tasuta loengud, praktilised teadmised ja mõnus seltskond – vali endale sobiv sündmus.",
+  "Tere!",
+  "Septembris toome Stay With My Peti kogukonna esimest korda kokku ka päriselus. 🐾",
+  "Korraldame restoranis Moon kolm tasuta kogukonnaüritust, kus räägime sellest, kuidas muuta elu koos lemmikuga paremaks – nii loomade kui ka inimeste jaoks.",
+  "Oleme kokku kutsunud erinevate valdkondade eksperdid, kes jagavad praktilisi teadmisi loomade tervisest, käitumisest ja heaolust. Ürituste jooksul räägime muu hulgas lemmikute esmaabist ja suuhügieenist, koerte liikumisest ja käitumisest ning vaatame ka teisele poole – kuidas mõjutavad lemmikloomad meie enda vaimset heaolu.",
+  "Seekord on suurem tähelepanu koertel, kuid osalema on oodatud kõik loomaomanikud ja loomasõbrad. Ka sõbralikud ja hästi käituvad koerad on koos oma inimestega väga oodatud. 🐶",
+  "Vali endale sobiv sündmus:",
+  "13. september – eesti keeles",
+  "Hea elu koos lemmikuga",
+  "11.30 kogunemine | 12.00–14.00 programm",
+  "20. september – inglise keeles",
+  "Living Well With Pets",
+  "27. september – vene keeles",
+  "Счастливая жизнь с питомцем",
+  "📍 Kõik kolm sündmust toimuvad restoranis Moon, Telliskivis ning osalemine on tasuta.",
+  "Lisaks loengutele ootab sind kohapeal veel nii mõndagi",
+  "Tervitusjoogiga kostitab meid YOOK ning Gelato Ladies toob kohale oma jäätisekäru, kust leiab midagi head nii inimestele kui ka koertele – spetsiaalselt meie sündmuste jaoks valmib ka koertele mõeldud jäätis. 🍦🐶",
+  "Moonist saab kogu sündmuse jooksul osta jooke ja kergemaid suupisteid ning alates kella 13st on avatud ka köök toekamaks kehakinnituseks.",
+  "Igat külalist ootab meie heade partnerite abil kokku pandud väike kinkekott, kust leiab üllatusi eelkõige meie neljajalgsetele sõpradele. 🎁",
+  "Suur aitäh meie sündmuste headele partneritele ja toetajatele:",
+  "Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“, et oskaksime külaliste arvuga võimalikult hästi arvestada.",
+  "Võta kaasa sõber, pereliige või koer – või tule lihtsalt ise. Kõige olulisem on huvi loomade ja hea elu vastu koos nendega.",
+  "Kohtumiseni Moonis! 🐾",
+  "Gerly & Stay With My Peti tiim",
+];
+
+export function missingDocxParagraphs(html: string, paragraphs: string[]): string[] {
+  const text = htmlToPlainText(html);
+  return paragraphs.filter((paragraph) => !text.includes(paragraph));
 }
 
 export function hrefsInHtml(html: string): string[] {

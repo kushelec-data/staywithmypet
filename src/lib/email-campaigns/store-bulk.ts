@@ -12,6 +12,7 @@ import {
   selectSendableRecipientIds,
 } from "@/lib/email-campaigns/send-queue";
 import { addCampaignRecipientWithTokens, type CampaignDetailDto, type NewRecipientInput } from "@/lib/email-campaigns/store";
+import { resolveDuplicateRecipientImport } from "@/lib/email-campaigns/recipient-upsert";
 
 type AdminDb = NonNullable<ReturnType<typeof createAdminClient>>;
 
@@ -159,8 +160,34 @@ export async function addRecipientsToExistingCampaign(
   let added = 0;
   let skipped = 0;
   for (const recipient of recipients) {
+    const email = normalizeMarketingEmail(recipient.email);
+    const { data: existing } = await admin
+      .from("email_campaign_recipients")
+      .select("id, status")
+      .eq("campaign_id", campaignId)
+      .eq("email", email)
+      .maybeSingle();
+    const action = resolveDuplicateRecipientImport(existing ? { status: String(existing.status) } : null);
+    if (action === "skip_sent") {
+      skipped += 1;
+      continue;
+    }
+    if (action === "update_language" && existing) {
+      const { error } = await admin
+        .from("email_campaign_recipients")
+        .update({
+          language: recipient.language ?? "en",
+          display_name: recipient.displayName,
+          user_id: recipient.userId ?? null,
+        })
+        .eq("id", existing.id)
+        .neq("status", "sent");
+      if (error) skipped += 1;
+      else added += 1;
+      continue;
+    }
     try {
-      await addCampaignRecipientWithTokens(admin, campaignId, recipient, links);
+      await addCampaignRecipientWithTokens(admin, campaignId, { ...recipient, email }, links);
       added += 1;
     } catch {
       skipped += 1;

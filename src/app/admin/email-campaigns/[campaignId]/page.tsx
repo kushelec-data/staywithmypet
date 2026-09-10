@@ -45,6 +45,21 @@ export default async function AdminEmailCampaignDetailPage({
         recipients={detail.recipients}
         htmlEn={detail.htmlEn}
         htmlEt={detail.htmlEt}
+        version={detail.version}
+        language={detail.language}
+        contentLocked={detail.contentLocked}
+        subjectEn={detail.subjectEn}
+        subjectEt={detail.subjectEt}
+        copy={{
+          subjectEn: detail.subjectEn,
+          subjectEt: detail.subjectEt,
+          preheaderEn: detail.copy.preheaderEn,
+          preheaderEt: detail.copy.preheaderEt,
+          bodyBeforeEn: detail.copy.bodyBeforeEn,
+          bodyAfterEn: detail.copy.bodyAfterEn,
+          bodyBeforeEt: detail.copy.bodyBeforeEt,
+          bodyAfterEt: detail.copy.bodyAfterEt,
+        }}
       />
     </AdminShell>
   );

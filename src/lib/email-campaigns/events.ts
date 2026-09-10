@@ -95,7 +95,7 @@ export function catalogLinkByKey(linkKey: string): CampaignTrackedLink | null {
 }
 
 export const DEFAULT_TEST_RECIPIENTS = [
-  { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "en" as const },
+  { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "et" as const },
   { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" as const },
 ];
 
@@ -106,7 +106,7 @@ export const ESTONIAN_TEST_RECIPIENTS = [
 ];
 
 export const RESEND_TEST_RECIPIENTS = [
-  { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "en" as const },
+  { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "et" as const },
   { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" as const },
   { displayName: "A. Biancheri", email: "a.biancheri@ignostiq.com", language: "en" as const },
 ];

@@ -17,19 +17,18 @@ export default async function AdminEmailCampaignsPage() {
       <p className="text-sm text-muted">From: {CAMPAIGN_FROM_HEADER}</p>
       <p className="text-xs text-muted">{OPEN_TRACKING_DISCLAIMER}</p>
       <AdminTable
-        headers={["Campaign", "Recipients", "Sent", "Opened", "Clicked", "Failed", "Created", "Status"]}
+        headers={["Name", "Version", "Language", "Status", "Updated", "Sent", "Recipients"]}
         empty={campaigns === null ? "Campaign data unavailable (admin database client missing)." : "No campaigns yet."}
         rows={(campaigns ?? []).map((row) => [
           <Link key={row.id} href={`/admin/email-campaigns/${row.id}`} className="font-semibold text-[#2E6B3F]">
             {row.name}
           </Link>,
-          String(row.recipients),
-          String(row.sent),
-          String(row.opened),
-          String(row.clicked),
-          String(row.failed),
-          new Date(row.createdAt).toLocaleString(),
+          row.version,
+          row.language,
           row.status,
+          new Date(row.updatedAt).toLocaleString(),
+          String(row.sent),
+          String(row.recipients),
         ])}
       />
       <EmailCampaignComposer />

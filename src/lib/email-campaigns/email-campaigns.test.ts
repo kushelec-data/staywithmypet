@@ -21,8 +21,11 @@ import {
   DEFAULT_CAMPAIGN_BODY_ET,
   DEFAULT_CAMPAIGN_CLOSING_EN,
   DEFAULT_CAMPAIGN_CLOSING_ET,
+  DOCX_EN_REQUIRED_PARAGRAPHS,
+  DOCX_ET_REQUIRED_PARAGRAPHS,
   defaultSeptemberBodies,
   hrefsInHtml,
+  missingDocxParagraphs,
   OPEN_PIXEL_PLACEHOLDER,
   renderSeptemberCampaignHtml,
 } from "@/lib/email-campaigns/html";
@@ -160,7 +163,7 @@ describe("september HTML", () => {
 
   it("uses Estonian language for the Estonian campaign recipients without changing English recipients", () => {
     expect(ESTONIAN_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["et", "et"]);
-    expect(DEFAULT_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["en", "en"]);
+    expect(DEFAULT_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["et", "en"]);
   });
 
   it("preserves English wording and three VIEW EVENT buttons", () => {
@@ -187,27 +190,46 @@ describe("september HTML", () => {
     expect(htmlEt).not.toContain("VIEW EVENT");
   });
 
-  it("places EN and ET closing after events and before sponsors", () => {
+  it("keeps the DOCX paragraph order around event cards and sponsor links", () => {
     expect(DEFAULT_CAMPAIGN_BODY_EN).toContain(DEFAULT_CAMPAIGN_CLOSING_EN);
     expect(DEFAULT_CAMPAIGN_BODY_ET).toContain(DEFAULT_CAMPAIGN_CLOSING_ET);
-    const view = htmlEn.lastIndexOf("VIEW EVENT");
-    const going = htmlEn.indexOf("If you’re planning to join us");
+    const choose = htmlEn.indexOf("Choose the event that suits you:");
+    const view = htmlEn.indexOf("VIEW EVENT");
+    const location = htmlEn.indexOf("All three events will take place at Restaurant Moon");
+    const more = htmlEn.indexOf("There’s more to look forward to than just the talks");
     const thanks = htmlEn.indexOf("A big thank you to our event partners");
-    expect(going).toBeGreaterThan(view);
-    expect(thanks).toBeGreaterThan(going);
+    const petcity = htmlEn.indexOf(">PetCity</a>");
+    const going = htmlEn.indexOf("If you’re planning to join us");
+    expect(view).toBeGreaterThan(choose);
+    expect(location).toBeGreaterThan(view);
+    expect(more).toBeGreaterThan(location);
+    expect(thanks).toBeGreaterThan(more);
+    expect(petcity).toBeGreaterThan(thanks);
+    expect(going).toBeGreaterThan(petcity);
     expect(htmlEn).toContain(
       "<strong>If you’re planning to join us, please mark “Going” on the relevant Facebook event,</strong>",
     );
-    expect(htmlEn).toContain("See you at Moon!🐾");
+    expect(htmlEn).toContain("See you at Moon! 🐾");
     expect(htmlEn).toContain("Gerly &amp; the Stay With My Pet team");
 
-    const vaata = htmlEt.lastIndexOf("VAATA SÜNDMUST");
-    const osalen = htmlEt.indexOf("Kui oled tulemas");
+    const vali = htmlEt.indexOf("Vali endale sobiv sündmus:");
+    const vaata = htmlEt.indexOf("VAATA SÜNDMUST");
+    const koht = htmlEt.indexOf("Kõik kolm sündmust toimuvad restoranis Moon");
+    const lisaks = htmlEt.indexOf("Lisaks loengutele ootab sind kohapeal veel nii mõndagi");
     const aitah = htmlEt.indexOf("Suur aitäh meie sündmuste headele partneritele");
-    expect(osalen).toBeGreaterThan(vaata);
-    expect(aitah).toBeGreaterThan(osalen);
+    const osalen = htmlEt.indexOf("Kui oled tulemas");
+    expect(vaata).toBeGreaterThan(vali);
+    expect(koht).toBeGreaterThan(vaata);
+    expect(lisaks).toBeGreaterThan(koht);
+    expect(aitah).toBeGreaterThan(lisaks);
+    expect(osalen).toBeGreaterThan(aitah);
     expect(htmlEt).toContain("<strong>Kui oled tulemas, märgi palun vastaval Facebooki sündmusel „Osalen“</strong>");
     expect(htmlEt).toContain("Kohtumiseni Moonis! 🐾");
+  });
+
+  it("contains every EN and ET paragraph from Emails for users (1).docx", () => {
+    expect(missingDocxParagraphs(htmlEn, DOCX_EN_REQUIRED_PARAGRAPHS)).toEqual([]);
+    expect(missingDocxParagraphs(htmlEt, DOCX_ET_REQUIRED_PARAGRAPHS)).toEqual([]);
   });
 
   it("does not print Facebook URLs in the email", () => {

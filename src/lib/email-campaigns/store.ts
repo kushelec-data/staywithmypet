@@ -13,7 +13,7 @@ import {
   trackedLinksFromTemplateConfig,
   type CampaignTrackedLink,
 } from "@/lib/email-campaigns/events";
-import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
+import { defaultSeptemberBodies, defaultCampaignCopy, resolveCampaignCopy, type CampaignCopyFields } from "@/lib/email-campaigns/html";
 import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
 import { createOpaqueToken } from "@/lib/email-campaigns/tokens";
 import {
@@ -28,6 +28,7 @@ import {
   mergeSeptemberTemplateConfig,
   type CampaignTemplateConfig,
 } from "@/lib/email-campaigns/template-config";
+import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion, versionLabel } from "@/lib/email-campaigns/versioning";
 
 type AdminDb = NonNullable<ReturnType<typeof createAdminClient>>;
 
@@ -48,14 +49,19 @@ export async function listCampaignSummaries(): Promise<CampaignListItemDto[] | n
 
   const { data: campaigns, error } = await admin
     .from("email_campaigns")
-    .select("id, name, status, created_at")
-    .order("created_at", { ascending: false });
+    .select("id, name, status, created_at, updated_at, family_id, version_number, subject_en, subject_et")
+    .order("updated_at", { ascending: false });
+  let rows: Array<Record<string, unknown>> | null = (campaigns as Array<Record<string, unknown>> | null) ?? null;
   if (error) {
-    console.error("[email-campaigns] list", error.message);
-    return null;
+    const fallback = await admin.from("email_campaigns").select("id, name, status, created_at").order("created_at", { ascending: false });
+    if (fallback.error) {
+      console.error("[email-campaigns] list", error.message);
+      return null;
+    }
+    rows = (fallback.data as Array<Record<string, unknown>> | null) ?? [];
   }
 
-  const ids = (campaigns ?? []).map((row) => row.id as string);
+  const ids = (rows ?? []).map((row) => row.id as string);
   if (ids.length === 0) return [];
 
   const { data: recipients } = await admin
@@ -75,18 +81,27 @@ export async function listCampaignSummaries(): Promise<CampaignListItemDto[] | n
     byCampaign.set(key, list);
   }
 
-  return (campaigns ?? []).map((campaign) => {
-    const stats = summarizeCampaignRecipients(byCampaign.get(campaign.id as string) ?? []);
+  return (rows ?? []).map((campaign) => {
+    const stats = summarizeCampaignRecipients(byCampaign.get(String(campaign.id)) ?? []);
+    const versionNumber = Number(campaign.version_number ?? 1);
+    const updatedAt = String(campaign.updated_at ?? campaign.created_at);
     return {
-      id: campaign.id as string,
-      name: campaign.name as string,
-      status: campaign.status as string,
+      id: String(campaign.id),
+      name: String(campaign.name),
+      status: String(campaign.status),
+      version: versionLabel(versionNumber),
+      versionNumber,
+      language: campaignLanguageLabel({
+        subjectEn: typeof campaign.subject_en === "string" ? campaign.subject_en : undefined,
+        subjectEt: typeof campaign.subject_et === "string" ? campaign.subject_et : undefined,
+      }),
       recipients: stats.recipients,
       sent: stats.sent,
       opened: stats.opened,
       clicked: stats.uniqueClicks,
       failed: stats.failed,
-      createdAt: campaign.created_at as string,
+      createdAt: String(campaign.created_at),
+      updatedAt,
     };
   });
 }
@@ -100,6 +115,14 @@ export type CampaignDetailDto = {
   htmlEn: string;
   htmlEt: string;
   createdAt: string;
+  updatedAt: string;
+  versionNumber: number;
+  version: string;
+  familyId: string;
+  language: string;
+  contentLocked: boolean;
+  copy: CampaignCopyFields;
+  templateConfig: CampaignTemplateConfig;
   summary: ReturnType<typeof summarizeCampaignRecipients>;
   recipients: CampaignRecipientDto[];
 };
@@ -108,12 +131,22 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
   const admin = db();
   if (!admin) return null;
 
-  const { data: campaign, error } = await admin
+  let campaignQuery = await admin
     .from("email_campaigns")
-    .select("id, name, status, subject_en, subject_et, html_en, html_et, created_at")
+    .select(
+      "id, name, status, subject_en, subject_et, html_en, html_et, created_at, updated_at, family_id, version_number, template_config",
+    )
     .eq("id", campaignId)
     .maybeSingle();
-  if (error || !campaign) return null;
+  if (campaignQuery.error) {
+    campaignQuery = await admin
+      .from("email_campaigns")
+      .select("id, name, status, subject_en, subject_et, html_en, html_et, created_at")
+      .eq("id", campaignId)
+      .maybeSingle();
+  }
+  const campaign = campaignQuery.data;
+  if (campaignQuery.error || !campaign) return null;
 
   const { data: recipients } = await admin
     .from("email_campaign_recipients")
@@ -124,15 +157,34 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
     .order("created_at", { ascending: true });
 
   const rows = recipients ?? [];
+  const templateConfig = mergeSeptemberTemplateConfig(
+    "template_config" in campaign ? campaign.template_config : undefined,
+  );
+  const copy = resolveCampaignCopy(templateConfig.copy);
+  const versionNumber = Number(("version_number" in campaign ? campaign.version_number : 1) ?? 1);
+  const status = campaign.status as string;
+  const familyId = String(("family_id" in campaign && campaign.family_id) || campaign.id);
+  const updatedAt = String(("updated_at" in campaign && campaign.updated_at) || campaign.created_at);
   return {
     id: campaign.id as string,
     name: campaign.name as string,
-    status: campaign.status as string,
+    status,
     subjectEn: campaign.subject_en as string,
     subjectEt: campaign.subject_et as string,
     htmlEn: campaign.html_en as string,
     htmlEt: campaign.html_et as string,
     createdAt: campaign.created_at as string,
+    updatedAt,
+    versionNumber,
+    version: versionLabel(versionNumber),
+    familyId,
+    language: campaignLanguageLabel({
+      subjectEn: campaign.subject_en as string,
+      subjectEt: campaign.subject_et as string,
+    }),
+    contentLocked: isCampaignContentLocked(status),
+    copy,
+    templateConfig,
     summary: summarizeCampaignRecipients(rows as Array<{ status: string; first_opened_at: string | null; first_clicked_at: string | null }>),
     recipients: rows.map((row) => toRecipientDto(row as Parameters<typeof toRecipientDto>[0])),
   };
@@ -258,12 +310,25 @@ export async function createCampaign(input: {
   recipients: NewRecipientInput[];
   templateKey?: string;
   templateConfig?: CampaignTemplateConfig;
+  copy?: CampaignCopyFields;
+  familyId?: string;
+  versionNumber?: number;
+  allowEmptyRecipients?: boolean;
 }): Promise<{ id: string } | { error: string }> {
   const admin = db();
   if (!admin) return { error: "Unavailable" };
-  if (input.recipients.length === 0) return { error: "Select at least one recipient" };
+  if (input.recipients.length === 0 && !input.allowEmptyRecipients) {
+    return { error: "Select at least one recipient" };
+  }
 
-  const templateConfig = mergeSeptemberTemplateConfig(input.templateConfig);
+  const copy = resolveCampaignCopy(input.copy ?? input.templateConfig?.copy);
+  const versionNumber = input.versionNumber ?? 1;
+  const templateConfig: CampaignTemplateConfig = {
+    ...mergeSeptemberTemplateConfig(input.templateConfig),
+    copy,
+    familyId: input.familyId,
+    versionNumber,
+  };
   for (const sponsor of templateConfig.sponsors) {
     if (sponsor.destinationUrl && !isSafeCampaignDestination(sponsor.destinationUrl)) {
       return { error: `Unsafe sponsor URL for ${sponsor.label}` };
@@ -281,9 +346,17 @@ export async function createCampaign(input: {
     created_by: input.createdBy,
     status: "draft",
     template_config: templateConfig,
+    version_number: versionNumber,
   };
+  if (input.familyId) payload.family_id = input.familyId;
 
   let campaignInsert = await admin.from("email_campaigns").insert(payload).select("id").single();
+  if (campaignInsert.error && /family_id|version_number/i.test(campaignInsert.error.message)) {
+    const { family_id: _f, version_number: _v, ...withoutVersion } = payload;
+    void _f;
+    void _v;
+    campaignInsert = await admin.from("email_campaigns").insert(withoutVersion).select("id").single();
+  }
   if (campaignInsert.error && /template_config/i.test(campaignInsert.error.message)) {
     const { template_config: _omit, ...withoutConfig } = payload;
     void _omit;
@@ -291,6 +364,10 @@ export async function createCampaign(input: {
   }
   const { data: campaign, error } = campaignInsert;
   if (error || !campaign) return { error: error?.message ?? "create_failed" };
+
+  if (!input.familyId) {
+    await admin.from("email_campaigns").update({ family_id: campaign.id }).eq("id", campaign.id);
+  }
 
   try {
     for (const recipient of input.recipients) {
@@ -304,12 +381,99 @@ export async function createCampaign(input: {
   return { id: campaign.id as string };
 }
 
+export async function updateCampaignContent(
+  campaignId: string,
+  input: {
+    name?: string;
+    subjectEn: string;
+    subjectEt: string;
+    templateConfig?: CampaignTemplateConfig;
+    copy: CampaignCopyFields;
+  },
+): Promise<{ ok: true } | { error: string }> {
+  const admin = db();
+  if (!admin) return { error: "Unavailable" };
+  const detail = await getCampaignDetail(campaignId);
+  if (!detail) return { error: "Not found" };
+  if (detail.contentLocked) {
+    return { error: "This version was already sent. Duplicate it to create a new draft version." };
+  }
+  const templateConfig: CampaignTemplateConfig = {
+    ...mergeSeptemberTemplateConfig(input.templateConfig ?? detail.templateConfig),
+    copy: resolveCampaignCopy(input.copy),
+    familyId: detail.familyId,
+    versionNumber: detail.versionNumber,
+  };
+  for (const sponsor of templateConfig.sponsors) {
+    if (sponsor.destinationUrl && !isSafeCampaignDestination(sponsor.destinationUrl)) {
+      return { error: `Unsafe sponsor URL for ${sponsor.label}` };
+    }
+  }
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
+    ...templateConfig.copy,
+    subjectEn: input.subjectEn,
+    subjectEt: input.subjectEt,
+  });
+  const { error } = await admin
+    .from("email_campaigns")
+    .update({
+      name: input.name?.trim() || detail.name,
+      subject_en: input.subjectEn,
+      subject_et: input.subjectEt,
+      html_en: bodies.htmlEn,
+      html_et: bodies.htmlEt,
+      template_config: templateConfig,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", campaignId);
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function duplicateCampaignVersion(
+  campaignId: string,
+  createdBy: string,
+): Promise<{ id: string } | { error: string }> {
+  const admin = db();
+  if (!admin) return { error: "Unavailable" };
+  const source = await getCampaignDetail(campaignId);
+  if (!source) return { error: "Not found" };
+  const siblingQuery = await admin.from("email_campaigns").select("version_number").eq("family_id", source.familyId);
+  const versions = [
+    source.versionNumber,
+    ...((siblingQuery.error ? [] : siblingQuery.data) ?? []).map((row) => Number(row.version_number ?? 1)),
+  ];
+  const versionNumber = nextCampaignVersion(versions);
+  const templateConfig: CampaignTemplateConfig = {
+    ...source.templateConfig,
+    copy: source.copy,
+    familyId: source.familyId,
+    versionNumber,
+  };
+  return createCampaign({
+    name: source.name.replace(/\s*\(v\d+\)\s*$/i, "").trim() || source.name,
+    subjectEn: source.subjectEn,
+    subjectEt: source.subjectEt,
+    htmlEn: source.htmlEn,
+    htmlEt: source.htmlEt,
+    createdBy,
+    recipients: [],
+    allowEmptyRecipients: true,
+    templateKey: SEPTEMBER_TEMPLATE_KEY,
+    templateConfig,
+    copy: source.copy,
+    familyId: source.familyId,
+    versionNumber,
+  });
+}
+
 export async function createSeptemberTestDraft(
   createdBy: string,
   templateConfig?: CampaignTemplateConfig,
 ): Promise<{ id: string } | { error: string }> {
-  const config = mergeSeptemberTemplateConfig(templateConfig);
-  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config);
+  const copy = defaultCampaignCopy();
+  const config = { ...mergeSeptemberTemplateConfig(templateConfig), copy };
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config, copy);
   return createCampaign({
     name: "September community events (test)",
     subjectEn: SEPTEMBER_SUBJECT_EN,
@@ -331,8 +495,9 @@ export async function createSeptemberEstonianDraft(
   createdBy: string,
   templateConfig?: CampaignTemplateConfig,
 ): Promise<{ id: string } | { error: string }> {
-  const config = mergeSeptemberTemplateConfig(templateConfig);
-  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config);
+  const copy = defaultCampaignCopy();
+  const config = { ...mergeSeptemberTemplateConfig(templateConfig), copy };
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config, copy);
   return createCampaign({
     name: SEPTEMBER_ESTONIAN_CAMPAIGN_NAME,
     subjectEn: SEPTEMBER_SUBJECT_EN,
@@ -354,8 +519,9 @@ export async function createSeptemberResendTest(
   createdBy: string,
   templateConfig?: CampaignTemplateConfig,
 ): Promise<{ id: string } | { error: string }> {
-  const config = mergeSeptemberTemplateConfig(templateConfig);
-  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config);
+  const copy = defaultCampaignCopy();
+  const config = { ...mergeSeptemberTemplateConfig(templateConfig), copy };
+  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config, copy);
   return createCampaign({
     name: "September community events (resend test)",
     subjectEn: SEPTEMBER_SUBJECT_EN,

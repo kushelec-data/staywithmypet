@@ -18,12 +18,16 @@ export type CampaignListItemDto = {
   id: string;
   name: string;
   status: string;
+  version: string;
+  versionNumber: number;
+  language: string;
   recipients: number;
   sent: number;
   opened: number;
   clicked: number;
   failed: number;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type CampaignRecipientDto = {

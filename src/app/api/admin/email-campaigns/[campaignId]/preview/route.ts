@@ -38,6 +38,10 @@ export async function POST(request: Request, context: RouteContext) {
     const bodies = defaultSeptemberBodies(`${CANONICAL_CAMPAIGN_EMAIL_ORIGIN}/logo.png`, templateConfig, {
       bodyEn: body.bodyEn,
       bodyEt: body.bodyEt,
+      bodyBeforeEn: (body as { bodyBeforeEn?: string }).bodyBeforeEn,
+      bodyAfterEn: (body as { bodyAfterEn?: string }).bodyAfterEn,
+      bodyBeforeEt: (body as { bodyBeforeEt?: string }).bodyBeforeEt,
+      bodyAfterEt: (body as { bodyAfterEt?: string }).bodyAfterEt,
       preheaderEn: body.preheaderEn,
       preheaderEt: body.preheaderEt,
       subjectEn: body.subjectEn ?? SEPTEMBER_SUBJECT_EN,

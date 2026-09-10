@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion } from "@/lib/email-campaigns/versioning";
 import { parseCampaignCsv, mapCampaignCsvLanguage } from "@/lib/email-campaigns/csv-import";
+import { resolveDuplicateRecipientImport } from "@/lib/email-campaigns/recipient-upsert";
 import { campaignBatchConfig, chunkIds } from "@/lib/email-campaigns/batch-config";
 import {
   anotherAdminHoldsLease,
@@ -18,6 +20,48 @@ import { createOpaqueToken, trackingUrlContainsIdentityLeak } from "@/lib/email-
 import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
 
 describe("CSV import", () => {
+  it("maps Gerly Estonian / Kush English CSV into ET vs EN SMTP content", () => {
+    const parsed = parseCampaignCsv(`Gerly,Kullamaa,gerlykullamaa@gmail.com,Estonian
+Kush,Chadha,kusheducation@gmail.com,English`);
+    expect(parsed.recipients).toEqual([
+      { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "et" },
+      { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" },
+    ]);
+    const fields = {
+      subjectEn: "EN subject",
+      subjectEt: "ET subject",
+      htmlEn: "<p>VIEW EVENT</p>",
+      htmlEt: "<p>VAATA SÜNDMUST</p>",
+    };
+    const keys = CAMPAIGN_TRACKED_LINKS.map((link) => link.key);
+    const gerly = planRecipientSend({
+      email: parsed.recipients[0].email,
+      language: parsed.recipients[0].language,
+      ...fields,
+      linkKeys: keys,
+      destinationsOk: true,
+    });
+    const kush = planRecipientSend({
+      email: parsed.recipients[1].email,
+      language: parsed.recipients[1].language,
+      ...fields,
+      linkKeys: keys,
+      destinationsOk: true,
+    });
+    expect(selectCampaignContent(parsed.recipients[0].language, fields)).toMatchObject({
+      template: "ET",
+      subject: "ET subject",
+      html: fields.htmlEt,
+    });
+    expect(selectCampaignContent(parsed.recipients[1].language, fields)).toMatchObject({
+      template: "EN",
+      subject: "EN subject",
+      html: fields.htmlEn,
+    });
+    expect(gerly).toMatchObject({ language: "et", subject: "ET subject", template: "ET" });
+    expect(kush).toMatchObject({ language: "en", subject: "EN subject", template: "EN" });
+  });
+
   it("maps languages, trims, lowercases, rejects invalid, and removes duplicates", () => {
     expect(mapCampaignCsvLanguage("Estonian")).toBe("et");
     expect(mapCampaignCsvLanguage("English")).toBe("en");
@@ -39,6 +83,13 @@ Nope,Bad,not-an-email,English
       "gerlykullamaa@gmail.com",
       "john@example.com",
     ]);
+  });
+
+  it("updates language on an existing unsent duplicate instead of keeping EN", () => {
+    expect(resolveDuplicateRecipientImport(null)).toBe("insert");
+    expect(resolveDuplicateRecipientImport({ status: "pending" })).toBe("update_language");
+    expect(resolveDuplicateRecipientImport({ status: "failed" })).toBe("update_language");
+    expect(resolveDuplicateRecipientImport({ status: "sent" })).toBe("skip_sent");
   });
 });
 
@@ -188,6 +239,16 @@ describe("client payload safety", () => {
   it("does not treat normal progress JSON as an SMTP secret dump", () => {
     expect(jsonLooksLikeSecretDump({ sent: 1, failed: 0, from: "Stay With My Pet <info@staywithmypet.ee>" })).toBe(false);
     expect(jsonLooksLikeSecretDump({ SMTP_PASSWORD: "secret" })).toBe(true);
+  });
+});
+
+describe("campaign versions", () => {
+  it("freezes sent content and increments versions", () => {
+    expect(isCampaignContentLocked("draft")).toBe(false);
+    expect(isCampaignContentLocked("sent")).toBe(true);
+    expect(isCampaignContentLocked("test_sent")).toBe(true);
+    expect(nextCampaignVersion([1])).toBe(2);
+    expect(campaignLanguageLabel({ subjectEn: "EN", subjectEt: "ET" })).toBe("EN + ET");
   });
 });
 

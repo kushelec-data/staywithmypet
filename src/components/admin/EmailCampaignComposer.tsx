@@ -4,24 +4,31 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard } from "@/components/admin/AdminUi";
 import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
+import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
 import { DEFAULT_TEST_RECIPIENTS, ESTONIAN_TEST_RECIPIENTS, SEPTEMBER_EVENT_LINKS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE, type CampaignTemplateConfig } from "@/lib/email-campaigns/template-config";
 import {
-  DEFAULT_CAMPAIGN_BODY_EN,
-  DEFAULT_CAMPAIGN_BODY_ET,
+  DEFAULT_BODY_AFTER_EN,
+  DEFAULT_BODY_AFTER_ET,
+  DEFAULT_BODY_BEFORE_EN,
+  DEFAULT_BODY_BEFORE_ET,
   DEFAULT_PREHEADER_EN,
   DEFAULT_PREHEADER_ET,
 } from "@/lib/email-campaigns/html";
 
 export function EmailCampaignComposer() {
   const router = useRouter();
-  const [name, setName] = useState("September community events (test)");
-  const [subjectEn, setSubjectEn] = useState(SEPTEMBER_SUBJECT_EN);
-  const [subjectEt, setSubjectEt] = useState(SEPTEMBER_SUBJECT_ET);
-  const [preheaderEn, setPreheaderEn] = useState(DEFAULT_PREHEADER_EN);
-  const [preheaderEt, setPreheaderEt] = useState(DEFAULT_PREHEADER_ET);
-  const [bodyEn, setBodyEn] = useState(DEFAULT_CAMPAIGN_BODY_EN);
-  const [bodyEt, setBodyEt] = useState(DEFAULT_CAMPAIGN_BODY_ET);
+  const [name, setName] = useState("September community events");
+  const [copy, setCopy] = useState<CampaignCopyFormValue>({
+    subjectEn: SEPTEMBER_SUBJECT_EN,
+    subjectEt: SEPTEMBER_SUBJECT_ET,
+    preheaderEn: DEFAULT_PREHEADER_EN,
+    preheaderEt: DEFAULT_PREHEADER_ET,
+    bodyBeforeEn: DEFAULT_BODY_BEFORE_EN,
+    bodyAfterEn: DEFAULT_BODY_AFTER_EN,
+    bodyBeforeEt: DEFAULT_BODY_BEFORE_ET,
+    bodyAfterEt: DEFAULT_BODY_AFTER_ET,
+  });
   const [language, setLanguage] = useState<"en" | "et">("en");
   const [previewHtml, setPreviewHtml] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -68,21 +75,17 @@ export function EmailCampaignComposer() {
     [sponsorUrls],
   );
 
-  async function preview() {
+  async function preview(nextLanguage: "en" | "et") {
+    setLanguage(nextLanguage);
     setBusy(true);
     setError(null);
     const res = await fetch("/api/admin/email-campaigns/new/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        language,
+        language: nextLanguage,
         templateConfig,
-        bodyEn,
-        bodyEt,
-        preheaderEn,
-        preheaderEt,
-        subjectEn,
-        subjectEt,
+        ...copy,
       }),
     });
     const json = await res.json().catch(() => ({}));
@@ -138,12 +141,7 @@ export function EmailCampaignComposer() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
-        subjectEn,
-        subjectEt,
-        preheaderEn,
-        preheaderEt,
-        bodyEn,
-        bodyEt,
+        ...copy,
         templateConfig,
         csvText: csvText.trim() || undefined,
         registeredFilter: registeredFilter === "none" ? undefined : registeredFilter,
@@ -167,50 +165,9 @@ export function EmailCampaignComposer() {
           Campaign name
           <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
         </label>
-
-        <h3 className="mt-5 font-heading text-base font-semibold">English email</h3>
-        <label className="mt-2 block text-sm">
-          Subject
-          <input value={subjectEn} onChange={(e) => setSubjectEn(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
-        </label>
-        <label className="mt-2 block text-sm">
-          Preview text
-          <input value={preheaderEn} onChange={(e) => setPreheaderEn(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
-        </label>
-        <label className="mt-2 block text-sm">
-          Email body
-          <textarea
-            value={bodyEn}
-            onChange={(e) => setBodyEn(e.target.value)}
-            rows={12}
-            className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
-          />
-        </label>
-        <p className="mt-1 text-xs text-muted">
-          Paste or write the main email content here. Keep the closing paragraphs in this field — they are placed after the event buttons. Sponsor links are added below that.
-        </p>
-
-        <h3 className="mt-5 font-heading text-base font-semibold">Estonian email</h3>
-        <label className="mt-2 block text-sm">
-          Subject
-          <input value={subjectEt} onChange={(e) => setSubjectEt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
-        </label>
-        <label className="mt-2 block text-sm">
-          Preview text
-          <input value={preheaderEt} onChange={(e) => setPreheaderEt(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
-        </label>
-        <label className="mt-2 block text-sm">
-          Email body
-          <textarea
-            value={bodyEt}
-            onChange={(e) => setBodyEt(e.target.value)}
-            rows={12}
-            className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
-          />
-        </label>
-        <p className="mt-1 text-xs text-muted">
-          Paste or write the main email content here. Keep the closing paragraphs in this field — they are placed after the event buttons. Sponsor links are added below that.
-        </p>
+        <div className="mt-4">
+          <EmailCampaignCopyFields value={copy} onChange={setCopy} />
+        </div>
       </AdminCard>
 
       <AdminCard>
@@ -283,8 +240,11 @@ export function EmailCampaignComposer() {
         </label>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={() => void preview()} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-            Preview
+          <button type="button" onClick={() => void preview("en")} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            Preview English
+          </button>
+          <button type="button" onClick={() => void preview("et")} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            Preview Estonian
           </button>
           <button type="button" onClick={() => void createFromImport()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
             Save with imported recipients

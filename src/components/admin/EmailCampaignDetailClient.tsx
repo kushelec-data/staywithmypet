@@ -6,7 +6,10 @@ import { AdminCard, AdminTable } from "@/components/admin/AdminUi";
 import { OPEN_TRACKING_DISCLAIMER } from "@/lib/email-campaigns/dto";
 import type { CampaignEventDto, CampaignRecipientDto } from "@/lib/email-campaigns/dto";
 import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
+import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
 import { bulkSendConsentGate } from "@/lib/email-campaigns/marketing-consent";
+import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
+import { SEPTEMBER_SPONSOR_LINE } from "@/lib/email-campaigns/template-config";
 
 type Summary = {
   recipients: number;
@@ -25,6 +28,12 @@ export function EmailCampaignDetailClient({
   recipients,
   htmlEn,
   htmlEt,
+  version,
+  language,
+  contentLocked,
+  copy: initialCopy,
+  subjectEn,
+  subjectEt,
 }: {
   campaignId: string;
   name: string;
@@ -34,8 +43,16 @@ export function EmailCampaignDetailClient({
   recipients: CampaignRecipientDto[];
   htmlEn: string;
   htmlEt: string;
+  version: string;
+  language: string;
+  contentLocked: boolean;
+  copy: CampaignCopyFormValue;
+  subjectEn: string;
+  subjectEt: string;
 }) {
   const router = useRouter();
+  const [campaignName, setCampaignName] = useState(name);
+  const [copy, setCopy] = useState<CampaignCopyFormValue>(initialCopy);
   const [previewLang, setPreviewLang] = useState<"en" | "et">(() =>
     recipients.length > 0 && recipients.every((row) => row.language.toLowerCase() === "et") ? "et" : "en",
   );
@@ -145,6 +162,38 @@ export function EmailCampaignDetailClient({
       .then((json) => setAudienceCount(typeof json.selected === "number" ? json.selected : null))
       .catch(() => undefined);
   }, [registeredFilter]);
+
+  async function duplicateVersion() {
+    const res = await fetch(`/api/admin/email-campaigns/${campaignId}/duplicate`, { method: "POST" });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setMessage(json.error ?? "Could not duplicate campaign");
+      return;
+    }
+    router.push(`/admin/email-campaigns/${json.id}`);
+    router.refresh();
+  }
+
+  async function saveDraft() {
+    const res = await fetch(`/api/admin/email-campaigns/${campaignId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: campaignName,
+        ...copy,
+        templateConfig: {
+          sponsors: SEPTEMBER_SPONSOR_LINE.map((item) => ({ ...item })),
+        },
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setMessage(json.error ?? "Could not save campaign");
+      return;
+    }
+    setMessage("Draft saved. No email sent.");
+    router.refresh();
+  }
 
   async function sendTest() {
     const confirmed = window.confirm(
@@ -257,7 +306,52 @@ export function EmailCampaignDetailClient({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted">From: {from} · Status: {live?.status ?? status}</p>
+      <p className="text-sm text-muted">
+        From: {from} · {version} · {language} · Status: {live?.status ?? status}
+      </p>
+      {contentLocked ? (
+        <p className="text-sm">
+          This version is frozen because it has already been sent. Duplicate it to create a new draft without changing this copy.
+        </p>
+      ) : null}
+      <AdminCard>
+        <h2 className="font-heading text-lg font-semibold">Saved email</h2>
+        <label className="mt-3 block text-sm">
+          Campaign name
+          <input
+            disabled={contentLocked}
+            value={campaignName}
+            onChange={(e) => setCampaignName(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+          />
+        </label>
+        <div className="mt-4">
+          <EmailCampaignCopyFields value={copy} onChange={setCopy} disabled={contentLocked} />
+        </div>
+        <h3 className="mt-6 font-heading text-base font-semibold">Event cards</h3>
+        <ul className="mt-2 space-y-2 text-sm">
+          {SEPTEMBER_EVENT_LINKS.map((link) => (
+            <li key={link.key}>
+              <span className="font-medium">{link.label}</span>
+              <span className="mt-0.5 block break-all text-xs text-muted">{link.destinationUrl}</span>
+            </li>
+          ))}
+        </ul>
+        <h3 className="mt-6 font-heading text-base font-semibold">Sponsor links</h3>
+        <ul className="mt-2 space-y-1 text-sm">
+          {SEPTEMBER_SPONSOR_LINE.map((item) => (
+            <li key={item.key}>
+              {item.label}
+              {item.destinationUrl ? <span className="block break-all text-xs text-muted">{item.destinationUrl}</span> : null}
+            </li>
+          ))}
+        </ul>
+        {!contentLocked ? (
+          <button type="button" onClick={() => void saveDraft()} className="mt-4 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
+            Save draft
+          </button>
+        ) : null}
+      </AdminCard>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map(([label, value]) => (
           <AdminCard key={label}>
@@ -401,13 +495,18 @@ export function EmailCampaignDetailClient({
       ) : null}
       <AdminCard>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-lg font-semibold">Preview · {name}</h2>
-          <select value={previewLang} onChange={(e) => setPreviewLang(e.target.value as "en" | "et")} className="rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm">
-            <option value="en">English</option>
-            <option value="et">Estonian</option>
-          </select>
+          <h2 className="font-heading text-lg font-semibold">Preview · {campaignName}</h2>
+          <button type="button" onClick={() => setPreviewLang("en")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
+            Preview English
+          </button>
+          <button type="button" onClick={() => setPreviewLang("et")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
+            Preview Estonian
+          </button>
           <button type="button" onClick={() => void sendTest()} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
             Send test
+          </button>
+          <button type="button" onClick={() => void duplicateVersion()} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
+            Duplicate / New Version
           </button>
           <button
             type="button"
@@ -460,7 +559,7 @@ export function EmailCampaignDetailClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <h3 className="font-heading text-xl font-semibold">SEND CAMPAIGN</h3>
-            <p className="mt-3 text-sm">Campaign: {name}</p>
+            <p className="mt-3 text-sm">Campaign: {campaignName}</p>
             <p className="text-sm">Total recipients: {recipients.length}</p>
             <p className="text-sm">Estonian: {languageCounts.estonian}</p>
             <p className="text-sm">English: {languageCounts.english}</p>

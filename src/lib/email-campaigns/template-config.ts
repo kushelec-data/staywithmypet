@@ -17,6 +17,16 @@ export const SEPTEMBER_SPONSOR_LINE: SponsorLineItem[] = [
 
 export type CampaignTemplateConfig = {
   sponsors: SponsorLineItem[];
+  copy?: {
+    preheaderEn?: string;
+    preheaderEt?: string;
+    bodyBeforeEn?: string;
+    bodyAfterEn?: string;
+    bodyBeforeEt?: string;
+    bodyAfterEt?: string;
+  };
+  familyId?: string;
+  versionNumber?: number;
 };
 
 export type TrackedSponsorLink = {
@@ -35,24 +45,49 @@ export function defaultSeptemberTemplateConfig(): CampaignTemplateConfig {
 export function parseTemplateConfig(raw: unknown): CampaignTemplateConfig {
   const fallback = defaultSeptemberTemplateConfig();
   if (!raw || typeof raw !== "object") return fallback;
-  const sponsors = (raw as { sponsors?: unknown }).sponsors;
-  if (!Array.isArray(sponsors)) return fallback;
-  const parsed: SponsorLineItem[] = sponsors
-    .map((row) => {
-      if (!row || typeof row !== "object") return null;
-      const item = row as Record<string, unknown>;
-      const key = String(item.key ?? "").trim();
-      const label = String(item.label ?? "").trim();
-      if (!key || !label) return null;
-      const dest = typeof item.destinationUrl === "string" ? item.destinationUrl.trim() : "";
-      return {
-        key,
-        label,
-        destinationUrl: dest.length > 0 ? dest : null,
-      };
-    })
-    .filter((row): row is SponsorLineItem => row !== null);
-  return parsed.length > 0 ? { sponsors: parsed } : fallback;
+  const record = raw as Record<string, unknown>;
+  const sponsors = record.sponsors;
+  let parsedSponsors = fallback.sponsors;
+  if (Array.isArray(sponsors)) {
+    const parsed: SponsorLineItem[] = sponsors
+      .map((row) => {
+        if (!row || typeof row !== "object") return null;
+        const item = row as Record<string, unknown>;
+        const key = String(item.key ?? "").trim();
+        const label = String(item.label ?? "").trim();
+        if (!key || !label) return null;
+        const dest = typeof item.destinationUrl === "string" ? item.destinationUrl.trim() : "";
+        return {
+          key,
+          label,
+          destinationUrl: dest.length > 0 ? dest : null,
+        };
+      })
+      .filter((row): row is SponsorLineItem => row !== null);
+    if (parsed.length > 0) parsedSponsors = parsed;
+  }
+  const copyRaw = record.copy;
+  const copy =
+    copyRaw && typeof copyRaw === "object"
+      ? {
+          preheaderEn: optionalString((copyRaw as Record<string, unknown>).preheaderEn),
+          preheaderEt: optionalString((copyRaw as Record<string, unknown>).preheaderEt),
+          bodyBeforeEn: optionalString((copyRaw as Record<string, unknown>).bodyBeforeEn),
+          bodyAfterEn: optionalString((copyRaw as Record<string, unknown>).bodyAfterEn),
+          bodyBeforeEt: optionalString((copyRaw as Record<string, unknown>).bodyBeforeEt),
+          bodyAfterEt: optionalString((copyRaw as Record<string, unknown>).bodyAfterEt),
+        }
+      : undefined;
+  return {
+    sponsors: parsedSponsors,
+    copy,
+    familyId: optionalString(record.familyId),
+    versionNumber: typeof record.versionNumber === "number" ? record.versionNumber : undefined,
+  };
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
 /** Keep display order and labels; overlay URLs from composer/storage. */
@@ -68,6 +103,9 @@ export function mergeSeptemberTemplateConfig(raw: unknown): CampaignTemplateConf
         destinationUrl: overlay ? overlay.destinationUrl : item.destinationUrl,
       };
     }),
+    copy: parsed.copy,
+    familyId: parsed.familyId,
+    versionNumber: parsed.versionNumber,
   };
 }
 

@@ -12,7 +12,7 @@ import {
 } from "@/lib/email-campaigns/store";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import { parseCampaignCsv } from "@/lib/email-campaigns/csv-import";
-import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
+import { defaultSeptemberBodies, resolveCampaignCopy } from "@/lib/email-campaigns/html";
 import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
 import { listRegisteredCampaignAudience, recipientsForRegisteredFilter } from "@/lib/email-campaigns/store-bulk";
 
@@ -103,16 +103,21 @@ export async function POST(request: Request) {
   }
 
   const templateConfig = mergeSeptemberTemplateConfig(body.templateConfig);
-  const defaults = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
+  const copy = {
     bodyEn: typeof body.bodyEn === "string" ? body.bodyEn : undefined,
     bodyEt: typeof body.bodyEt === "string" ? body.bodyEt : undefined,
+    bodyBeforeEn: typeof body.bodyBeforeEn === "string" ? body.bodyBeforeEn : undefined,
+    bodyAfterEn: typeof body.bodyAfterEn === "string" ? body.bodyAfterEn : undefined,
+    bodyBeforeEt: typeof body.bodyBeforeEt === "string" ? body.bodyBeforeEt : undefined,
+    bodyAfterEt: typeof body.bodyAfterEt === "string" ? body.bodyAfterEt : undefined,
     preheaderEn: typeof body.preheaderEn === "string" ? body.preheaderEn : undefined,
     preheaderEt: typeof body.preheaderEt === "string" ? body.preheaderEt : undefined,
     subjectEn: String(body.subjectEn ?? "") || undefined,
     subjectEt: String(body.subjectEt ?? "") || undefined,
-  });
+  };
+  const defaults = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, copy);
   const created = await createCampaign({
-    name: String(body.name ?? "").trim() || "Untitled campaign",
+    name: String(body.name ?? "").trim() || "September community events",
     subjectEn: String(body.subjectEn ?? ""),
     subjectEt: String(body.subjectEt ?? ""),
     htmlEn: String(body.htmlEn ?? "") || defaults.htmlEn,
@@ -121,6 +126,7 @@ export async function POST(request: Request) {
     recipients,
     templateKey: typeof body.templateKey === "string" ? body.templateKey : undefined,
     templateConfig,
+    copy: resolveCampaignCopy(copy),
   });
   if ("error" in created) return NextResponse.json({ error: created.error }, { status: 400 });
   return NextResponse.json({ id: created.id, sent: false });
