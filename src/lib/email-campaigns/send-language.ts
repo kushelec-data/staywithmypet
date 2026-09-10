@@ -66,11 +66,10 @@ export function routingHeading(mode: SendLanguageMode): string {
 }
 
 export function formatSendCompletedMessage(
-  kind: "test" | "campaign",
+  _kind: "test" | "campaign",
   stats: { sent: number; failed: number; sentEstonian: number; sentEnglish: number },
 ): string {
-  const title = kind === "test" ? "Send test completed" : "Campaign send completed";
-  return `${title}\n${stats.sent} sent\n- ${stats.sentEstonian} Estonian\n- ${stats.sentEnglish} English\n${stats.failed} failed`;
+  return `Email sent successfully\n${stats.sent} sent\n${stats.sentEnglish} English · ${stats.sentEstonian} Estonian\n${stats.failed} failed`;
 }
 
 export function bilingualCampaignDisplayName(name: string): string {

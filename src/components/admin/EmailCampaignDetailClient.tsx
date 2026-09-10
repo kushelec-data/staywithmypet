@@ -3,21 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard, AdminTable } from "@/components/admin/AdminUi";
-import { OPEN_TRACKING_DISCLAIMER } from "@/lib/email-campaigns/dto";
 import type { CampaignEventDto, CampaignRecipientDto } from "@/lib/email-campaigns/dto";
 import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
 import { bulkSendConsentGate } from "@/lib/email-campaigns/marketing-consent";
 import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE } from "@/lib/email-campaigns/template-config";
-import {
-  formatSendCompletedMessage,
-  recipientSendRouting,
-  routingHeading,
-  sendActionLabel,
-  storedLanguageCounts,
-  type SendLanguageMode,
-} from "@/lib/email-campaigns/send-language";
+import { formatSendCompletedMessage, storedLanguageCounts } from "@/lib/email-campaigns/send-language";
 
 type Summary = {
   recipients: number;
@@ -31,7 +23,6 @@ export function EmailCampaignDetailClient({
   campaignId,
   name,
   status,
-  from,
   summary,
   recipients,
   htmlEn,
@@ -40,8 +31,6 @@ export function EmailCampaignDetailClient({
   language,
   contentLocked,
   copy: initialCopy,
-  subjectEn,
-  subjectEt,
 }: {
   campaignId: string;
   name: string;
@@ -62,17 +51,13 @@ export function EmailCampaignDetailClient({
   const [campaignName, setCampaignName] = useState(name);
   const [copy, setCopy] = useState<CampaignCopyFormValue>(initialCopy);
   const [previewLang, setPreviewLang] = useState<"en" | "et">("en");
-  const [sendLanguageMode, setSendLanguageMode] = useState<SendLanguageMode>("automatic");
   const [activity, setActivity] = useState<{ recipient: CampaignRecipientDto; events: CampaignEventDto[] } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [languageFilter, setLanguageFilter] = useState<"all" | "et" | "en">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "sending" | "sent" | "failed">("all");
-  const [csvText, setCsvText] = useState("");
-  const [registeredFilter, setRegisteredFilter] = useState<"none" | "all" | "et" | "en">("none");
-  const [audienceCount, setAudienceCount] = useState<number | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmChecked, setConfirmChecked] = useState(false);
+  const [csvBusy, setCsvBusy] = useState(false);
+  const [confirmKind, setConfirmKind] = useState<null | "test" | "campaign">(null);
   const [sendMode, setSendMode] = useState<"pending" | "resume" | "failed">("pending");
   const [progress, setProgress] = useState<{
     status: string;
@@ -94,10 +79,6 @@ export function EmailCampaignDetailClient({
   const [sendingLive, setSendingLive] = useState(false);
 
   const languageCounts = useMemo(() => storedLanguageCounts(recipients), [recipients]);
-  const routing = useMemo(
-    () => recipientSendRouting(recipients.map((row) => ({ name: row.name, email: row.email, language: row.language })), sendLanguageMode),
-    [recipients, sendLanguageMode],
-  );
   const pending = recipients.filter((row) => row.status === "pending").length;
   const alreadySent = recipients.filter((row) => row.status === "sent").length;
   const failedCount = recipients.filter((row) => row.status === "failed").length;
@@ -160,17 +141,6 @@ export function EmailCampaignDetailClient({
     return () => window.clearInterval(timer);
   }, [sendingLive, campaignId]);
 
-  useEffect(() => {
-    if (registeredFilter === "none") {
-      setAudienceCount(null);
-      return;
-    }
-    void fetch(`/api/admin/email-campaigns/audience?filter=${registeredFilter}`)
-      .then((res) => res.json())
-      .then((json) => setAudienceCount(typeof json.selected === "number" ? json.selected : null))
-      .catch(() => undefined);
-  }, [registeredFilter]);
-
   async function duplicateVersion() {
     const res = await fetch(`/api/admin/email-campaigns/${campaignId}/duplicate`, { method: "POST" });
     const json = await res.json().catch(() => ({}));
@@ -199,19 +169,33 @@ export function EmailCampaignDetailClient({
       setMessage(json.error ?? "Could not save campaign");
       return;
     }
-    setMessage("Draft saved. No email sent.");
+    setMessage("Draft saved.");
+    router.refresh();
+  }
+
+  async function importCsv(csvText: string) {
+    setCsvBusy(true);
+    const res = await fetch(`/api/admin/email-campaigns/${campaignId}/recipients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ csvText }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setCsvBusy(false);
+    if (!res.ok) {
+      setMessage(json.error ?? "Could not import recipients");
+      return;
+    }
+    setMessage(`Imported ${json.added} people.`);
     router.refresh();
   }
 
   async function sendTest() {
-    const confirmed = window.confirm(
-      "This will send the campaign email through SpaceMail to every recipient on this campaign.\n\nOnly continue if you intend to send real email now.",
-    );
-    if (!confirmed) return;
+    setConfirmKind(null);
     const res = await fetch(`/api/admin/email-campaigns/${campaignId}/send-test`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirm: true, sendLanguageMode, previewLanguage: previewLang }),
+      body: JSON.stringify({ confirm: true, sendLanguageMode: "automatic" }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -233,25 +217,6 @@ export function EmailCampaignDetailClient({
     router.refresh();
   }
 
-  async function addRecipients() {
-    const res = await fetch(`/api/admin/email-campaigns/${campaignId}/recipients`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        csvText: csvText.trim() || undefined,
-        registeredFilter: registeredFilter === "none" ? undefined : registeredFilter,
-      }),
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setMessage(json.error ?? "Could not add recipients");
-      return;
-    }
-    setMessage(`Added ${json.added} recipients (skipped ${json.skipped}, invalid ${json.invalid ?? 0}, duplicates ${json.duplicatesRemoved ?? 0}). No email sent.`);
-    setCsvText("");
-    router.refresh();
-  }
-
   async function removeRecipient(id: string) {
     const res = await fetch(`/api/admin/email-campaigns/${campaignId}/recipients/${id}`, { method: "DELETE" });
     const json = await res.json().catch(() => ({}));
@@ -263,18 +228,7 @@ export function EmailCampaignDetailClient({
   }
 
   async function runSendLoop(mode: "pending" | "resume" | "failed", existingLease?: string) {
-    const planned = recipientSendRouting(
-      recipients
-        .filter((row) =>
-          mode === "failed"
-            ? row.status === "failed"
-            : mode === "resume"
-              ? row.status !== "sent"
-              : row.status === "pending",
-        )
-        .map((row) => ({ name: row.name, email: row.email, language: row.language })),
-      sendLanguageMode,
-    );
+    setConfirmKind(null);
     setSendingLive(true);
     let nextLease = existingLease;
     let continueExisting = Boolean(existingLease);
@@ -283,12 +237,16 @@ export function EmailCampaignDetailClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sendLanguageMode,
+          confirm: true,
+          mode,
+          continueExisting,
+          leaseId: nextLease,
+          sendLanguageMode: "automatic",
         }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage(json.blocked ?? json.error ?? "Bulk send failed");
+        setMessage(json.blocked ?? json.error ?? "Could not send campaign");
         setSendingLive(false);
         await refreshProgress();
         router.refresh();
@@ -302,13 +260,12 @@ export function EmailCampaignDetailClient({
       if (json.done) {
         setSendingLive(false);
         setLeaseId(null);
-        setConfirmOpen(false);
         setMessage(
           formatSendCompletedMessage("campaign", {
             sent: Number(json.sent ?? 0) + (progress?.sent ?? 0),
             failed: Number(json.failed ?? 0) + (progress?.failed ?? 0),
-            sentEstonian: planned.filter((row) => row.sendLanguage === "et").length,
-            sentEnglish: planned.filter((row) => row.sendLanguage === "en").length,
+            sentEstonian: languageCounts.estonian,
+            sentEnglish: languageCounts.english,
           }),
         );
         router.refresh();
@@ -324,6 +281,9 @@ export function EmailCampaignDetailClient({
   const canRemove = status === "draft" || status === "test_sent";
   const remainingUnsent = pending + recipients.filter((row) => row.status === "sending").length;
   const bulkLocked = !consentGate.allowed;
+  const peopleCount = languageCounts.recipients;
+  const englishCount = languageCounts.english;
+  const estonianCount = languageCounts.estonian;
 
   const cards: Array<[string, number]> = [
     ["Recipients", live?.recipients ?? summary.recipients],
@@ -336,15 +296,13 @@ export function EmailCampaignDetailClient({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        From: {from} · {version} · {language} · Status: {live?.status ?? status}
+        {version} · {language} · {live?.status ?? status}
       </p>
       {contentLocked ? (
-        <p className="text-sm">
-          This version is frozen because it has already been sent. Duplicate it to create a new draft without changing this copy.
-        </p>
+        <p className="text-sm">This version has already been sent. Duplicate it to edit a new draft.</p>
       ) : null}
       <AdminCard>
-        <h2 className="font-heading text-lg font-semibold">Saved email</h2>
+        <h2 className="font-heading text-lg font-semibold">Email</h2>
         <label className="mt-3 block text-sm">
           Campaign name
           <input
@@ -362,24 +320,25 @@ export function EmailCampaignDetailClient({
           {SEPTEMBER_EVENT_LINKS.map((link) => (
             <li key={link.key}>
               <span className="font-medium">{link.label}</span>
-              <span className="mt-0.5 block break-all text-xs text-muted">{link.destinationUrl}</span>
             </li>
           ))}
         </ul>
         <h3 className="mt-6 font-heading text-base font-semibold">Sponsor links</h3>
         <ul className="mt-2 space-y-1 text-sm">
           {SEPTEMBER_SPONSOR_LINE.map((item) => (
-            <li key={item.key}>
-              {item.label}
-              {item.destinationUrl ? <span className="block break-all text-xs text-muted">{item.destinationUrl}</span> : null}
-            </li>
+            <li key={item.key}>{item.label}</li>
           ))}
         </ul>
-        {!contentLocked ? (
-          <button type="button" onClick={() => void saveDraft()} className="mt-4 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
-            Save draft
+        <div className="mt-4 flex flex-wrap gap-3">
+          {!contentLocked ? (
+            <button type="button" onClick={() => void saveDraft()} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
+              Save Draft
+            </button>
+          ) : null}
+          <button type="button" onClick={() => void duplicateVersion()} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
+            Duplicate / New Version
           </button>
-        ) : null}
+        </div>
       </AdminCard>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map(([label, value]) => (
@@ -389,16 +348,6 @@ export function EmailCampaignDetailClient({
           </AdminCard>
         ))}
       </div>
-      <p className="text-sm">
-        Language split · Estonian: {live?.estonian ?? languageCounts.estonian} · English: {live?.english ?? languageCounts.english}
-      </p>
-      <p className="text-xs text-muted">{OPEN_TRACKING_DISCLAIMER}</p>
-      {bulkLocked ? (
-        <p className="text-sm text-red-700">
-          Production Bulk Send is locked. {consentGate.missingConsent} pending recipient(s) are not on the newsletter list or have unsubscribed.
-          Cookie marketing consent is not email consent. Transactional mail is separate.
-        </p>
-      ) : null}
       {sendingLive || (live?.status === "sending" && live.remaining > 0) ? (
         <AdminCard>
           <p className="font-semibold">Sending campaign...</p>
@@ -406,19 +355,20 @@ export function EmailCampaignDetailClient({
             <div className="h-full bg-[#2E6B3F]" style={{ width: `${percent}%` }} />
           </div>
           <p className="mt-2 text-sm">
-            {live?.processed ?? 0} / {live?.recipients ?? 0} processed · Sent: {live?.sent ?? 0} · Failed: {live?.failed ?? 0} · Remaining:{" "}
-            {live?.remaining ?? 0}
+            {live?.processed ?? 0} / {live?.recipients ?? 0} processed · Sent: {live?.sent ?? 0} · Failed: {live?.failed ?? 0}
           </p>
         </AdminCard>
       ) : null}
       {live && live.remaining === 0 && live.sent + live.failed > 0 && live.status !== "sending" ? (
         <AdminCard>
-          <h3 className="font-heading text-lg font-semibold">Campaign sent{live.failed > 0 ? ` with ${live.failed} failures` : ""}</h3>
-          <p className="mt-2 text-sm">
-            Recipients: {live.recipients} · Sent: {live.sent} · Failed: {live.failed}
+          <p className="whitespace-pre-line text-sm">
+            {formatSendCompletedMessage("campaign", {
+              sent: live.sent,
+              failed: live.failed,
+              sentEstonian: live.estonian,
+              sentEnglish: live.english,
+            })}
           </p>
-          <p className="text-sm">Estonian: {live.estonian} · English: {live.english}</p>
-          <p className="text-sm">Opened: {live.opened} · Clicked: {live.clicked}</p>
           {live.failures.length > 0 ? (
             <ul className="mt-2 text-sm">
               {live.failures.map((row) => (
@@ -432,24 +382,18 @@ export function EmailCampaignDetailClient({
       ) : null}
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Recipients</h2>
-        <CampaignCsvImport csvText={csvText} onCsvTextChange={setCsvText} />
-        <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Add registered users</p>
-        <div className="mt-2 flex flex-wrap gap-4 text-sm">
-          {(["all", "et", "en"] as const).map((value) => (
-            <label key={value} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={registeredFilter === value}
-                onChange={() => setRegisteredFilter((current) => (current === value ? "none" : value))}
-              />
-              {value === "all" ? "All registered users" : value === "et" ? "Estonian" : "English"}
-            </label>
-          ))}
-        </div>
-        {audienceCount != null ? <p className="mt-2 text-sm">Will add {audienceCount} registered users (before save).</p> : null}
-        <button type="button" onClick={() => void addRecipients()} className="mt-3 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
-          Add to campaign (no send)
-        </button>
+        <p className="mt-1 text-sm">
+          {peopleCount} {peopleCount === 1 ? "person" : "people"}
+        </p>
+        <p className="text-sm">
+          {englishCount} English · {estonianCount} Estonian
+        </p>
+        <p className="mt-1 text-sm text-muted">Languages are automatically selected from the CSV.</p>
+        {!contentLocked ? (
+          <div className="mt-3">
+            <CampaignCsvImport busy={csvBusy} showSummary={false} onCsvReady={(text) => void importCsv(text)} />
+          </div>
+        ) : null}
       </AdminCard>
       <div className="flex flex-wrap gap-3">
         <input
@@ -523,44 +467,9 @@ export function EmailCampaignDetailClient({
         </AdminCard>
       ) : null}
       <AdminCard>
-        <h2 className="font-heading text-lg font-semibold">Campaign Preview · {campaignName}</h2>
-        <p className="mt-1 text-sm font-semibold">Viewing: {previewLang === "et" ? "Estonian" : "English"}</p>
-        <p className="mt-1 text-xs text-muted">Preview does not change the language used for sending.</p>
-        <fieldset className="mt-4">
-          <legend className="text-sm font-semibold">Send language</legend>
-          <div className="mt-2 grid gap-2 text-sm">
-            {(
-              [
-                ["automatic", "Automatic — use recipient language from CSV"],
-                ["en", "English only"],
-                ["et", "Estonian only"],
-              ] as const
-            ).map(([value, label]) => (
-              <label key={value} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="send-language-mode"
-                  checked={sendLanguageMode === value}
-                  onChange={() => setSendLanguageMode(value)}
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <div className="mt-4 text-sm">
-          <p>Recipients: {languageCounts.recipients}</p>
-          <p>Estonian: {languageCounts.estonian}</p>
-          <p>English: {languageCounts.english}</p>
-          <p className="mt-3 font-semibold">{routingHeading(sendLanguageMode)}</p>
-          <ul className="mt-1">
-            {routing.map((row) => (
-              <li key={row.email}>
-                {row.name} -&gt; {row.sendLabel}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <h2 className="font-heading text-lg font-semibold">Send / Test</h2>
+        <p className="mt-1 text-sm">Viewing: {previewLang === "et" ? "Estonian" : "English"}</p>
+        <p className="mt-1 text-sm text-muted">Preview only changes what you see. Each person still receives their CSV language.</p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button type="button" onClick={() => setPreviewLang("en")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
             Preview English
@@ -568,96 +477,101 @@ export function EmailCampaignDetailClient({
           <button type="button" onClick={() => setPreviewLang("et")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
             Preview Estonian
           </button>
-          <button type="button" onClick={() => void sendTest()} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
-            {sendActionLabel("test", sendLanguageMode)}
-          </button>
-          <button type="button" onClick={() => void duplicateVersion()} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
-            Duplicate / New Version
+          <button
+            type="button"
+            disabled={peopleCount === 0}
+            onClick={() => setConfirmKind("test")}
+            className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
+          >
+            Send Test Email
           </button>
           <button
             type="button"
             disabled={bulkLocked || pending === 0}
             onClick={() => {
               setSendMode("pending");
-              setConfirmChecked(false);
-              setConfirmOpen(true);
+              setConfirmKind("campaign");
             }}
             className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#E5E2D8] disabled:text-muted"
           >
-            {bulkLocked ? "Send campaign (locked — consent required)" : sendActionLabel("campaign", sendLanguageMode)}
+            Send Campaign
           </button>
-          {remainingUnsent > 0 && (status === "partially_sent" || status === "sending" || alreadySent > 0) ? (
-            <button
-              type="button"
-              disabled={bulkLocked}
-              onClick={() => {
-                setSendMode("resume");
-                setConfirmChecked(false);
-                setConfirmOpen(true);
-              }}
-              className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
-            >
-              Resume sending
-            </button>
-          ) : null}
-          {failedCount > 0 ? (
-            <button
-              type="button"
-              disabled={bulkLocked}
-              onClick={() => {
-                setSendMode("failed");
-                setConfirmChecked(false);
-                setConfirmOpen(true);
-              }}
-              className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
-            >
-              Retry failed ({failedCount})
-            </button>
-          ) : null}
         </div>
-        <p className="mt-2 text-xs text-muted">
-          Send test is separate from marketing bulk send. Preview uses `selectCampaignContent()` the same way SMTP does. Tracking origin is https://www.staywithmypet.ee.
-        </p>
-        {message ? <p className="mt-2 whitespace-pre-line text-sm">{message}</p> : null}
+        {bulkLocked ? (
+          <p className="mt-3 text-sm text-red-700">
+            This campaign cannot be sent yet. {consentGate.missingConsent} {consentGate.missingConsent === 1 ? "person is" : "people are"} not on the
+            newsletter, or have unsubscribed.
+          </p>
+        ) : null}
+        {remainingUnsent > 0 && (status === "partially_sent" || status === "sending" || alreadySent > 0) ? (
+          <button
+            type="button"
+            disabled={bulkLocked}
+            onClick={() => {
+              setSendMode("resume");
+              setConfirmKind("campaign");
+            }}
+            className="mt-3 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
+          >
+            Continue sending
+          </button>
+        ) : null}
+        {failedCount > 0 ? (
+          <button
+            type="button"
+            disabled={bulkLocked}
+            onClick={() => {
+              setSendMode("failed");
+              setConfirmKind("campaign");
+            }}
+            className="mt-3 ml-3 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
+          >
+            Retry failed
+          </button>
+        ) : null}
+        {message ? <p className="mt-3 whitespace-pre-line text-sm">{message}</p> : null}
         <iframe title="Campaign preview" className="mt-4 h-[480px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={previewLang === "et" ? htmlEt : htmlEn} />
       </AdminCard>
-      {confirmOpen ? (
+      {confirmKind ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="font-heading text-xl font-semibold">SEND CAMPAIGN</h3>
-            <p className="mt-3 text-sm">Campaign: {campaignName}</p>
-            <p className="text-sm">Send language: {sendActionLabel("campaign", sendLanguageMode)}</p>
-            <p className="text-sm">Recipients: {languageCounts.recipients}</p>
-            <p className="text-sm">Estonian: {languageCounts.estonian}</p>
-            <p className="text-sm">English: {languageCounts.english}</p>
-            <p className="mt-2 text-sm font-semibold">{routingHeading(sendLanguageMode)}</p>
-            <ul className="mt-1 max-h-40 overflow-auto text-sm">
-              {routing.map((row) => (
-                <li key={row.email}>
-                  {row.name} -&gt; {row.sendLabel}
-                </li>
-              ))}
-            </ul>
-            <p className="text-sm">Pending: {pending}</p>
-            <p className="text-sm">Already sent: {alreadySent}</p>
-            <p className="mt-2 text-sm">From: {from}</p>
-            <label className="mt-4 flex items-start gap-2 text-sm">
-              <input type="checkbox" checked={confirmChecked} onChange={(e) => setConfirmChecked(e.target.checked)} />
-              I confirm the recipient list and campaign content
-            </label>
-            <div className="mt-4 flex gap-3">
-              <button type="button" onClick={() => setConfirmOpen(false)} className="rounded-full border px-4 py-2 text-sm">
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!confirmChecked || sendingLive}
-                onClick={() => void runSendLoop(sendMode, leaseId ?? undefined)}
-                className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                SEND {sendMode === "failed" ? failedCount : sendMode === "resume" ? remainingUnsent : pending} EMAILS
-              </button>
-            </div>
+            {confirmKind === "test" ? (
+              <>
+                <p className="text-sm">Send test email to {peopleCount} {peopleCount === 1 ? "person" : "people"}?</p>
+                <p className="mt-2 text-sm">{englishCount} will receive English</p>
+                <p className="text-sm">{estonianCount} will receive Estonian</p>
+                <div className="mt-4 flex gap-3">
+                  <button type="button" onClick={() => setConfirmKind(null)} className="rounded-full border px-4 py-2 text-sm">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={() => void sendTest()} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white">
+                    Send Test
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm">
+                  Send campaign to {sendMode === "failed" ? failedCount : sendMode === "resume" ? remainingUnsent : peopleCount} recipients?
+                </p>
+                <p className="mt-2 text-sm">{englishCount} English</p>
+                <p className="text-sm">{estonianCount} Estonian</p>
+                <p className="mt-2 text-sm">Each recipient will automatically receive the correct language.</p>
+                <div className="mt-4 flex gap-3">
+                  <button type="button" onClick={() => setConfirmKind(null)} className="rounded-full border px-4 py-2 text-sm">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={sendingLive}
+                    onClick={() => void runSendLoop(sendMode, leaseId ?? undefined)}
+                    className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    Send Campaign
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}

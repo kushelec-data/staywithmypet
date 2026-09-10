@@ -76,7 +76,7 @@ describe("send language mode", () => {
       { email: "umut@example.com", subject: "EN subject", html: fields.htmlEn, template: "EN", previewLanguage: "et" },
     ]);
     expect(formatSendCompletedMessage("test", { sent: 4, failed: 0, sentEstonian: 2, sentEnglish: 2 })).toBe(
-      "Send test completed\n4 sent\n- 2 Estonian\n- 2 English\n0 failed",
+      "Email sent successfully\n4 sent\n2 English · 2 Estonian\n0 failed",
     );
     expect(recipientSendRouting(savedRows, "en").every((row) => row.sendLanguage === "en")).toBe(true);
     expect(recipientSendRouting(savedRows, "et").every((row) => row.sendLanguage === "et")).toBe(true);

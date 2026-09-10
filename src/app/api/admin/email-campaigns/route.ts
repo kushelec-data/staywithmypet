@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     seen.add(email);
     return true;
   });
-  if (recipients.length === 0) {
+  if (recipients.length === 0 && body.requireRecipients === true) {
     return NextResponse.json({ error: "Select at least one recipient" }, { status: 400 });
   }
 
@@ -124,6 +124,7 @@ export async function POST(request: Request) {
     htmlEt: String(body.htmlEt ?? "") || defaults.htmlEt,
     createdBy: gate.session.userId,
     recipients,
+    allowEmptyRecipients: recipients.length === 0,
     templateKey: typeof body.templateKey === "string" ? body.templateKey : undefined,
     templateConfig,
     copy: resolveCampaignCopy(copy),

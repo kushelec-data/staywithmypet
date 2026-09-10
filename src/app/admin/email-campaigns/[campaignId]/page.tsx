@@ -29,7 +29,7 @@ export default async function AdminEmailCampaignDetailPage({
     <AdminShell
       title={detail.name}
       pathname="/admin/email-campaigns"
-      description="Recipient tracking for this campaign only. Open counts are approximate."
+      description="Write, preview, and send this email."
       actions={
         <Link href="/admin/email-campaigns" className="text-sm font-semibold text-[#2E6B3F]">
           All campaigns

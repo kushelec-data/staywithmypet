@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard } from "@/components/admin/AdminUi";
 import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
-import { DEFAULT_TEST_RECIPIENTS, ESTONIAN_TEST_RECIPIENTS, SEPTEMBER_EVENT_LINKS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
+import { SEPTEMBER_EVENT_LINKS, SEPTEMBER_SUBJECT_EN, SEPTEMBER_SUBJECT_ET } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE, type CampaignTemplateConfig } from "@/lib/email-campaigns/template-config";
 import {
   DEFAULT_BODY_AFTER_EN,
@@ -33,36 +33,9 @@ export function EmailCampaignComposer() {
   const [previewHtml, setPreviewHtml] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [csvText, setCsvText] = useState("");
-  const [registeredFilter, setRegisteredFilter] = useState<"none" | "all" | "et" | "en">("none");
-  const [audience, setAudience] = useState<{
-    all: number;
-    estonian: number;
-    english: number;
-    selected: number;
-    selectedConsented: number;
-  } | null>(null);
   const [sponsorUrls, setSponsorUrls] = useState<Record<string, string>>(() =>
     Object.fromEntries(SEPTEMBER_SPONSOR_LINE.map((item) => [item.key, item.destinationUrl ?? ""])),
   );
-
-  useEffect(() => {
-    const filter = registeredFilter === "none" ? "all" : registeredFilter;
-    void fetch(`/api/admin/email-campaigns/audience?filter=${filter}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.all != null) {
-          setAudience({
-            all: json.all,
-            estonian: json.estonian,
-            english: json.english,
-            selected: json.selected,
-            selectedConsented: json.selectedConsented,
-          });
-        }
-      })
-      .catch(() => undefined);
-  }, [registeredFilter]);
 
   const templateConfig: CampaignTemplateConfig = useMemo(
     () => ({
@@ -74,6 +47,29 @@ export function EmailCampaignComposer() {
     }),
     [sponsorUrls],
   );
+
+  async function saveDraft(csvText?: string) {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/email-campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        ...copy,
+        templateConfig,
+        csvText: csvText?.trim() || undefined,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(json.error ?? "Could not save draft");
+      return;
+    }
+    router.push(`/admin/email-campaigns/${json.id}`);
+    router.refresh();
+  }
 
   async function preview(nextLanguage: "en" | "et") {
     setLanguage(nextLanguage);
@@ -97,70 +93,10 @@ export function EmailCampaignComposer() {
     setPreviewHtml(json.html ?? "");
   }
 
-  async function createEstonianDraft() {
-    setBusy(true);
-    setError(null);
-    const res = await fetch("/api/admin/email-campaigns", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seedSeptemberEstonianTest: true, templateConfig }),
-    });
-    const json = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) {
-      setError(json.error ?? "Could not create Estonian campaign");
-      return;
-    }
-    router.push(`/admin/email-campaigns/${json.id}`);
-    router.refresh();
-  }
-
-  async function createDraft() {
-    setBusy(true);
-    setError(null);
-    const res = await fetch("/api/admin/email-campaigns", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seedSeptemberTest: true, templateConfig }),
-    });
-    const json = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) {
-      setError(json.error ?? "Could not create campaign");
-      return;
-    }
-    router.push(`/admin/email-campaigns/${json.id}`);
-    router.refresh();
-  }
-
-  async function createFromImport() {
-    setBusy(true);
-    setError(null);
-    const res = await fetch("/api/admin/email-campaigns", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        ...copy,
-        templateConfig,
-        csvText: csvText.trim() || undefined,
-        registeredFilter: registeredFilter === "none" ? undefined : registeredFilter,
-      }),
-    });
-    const json = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) {
-      setError(json.error ?? "Could not save campaign");
-      return;
-    }
-    router.push(`/admin/email-campaigns/${json.id}`);
-    router.refresh();
-  }
-
   return (
     <div className="space-y-4">
       <AdminCard>
-        <h2 className="font-heading text-lg font-semibold">Campaign details</h2>
+        <h2 className="font-heading text-lg font-semibold">New campaign</h2>
         <label className="mt-3 block text-sm">
           Campaign name
           <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
@@ -168,34 +104,22 @@ export function EmailCampaignComposer() {
         <div className="mt-4">
           <EmailCampaignCopyFields value={copy} onChange={setCopy} />
         </div>
+        <button
+          type="button"
+          onClick={() => void saveDraft()}
+          disabled={busy}
+          className="mt-4 rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          Save Draft
+        </button>
       </AdminCard>
 
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Recipients</h2>
-        <p className="mt-1 text-xs text-muted">Language uses stored locale for registered users (swmp_locale), or CSV Keel.</p>
+        <p className="mt-1 text-sm text-muted">Upload a CSV. People from the file are saved into this campaign automatically.</p>
         <div className="mt-3">
-          <CampaignCsvImport csvText={csvText} onCsvTextChange={setCsvText} />
+          <CampaignCsvImport busy={busy} onCsvReady={(text) => void saveDraft(text)} />
         </div>
-        <p className="mt-4 text-sm font-semibold text-[#2E6B3F]">Add registered users</p>
-        <div className="mt-2 flex flex-wrap gap-4 text-sm">
-          {(["all", "et", "en"] as const).map((value) => (
-            <label key={value} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={registeredFilter === value}
-                onChange={() => setRegisteredFilter((current) => (current === value ? "none" : value))}
-              />
-              {value === "all" ? "All registered users" : value === "et" ? "Estonian" : "English"}
-            </label>
-          ))}
-        </div>
-        {audience ? (
-          <p className="mt-2 text-sm">
-            Registered: {audience.all} (ET {audience.estonian} / EN {audience.english}). This selection: {audience.selected} ({audience.selectedConsented} with newsletter consent).
-          </p>
-        ) : null}
-        <p className="mt-3 text-xs text-muted">English test: {DEFAULT_TEST_RECIPIENTS.map((row) => row.email).join(", ")}</p>
-        <p className="text-xs text-muted">Estonian test: {ESTONIAN_TEST_RECIPIENTS.map((row) => row.email).join(", ")}</p>
       </AdminCard>
 
       <AdminCard>
@@ -204,7 +128,6 @@ export function EmailCampaignComposer() {
           {SEPTEMBER_EVENT_LINKS.map((link) => (
             <li key={link.key}>
               <span className="font-medium">{link.label}</span>
-              <span className="mt-0.5 block break-all text-xs text-muted">{link.destinationUrl}</span>
             </li>
           ))}
         </ul>
@@ -212,7 +135,6 @@ export function EmailCampaignComposer() {
 
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Sponsor links</h2>
-        <p className="mt-1 text-xs text-muted">Used for click tracking. New campaigns load these URLs automatically.</p>
         <div className="mt-3 grid gap-2">
           {SEPTEMBER_SPONSOR_LINE.map((item) => (
             <label key={item.key} className="text-sm">
@@ -220,7 +142,6 @@ export function EmailCampaignComposer() {
               <input
                 value={sponsorUrls[item.key] ?? ""}
                 onChange={(e) => setSponsorUrls((prev) => ({ ...prev, [item.key]: e.target.value }))}
-                placeholder={item.destinationUrl ?? "No URL yet"}
                 className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-1.5"
               />
             </label>
@@ -229,25 +150,15 @@ export function EmailCampaignComposer() {
       </AdminCard>
 
       <AdminCard>
-        <h2 className="font-heading text-lg font-semibold">Send / test</h2>
-        <p className="mt-1 text-xs text-muted">Saving a draft does not send email. Preview language does not set send language — each saved recipient row does.</p>
-        <p className="mt-2 text-sm font-semibold">Viewing: {language === "et" ? "Estonian" : "English"}</p>
+        <h2 className="font-heading text-lg font-semibold">Preview</h2>
+        <p className="mt-1 text-sm">Viewing: {language === "et" ? "Estonian" : "English"}</p>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={() => void preview("en")} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+          <button type="button" onClick={() => void preview("en")} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
             Preview English
           </button>
-          <button type="button" onClick={() => void preview("et")} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+          <button type="button" onClick={() => void preview("et")} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
             Preview Estonian
-          </button>
-          <button type="button" onClick={() => void createFromImport()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
-            Save with imported recipients
-          </button>
-          <button type="button" onClick={() => void createDraft()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
-            Save Gerly/Kush test draft
-          </button>
-          <button type="button" onClick={() => void createEstonianDraft()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
-            Save second test draft
           </button>
         </div>
         {previewHtml ? (

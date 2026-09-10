@@ -1,30 +1,38 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { parseCampaignCsv } from "@/lib/email-campaigns/csv-import";
 
 export function CampaignCsvImport({
-  csvText,
-  onCsvTextChange,
+  onCsvReady,
+  busy,
+  showSummary = true,
 }: {
-  csvText: string;
-  onCsvTextChange: (value: string) => void;
+  onCsvReady: (text: string) => void;
+  busy?: boolean;
+  showSummary?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const preview = useMemo(() => (csvText.trim() ? parseCampaignCsv(csvText) : null), [csvText]);
+  const [summary, setSummary] = useState<{ people: number; english: number; estonian: number; invalid: number } | null>(null);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
     const text = await file.text();
+    const parsed = parseCampaignCsv(text);
     setFileName(file.name);
-    onCsvTextChange(text);
+    setSummary({
+      people: parsed.recipients.length,
+      english: parsed.english,
+      estonian: parsed.estonian,
+      invalid: parsed.invalid.length,
+    });
+    onCsvReady(text);
   }
 
   return (
     <div>
-      <p className="text-xs text-muted">Upload a CSV exported from Excel or Supabase. Import does not send email.</p>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <input
           ref={inputRef}
           type="file"
@@ -38,36 +46,25 @@ export function CampaignCsvImport({
         />
         <button
           type="button"
+          disabled={busy}
           onClick={() => inputRef.current?.click()}
-          className="rounded-full border border-[#2E6B3F] px-4 py-1.5 text-sm font-semibold text-[#2E6B3F]"
+          className="rounded-full border border-[#2E6B3F] px-4 py-1.5 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
         >
           Upload CSV
         </button>
       </div>
-      {fileName ? <p className="mt-2 text-sm">Selected file: {fileName}</p> : null}
-      {preview ? (
-        <p className="mt-2 text-sm">
-          Recipients: {preview.recipients.length}
-          <br />
-          Estonian: {preview.estonian}
-          <br />
-          English: {preview.english}
-          <br />
-          Invalid: {preview.invalid.length}
-          <br />
-          Duplicates: {preview.duplicatesRemoved}
-        </p>
+      {showSummary && fileName ? <p className="mt-2 text-sm">File: {fileName}</p> : null}
+      {showSummary && summary ? (
+        <div className="mt-3 text-sm">
+          <p className="font-semibold">Recipients</p>
+          <p>{summary.people} {summary.people === 1 ? "person" : "people"}</p>
+          <p>
+            {summary.english} English · {summary.estonian} Estonian
+          </p>
+          <p className="mt-1 text-muted">Languages are automatically selected from the CSV.</p>
+          {summary.invalid > 0 ? <p className="mt-1 text-red-700">{summary.invalid} row(s) could not be imported.</p> : null}
+        </div>
       ) : null}
-      <label className="mt-3 block text-sm">
-        Paste CSV
-        <textarea
-          value={csvText}
-          onChange={(e) => onCsvTextChange(e.target.value)}
-          rows={3}
-          className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 font-mono text-xs"
-          placeholder="Kush,Chadha,kusheducation@gmail.com,Estonian"
-        />
-      </label>
     </div>
   );
 }
