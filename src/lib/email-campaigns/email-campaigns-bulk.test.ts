@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion } from "@/lib/email-campaigns/versioning";
+import {
+  bilingualCampaignDisplayName,
+  formatSendCompletedMessage,
+  parseSendLanguageMode,
+  recipientSendRouting,
+  resolveSendLanguage,
+  sendActionLabel,
+} from "@/lib/email-campaigns/send-language";
 import { parseCampaignCsv, mapCampaignCsvLanguage } from "@/lib/email-campaigns/csv-import";
 import { resolveDuplicateRecipientImport } from "@/lib/email-campaigns/recipient-upsert";
 import { campaignBatchConfig, chunkIds } from "@/lib/email-campaigns/batch-config";
@@ -18,6 +26,62 @@ import { jsonLooksLikeSecretDump } from "@/lib/email-campaigns/dto";
 import { CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
 import { createOpaqueToken, trackingUrlContainsIdentityLeak } from "@/lib/email-campaigns/tokens";
 import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
+
+describe("send language mode", () => {
+  it("routes Gerly/Triin to ET and Kush/Umut to EN from saved recipient rows, ignoring preview language", () => {
+    const previewLanguage = "et";
+    void previewLanguage;
+    expect(parseSendLanguageMode(previewLanguage)).toBe("et");
+    expect(resolveSendLanguage("automatic", "et")).toBe("et");
+    expect(resolveSendLanguage("automatic", "en")).toBe("en");
+    expect(bilingualCampaignDisplayName("September community events (Estonian)")).toBe("September community events");
+    expect(sendActionLabel("test", "automatic")).toBe("Send test — mixed EN/ET");
+
+    const fields = {
+      subjectEn: "EN subject",
+      subjectEt: "ET subject",
+      htmlEn: "<p>VIEW EVENT</p>",
+      htmlEt: "<p>VAATA SÜNDMUST</p>",
+    };
+    const savedRows = [
+      { name: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "et" },
+      { name: "Triin Hook", email: "triin@example.com", language: "et" },
+      { name: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" },
+      { name: "Umut Vedat", email: "umut@example.com", language: "en" },
+    ];
+    const routing = recipientSendRouting(savedRows, "automatic");
+    expect(routing.map((row) => `${row.name} -> ${row.sendLabel}`)).toEqual([
+      "Gerly Kullamaa -> Estonian",
+      "Triin Hook -> Estonian",
+      "Kush Chadha -> English",
+      "Umut Vedat -> English",
+    ]);
+    const keys = CAMPAIGN_TRACKED_LINKS.map((link) => link.key);
+    const smtp = savedRows.map((row) => {
+      const language = resolveSendLanguage("automatic", row.language);
+      const selected = selectCampaignContent(language, fields);
+      const plan = planRecipientSend({
+        email: row.email,
+        language,
+        ...fields,
+        linkKeys: keys,
+        destinationsOk: true,
+      });
+      return { email: row.email, subject: plan.subject, html: selected.html, template: plan.template, previewLanguage };
+    });
+    expect(smtp).toEqual([
+      { email: "gerlykullamaa@gmail.com", subject: "ET subject", html: fields.htmlEt, template: "ET", previewLanguage: "et" },
+      { email: "triin@example.com", subject: "ET subject", html: fields.htmlEt, template: "ET", previewLanguage: "et" },
+      { email: "kusheducation@gmail.com", subject: "EN subject", html: fields.htmlEn, template: "EN", previewLanguage: "et" },
+      { email: "umut@example.com", subject: "EN subject", html: fields.htmlEn, template: "EN", previewLanguage: "et" },
+    ]);
+    expect(formatSendCompletedMessage("test", { sent: 4, failed: 0, sentEstonian: 2, sentEnglish: 2 })).toBe(
+      "Send test completed\n4 sent\n- 2 Estonian\n- 2 English\n0 failed",
+    );
+    expect(recipientSendRouting(savedRows, "en").every((row) => row.sendLanguage === "en")).toBe(true);
+    expect(recipientSendRouting(savedRows, "et").every((row) => row.sendLanguage === "et")).toBe(true);
+  });
+});
 
 describe("CSV import", () => {
   it("maps Gerly Estonian / Kush English CSV into ET vs EN SMTP content", () => {

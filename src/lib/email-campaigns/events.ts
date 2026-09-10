@@ -99,10 +99,10 @@ export const DEFAULT_TEST_RECIPIENTS = [
   { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" as const },
 ];
 
-/** Same first-test people, Estonian template. Does not change the English campaign recipients. */
+/** Same first-test people; languages stay mixed so Automatic send can route EN/ET. */
 export const ESTONIAN_TEST_RECIPIENTS = [
   { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "et" as const },
-  { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "et" as const },
+  { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" as const },
 ];
 
 export const RESEND_TEST_RECIPIENTS = [
@@ -112,7 +112,8 @@ export const RESEND_TEST_RECIPIENTS = [
 ];
 
 export const SEPTEMBER_TEMPLATE_KEY = "september_community_events";
-export const SEPTEMBER_ESTONIAN_CAMPAIGN_NAME = "September community events (Estonian)";
+export const SEPTEMBER_CAMPAIGN_NAME = "September community events";
+export const SEPTEMBER_ESTONIAN_CAMPAIGN_NAME = SEPTEMBER_CAMPAIGN_NAME;
 
 export const SEPTEMBER_SUBJECT_EN =
   "🐾 Join us for a relaxed and inspiring Sunday all about life with pets!";

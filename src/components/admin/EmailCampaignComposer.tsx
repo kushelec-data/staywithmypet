@@ -230,14 +230,8 @@ export function EmailCampaignComposer() {
 
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Send / test</h2>
-        <p className="mt-1 text-xs text-muted">Saving a draft does not send email.</p>
-        <label className="mt-2 block text-sm">
-          Preview language
-          <select value={language} onChange={(e) => setLanguage(e.target.value as "en" | "et")} className="mt-1 w-full max-w-xs rounded-xl border border-[#E5E2D8] px-3 py-2">
-            <option value="en">English</option>
-            <option value="et">Estonian</option>
-          </select>
-        </label>
+        <p className="mt-1 text-xs text-muted">Saving a draft does not send email. Preview language does not set send language — each saved recipient row does.</p>
+        <p className="mt-2 text-sm font-semibold">Viewing: {language === "et" ? "Estonian" : "English"}</p>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" onClick={() => void preview("en")} disabled={busy} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
@@ -250,10 +244,10 @@ export function EmailCampaignComposer() {
             Save with imported recipients
           </button>
           <button type="button" onClick={() => void createDraft()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
-            Save English test draft
+            Save Gerly/Kush test draft
           </button>
           <button type="button" onClick={() => void createEstonianDraft()} disabled={busy} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50">
-            Save Estonian test draft
+            Save second test draft
           </button>
         </div>
         {previewHtml ? (

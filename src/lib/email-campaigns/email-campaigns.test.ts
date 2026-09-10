@@ -162,7 +162,7 @@ describe("september HTML", () => {
   });
 
   it("uses Estonian language for the Estonian campaign recipients without changing English recipients", () => {
-    expect(ESTONIAN_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["et", "et"]);
+    expect(ESTONIAN_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["et", "en"]);
     expect(DEFAULT_TEST_RECIPIENTS.map((row) => row.language)).toEqual(["et", "en"]);
   });
 

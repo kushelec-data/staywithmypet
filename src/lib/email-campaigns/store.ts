@@ -29,6 +29,7 @@ import {
   type CampaignTemplateConfig,
 } from "@/lib/email-campaigns/template-config";
 import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion, versionLabel } from "@/lib/email-campaigns/versioning";
+import { bilingualCampaignDisplayName } from "@/lib/email-campaigns/send-language";
 
 type AdminDb = NonNullable<ReturnType<typeof createAdminClient>>;
 
@@ -87,7 +88,7 @@ export async function listCampaignSummaries(): Promise<CampaignListItemDto[] | n
     const updatedAt = String(campaign.updated_at ?? campaign.created_at);
     return {
       id: String(campaign.id),
-      name: String(campaign.name),
+    name: bilingualCampaignDisplayName(String(campaign.name)),
       status: String(campaign.status),
       version: versionLabel(versionNumber),
       versionNumber,
@@ -167,7 +168,7 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
   const updatedAt = String(("updated_at" in campaign && campaign.updated_at) || campaign.created_at);
   return {
     id: campaign.id as string,
-    name: campaign.name as string,
+    name: bilingualCampaignDisplayName(campaign.name as string),
     status,
     subjectEn: campaign.subject_en as string,
     subjectEt: campaign.subject_et as string,
@@ -475,7 +476,7 @@ export async function createSeptemberTestDraft(
   const config = { ...mergeSeptemberTemplateConfig(templateConfig), copy };
   const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), config, copy);
   return createCampaign({
-    name: "September community events (test)",
+    name: "September community events",
     subjectEn: SEPTEMBER_SUBJECT_EN,
     subjectEt: SEPTEMBER_SUBJECT_ET,
     htmlEn: bodies.htmlEn,

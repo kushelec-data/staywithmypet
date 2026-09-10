@@ -13,6 +13,12 @@ import {
 } from "@/lib/email-campaigns/store";
 import { htmlContainsBrokenCampaignTracking, requireCampaignEmailOrigin } from "@/lib/email-campaigns/public-base";
 import { planRecipientSend, selectCampaignContent, type RecipientSendPlan } from "@/lib/email-campaigns/locale";
+import {
+  countSentByTemplate,
+  parseSendLanguageMode,
+  type SendLanguageMode,
+  resolveSendLanguage,
+} from "@/lib/email-campaigns/send-language";
 import { bulkSendConsentGate, hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
 import { runSequentialSends, type SendMode } from "@/lib/email-campaigns/send-queue";
 import {
@@ -39,7 +45,11 @@ function smtpFailureReason(result: { ok: false; reason: string; detail?: string 
 
 export async function sendToRecipient(
   recipientId: string,
-  options?: { skipIfAlreadySent?: boolean; enforceMarketingConsent?: boolean },
+  options?: {
+    skipIfAlreadySent?: boolean;
+    enforceMarketingConsent?: boolean;
+    sendLanguageMode?: SendLanguageMode;
+  },
 ): Promise<{
   ok: boolean;
   reason?: string;
@@ -87,9 +97,10 @@ export async function sendToRecipient(
   }
   if (!packed) return { ok: false, reason: "recipient_not_found", smtpCalled: false };
 
+  const sendLanguage = resolveSendLanguage(options?.sendLanguageMode ?? "automatic", packed.recipient.language as string);
   const plan = planRecipientSend({
     email: packed.recipient.email as string,
-    language: packed.recipient.language as string,
+    language: sendLanguage,
     subjectEn: packed.campaign.subject_en as string,
     subjectEt: packed.campaign.subject_et as string,
     htmlEn: packed.campaign.html_en as string,
@@ -119,7 +130,7 @@ export async function sendToRecipient(
     return { ok: false, reason: "destination_mismatch", email: plan.email, smtpCalled: false, plan };
   }
 
-  const selected = selectCampaignContent(packed.recipient.language as string, {
+  const selected = selectCampaignContent(sendLanguage, {
     subjectEn: packed.campaign.subject_en as string,
     subjectEt: packed.campaign.subject_et as string,
     htmlEn: packed.campaign.html_en as string,
@@ -130,7 +141,7 @@ export async function sendToRecipient(
   const { html, text } = personalizeCampaignHtml({
     htmlEn: packed.campaign.html_en as string,
     htmlEt: packed.campaign.html_et as string,
-    language: packed.recipient.language as string,
+    language: sendLanguage,
     openToken: packed.recipient.open_token as string,
     clickTokens: packed.clickTokens,
     origin: origin.origin,
@@ -166,13 +177,22 @@ export async function sendToRecipient(
     : { ok: false, reason: smtpFailureReason(result), email: plan.email, smtpCalled: true, plan };
 }
 
-export async function sendTestCampaign(campaignId: string, recipientIds: string[]): Promise<{
+export async function sendTestCampaign(
+  campaignId: string,
+  recipientIds: string[],
+  sendLanguageMode: SendLanguageMode = "automatic",
+): Promise<{
   ok: boolean;
   sent: number;
   failed: number;
+  sentEstonian: number;
+  sentEnglish: number;
+  sendLanguageMode: SendLanguageMode;
+  deliveries: Array<{ email?: string; language?: string; subject?: string; template?: "ET" | "EN" }>;
   failures: Array<{ email?: string; reason: string }>;
   blocked?: string;
 }> {
+  const mode = parseSendLanguageMode(sendLanguageMode);
   const first = recipientIds[0] ? await loadRecipientForSend(recipientIds[0]) : null;
   const status = first?.campaign.status as string | undefined;
   if (status === "sending") {
@@ -180,6 +200,10 @@ export async function sendTestCampaign(campaignId: string, recipientIds: string[
       ok: false,
       sent: 0,
       failed: 0,
+      sentEstonian: 0,
+      sentEnglish: 0,
+      sendLanguageMode: mode,
+      deliveries: [],
       failures: [],
       blocked: "Campaign is currently sending. Wait for that run to finish before sending a test.",
     };
@@ -188,23 +212,36 @@ export async function sendTestCampaign(campaignId: string, recipientIds: string[
   let sent = 0;
   let failed = 0;
   const failures: Array<{ email?: string; reason: string }> = [];
+  const deliveries: Array<{ email?: string; language?: string; subject?: string; template?: "ET" | "EN" }> = [];
   for (const id of recipientIds) {
-    const result = await sendToRecipient(id);
-    if (result.ok) sent += 1;
-    else {
+    const result = await sendToRecipient(id, { sendLanguageMode: mode });
+    if (result.ok) {
+      sent += 1;
+      deliveries.push({
+        email: result.email,
+        language: result.plan?.language,
+        subject: result.plan?.subject,
+        template: result.plan?.template,
+      });
+    } else {
       failed += 1;
       failures.push({ email: result.email, reason: result.reason ?? "send_failed" });
     }
   }
+  const byLang = countSentByTemplate(deliveries.map((row) => row.template));
   await markCampaignStatus(campaignId, sent > 0 ? "test_sent" : status === "test_sent" ? "test_sent" : "draft");
-  return { ok: sent > 0, sent, failed, failures };
+  return { ok: sent > 0, sent, failed, ...byLang, sendLanguageMode: mode, deliveries, failures };
 }
 
-async function sendClaimedRecipient(recipientId: string): Promise<"sent" | "failed" | "skipped"> {
+async function sendClaimedRecipient(recipientId: string, sendLanguageMode: SendLanguageMode): Promise<"sent" | "failed" | "skipped"> {
   const claim = await claimRecipientForSend(recipientId);
   if (claim === "skip_sent") return "skipped";
   if (claim === "missing") return "failed";
-  const result = await sendToRecipient(recipientId, { skipIfAlreadySent: true, enforceMarketingConsent: true });
+  const result = await sendToRecipient(recipientId, {
+    skipIfAlreadySent: true,
+    enforceMarketingConsent: true,
+    sendLanguageMode,
+  });
   if (result.skipped) return "skipped";
   return result.ok ? "sent" : "failed";
 }
@@ -215,6 +252,7 @@ export async function sendCampaignNextBatch(input: {
   confirm: boolean;
   continueExisting?: boolean;
   leaseId?: string;
+  sendLanguageMode?: SendLanguageMode;
 }): Promise<{
   ok: boolean;
   blocked?: string;
@@ -285,8 +323,9 @@ export async function sendCampaignNextBatch(input: {
     };
   }
 
+  const sendLanguageMode = parseSendLanguageMode(input.sendLanguageMode);
   const batch = chunkIds(ids, config.size)[0] ?? [];
-  const stats = await runSequentialSends(batch, sendClaimedRecipient);
+  const stats = await runSequentialSends(batch, (id) => sendClaimedRecipient(id, sendLanguageMode));
   const remainingIds = await sendableRecipientIds(input.campaignId, input.mode);
   if (remainingIds.length === 0) {
     const campaignStatus = await finalizeBulkCampaignStatus(input.campaignId);

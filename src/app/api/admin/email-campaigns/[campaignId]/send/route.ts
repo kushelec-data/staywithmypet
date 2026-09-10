@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/admin/require-api";
 import { jsonLooksLikeSecretDump } from "@/lib/email-campaigns/dto";
 import { sendCampaignNextBatch } from "@/lib/email-campaigns/send";
 import type { SendMode } from "@/lib/email-campaigns/send-queue";
+import { parseSendLanguageMode } from "@/lib/email-campaigns/send-language";
 
 type RouteContext = { params: Promise<{ campaignId: string }> };
 
@@ -15,6 +16,7 @@ export async function POST(request: Request, context: RouteContext) {
     continueExisting?: boolean;
     leaseId?: string;
     mode?: SendMode;
+    sendLanguageMode?: string;
   } | null;
 
   const { campaignId } = await context.params;
@@ -25,6 +27,7 @@ export async function POST(request: Request, context: RouteContext) {
     confirm: Boolean(body?.confirm),
     continueExisting: Boolean(body?.continueExisting),
     leaseId: typeof body?.leaseId === "string" ? body.leaseId : undefined,
+    sendLanguageMode: parseSendLanguageMode(body?.sendLanguageMode),
   });
 
   const payload = {

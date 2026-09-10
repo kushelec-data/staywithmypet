@@ -21,7 +21,7 @@ export type CampaignContentFields = {
   htmlEt: string;
 };
 
-/** Shared by preview and SMTP personalization. Recipient `language` wins; campaign has no separate language flag. */
+/** Shared by preview and SMTP. Send language comes from send mode + recipient row, never the campaign title or preview pane. */
 export function selectCampaignContent(
   language: string | null | undefined,
   fields: CampaignContentFields,
