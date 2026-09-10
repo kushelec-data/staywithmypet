@@ -568,6 +568,9 @@ export function EmailCampaignDetailClient({
             Schedule
           </button>
         </div>
+        <p className="mt-3 text-sm text-muted">
+          Automatic scheduled sending currently runs once daily on the Hobby deployment. A campaign is sent on the next daily run after its scheduled time.
+        </p>
         {isScheduled ? (
           <div className="mt-3 flex flex-wrap gap-3">
             <button
@@ -645,6 +648,9 @@ export function EmailCampaignDetailClient({
                   <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
                 </label>
                 <p className="mt-2 text-sm">Timezone: Europe/Tallinn</p>
+                <p className="mt-2 text-sm text-muted">
+                  Automatic scheduled sending currently runs once daily on the Hobby deployment. The email goes out on the next daily run after this time.
+                </p>
                 <div className="mt-4 text-sm">
                   <p className="font-semibold">Summary</p>
                   <p>{peopleCount} recipients</p>

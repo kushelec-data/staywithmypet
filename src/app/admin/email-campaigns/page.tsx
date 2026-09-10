@@ -11,7 +11,7 @@ export default async function AdminEmailCampaignsPage() {
     <AdminShell
       title="Email campaigns"
       pathname="/admin/email-campaigns"
-      description="Create a campaign, write EN/ET, upload a CSV, save, preview, send a test, then send now or schedule."
+      description="Create a campaign, write EN/ET, upload a CSV, save, preview, send a test, then send now or schedule. Automatic scheduled sending currently runs once daily on the Hobby deployment."
     >
       <AdminTable
         headers={["Name", "Version", "Status", "Recipients", "Sent", "Opened", "Clicked", "Failed", "Scheduled / Sent at"]}
