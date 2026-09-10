@@ -50,7 +50,7 @@ export async function listCampaignSummaries(): Promise<CampaignListItemDto[] | n
 
   const { data: campaigns, error } = await admin
     .from("email_campaigns")
-    .select("id, name, status, created_at, updated_at, family_id, version_number, subject_en, subject_et")
+    .select("id, name, status, created_at, updated_at, family_id, version_number, subject_en, subject_et, scheduled_at, scheduled_timezone, sent_at")
     .order("updated_at", { ascending: false });
   let rows: Array<Record<string, unknown>> | null = (campaigns as Array<Record<string, unknown>> | null) ?? null;
   if (error) {
@@ -101,6 +101,9 @@ export async function listCampaignSummaries(): Promise<CampaignListItemDto[] | n
       opened: stats.opened,
       clicked: stats.uniqueClicks,
       failed: stats.failed,
+      scheduledAt: campaign.scheduled_at ? String(campaign.scheduled_at) : null,
+      scheduledTimezone: campaign.scheduled_timezone ? String(campaign.scheduled_timezone) : null,
+      sentAt: campaign.sent_at ? String(campaign.sent_at) : null,
       createdAt: String(campaign.created_at),
       updatedAt,
     };
@@ -122,6 +125,9 @@ export type CampaignDetailDto = {
   familyId: string;
   language: string;
   contentLocked: boolean;
+  scheduledAt: string | null;
+  scheduledTimezone: string | null;
+  sentAt: string | null;
   copy: CampaignCopyFields;
   templateConfig: CampaignTemplateConfig;
   summary: ReturnType<typeof summarizeCampaignRecipients>;
@@ -135,7 +141,7 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
   let campaignQuery = await admin
     .from("email_campaigns")
     .select(
-      "id, name, status, subject_en, subject_et, html_en, html_et, created_at, updated_at, family_id, version_number, template_config",
+      "id, name, status, subject_en, subject_et, html_en, html_et, created_at, updated_at, family_id, version_number, template_config, scheduled_at, scheduled_timezone, scheduled_by, sent_at",
     )
     .eq("id", campaignId)
     .maybeSingle();
@@ -184,11 +190,93 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
       subjectEt: campaign.subject_et as string,
     }),
     contentLocked: isCampaignContentLocked(status),
+    scheduledAt: "scheduled_at" in campaign && campaign.scheduled_at ? String(campaign.scheduled_at) : null,
+    scheduledTimezone: "scheduled_timezone" in campaign && campaign.scheduled_timezone ? String(campaign.scheduled_timezone) : null,
+    sentAt: "sent_at" in campaign && campaign.sent_at ? String(campaign.sent_at) : null,
     copy,
     templateConfig,
     summary: summarizeCampaignRecipients(rows as Array<{ status: string; first_opened_at: string | null; first_clicked_at: string | null }>),
     recipients: rows.map((row) => toRecipientDto(row as Parameters<typeof toRecipientDto>[0])),
   };
+}
+
+export async function listCampaignClickEvents(
+  campaignId: string,
+): Promise<Array<{ linkKey: string; recipientId: string; linkLabel: string | null; linkType: string | null }>> {
+  const admin = db();
+  if (!admin) return [];
+  const { data, error } = await admin
+    .from("email_campaign_events")
+    .select("link_key, recipient_id, link_label, link_type")
+    .eq("campaign_id", campaignId)
+    .eq("event_type", "clicked");
+  if (error) {
+    const fallback = await admin
+      .from("email_campaign_events")
+      .select("link_key, recipient_id")
+      .eq("campaign_id", campaignId)
+      .eq("event_type", "clicked");
+    return (fallback.data ?? []).map((row) => ({
+      linkKey: String(row.link_key ?? ""),
+      recipientId: String(row.recipient_id),
+      linkLabel: null,
+      linkType: null,
+    }));
+  }
+  return (data ?? []).map((row) => ({
+    linkKey: String(row.link_key ?? ""),
+    recipientId: String(row.recipient_id),
+    linkLabel: row.link_label ? String(row.link_label) : null,
+    linkType: row.link_type ? String(row.link_type) : null,
+  }));
+}
+
+export async function scheduleCampaign(
+  campaignId: string,
+  input: { scheduledAt: string; timezone: string; scheduledBy: string },
+): Promise<{ ok: true } | { error: string }> {
+  const admin = db();
+  if (!admin) return { error: "Unavailable" };
+  const detail = await getCampaignDetail(campaignId);
+  if (!detail) return { error: "Not found" };
+  if (detail.recipients.length === 0) return { error: "Add recipients before scheduling." };
+  if (!["draft", "test_sent", "scheduled"].includes(detail.status)) {
+    return { error: "This campaign cannot be scheduled." };
+  }
+  const { error } = await admin
+    .from("email_campaigns")
+    .update({
+      status: "scheduled",
+      scheduled_at: input.scheduledAt,
+      scheduled_timezone: input.timezone,
+      scheduled_by: input.scheduledBy,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", campaignId)
+    .in("status", ["draft", "test_sent", "scheduled"]);
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+export async function cancelCampaignSchedule(campaignId: string): Promise<{ ok: true } | { error: string }> {
+  const admin = db();
+  if (!admin) return { error: "Unavailable" };
+  const { data, error } = await admin
+    .from("email_campaigns")
+    .update({
+      status: "draft",
+      scheduled_at: null,
+      scheduled_timezone: null,
+      scheduled_by: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", campaignId)
+    .eq("status", "scheduled")
+    .select("id")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "This campaign is not scheduled." };
+  return { ok: true };
 }
 
 export async function getRecipientActivity(

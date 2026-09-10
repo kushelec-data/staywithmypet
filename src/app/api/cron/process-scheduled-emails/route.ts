@@ -1,4 +1,5 @@
 import { processDueScheduledEmails } from "@/lib/email-send";
+import { processDueScheduledCampaigns } from "@/lib/email-campaigns/scheduled-send";
 import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
 import { NextResponse } from "next/server";
 
@@ -15,5 +16,6 @@ export async function POST(request: Request) {
   }
 
   const result = await processDueScheduledEmails();
-  return NextResponse.json({ ok: true, ...result });
+  const campaigns = await processDueScheduledCampaigns().catch(() => ({ claimed: 0, continued: 0, finished: 0, skipped: 0 }));
+  return NextResponse.json({ ok: true, ...result, campaigns });
 }

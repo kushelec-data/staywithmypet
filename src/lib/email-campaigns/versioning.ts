@@ -1,5 +1,5 @@
 export function isCampaignContentLocked(status: string): boolean {
-  return ["test_sent", "sending", "partially_sent", "sent", "cancelled"].includes(status);
+  return ["test_sent", "scheduled", "sending", "partially_sent", "sent", "cancelled"].includes(status);
 }
 
 export function campaignLanguageLabel(input: { subjectEn?: string | null; subjectEt?: string | null }): string {

@@ -240,8 +240,13 @@ export async function claimCampaignSendLease(
     leaseUntil: (campaign.send_lease_until as string | null) ?? null,
     nowIso: new Date(now).toISOString(),
   };
-  if (isSendLeaseActive(lock) && lock.leaseId !== leaseId) {
-    return { ok: false, reason: "Campaign is already sending." };
+  if (lock.leaseId !== leaseId) {
+    if (isSendLeaseActive(lock)) {
+      return { ok: false, reason: "Campaign is already sending." };
+    }
+    if (lock.status === "sent" || lock.status === "cancelled") {
+      return { ok: false, reason: "This campaign has already finished." };
+    }
   }
   const until = new Date(now + LEASE_MS).toISOString();
   const { data: updated, error } = await admin
@@ -331,7 +336,9 @@ export async function finalizeBulkCampaignStatus(campaignId: string): Promise<st
     leaseActive: false,
   };
   const status = deriveBulkCampaignStatus(counts);
-  await admin.from("email_campaigns").update({ status, send_lease_id: null, send_lease_until: null, updated_at: new Date().toISOString() }).eq("id", campaignId);
+  const patch: Record<string, unknown> = { status, send_lease_id: null, send_lease_until: null, updated_at: new Date().toISOString() };
+  if (status === "sent") patch.sent_at = new Date().toISOString();
+  await admin.from("email_campaigns").update(patch).eq("id", campaignId);
   return status;
 }
 
@@ -341,7 +348,79 @@ export async function attachRecipientConsent(detail: CampaignDetailDto): Promise
     ...detail,
     recipients: detail.recipients.map((row) => {
       const entry = consent.get(row.email.trim().toLowerCase()) ?? { newsletterSubscribed: false, unsubscribed: false };
-      return { ...row, consented: hasMarketingEmailConsent({ email: row.email, ...entry }) };
+      return {
+        ...row,
+        consented: hasMarketingEmailConsent({ email: row.email, ...entry }),
+        unsubscribed: entry.unsubscribed,
+      };
     }),
   };
+}
+
+export async function claimDueScheduledCampaigns(nowIso = new Date().toISOString()): Promise<Array<{ id: string; leaseId: string }>> {
+  const admin = db();
+  if (!admin) return [];
+  const { data: due, error } = await admin
+    .from("email_campaigns")
+    .select("id, status, scheduled_at, send_lease_id, send_lease_until")
+    .eq("status", "scheduled")
+    .lte("scheduled_at", nowIso);
+  if (error || !due?.length) return [];
+  const claimed: Array<{ id: string; leaseId: string }> = [];
+  const until = new Date(Date.now() + LEASE_MS).toISOString();
+  for (const row of due) {
+    const leaseId = crypto.randomUUID();
+    const { data: updated } = await admin
+      .from("email_campaigns")
+      .update({
+        status: "sending",
+        send_lease_id: leaseId,
+        send_lease_until: until,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id)
+      .eq("status", "scheduled")
+      .select("id, send_lease_id")
+      .maybeSingle();
+    if (updated?.send_lease_id === leaseId) {
+      claimed.push({ id: String(updated.id), leaseId });
+    }
+  }
+  return claimed;
+}
+
+export async function claimExpiredSendingCampaigns(): Promise<Array<{ id: string; leaseId: string }>> {
+  const admin = db();
+  if (!admin) return [];
+  const nowIso = new Date().toISOString();
+  const { data: rows, error } = await admin
+    .from("email_campaigns")
+    .select("id, status, send_lease_id, send_lease_until")
+    .eq("status", "sending");
+  if (error || !rows?.length) return [];
+  const claimed: Array<{ id: string; leaseId: string }> = [];
+  const until = new Date(Date.now() + LEASE_MS).toISOString();
+  for (const row of rows) {
+    const lock = {
+      status: String(row.status),
+      leaseId: (row.send_lease_id as string | null) ?? null,
+      leaseUntil: (row.send_lease_until as string | null) ?? null,
+      nowIso,
+    };
+    if (isSendLeaseActive(lock)) continue;
+    const leaseId = crypto.randomUUID();
+    const { data: updated } = await admin
+      .from("email_campaigns")
+      .update({
+        send_lease_id: leaseId,
+        send_lease_until: until,
+        updated_at: nowIso,
+      })
+      .eq("id", row.id)
+      .eq("status", "sending")
+      .select("id, send_lease_id")
+      .maybeSingle();
+    if (updated?.send_lease_id === leaseId) claimed.push({ id: String(updated.id), leaseId });
+  }
+  return claimed;
 }

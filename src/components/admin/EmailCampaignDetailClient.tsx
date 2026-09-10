@@ -3,13 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard, AdminTable } from "@/components/admin/AdminUi";
+import { EmailCampaignOverview } from "@/components/admin/EmailCampaignOverview";
 import type { CampaignEventDto, CampaignRecipientDto } from "@/lib/email-campaigns/dto";
 import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
-import { bulkSendConsentGate } from "@/lib/email-campaigns/marketing-consent";
 import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE } from "@/lib/email-campaigns/template-config";
 import { formatSendCompletedMessage, storedLanguageCounts } from "@/lib/email-campaigns/send-language";
+import { campaignConsentSummary, canEnableCampaignSend } from "@/lib/email-campaigns/consent-summary";
+import {
+  CAMPAIGN_SCHEDULE_TIMEZONE,
+  campaignStatusLabel,
+  formatScheduledFor,
+  selectDateTimeParts,
+} from "@/lib/email-campaigns/schedule";
+import {
+  campaignOverviewStats,
+  filterCampaignRecipients,
+  type LinkClickRow,
+  type RecipientTableFilter,
+} from "@/lib/email-campaigns/analytics";
 
 type Summary = {
   recipients: number;
@@ -18,6 +31,16 @@ type Summary = {
   uniqueClicks: number;
   failed: number;
 };
+
+const FILTERS: Array<{ id: RecipientTableFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "en", label: "English" },
+  { id: "et", label: "Estonian" },
+  { id: "sent", label: "Sent" },
+  { id: "opened", label: "Opened" },
+  { id: "clicked", label: "Clicked" },
+  { id: "failed", label: "Failed" },
+];
 
 export function EmailCampaignDetailClient({
   campaignId,
@@ -28,9 +51,12 @@ export function EmailCampaignDetailClient({
   htmlEn,
   htmlEt,
   version,
-  language,
   contentLocked,
   copy: initialCopy,
+  scheduledAt,
+  scheduledTimezone,
+  sentAt,
+  links,
 }: {
   campaignId: string;
   name: string;
@@ -46,6 +72,10 @@ export function EmailCampaignDetailClient({
   copy: CampaignCopyFormValue;
   subjectEn: string;
   subjectEt: string;
+  scheduledAt: string | null;
+  scheduledTimezone: string | null;
+  sentAt: string | null;
+  links: LinkClickRow[];
 }) {
   const router = useRouter();
   const [campaignName, setCampaignName] = useState(name);
@@ -54,11 +84,13 @@ export function EmailCampaignDetailClient({
   const [activity, setActivity] = useState<{ recipient: CampaignRecipientDto; events: CampaignEventDto[] } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [languageFilter, setLanguageFilter] = useState<"all" | "et" | "en">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "sending" | "sent" | "failed">("all");
+  const [tableFilter, setTableFilter] = useState<RecipientTableFilter>("all");
   const [csvBusy, setCsvBusy] = useState(false);
-  const [confirmKind, setConfirmKind] = useState<null | "test" | "campaign">(null);
+  const [confirmKind, setConfirmKind] = useState<null | "test" | "campaign" | "schedule">(null);
   const [sendMode, setSendMode] = useState<"pending" | "resume" | "failed">("pending");
+  const scheduleParts = scheduledAt ? selectDateTimeParts(scheduledAt, scheduledTimezone || CAMPAIGN_SCHEDULE_TIMEZONE) : { date: "", time: "10:00" };
+  const [scheduleDate, setScheduleDate] = useState(scheduleParts.date);
+  const [scheduleTime, setScheduleTime] = useState(scheduleParts.time || "10:00");
   const [progress, setProgress] = useState<{
     status: string;
     recipients: number;
@@ -71,8 +103,6 @@ export function EmailCampaignDetailClient({
     english: number;
     opened: number;
     clicked: number;
-    bulkSendEnabled: boolean;
-    missingConsent: number;
     failures: Array<{ email: string; reason: string | null }>;
   } | null>(null);
   const [leaseId, setLeaseId] = useState<string | null>(null);
@@ -82,18 +112,42 @@ export function EmailCampaignDetailClient({
   const pending = recipients.filter((row) => row.status === "pending").length;
   const alreadySent = recipients.filter((row) => row.status === "sent").length;
   const failedCount = recipients.filter((row) => row.status === "failed").length;
-  const consentGate = bulkSendConsentGate(
-    recipients
-      .filter((row) => row.status === "pending" || row.status === "sending")
-      .map((row) => ({ email: row.email, consented: row.consented === true })),
+  const consent = useMemo(
+    () =>
+      campaignConsentSummary(
+        recipients.map((row) => ({ status: row.status, consented: row.consented === true })),
+      ),
+    [recipients],
   );
-
-  const filtered = recipients.filter((row) => {
-    const q = query.trim().toLowerCase();
-    if (q && !`${row.name} ${row.email}`.toLowerCase().includes(q)) return false;
-    if (languageFilter !== "all" && row.language.toLowerCase() !== languageFilter) return false;
-    if (statusFilter !== "all" && row.status !== statusFilter) return false;
-    return true;
+  const overview = useMemo(
+    () =>
+      campaignOverviewStats(
+        recipients.map((row) => ({
+          language: row.language,
+          status: row.status,
+          openedAt: row.openedAt,
+          clickedAt: row.clickedAt,
+          unsubscribed: row.unsubscribed === true,
+        })),
+      ),
+    [recipients],
+  );
+  const filtered = useMemo(
+    () =>
+      filterCampaignRecipients(
+        recipients.map((row) => ({
+          ...row,
+          clickedAt: row.clickedAt ?? (row.clicked ? row.sentAt : null),
+        })),
+        query,
+        tableFilter,
+      ),
+    [recipients, query, tableFilter],
+  );
+  const canSendNow = canEnableCampaignSend({
+    recipientCount: recipients.length,
+    blockedCount: consent.blocked,
+    pendingCount: pending,
   });
 
   async function loadActivity(recipientId: string) {
@@ -122,8 +176,6 @@ export function EmailCampaignDetailClient({
       english: json.progress.english,
       opened: json.progress.opened,
       clicked: json.progress.clicked,
-      bulkSendEnabled: json.bulkSendEnabled,
-      missingConsent: json.consent?.missingConsent ?? 0,
       failures: json.failures ?? [],
     });
     return json;
@@ -276,31 +328,54 @@ export function EmailCampaignDetailClient({
     }
   }
 
+  async function saveSchedule() {
+    const res = await fetch(`/api/admin/email-campaigns/${campaignId}/schedule`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: scheduleDate, time: scheduleTime, timezone: CAMPAIGN_SCHEDULE_TIMEZONE }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setConfirmKind(null);
+    if (!res.ok) {
+      setMessage(json.error ?? "Could not schedule campaign");
+      return;
+    }
+    setMessage("Campaign scheduled.");
+    router.refresh();
+  }
+
+  async function cancelSchedule() {
+    const res = await fetch(`/api/admin/email-campaigns/${campaignId}/schedule`, { method: "DELETE" });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setMessage(json.error ?? "Could not cancel schedule");
+      return;
+    }
+    setMessage("Schedule cancelled.");
+    router.refresh();
+  }
+
   const live = progress;
   const percent = live && live.recipients > 0 ? Math.round((live.processed / live.recipients) * 100) : 0;
   const canRemove = status === "draft" || status === "test_sent";
   const remainingUnsent = pending + recipients.filter((row) => row.status === "sending").length;
-  const bulkLocked = !consentGate.allowed;
   const peopleCount = languageCounts.recipients;
   const englishCount = languageCounts.english;
   const estonianCount = languageCounts.estonian;
-
-  const cards: Array<[string, number]> = [
-    ["Recipients", live?.recipients ?? summary.recipients],
-    ["Sent", live?.sent ?? summary.sent],
-    ["Opened", live?.opened ?? summary.opened],
-    ["Unique clicks", live?.clicked ?? summary.uniqueClicks],
-    ["Failed", live?.failed ?? summary.failed],
-  ];
+  const isScheduled = (live?.status ?? status) === "scheduled";
+  const scheduledLabel = formatScheduledFor(scheduledAt, scheduledTimezone || CAMPAIGN_SCHEDULE_TIMEZONE);
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        {version} · {language} · {live?.status ?? status}
+        {version} · {campaignStatusLabel(live?.status ?? status)}
+        {isScheduled && scheduledLabel ? ` · Scheduled for: ${scheduledLabel}` : null}
+        {sentAt && !isScheduled ? ` · Sent ${formatScheduledFor(sentAt) ?? ""}` : null}
       </p>
-      {contentLocked ? (
+      {contentLocked && !isScheduled ? (
         <p className="text-sm">This version has already been sent. Duplicate it to edit a new draft.</p>
       ) : null}
+      <EmailCampaignOverview overview={overview.recipients ? overview : { ...overview, recipients: summary.recipients, sent: summary.sent, opened: summary.opened, clicked: summary.uniqueClicks, failed: summary.failed }} links={links} />
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Email</h2>
         <label className="mt-3 block text-sm">
@@ -340,14 +415,6 @@ export function EmailCampaignDetailClient({
           </button>
         </div>
       </AdminCard>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {cards.map(([label, value]) => (
-          <AdminCard key={label}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#2E6B3F]">{label}</p>
-            <p className="mt-1 font-heading text-2xl font-semibold">{value}</p>
-          </AdminCard>
-        ))}
-      </div>
       {sendingLive || (live?.status === "sending" && live.remaining > 0) ? (
         <AdminCard>
           <p className="font-semibold">Sending campaign...</p>
@@ -369,15 +436,6 @@ export function EmailCampaignDetailClient({
               sentEnglish: live.english,
             })}
           </p>
-          {live.failures.length > 0 ? (
-            <ul className="mt-2 text-sm">
-              {live.failures.map((row) => (
-                <li key={row.email}>
-                  {row.email} — {row.reason ?? "failed"}
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </AdminCard>
       ) : null}
       <AdminCard>
@@ -402,25 +460,23 @@ export function EmailCampaignDetailClient({
           placeholder="Search name or email"
           className="rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
         />
-        <select value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value as "all" | "et" | "en")} className="rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm">
-          <option value="all">All languages</option>
-          <option value="et">Estonian</option>
-          <option value="en">English</option>
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          className="rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
-        >
-          <option value="all">All statuses</option>
-          <option value="pending">pending</option>
-          <option value="sending">sending</option>
-          <option value="sent">sent</option>
-          <option value="failed">failed</option>
-        </select>
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTableFilter(item.id)}
+              className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
+                tableFilter === item.id ? "bg-[#2E6B3F] text-white" : "border border-[#2E6B3F] text-[#2E6B3F]"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
       <AdminTable
-        headers={["Name", "Email", "Language", "Status", "Sent at", "Opened", "Clicked", "Failure", ""]}
+        headers={["Name", "Email", "Language", "Status", "Sent at", "Opened", "Opened at", "Clicked", "Clicked at", "Failure", ""]}
         empty="No recipients yet."
         rows={filtered.map((row) => [
           row.name,
@@ -428,19 +484,14 @@ export function EmailCampaignDetailClient({
           row.language.toUpperCase(),
           row.status,
           row.sentAt ? new Date(row.sentAt).toLocaleString() : "—",
-          row.openedAt ? "✓" : "—",
-          row.clicked ? "✓" : "—",
+          row.openedAt ? "Yes" : "—",
+          row.openedAt ? new Date(row.openedAt).toLocaleString() : "—",
+          row.clickedAt ? "Yes" : "—",
+          row.clickedAt ? new Date(row.clickedAt).toLocaleString() : "—",
           row.failureReason ?? "—",
-          <span key={row.id} className="flex gap-2">
-            <button type="button" className="font-semibold text-[#2E6B3F]" onClick={() => void loadActivity(row.id)}>
-              Activity
-            </button>
-            {canRemove ? (
-              <button type="button" className="font-semibold text-red-700" onClick={() => void removeRecipient(row.id)}>
-                Remove
-              </button>
-            ) : null}
-          </span>,
+          <button key={row.id} type="button" className="font-semibold text-[#2E6B3F]" onClick={() => void loadActivity(row.id)}>
+            Activity
+          </button>,
         ])}
       />
       {activity ? (
@@ -470,6 +521,9 @@ export function EmailCampaignDetailClient({
         <h2 className="font-heading text-lg font-semibold">Send / Test</h2>
         <p className="mt-1 text-sm">Viewing: {previewLang === "et" ? "Estonian" : "English"}</p>
         <p className="mt-1 text-sm text-muted">Preview only changes what you see. Each person still receives their CSV language.</p>
+        <p className="mt-3 text-sm">Eligible recipients: {consent.eligible}</p>
+        <p className="text-sm">Blocked recipients: {consent.blocked}</p>
+        {consent.warning ? <p className="mt-2 text-sm text-red-700">{consent.warning}</p> : null}
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button type="button" onClick={() => setPreviewLang("en")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
             Preview English
@@ -487,31 +541,62 @@ export function EmailCampaignDetailClient({
           </button>
           <button
             type="button"
-            disabled={bulkLocked || pending === 0}
+            disabled={!canSendNow}
             onClick={() => {
               setSendMode("pending");
               setConfirmKind("campaign");
             }}
             className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#E5E2D8] disabled:text-muted"
           >
-            Send Campaign
+            Send Now
+          </button>
+          <button
+            type="button"
+            disabled={peopleCount === 0 || (status !== "draft" && status !== "test_sent" && status !== "scheduled")}
+            onClick={() => {
+              if (!scheduleDate) {
+                const parts = scheduledAt
+                  ? selectDateTimeParts(scheduledAt)
+                  : selectDateTimeParts(new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
+                setScheduleDate(parts.date);
+                setScheduleTime(parts.time === "24:00" ? "10:00" : parts.time);
+              }
+              setConfirmKind("schedule");
+            }}
+            className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
+          >
+            Schedule
           </button>
         </div>
-        {bulkLocked ? (
-          <p className="mt-3 text-sm text-red-700">
-            This campaign cannot be sent yet. {consentGate.missingConsent} {consentGate.missingConsent === 1 ? "person is" : "people are"} not on the
-            newsletter, or have unsubscribed.
-          </p>
+        {isScheduled ? (
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (scheduledAt) {
+                  const parts = selectDateTimeParts(scheduledAt, scheduledTimezone || CAMPAIGN_SCHEDULE_TIMEZONE);
+                  setScheduleDate(parts.date);
+                  setScheduleTime(parts.time);
+                }
+                setConfirmKind("schedule");
+              }}
+              className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]"
+            >
+              Change schedule
+            </button>
+            <button type="button" onClick={() => void cancelSchedule()} className="rounded-full border px-4 py-2 text-sm font-semibold">
+              Cancel schedule
+            </button>
+          </div>
         ) : null}
         {remainingUnsent > 0 && (status === "partially_sent" || status === "sending" || alreadySent > 0) ? (
           <button
             type="button"
-            disabled={bulkLocked}
             onClick={() => {
               setSendMode("resume");
               setConfirmKind("campaign");
             }}
-            className="mt-3 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
+            className="mt-3 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]"
           >
             Continue sending
           </button>
@@ -519,12 +604,11 @@ export function EmailCampaignDetailClient({
         {failedCount > 0 ? (
           <button
             type="button"
-            disabled={bulkLocked}
             onClick={() => {
               setSendMode("failed");
               setConfirmKind("campaign");
             }}
-            className="mt-3 ml-3 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
+            className="mt-3 ml-3 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]"
           >
             Retry failed
           </button>
@@ -549,6 +633,33 @@ export function EmailCampaignDetailClient({
                   </button>
                 </div>
               </>
+            ) : confirmKind === "schedule" ? (
+              <>
+                <h3 className="font-heading text-lg font-semibold">Schedule campaign</h3>
+                <label className="mt-3 block text-sm">
+                  Date
+                  <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
+                </label>
+                <label className="mt-3 block text-sm">
+                  Time
+                  <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
+                </label>
+                <p className="mt-2 text-sm">Timezone: Europe/Tallinn</p>
+                <div className="mt-4 text-sm">
+                  <p className="font-semibold">Summary</p>
+                  <p>{peopleCount} recipients</p>
+                  <p>{englishCount} English</p>
+                  <p>{estonianCount} Estonian</p>
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <button type="button" onClick={() => setConfirmKind(null)} className="rounded-full border px-4 py-2 text-sm">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={() => void saveSchedule()} className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white">
+                    Schedule Campaign
+                  </button>
+                </div>
+              </>
             ) : (
               <>
                 <p className="text-sm">
@@ -567,7 +678,7 @@ export function EmailCampaignDetailClient({
                     onClick={() => void runSendLoop(sendMode, leaseId ?? undefined)}
                     className="rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                   >
-                    Send Campaign
+                    Send Now
                   </button>
                 </div>
               </>

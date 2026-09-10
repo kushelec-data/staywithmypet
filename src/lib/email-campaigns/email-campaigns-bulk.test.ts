@@ -204,6 +204,7 @@ describe("simultaneous send protection", () => {
     expect(anotherAdminHoldsLease(lock, "lease-2")).toBe(true);
     expect(canStartBulkSend("sending", true).ok).toBe(false);
     expect(canStartBulkSend("draft", false).ok).toBe(true);
+    expect(canStartBulkSend("sent", false).ok).toBe(false);
   });
 });
 
@@ -296,6 +297,7 @@ describe("marketing opt-out", () => {
     expect(hasMarketingEmailConsent({ email: "ok@example.com", newsletterSubscribed: true, unsubscribed: false })).toBe(true);
     expect(bulkSendConsentGate([{ email: "ok@example.com", consented: true }]).allowed).toBe(true);
     expect(bulkSendConsentGate([{ email: "nope@example.com", consented: false }]).allowed).toBe(false);
+    expect(bulkSendConsentGate([]).allowed).toBe(true);
   });
 });
 
@@ -311,6 +313,7 @@ describe("campaign versions", () => {
     expect(isCampaignContentLocked("draft")).toBe(false);
     expect(isCampaignContentLocked("sent")).toBe(true);
     expect(isCampaignContentLocked("test_sent")).toBe(true);
+    expect(isCampaignContentLocked("scheduled")).toBe(true);
     expect(nextCampaignVersion([1])).toBe(2);
     expect(campaignLanguageLabel({ subjectEn: "EN", subjectEt: "ET" })).toBe("EN + ET");
   });

@@ -39,7 +39,7 @@ export function bulkSendConsentGate(pending: Array<{ email: string; consented: b
   const consented = pending.filter((row) => row.consented).length;
   const missingConsent = pending.length - consented;
   return {
-    allowed: pending.length > 0 && missingConsent === 0,
+    allowed: missingConsent === 0,
     consented,
     missingConsent,
   };

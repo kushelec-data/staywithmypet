@@ -19,13 +19,12 @@ import {
   type SendLanguageMode,
   resolveSendLanguage,
 } from "@/lib/email-campaigns/send-language";
-import { bulkSendConsentGate, hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
+import { hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
 import { runSequentialSends, type SendMode } from "@/lib/email-campaigns/send-queue";
 import {
   claimCampaignSendLease,
   claimRecipientForSend,
   finalizeBulkCampaignStatus,
-  listCampaignDeliveryRows,
   loadMarketingConsentMap,
   refreshCampaignSendLease,
   releaseCampaignSendLease,
@@ -293,34 +292,6 @@ export async function sendCampaignNextBatch(input: {
     const campaignStatus = await finalizeBulkCampaignStatus(input.campaignId);
     await releaseCampaignSendLease(input.campaignId, leaseId);
     return { ok: true, leaseId, done: true, delayMs: config.delayMs, batchSize: config.size, remaining: 0, sent: 0, failed: 0, skipped: 0, campaignStatus };
-  }
-
-  const deliveryRows = await listCampaignDeliveryRows(input.campaignId);
-  const sendable = new Set(ids);
-  const emails = deliveryRows
-    .filter((row) => sendable.has(row.id as string))
-    .map((row) => String(row.email));
-  const consentMap = await loadMarketingConsentMap(emails);
-  const gate = bulkSendConsentGate(
-    emails.map((email) => {
-      const entry = consentMap.get(email.trim().toLowerCase()) ?? { newsletterSubscribed: false, unsubscribed: false };
-      return { email, consented: hasMarketingEmailConsent({ email, ...entry }) };
-    }),
-  );
-  if (!gate.allowed) {
-    await finalizeBulkCampaignStatus(input.campaignId);
-    await releaseCampaignSendLease(input.campaignId, leaseId);
-    return {
-      ok: false,
-      blocked: `Bulk marketing send is locked: ${gate.missingConsent} pending recipient(s) lack newsletter consent or have unsubscribed.`,
-      done: true,
-      delayMs: config.delayMs,
-      batchSize: config.size,
-      remaining: ids.length,
-      sent: 0,
-      failed: 0,
-      skipped: 0,
-    };
   }
 
   const sendLanguageMode = parseSendLanguageMode(input.sendLanguageMode);

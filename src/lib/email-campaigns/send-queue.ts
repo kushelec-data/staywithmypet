@@ -38,6 +38,9 @@ export function canStartBulkSend(status: string, leaseActive: boolean): { ok: tr
   if (leaseActive || status === "sending") {
     return { ok: false, reason: "Campaign is already sending. Use progress or wait for the lease to expire." };
   }
+  if (status === "sent" || status === "cancelled") {
+    return { ok: false, reason: "This campaign has already finished." };
+  }
   return { ok: true };
 }
 

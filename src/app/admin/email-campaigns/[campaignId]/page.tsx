@@ -2,8 +2,10 @@ import Link from "next/link";
 import { AdminShell } from "@/components/admin/AdminUi";
 import { EmailCampaignDetailClient } from "@/components/admin/EmailCampaignDetailClient";
 import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
-import { getCampaignDetail } from "@/lib/email-campaigns/store";
+import { getCampaignDetail, listCampaignClickEvents } from "@/lib/email-campaigns/store";
 import { attachRecipientConsent } from "@/lib/email-campaigns/store-bulk";
+import { topClickedLinks } from "@/lib/email-campaigns/analytics";
+import { trackedLinksFromTemplateConfig } from "@/lib/email-campaigns/events";
 
 export default async function AdminEmailCampaignDetailPage({
   params,
@@ -25,11 +27,21 @@ export default async function AdminEmailCampaignDetailPage({
     );
   }
 
+  const clickEvents = await listCampaignClickEvents(detail.id);
+  const links = topClickedLinks(
+    clickEvents.map((row) => ({ linkKey: row.linkKey, recipientId: row.recipientId })),
+    trackedLinksFromTemplateConfig(detail.templateConfig).map((item) => ({
+      key: item.key,
+      type: item.type,
+      label: item.label,
+    })),
+  );
+
   return (
     <AdminShell
       title={detail.name}
       pathname="/admin/email-campaigns"
-      description="Write, preview, and send this email."
+      description="Write, preview, send, or schedule this email, then view results."
       actions={
         <Link href="/admin/email-campaigns" className="text-sm font-semibold text-[#2E6B3F]">
           All campaigns
@@ -48,6 +60,10 @@ export default async function AdminEmailCampaignDetailPage({
         version={detail.version}
         language={detail.language}
         contentLocked={detail.contentLocked}
+        scheduledAt={detail.scheduledAt}
+        scheduledTimezone={detail.scheduledTimezone}
+        sentAt={detail.sentAt}
+        links={links}
         subjectEn={detail.subjectEn}
         subjectEt={detail.subjectEt}
         copy={{

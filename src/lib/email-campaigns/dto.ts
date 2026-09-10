@@ -26,6 +26,9 @@ export type CampaignListItemDto = {
   opened: number;
   clicked: number;
   failed: number;
+  scheduledAt: string | null;
+  scheduledTimezone: string | null;
+  sentAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -37,6 +40,7 @@ export type CampaignRecipientDto = {
   language: string;
   sentAt: string | null;
   openedAt: string | null;
+  clickedAt: string | null;
   clicked: boolean;
   clickedLinkKey: string | null;
   lastActivityAt: string | null;
@@ -44,6 +48,7 @@ export type CampaignRecipientDto = {
   activityLabel: string;
   failureReason: string | null;
   consented?: boolean;
+  unsubscribed?: boolean;
 };
 
 export type CampaignEventDto = {
@@ -76,6 +81,7 @@ export function toRecipientDto(row: {
     language: row.language,
     sentAt: row.sent_at,
     openedAt: row.first_opened_at,
+    clickedAt: row.first_clicked_at,
     clicked: Boolean(row.first_clicked_at),
     clickedLinkKey: row.last_clicked_link_key,
     lastActivityAt: lastActivityAt(row),
