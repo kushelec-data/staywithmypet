@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE } from "@/lib/quiz/seed";
-import { scoreAnswer, scoreCorrectAnswer } from "@/lib/quiz/scoring";
+import { QUIZ_MAX_SCORE, scoreAnswer, scoreCorrectAnswer } from "@/lib/quiz/scoring";
 import { displayNamesClash, formatDisplayPin, normalizeDisplayName, normalizeGamePin, parseQuizReaction, pinIsPlayable } from "@/lib/quiz/pin";
 import { payloadLeaksAnswer, publicQuestionPayload, stripAnswerKey } from "@/lib/quiz/public-state";
 import {
@@ -32,13 +32,35 @@ describe("seeded quiz", () => {
 });
 
 describe("scoring", () => {
-  it("gives more points for a faster correct answer and zero for a miss", () => {
+  it("gives exactly 200 for a correct answer", () => {
+    expect(scoreAnswer({ correct: true })).toBe(200);
+    expect(scoreCorrectAnswer()).toBe(200);
+  });
+
+  it("gives 400 after two correct answers", () => {
+    const afterOne = applyRoundScores([{ id: "p1", score: 0 }], [{ player_id: "p1", points: 200 }]);
+    expect(afterOne).toEqual([{ id: "p1", score: 200 }]);
+    expect(applyRoundScores(afterOne, [{ player_id: "p1", points: 200 }])).toEqual([{ id: "p1", score: 400 }]);
+  });
+
+  it("gives 0 for a wrong answer", () => {
     expect(scoreAnswer({ correct: false, elapsedMs: 100, limitMs: 15000 })).toBe(0);
-    const fast = scoreCorrectAnswer(200, 15000);
-    const slow = scoreCorrectAnswer(14000, 15000);
-    expect(fast).toBeGreaterThan(slow);
-    expect(fast).toBeLessThanOrEqual(1000);
-    expect(slow).toBeGreaterThanOrEqual(500);
+    expect(scoreAnswer({ correct: false })).toBe(0);
+  });
+
+  it("gives the same score for fast and slow correct answers", () => {
+    expect(scoreAnswer({ correct: true, elapsedMs: 100, limitMs: 15000 })).toBe(200);
+    expect(scoreAnswer({ correct: true, elapsedMs: 14000, limitMs: 15000 })).toBe(200);
+    expect(scoreCorrectAnswer(200, 15000)).toBe(200);
+    expect(scoreCorrectAnswer(14000, 15000)).toBe(200);
+  });
+
+  it("caps a 20-question quiz at 4000", () => {
+    expect(QUIZ_MAX_SCORE).toBe(4000);
+    expect(20 * 200).toBe(4000);
+    const scoring = readFileSync(join(process.cwd(), "src/lib/quiz/scoring.ts"), "utf8");
+    expect(scoring).toContain("QUIZ_POINTS_PER_CORRECT = 200");
+    expect(scoring).not.toMatch(/1000\s*-/);
   });
 });
 
@@ -174,6 +196,11 @@ describe("quiz security sources", () => {
     expect(play).not.toContain("Open Question");
     expect(play).not.toContain("Start Quiz");
     expect(play).toContain("Waiting for the host to reveal the answer");
+    expect(play).toContain("Leave the quiz?");
+    expect(play).toContain("QuizStage");
+    const chrome = readFileSync(join(process.cwd(), "src/components/layout/SiteChrome.tsx"), "utf8");
+    expect(chrome).toContain('pathname === "/quiz/play"');
+    expect(chrome).toContain("hidden md:block");
 
     expect(host).toContain("Reveal Answer");
     expect(host).toContain("Close Question");
@@ -253,7 +280,7 @@ describe("kahoot host-controlled game", () => {
     const revealFn = store.slice(store.indexOf("export async function hostRevealAnswer"), store.indexOf("export async function hostEndQuestion"));
     expect(revealFn.indexOf("scoreOpenRound")).toBeGreaterThan(-1);
     expect(revealFn.indexOf("scoreOpenRound")).toBeLessThan(revealFn.indexOf('status: "reveal"'));
-    expect(applyRoundScores([{ id: "p1", score: 100 }], [{ player_id: "p1", points: 842 }])).toEqual([{ id: "p1", score: 942 }]);
+    expect(applyRoundScores([{ id: "p1", score: 100 }], [{ player_id: "p1", points: 200 }])).toEqual([{ id: "p1", score: 300 }]);
   });
 
   it("6. player sees correct answer only after reveal", () => {

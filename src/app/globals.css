@@ -1501,9 +1501,83 @@ select.input-field {
   }
 }
 
+@keyframes quiz-stage-in {
+  from {
+    transform: translateX(22%);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes quiz-stage-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-16%);
+    opacity: 0;
+  }
+}
+
+@keyframes quiz-stage-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.quiz-stage-enter {
+  animation: quiz-stage-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.quiz-stage-enter-fade {
+  animation: quiz-stage-fade 0.32s ease both;
+}
+
+.quiz-stage-leave {
+  animation: quiz-stage-out 0.38s ease both;
+}
+
+.quiz-stage-leave-fade {
+  animation: quiz-stage-fade-out 0.3s ease both;
+}
+
+@keyframes quiz-stage-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  html.quiz-play-active,
+  html.quiz-play-active body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .quiz-reaction-particle {
     animation: none;
     opacity: 0;
+  }
+
+  .quiz-stage-enter,
+  .quiz-stage-enter-fade {
+    animation: quiz-stage-fade 0.32s ease both;
+  }
+
+  .quiz-stage-leave,
+  .quiz-stage-leave-fade {
+    animation: quiz-stage-fade-out 0.3s ease both;
   }
 }

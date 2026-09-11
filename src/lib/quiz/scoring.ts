@@ -1,12 +1,13 @@
-export function scoreCorrectAnswer(elapsedMs: number, limitMs: number): number {
-  if (limitMs <= 0) return 1000;
-  const elapsed = Math.min(Math.max(0, elapsedMs), limitMs);
-  return Math.round(1000 * (1 - (elapsed / limitMs) * 0.5));
+export const QUIZ_POINTS_PER_CORRECT = 200;
+export const QUIZ_MAX_QUESTIONS = 20;
+export const QUIZ_MAX_SCORE = QUIZ_POINTS_PER_CORRECT * QUIZ_MAX_QUESTIONS;
+
+export function scoreCorrectAnswer(_elapsedMs?: number, _limitMs?: number): number {
+  return QUIZ_POINTS_PER_CORRECT;
 }
 
-export function scoreAnswer(input: { correct: boolean; elapsedMs: number; limitMs: number }): number {
-  if (!input.correct) return 0;
-  return scoreCorrectAnswer(input.elapsedMs, input.limitMs);
+export function scoreAnswer(input: { correct: boolean; elapsedMs?: number; limitMs?: number }): number {
+  return input.correct ? QUIZ_POINTS_PER_CORRECT : 0;
 }
 
 export function remainingMs(closesAtIso: string | null, nowMs = Date.now()): number {

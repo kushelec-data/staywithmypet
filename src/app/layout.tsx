@@ -5,8 +5,7 @@ import { ConsentAwareAnalytics } from "@/components/cookies/ConsentAwareAnalytic
 import { ConsentAwareGoogleAnalytics } from "@/components/cookies/ConsentAwareGoogleAnalytics";
 import { ConsentAwareMetaPixel } from "@/components/cookies/ConsentAwareMetaPixel";
 import { CookieConsentMount } from "@/components/cookies/CookieConsentMount";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar";
+import { SiteChrome } from "@/components/layout/SiteChrome";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
@@ -49,10 +48,10 @@ export default function RootLayout({
           <AuthProvider>
             <ProfileProvider>
               <FavoritesProvider>
-                <Navbar />
-                <ProductActivityTracker />
-                <main className="flex-1">{children}</main>
-                <Footer />
+                <SiteChrome>
+                  <ProductActivityTracker />
+                  {children}
+                </SiteChrome>
               </FavoritesProvider>
             </ProfileProvider>
           </AuthProvider>
