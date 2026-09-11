@@ -1,5 +1,6 @@
 import { HeroSection } from "@/sections/HeroSection";
 import { HomeExploreSection } from "@/sections/HomeExploreSection";
+import { HomeQuizPromoSection } from "@/sections/HomeQuizPromoSection";
 import { SearchSection } from "@/sections/SearchSection";
 import { ServicesSection } from "@/sections/ServicesSection";
 import { HomeReadyCtaSection } from "@/sections/HomeReadyCtaSection";
@@ -14,6 +15,7 @@ export default function HomePage() {
       <WhyChooseUsSection />
       <HomeReadyCtaSection />
       <HomeExploreSection />
+      <HomeQuizPromoSection />
     </div>
   );
 }

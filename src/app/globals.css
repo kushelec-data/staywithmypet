@@ -1466,3 +1466,44 @@ select.input-field {
 .pac-container[style*="display: none"] {
   pointer-events: none !important;
 }
+
+@keyframes quiz-reaction-float {
+  0% {
+    transform: translate(-50%, 0) rotate(var(--quiz-rot, 0deg)) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--quiz-drift, 0px)), -46vh) rotate(calc(var(--quiz-rot, 0deg) + 36deg)) scale(0.55);
+    opacity: 0;
+  }
+}
+
+.quiz-reaction-particle {
+  pointer-events: none;
+  line-height: 1;
+  animation-name: quiz-reaction-float;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+.quiz-reaction-pulse {
+  animation: quiz-reaction-pulse 0.45s ease;
+}
+
+@keyframes quiz-reaction-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-reaction-particle {
+    animation: none;
+    opacity: 0;
+  }
+}
