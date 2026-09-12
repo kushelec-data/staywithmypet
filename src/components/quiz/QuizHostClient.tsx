@@ -175,19 +175,30 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
           </div>
         </div>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
+        {state.status !== "lobby" && state.pin ? (
+          <p className="mt-4 rounded-2xl border border-[#2E6B3F]/20 bg-white px-4 py-3 text-center">
+            <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-muted">Game PIN</span>
+            <span className="font-heading mt-1 block text-4xl font-semibold tracking-[0.12em] text-[#2E6B3F] sm:text-5xl">{displayPin}</span>
+          </p>
+        ) : null}
+        {state.status === "lobby" && !state.pin ? (
+          <p className="mt-4 text-center text-sm text-red-700">This game has no PIN. Start a new live game.</p>
+        ) : null}
 
         {state.status === "lobby" ? (
           <div className="mt-6 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="rounded-[1.75rem] border border-[#E5E2D8] bg-white p-6 text-center shadow-sm sm:p-8">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#2E6B3F]">Join the quiz</p>
               <p className="mt-3 text-lg font-semibold sm:text-xl">{QUIZ_PUBLIC_JOIN_HOST}</p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="QR code to join the quiz" className="mx-auto mt-6 h-44 w-44 rounded-2xl border border-[#E5E2D8] bg-white p-2 sm:h-52 sm:w-52" src={qr} />
-              <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em] text-muted">Game PIN</p>
-              <p className="font-heading mt-2 text-6xl font-semibold tracking-[0.14em] text-[#2E6B3F] sm:text-8xl">{displayPin}</p>
-              <button type="button" onClick={() => void copyPin()} className="btn-interactive mt-5 rounded-2xl border border-[#2E6B3F] px-5 py-3 font-semibold text-[#2E6B3F]">
+              <p className="mt-8 text-sm font-semibold uppercase tracking-[0.22em] text-muted">Game PIN</p>
+              <p className="font-heading mt-3 break-all text-7xl font-semibold leading-none tracking-[0.12em] text-[#2E6B3F] sm:text-9xl">
+                {displayPin || "------"}
+              </p>
+              <button type="button" onClick={() => void copyPin()} className="btn-interactive mt-6 rounded-2xl border border-[#2E6B3F] px-5 py-3 font-semibold text-[#2E6B3F]">
                 {copied ? "Copied" : "Copy PIN"}
               </button>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img alt="QR code to join the quiz" className="mx-auto mt-8 h-40 w-40 rounded-2xl border border-[#E5E2D8] bg-white p-2 sm:h-48 sm:w-48" src={qr} />
               <p className="mt-6 text-lg">Players joined: {state.players.length}</p>
               <HostPrimaryButton label="Start Quiz" onClick={() => void action("open")} />
             </div>

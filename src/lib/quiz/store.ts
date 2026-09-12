@@ -3,7 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createOpaqueToken } from "@/lib/email-campaigns/tokens";
-import { displayNamesClash, emptyReactionCounts, generateGamePin, normalizeDisplayName, normalizeGamePin, parseQuizReaction, pinIsPlayable, type QuizReaction } from "@/lib/quiz/pin";
+import { displayNamesClash, emptyReactionCounts, generateGamePin, liveGameStartPayload, normalizeDisplayName, normalizeGamePin, parseQuizReaction, pinIsPlayable, type QuizReaction } from "@/lib/quiz/pin";
 import {
   answerKeyIsPublic,
   hostMayCloseQuestion,
@@ -224,26 +224,36 @@ export async function duplicateQuiz(quizId: string): Promise<{ id: string } | { 
   return created;
 }
 
-export async function startLiveGame(quizId: string, hostUserId: string): Promise<{ id: string; pin: string } | { error: string }> {
+export async function startLiveGame(
+  quizId: string,
+  hostUserId: string,
+): Promise<{ id: string; gameId: string; pin: string; status: string } | { error: string }> {
   const admin = db();
   if (!admin) return { error: "Unavailable" };
   const packed = await getQuiz(quizId);
   if (!packed || packed.questions.length === 0) return { error: "Add questions first" };
   const { data: active } = await admin.from("live_quiz_games").select("pin").neq("status", "finished");
   const pin = generateGamePin((active ?? []).map((row) => String(row.pin)));
-  const { data, error } = await admin
-    .from("live_quiz_games")
-    .insert({
-      quiz_id: quizId,
-      pin,
-      status: "lobby",
-      current_index: 0,
-      host_user_id: hostUserId,
-    })
-    .select("id, pin")
-    .single();
-  if (error || !data) return { error: error?.message ?? "start_failed" };
-  return { id: String(data.id), pin: String(data.pin) };
+  const payload = {
+    quiz_id: quizId,
+    pin,
+    status: "lobby" as const,
+    current_index: 0,
+    host_user_id: hostUserId,
+  };
+  let inserted = await admin.from("live_quiz_games").insert(payload).select("id, pin, status").single();
+  if (inserted.error && hostUserId) {
+    const { host_user_id: _host, ...withoutHost } = payload;
+    inserted = await admin.from("live_quiz_games").insert(withoutHost).select("id, pin, status").single();
+  }
+  if (inserted.error || !inserted.data) {
+    return { error: inserted.error?.message ?? "Could not create the live game. Try again." };
+  }
+  return liveGameStartPayload({
+    id: String(inserted.data.id),
+    pin: String(inserted.data.pin),
+    status: String(inserted.data.status ?? "lobby"),
+  });
 }
 
 type GameRow = {
@@ -442,7 +452,12 @@ export async function joinGameWithPin(pinRaw: string): Promise<{ gameId: string;
   if (!admin) return { error: "Unavailable" };
   const pin = normalizeGamePin(pinRaw);
   if (!pin) return { error: "Enter the 6-digit game PIN" };
-  const { data } = await admin.from("live_quiz_games").select("id, status").eq("pin", pin).maybeSingle();
+  const { data } = await admin
+    .from("live_quiz_games")
+    .select("id, status, pin")
+    .eq("pin", pin)
+    .neq("status", "finished")
+    .maybeSingle();
   if (!data || !pinIsPlayable(String(data.status))) return { error: "That PIN is not active" };
   return { gameId: String(data.id), status: String(data.status) };
 }

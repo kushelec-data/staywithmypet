@@ -4,13 +4,31 @@ export function normalizeGamePin(raw: string): string | null {
   return digits;
 }
 
+export function isExactSixDigitPin(pin: string): boolean {
+  return /^\d{6}$/.test(pin);
+}
+
 export function generateGamePin(taken: Iterable<string>): string {
   const used = new Set([...taken].map((pin) => pin.replace(/\D/g, "")));
   for (let i = 0; i < 80; i += 1) {
     const pin = String(100000 + Math.floor(Math.random() * 900000));
-    if (!used.has(pin)) return pin;
+    if (!used.has(pin) && isExactSixDigitPin(pin)) return pin;
   }
   throw new Error("Could not generate a free game PIN");
+}
+
+export function liveGameStartPayload(row: { id: string; pin: string; status?: string }) {
+  const pin = normalizeGamePin(row.pin);
+  if (!pin || !isExactSixDigitPin(pin)) {
+    return { error: "Live game was created without a valid 6-digit PIN" };
+  }
+  const id = String(row.id);
+  return {
+    id,
+    gameId: id,
+    pin,
+    status: row.status || "lobby",
+  };
 }
 
 export function pinIsPlayable(status: string): boolean {

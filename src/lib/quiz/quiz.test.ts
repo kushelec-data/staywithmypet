@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE, seedQuestionToRow } from "@/lib/quiz/seed";
 import { QUIZ_MAX_SCORE, scoreAnswer, scoreCorrectAnswer } from "@/lib/quiz/scoring";
-import { displayNamesClash, formatDisplayPin, normalizeDisplayName, normalizeGamePin, parseQuizReaction, pinIsPlayable } from "@/lib/quiz/pin";
+import { displayNamesClash, formatDisplayPin, generateGamePin, isExactSixDigitPin, liveGameStartPayload, normalizeDisplayName, normalizeGamePin, parseQuizReaction, pinIsPlayable } from "@/lib/quiz/pin";
 import { payloadLeaksAnswer, publicQuestionPayload, stripAnswerKey } from "@/lib/quiz/public-state";
 import {
   answerKeyIsPublic,
@@ -66,6 +66,57 @@ describe("scoring", () => {
     const scoring = readFileSync(join(process.cwd(), "src/lib/quiz/scoring.ts"), "utf8");
     expect(scoring).toContain("QUIZ_POINTS_PER_CORRECT = 200");
     expect(scoring).not.toMatch(/1000\s*-/);
+  });
+});
+
+describe("live game PIN", () => {
+  it("creates an exact 6-digit PIN when starting a live game", () => {
+    const pin = generateGamePin(["111111", "222222"]);
+    expect(isExactSixDigitPin(pin)).toBe(true);
+    expect(pin).toHaveLength(6);
+    expect(pin).not.toBe("111111");
+    const created = liveGameStartPayload({ id: "game-1", pin, status: "lobby" });
+    expect("error" in created).toBe(false);
+    if ("error" in created) throw new Error(created.error);
+    expect(created.gameId).toBe("game-1");
+    expect(created.id).toBe("game-1");
+    expect(created.pin).toBe(pin);
+    expect(created.status).toBe("lobby");
+    const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    const startFn = store.slice(store.indexOf("export async function startLiveGame"), store.indexOf("type GameRow"));
+    expect(startFn).toContain("generateGamePin");
+    expect(startFn).toContain("liveGameStartPayload");
+    expect(startFn).toContain("insert");
+    expect(startFn).toContain("pin");
+  });
+
+  it("returns that PIN from the host API and keeps it on refresh", () => {
+    const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    const hostFn = store.slice(store.indexOf("export async function hostGameState"), store.length);
+    expect(hostFn).toContain("pin: game.pin");
+    expect(hostFn).not.toContain("generateGamePin");
+    const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
+    expect(host).toContain("state.pin");
+    expect(host).toContain("Copy PIN");
+    expect(host).not.toContain("generateGamePin");
+    const first = liveGameStartPayload({ id: "game-1", pin: "482731", status: "lobby" });
+    const refresh = liveGameStartPayload({ id: "game-1", pin: "482731", status: "lobby" });
+    expect(first).toEqual(refresh);
+  });
+
+  it("lets a player join the stored PIN and rejects a wrong or finished PIN", () => {
+    expect(normalizeGamePin("482 731")).toBe("482731");
+    expect(normalizeGamePin("000000")).toBe("000000");
+    expect(normalizeGamePin("48273")).toBeNull();
+    expect(normalizeGamePin("abcdef")).toBeNull();
+    expect(pinIsPlayable("lobby")).toBe(true);
+    expect(pinIsPlayable("finished")).toBe(false);
+    const storeSrc = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    const joinFn = storeSrc.slice(storeSrc.indexOf("export async function joinGameWithPin"), storeSrc.indexOf("export async function registerPlayer"));
+    expect(joinFn).toContain('.eq("pin", pin)');
+    expect(joinFn).toContain('.neq("status", "finished")');
+    expect(joinFn).toContain("That PIN is not active");
+    expect(joinFn).toContain("Enter the 6-digit game PIN");
   });
 });
 
@@ -209,6 +260,10 @@ describe("quiz security sources", () => {
     const joinUi = readFileSync(join(process.cwd(), "src/components/quiz/QuizJoinClient.tsx"), "utf8");
     expect(joinUi).toContain("Choose language");
     expect(joinUi).toContain("Vali keel");
+    expect(joinUi).toContain("Eesti");
+    expect(joinUi).toContain("English");
+    expect(joinUi).not.toContain("🇪🇪");
+    expect(joinUi).not.toContain("🇬🇧");
     const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
     expect(host).toContain("useQuizCountdown");
     expect(host).toContain("previewLocale");

@@ -39,11 +39,12 @@ export function QuizAdminList({ initial }: { initial: QuizRow[] }) {
   async function start(id: string) {
     const res = await fetch("/api/admin/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ startQuizId: id }) });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(json.error ?? "Could not start");
+    const gameId = String(json.gameId ?? json.id ?? "");
+    if (!res.ok || !gameId) {
+      setError(json.error ?? "Could not start the live game. No game was created.");
       return;
     }
-    router.push(`/admin/quiz/host/${json.id}`);
+    router.push(`/admin/quiz/host/${gameId}`);
   }
 
   return (

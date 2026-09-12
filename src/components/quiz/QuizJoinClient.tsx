@@ -74,14 +74,14 @@ export function QuizJoinClient() {
                 onClick={() => chooseLanguage("et")}
                 className="btn-interactive min-h-[64px] w-full rounded-2xl border border-[#E5E2D8] bg-white px-4 text-lg font-semibold shadow-sm"
               >
-                🇪🇪 Eesti
+                Eesti
               </button>
               <button
                 type="button"
                 onClick={() => chooseLanguage("en")}
                 className="btn-interactive min-h-[64px] w-full rounded-2xl border border-[#E5E2D8] bg-white px-4 text-lg font-semibold shadow-sm"
               >
-                🇬🇧 English
+                English
               </button>
             </div>
           </>

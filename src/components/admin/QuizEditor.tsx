@@ -62,6 +62,7 @@ export function QuizEditor({
   }
 
   async function start() {
+    setMessage(null);
     await save();
     const res = await fetch("/api/admin/quiz", {
       method: "POST",
@@ -69,11 +70,15 @@ export function QuizEditor({
       body: JSON.stringify({ startQuizId: quizId }),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setMessage(json.error ?? "Could not start");
+    const gameId = String(json.gameId ?? json.id ?? "");
+    if (!res.ok || !gameId) {
+      setMessage(json.error ?? "Could not start the live game. No game was created.");
       return;
     }
-    router.push(`/admin/quiz/host/${json.id}`);
+    if (!json.pin) {
+      setMessage("The live game was created, but no PIN was returned. Open the host screen and refresh.");
+    }
+    router.push(`/admin/quiz/host/${gameId}`);
   }
 
   function updateQuestion(index: number, patch: Partial<QuizQuestionRow>) {
