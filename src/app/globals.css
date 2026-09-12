@@ -1565,6 +1565,13 @@ select.input-field {
   }
 }
 
+html.quiz-host-active,
+html.quiz-host-active body {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .quiz-reaction-particle {
     animation: none;

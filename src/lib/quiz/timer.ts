@@ -1,7 +1,7 @@
 import { isQuestionOpen } from "@/lib/quiz/game-status";
 import { remainingMs } from "@/lib/quiz/scoring";
 
-export const QUIZ_QUESTION_SECONDS = 20;
+export const QUIZ_QUESTION_SECONDS = 30;
 
 export function questionHasEnded(endsAt: string | null, nowMs = Date.now()): boolean {
   if (!endsAt) return false;

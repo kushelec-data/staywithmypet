@@ -25,7 +25,7 @@ describe("seeded quiz", () => {
       expect(question.choices).toHaveLength(4);
       expect(new Set(question.choices.map((row) => row.id)).size).toBe(4);
       expect(question.choices.some((row) => row.id === question.correctId)).toBe(true);
-      expect(question.timerSeconds).toBe(20);
+      expect(question.timerSeconds).toBe(30);
       expect(question.promptEt.length).toBeGreaterThan(10);
       expect(question.explanationEt.length).toBeGreaterThan(20);
       expect(question.choices.every((choice) => choice.textEt.length > 0)).toBe(true);
@@ -163,7 +163,7 @@ describe("hidden answers", () => {
     ],
     correctId: "c" as const,
     explanation: "Because science.",
-    timerSeconds: 20,
+    timerSeconds: 30,
   };
 
   it("hides the correct answer while the question is open", () => {
@@ -281,9 +281,21 @@ describe("quiz security sources", () => {
     const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
     expect(host).toContain("useQuizCountdown");
     expect(host).toContain("previewLocale");
+    expect(host).toContain("QuizStage");
+    expect(host).toContain("100dvh");
+    expect(host).toContain("100vw");
+    expect(host).toContain("max-w-[1200px]");
+    expect(host).toContain("clamp(");
+    expect(host).toContain("JOIN THE QUIZ");
+    expect(host).toContain("GAME PIN");
+    expect(host).toContain("StayWithMyPet Live Quiz");
+    expect(host).toContain("Waiting to reveal the answer");
+    expect(host).toContain("max-w-[420px]");
     const chrome = readFileSync(join(process.cwd(), "src/components/layout/SiteChrome.tsx"), "utf8");
     expect(chrome).toContain('pathname === "/quiz/play"');
     expect(chrome).toContain("hidden md:block");
+    expect(chrome).toContain('pathname.startsWith("/admin/quiz/host/")');
+    expect(chrome).toContain("quiz-host-active");
 
     expect(host).toContain("Reveal Answer");
     expect(host).toContain("Close Question");
@@ -323,7 +335,7 @@ describe("kahoot host-controlled game", () => {
     ],
     correctId: "c" as const,
     explanation: "Because science.",
-    timerSeconds: 20,
+    timerSeconds: 30,
   };
 
   it("1. player gets no answer during question_open", () => {
@@ -397,7 +409,7 @@ describe("kahoot host-controlled game", () => {
     expect(patch.status).toBe("question_open");
     expect(patch.current_index).toBe(4);
     expect(patch.question_started_at).toBe("2026-09-11T12:00:00.000Z");
-    expect(patch.question_ends_at).toBe("2026-09-11T12:00:20.000Z");
+    expect(patch.question_ends_at).toBe("2026-09-11T12:00:30.000Z");
     const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
     expect(store).toContain("openQuestionUpdate");
     const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
@@ -434,43 +446,57 @@ describe("kahoot host-controlled game", () => {
   });
 });
 
-describe("shared 20-second countdown", () => {
-  it("opens every question for exactly 20 seconds", () => {
-    expect(QUIZ_QUESTION_SECONDS).toBe(20);
+describe("shared 30-second countdown", () => {
+  it("opens every question for exactly 30 seconds", () => {
+    expect(QUIZ_QUESTION_SECONDS).toBe(30);
     const opened = openQuestionUpdate({ index: 0, timerSeconds: 99, now: new Date("2026-09-12T10:00:00.000Z") });
     expect(opened.question_started_at).toBe("2026-09-12T10:00:00.000Z");
-    expect(opened.question_ends_at).toBe("2026-09-12T10:00:20.000Z");
-    expect(SEEDED_QUIZ_QUESTIONS.every((row) => row.timerSeconds === 20)).toBe(true);
+    expect(opened.question_ends_at).toBe("2026-09-12T10:00:30.000Z");
+    expect(SEEDED_QUIZ_QUESTIONS.every((row) => row.timerSeconds === 30)).toBe(true);
+    const sql = readFileSync(join(process.cwd(), "supabase/migrations/20260912140000_live_quiz_timer_30.sql"), "utf8");
+    expect(sql).toContain("timer_seconds = 30");
+    expect(sql).toContain("set default 30");
   });
 
   it("gives host and player the same countdown from the same timestamps", () => {
-    const endsAt = "2026-09-12T10:00:20.000Z";
+    const endsAt = "2026-09-12T10:00:30.000Z";
     const now = Date.parse("2026-09-12T10:00:07.200Z");
     const hostSeconds = remainingQuizSeconds(endsAt, now);
     const playerSeconds = remainingQuizSeconds(endsAt, now);
-    expect(hostSeconds).toBe(13);
+    expect(hostSeconds).toBe(23);
     expect(playerSeconds).toBe(hostSeconds);
+    const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
+    const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
+    expect(host).toContain("useQuizCountdown");
+    expect(play).toContain("useQuizCountdown");
+    expect(host).toContain("QUIZ_QUESTION_SECONDS");
+    expect(play).toContain("QUIZ_QUESTION_SECONDS");
   });
 
-  it("does not restart after a refresh 8 seconds in", () => {
+  it("does not restart after a refresh 10 seconds in", () => {
     const started = Date.parse("2026-09-12T10:00:00.000Z");
-    const endsAt = new Date(started + 20_000).toISOString();
-    const afterRefresh = remainingQuizSeconds(endsAt, started + 8_000);
-    expect(afterRefresh).toBe(12);
-    expect(afterRefresh).not.toBe(20);
+    const endsAt = new Date(started + 30_000).toISOString();
+    const afterRefresh = remainingQuizSeconds(endsAt, started + 10_000);
+    expect(afterRefresh).toBe(20);
+    expect(afterRefresh).not.toBe(30);
   });
 
-  it("does not restart on reconnect and never exceeds 20", () => {
-    const endsAt = "2026-09-12T10:00:20.000Z";
-    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:01.000Z"))).toBe(19);
-    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T09:59:50.000Z"))).toBe(20);
-    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:20.000Z"))).toBe(0);
+  it("does not restart on reconnect and never exceeds 30", () => {
+    const endsAt = "2026-09-12T10:00:30.000Z";
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:01.000Z"))).toBe(29);
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T09:59:50.000Z"))).toBe(30);
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:30.000Z"))).toBe(0);
   });
 
   it("expires an open question into waiting_reveal only", () => {
-    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:21.000Z"))).toBe("waiting_reveal");
-    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:20.000Z", Date.parse("2026-09-12T10:00:10.000Z"))).toBe("question_open");
-    expect(statusAfterTimerExpiry("reveal", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:21.000Z"))).toBe("reveal");
+    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:31.000Z"))).toBe("waiting_reveal");
+    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:30.000Z", Date.parse("2026-09-12T10:00:10.000Z"))).toBe("question_open");
+    expect(statusAfterTimerExpiry("reveal", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:31.000Z"))).toBe("reveal");
+  });
+
+  it("keeps scoring at +200 after the 30-second timer change", () => {
+    expect(scoreAnswer({ correct: true, elapsedMs: 200, limitMs: 30_000 })).toBe(200);
+    expect(scoreAnswer({ correct: true, elapsedMs: 29_000, limitMs: 30_000 })).toBe(200);
   });
 });
 
