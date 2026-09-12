@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { CONTENT_CONTAINER } from "@/lib/layout";
-import { formatDisplayPin, QUIZ_PUBLIC_JOIN_HOST, type QuizReaction } from "@/lib/quiz/pin";
+import { formatDisplayPin, hostPinStorageKey, QUIZ_PUBLIC_JOIN_HOST, type QuizReaction } from "@/lib/quiz/pin";
 import { isQuestionOpen } from "@/lib/quiz/game-status";
 import type { QuizLocale } from "@/lib/quiz/locale";
 import { QUIZ_QUESTION_SECONDS } from "@/lib/quiz/timer";
@@ -38,8 +38,6 @@ type HostState = {
   finished: boolean;
 };
 
-const JOIN_URL = `https://${QUIZ_PUBLIC_JOIN_HOST}`;
-
 const STATUS_LABEL: Record<string, string> = {
   lobby: "Lobby",
   question_open: "Live",
@@ -64,11 +62,44 @@ function HostPrimaryButton({ label, onClick }: { label: string; onClick: () => v
   );
 }
 
+function HostPinPanel({
+  pin,
+  players,
+  copied,
+  onCopy,
+  showStart,
+  onStart,
+}: {
+  pin: string;
+  players: number;
+  copied: boolean;
+  onCopy: () => void;
+  showStart?: boolean;
+  onStart?: () => void;
+}) {
+  return (
+    <div className="rounded-[1.75rem] border border-[#E5E2D8] bg-white p-6 text-center shadow-sm sm:p-8">
+      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#2E6B3F]">Join the quiz</p>
+      <p className="mt-3 text-lg font-semibold sm:text-xl">{QUIZ_PUBLIC_JOIN_HOST}</p>
+      <p className="mt-8 text-sm font-semibold uppercase tracking-[0.22em] text-muted">Game PIN</p>
+      <p className="font-heading mt-3 break-all text-7xl font-semibold leading-none tracking-[0.12em] text-[#2E6B3F] sm:text-9xl">
+        {formatDisplayPin(pin)}
+      </p>
+      <button type="button" onClick={onCopy} className="btn-interactive mt-6 rounded-2xl border border-[#2E6B3F] px-5 py-3 font-semibold text-[#2E6B3F]">
+        {copied ? "Copied" : "Copy PIN"}
+      </button>
+      <p className="mt-6 text-lg">Players joined: {players}</p>
+      {showStart && onStart ? <HostPrimaryButton label="Start Quiz" onClick={onStart} /> : null}
+    </div>
+  );
+}
+
 export function QuizHostClient({ gameId }: { gameId: string }) {
   const [state, setState] = useState<HostState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [previewLocale, setPreviewLocale] = useState<QuizLocale>("en");
+  const [cachedPin] = useState(() => (typeof window === "undefined" ? "" : window.sessionStorage.getItem(hostPinStorageKey(gameId)) ?? ""));
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/admin/quiz/games/${gameId}`);
@@ -78,6 +109,7 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
       return;
     }
     setState(json);
+    if (json.pin) window.sessionStorage.setItem(hostPinStorageKey(gameId), String(json.pin));
   }, [gameId]);
 
   useEffect(() => {
@@ -123,23 +155,37 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
     await refresh();
   }
 
+  const visiblePin = state?.pin || cachedPin;
+
   async function copyPin() {
-    if (!state?.pin) return;
-    await navigator.clipboard.writeText(state.pin);
+    if (!visiblePin) return;
+    await navigator.clipboard.writeText(visiblePin);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   }
 
-  if (!state) {
+  if (!visiblePin && (error || state)) {
     return (
       <main className="min-h-[100dvh] bg-[#F6F4EE] px-4 py-16">
-        <p className={`${CONTENT_CONTAINER} text-center`}>{error ?? "Loading host screen…"}</p>
+        <p className={`${CONTENT_CONTAINER} text-center text-red-700`}>
+          {error ?? "This live game has no PIN. Go back to Admin → Quiz and click START LIVE GAME."}
+        </p>
       </main>
     );
   }
 
-  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(JOIN_URL)}`;
-  const displayPin = formatDisplayPin(state.pin);
+  if (!state) {
+    return (
+      <main className="min-h-[100dvh] bg-[#F6F4EE] px-4 py-10">
+        <div className={`${CONTENT_CONTAINER} mx-auto max-w-3xl`}>
+          {visiblePin ? (
+            <HostPinPanel pin={visiblePin} players={0} copied={copied} onCopy={() => void copyPin()} />
+          ) : null}
+          <p className="mt-6 text-center">{error ?? "Loading host screen…"}</p>
+        </div>
+      </main>
+    );
+  }
   const questionNumber = state.currentIndex + 1;
   const lastQuestion = questionNumber >= state.total;
   const prompt = previewLocale === "et" ? state.promptEt || state.promptEn || state.prompt : state.promptEn || state.prompt;
@@ -175,43 +221,27 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
           </div>
         </div>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
-        {state.status !== "lobby" && state.pin ? (
-          <p className="mt-4 rounded-2xl border border-[#2E6B3F]/20 bg-white px-4 py-3 text-center">
-            <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-muted">Game PIN</span>
-            <span className="font-heading mt-1 block text-4xl font-semibold tracking-[0.12em] text-[#2E6B3F] sm:text-5xl">{displayPin}</span>
-          </p>
-        ) : null}
-        {state.status === "lobby" && !state.pin ? (
-          <p className="mt-4 text-center text-sm text-red-700">This game has no PIN. Start a new live game.</p>
-        ) : null}
+        <div className="mt-6">
+          <HostPinPanel
+            pin={visiblePin}
+            players={state.players.length}
+            copied={copied}
+            onCopy={() => void copyPin()}
+            showStart={state.status === "lobby"}
+            onStart={() => void action("open")}
+          />
+        </div>
 
         {state.status === "lobby" ? (
-          <div className="mt-6 grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-[1.75rem] border border-[#E5E2D8] bg-white p-6 text-center shadow-sm sm:p-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#2E6B3F]">Join the quiz</p>
-              <p className="mt-3 text-lg font-semibold sm:text-xl">{QUIZ_PUBLIC_JOIN_HOST}</p>
-              <p className="mt-8 text-sm font-semibold uppercase tracking-[0.22em] text-muted">Game PIN</p>
-              <p className="font-heading mt-3 break-all text-7xl font-semibold leading-none tracking-[0.12em] text-[#2E6B3F] sm:text-9xl">
-                {displayPin || "------"}
-              </p>
-              <button type="button" onClick={() => void copyPin()} className="btn-interactive mt-6 rounded-2xl border border-[#2E6B3F] px-5 py-3 font-semibold text-[#2E6B3F]">
-                {copied ? "Copied" : "Copy PIN"}
-              </button>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="QR code to join the quiz" className="mx-auto mt-8 h-40 w-40 rounded-2xl border border-[#E5E2D8] bg-white p-2 sm:h-48 sm:w-48" src={qr} />
-              <p className="mt-6 text-lg">Players joined: {state.players.length}</p>
-              <HostPrimaryButton label="Start Quiz" onClick={() => void action("open")} />
-            </div>
-            <div className="rounded-[1.75rem] border border-[#E5E2D8] bg-white p-5 shadow-sm">
-              <h2 className="font-heading text-lg font-semibold">Players</h2>
-              <ul className="mt-3 max-h-[50vh] space-y-1 overflow-auto text-sm">
-                {state.players.map((player) => (
-                  <li key={player.id} className="rounded-lg px-2 py-1.5 even:bg-[#F6F4EE]">
-                    {player.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="mt-6 rounded-[1.75rem] border border-[#E5E2D8] bg-white p-5 shadow-sm">
+            <h2 className="font-heading text-lg font-semibold">Players</h2>
+            <ul className="mt-3 max-h-[50vh] space-y-1 overflow-auto text-sm">
+              {state.players.map((player) => (
+                <li key={player.id} className="rounded-lg px-2 py-1.5 even:bg-[#F6F4EE]">
+                  {player.name}
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
 

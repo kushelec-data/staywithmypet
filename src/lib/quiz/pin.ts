@@ -49,6 +49,17 @@ export function formatDisplayPin(pin: string): string {
 }
 
 export const QUIZ_PUBLIC_JOIN_HOST = "staywithmypet.ee/quiz";
+export const ADMIN_QUIZ_HOST_PREFIX = "/admin/quiz/host";
+
+export function adminQuizHostHref(gameId: string): string {
+  return `${ADMIN_QUIZ_HOST_PREFIX}/${gameId}`;
+}
+
+export const HOST_PIN_STORAGE_PREFIX = "swmp_host_pin:";
+
+export function hostPinStorageKey(gameId: string): string {
+  return `${HOST_PIN_STORAGE_PREFIX}${gameId}`;
+}
 
 export const QUIZ_REACTIONS = ["love", "wow", "funny", "angry"] as const;
 export type QuizReaction = (typeof QUIZ_REACTIONS)[number];

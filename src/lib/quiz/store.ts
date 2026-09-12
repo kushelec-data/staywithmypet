@@ -256,6 +256,16 @@ export async function startLiveGame(
   });
 }
 
+export async function startDefaultLiveGame(
+  hostUserId: string,
+): Promise<{ id: string; gameId: string; pin: string; status: string } | { error: string }> {
+  await ensureDefaultQuiz();
+  const quizzes = await listQuizzes();
+  const ready = quizzes.find((quiz) => quiz.questionCount > 0);
+  if (!ready) return { error: "Add questions first" };
+  return startLiveGame(ready.id, hostUserId);
+}
+
 type GameRow = {
   id: string;
   quiz_id: string;

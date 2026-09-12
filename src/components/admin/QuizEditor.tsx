@@ -71,14 +71,12 @@ export function QuizEditor({
     });
     const json = await res.json().catch(() => ({}));
     const gameId = String(json.gameId ?? json.id ?? "");
-    if (!res.ok || !gameId) {
-      setMessage(json.error ?? "Could not start the live game. No game was created.");
+    if (!res.ok || !gameId || !json.pin) {
+      setMessage(json.error ?? "Could not start the live game. No PIN was created.");
       return;
     }
-    if (!json.pin) {
-      setMessage("The live game was created, but no PIN was returned. Open the host screen and refresh.");
-    }
-    router.push(`/admin/quiz/host/${gameId}`);
+    window.sessionStorage.setItem(`swmp_host_pin:${gameId}`, String(json.pin));
+    window.location.assign(`/admin/quiz/host/${gameId}`);
   }
 
   function updateQuestion(index: number, patch: Partial<QuizQuestionRow>) {

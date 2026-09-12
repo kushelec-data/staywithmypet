@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE, seedQuestionToRow } from "@/lib/quiz/seed";
@@ -96,12 +96,26 @@ describe("live game PIN", () => {
     expect(hostFn).toContain("pin: game.pin");
     expect(hostFn).not.toContain("generateGamePin");
     const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
-    expect(host).toContain("state.pin");
+    expect(host).toContain("state?.pin");
     expect(host).toContain("Copy PIN");
     expect(host).not.toContain("generateGamePin");
     const first = liveGameStartPayload({ id: "game-1", pin: "482731", status: "lobby" });
     const refresh = liveGameStartPayload({ id: "game-1", pin: "482731", status: "lobby" });
     expect(first).toEqual(refresh);
+    const list = readFileSync(join(process.cwd(), "src/components/admin/QuizAdminList.tsx"), "utf8");
+    expect(list).toContain("START LIVE GAME");
+    expect(list).toContain("startLiveGame: true");
+    expect(list).toContain("adminQuizHostHref");
+    expect(list).toContain("location.assign");
+    expect(list).not.toContain('href="/quiz"');
+    expect(host).not.toContain("QuizJoinClient");
+    expect(host).not.toContain("Choose language");
+    expect(host).toContain("HostPinPanel");
+    expect(existsSync(join(process.cwd(), "src/app/admin/quiz/host/[gameId]/page.tsx"))).toBe(true);
+    expect(existsSync(join(process.cwd(), "src/app/admin/quiz/edit/[quizId]/page.tsx"))).toBe(true);
+    const legacy = readFileSync(join(process.cwd(), "src/app/admin/quiz/[quizId]/page.tsx"), "utf8");
+    expect(legacy).toContain('quizId === "host"');
+    expect(legacy).toContain('redirect("/admin/quiz")');
   });
 
   it("lets a player join the stored PIN and rejects a wrong or finished PIN", () => {
