@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE, seedQuestionToRow } from "@/lib/quiz/seed";
-import { QUIZ_MAX_SCORE, scoreAnswer, scoreCorrectAnswer } from "@/lib/quiz/scoring";
+import { DENNY_QUESTION_IMAGE, SEEDED_QUIZ_QUESTION_COUNT, SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE, seedQuestionToRow } from "@/lib/quiz/seed";
+import { quizMaxScore, scoreAnswer, scoreCorrectAnswer } from "@/lib/quiz/scoring";
 import { displayNamesClash, formatDisplayPin, generateGamePin, isExactSixDigitPin, liveGameStartPayload, normalizeDisplayName, normalizeGamePin, parseQuizReaction, pinIsPlayable } from "@/lib/quiz/pin";
 import { payloadLeaksAnswer, publicQuestionPayload, stripAnswerKey } from "@/lib/quiz/public-state";
 import {
@@ -17,10 +17,11 @@ import { localizeQuestion, parseQuizLocale } from "@/lib/quiz/locale";
 import { PLAYER_COPY } from "@/lib/quiz/player-copy";
 
 describe("seeded quiz", () => {
-  it("has exactly 20 questions with one correct choice and a source", () => {
+  it("has exactly 12 questions: 9 animal plus 3 StayWithMyPet", () => {
     expect(SEEDED_QUIZ_TITLE).toBe("How Well Do You Really Know Dogs & Cats?");
-    expect(SEEDED_QUIZ_QUESTIONS).toHaveLength(20);
-    expect(SEEDED_QUIZ_QUESTIONS.map((row) => row.sortOrder)).toEqual([...Array(20)].map((_, i) => i + 1));
+    expect(SEEDED_QUIZ_QUESTION_COUNT).toBe(12);
+    expect(SEEDED_QUIZ_QUESTIONS).toHaveLength(12);
+    expect(SEEDED_QUIZ_QUESTIONS.map((row) => row.sortOrder)).toEqual([...Array(SEEDED_QUIZ_QUESTIONS.length)].map((_, i) => i + 1));
     for (const question of SEEDED_QUIZ_QUESTIONS) {
       expect(question.choices).toHaveLength(4);
       expect(new Set(question.choices.map((row) => row.id)).size).toBe(4);
@@ -32,7 +33,32 @@ describe("seeded quiz", () => {
       expect(question.sourceUrl.startsWith("http")).toBe(true);
       expect(question.explanation.length).toBeGreaterThan(20);
     }
-    expect(SEEDED_QUIZ_QUESTIONS.slice(-2).every((row) => row.sourceLabel === "StayWithMyPet")).toBe(true);
+    expect(SEEDED_QUIZ_QUESTIONS.slice(0, 9).every((row) => row.sourceLabel !== "StayWithMyPet")).toBe(true);
+    expect(SEEDED_QUIZ_QUESTIONS.slice(9).every((row) => row.sourceLabel === "StayWithMyPet")).toBe(true);
+    expect(SEEDED_QUIZ_QUESTIONS.some((row) => row.prompt.includes("Only veterinary clinics"))).toBe(false);
+    expect(SEEDED_QUIZ_QUESTIONS.some((row) => row.prompt.includes("If you have a pet and want a trusted person"))).toBe(false);
+    const denny = SEEDED_QUIZ_QUESTIONS[9];
+    expect(denny.prompt).toContain("Chief Happiness Officer");
+    expect(denny.promptEt).toContain("Chief Happiness Officer");
+    expect(denny.correctId).toBe("c");
+    expect(denny.choices[2].text).toBe("Denny");
+    expect(denny.imageUrl).toBe(DENNY_QUESTION_IMAGE);
+    expect(existsSync(join(process.cwd(), "public/quiz/denny.jpg"))).toBe(true);
+    const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    expect(store).toContain("questions.length");
+    expect(store).toContain("nextIndex >= questions.length");
+    expect(store).toContain('status: "finished"');
+    const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
+    expect(play).toContain("question?.total");
+    expect(play).not.toContain("?? 20");
+    const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
+    expect(host).toContain("state.total");
+    expect(host).toContain("QuizQuestionImage");
+    expect(play).toContain("QuizQuestionImage");
+    const sql = readFileSync(join(process.cwd(), "supabase/migrations/20260912190000_live_quiz_12_questions.sql"), "utf8");
+    expect(sql).toContain("add column if not exists image_url");
+    expect(sql).toContain("Chief Happiness Officer");
+    expect(sql).toContain("/quiz/denny.jpg");
   });
 });
 
@@ -60,11 +86,12 @@ describe("scoring", () => {
     expect(scoreCorrectAnswer(14000, 15000)).toBe(200);
   });
 
-  it("caps a 20-question quiz at 4000", () => {
-    expect(QUIZ_MAX_SCORE).toBe(4000);
-    expect(20 * 200).toBe(4000);
+  it("caps this quiz at 2400 from the actual question count", () => {
+    expect(quizMaxScore(SEEDED_QUIZ_QUESTIONS.length)).toBe(2400);
+    expect(SEEDED_QUIZ_QUESTIONS.length * 200).toBe(2400);
     const scoring = readFileSync(join(process.cwd(), "src/lib/quiz/scoring.ts"), "utf8");
     expect(scoring).toContain("QUIZ_POINTS_PER_CORRECT = 200");
+    expect(scoring).toContain("function quizMaxScore");
     expect(scoring).not.toMatch(/1000\s*-/);
   });
 });
@@ -400,6 +427,9 @@ describe("kahoot host-controlled game", () => {
     expect(hostMayNextQuestion("question_open")).toBe(false);
     const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
     expect(play).not.toContain("Next Question");
+    const hostAdvance = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    expect(hostAdvance).toContain("nextIndex >= questions.length");
+    expect(hostAdvance).toContain('status: "finished"');
     const admin = readFileSync(join(process.cwd(), "src/app/api/admin/quiz/games/[gameId]/route.ts"), "utf8");
     expect(admin).toContain("hostNextQuestion");
   });
@@ -526,8 +556,8 @@ describe("bilingual live quiz", () => {
     expect(et.prompt).toContain("värvi");
     expect(en.choices.find((row) => row.id === "b")?.text).toBe("Blue and yellow");
     expect(et.choices.find((row) => row.id === "b")?.text).toBe("Sinist ja kollast");
-    const enLive = publicQuestionPayload(en, { index: 2, total: 20, revealed: false });
-    const etLive = publicQuestionPayload(et, { index: 2, total: 20, revealed: false });
+    const enLive = publicQuestionPayload(en, { index: 2, total: SEEDED_QUIZ_QUESTIONS.length, revealed: false });
+    const etLive = publicQuestionPayload(et, { index: 2, total: SEEDED_QUIZ_QUESTIONS.length, revealed: false });
     expect(payloadLeaksAnswer(enLive)).toBe(false);
     expect(payloadLeaksAnswer(etLive)).toBe(false);
     expect(enLive.id).toBe(etLive.id);

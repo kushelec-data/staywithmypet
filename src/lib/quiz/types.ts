@@ -13,4 +13,5 @@ export type QuizQuestionRow = {
   sourceLabel: string;
   sourceUrl: string;
   timerSeconds: number;
+  imageUrl?: string | null;
 };

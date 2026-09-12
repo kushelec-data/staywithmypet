@@ -14,9 +14,11 @@ export type SeedQuestion = {
   sourceLabel: string;
   sourceUrl: string;
   timerSeconds: number;
+  imageUrl?: string | null;
 };
 
 export const SEEDED_QUIZ_TITLE = "How Well Do You Really Know Dogs & Cats?";
+export const DENNY_QUESTION_IMAGE = "/quiz/denny.jpg";
 
 export function seedQuestionToRow(question: SeedQuestion, id = `seed-${question.sortOrder}`): QuizQuestionRow {
   return {
@@ -36,6 +38,7 @@ export function seedQuestionToRow(question: SeedQuestion, id = `seed-${question.
     sourceLabel: question.sourceLabel,
     sourceUrl: question.sourceUrl,
     timerSeconds: QUIZ_QUESTION_SECONDS,
+    imageUrl: question.imageUrl ?? null,
   };
 }
 
@@ -110,23 +113,6 @@ export const SEEDED_QUIZ_QUESTIONS: SeedQuestion[] = [
   },
   {
     sortOrder: 5,
-    prompt: "How do dogs mainly cool themselves?",
-    promptEt: "Kuidas koerad peamiselt jahtuvad?",
-    choices: [
-      { id: "a", text: "A full-body sweat like humans", textEt: "Kogu kehaga higistades nagu inimesed" },
-      { id: "b", text: "Panting, plus a little moisture through paw pads", textEt: "Hingeldades, pluss veidi niiskust käpapadjandite kaudu" },
-      { id: "c", text: "Only through their ears", textEt: "Ainult kõrvade kaudu" },
-      { id: "d", text: "Only by jumping in water", textEt: "Ainult vette hüpates" },
-    ],
-    correctId: "b",
-    explanation: "Panting does most of the cooling. Paw pads have some sweat glands, but they are not a dog’s air-conditioning system.",
-    explanationEt: "Hingeldamine teeb suurema osa jahutusest. Käpapadjanditel on higinäärmeid, aga see pole koera kliimaseade.",
-    sourceLabel: "American Kennel Club",
-    sourceUrl: "https://www.akc.org/expert-advice/health/do-dogs-sweat/",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 6,
     prompt: "The tapetum lucidum in a cat’s eye mainly helps by:",
     promptEt: "Kasside silmas olev tapetum lucidum aitab peamiselt:",
     choices: [
@@ -143,7 +129,7 @@ export const SEEDED_QUIZ_QUESTIONS: SeedQuestion[] = [
     timerSeconds: QUIZ_QUESTION_SECONDS,
   },
   {
-    sortOrder: 7,
+    sortOrder: 6,
     prompt: "A cat’s whiskers are especially useful because they:",
     promptEt: "Kasside vurrud on eriti kasulikud, sest need:",
     choices: [
@@ -160,126 +146,7 @@ export const SEEDED_QUIZ_QUESTIONS: SeedQuestion[] = [
     timerSeconds: QUIZ_QUESTION_SECONDS,
   },
   {
-    sortOrder: 8,
-    prompt: "Newborn puppies typically:",
-    promptEt: "Vastsündinud kutsikad tavaliselt:",
-    choices: [
-      { id: "a", text: "See and hear clearly from minute one", textEt: "Näevad ja kuulevad selgelt esimesest hetkest" },
-      { id: "b", text: "Cannot see or hear yet — eyes and ears stay closed", textEt: "Ei näe ega kuule veel — silmad ja kõrvad on suletud" },
-      { id: "c", text: "Already have adult teeth", textEt: "Neil on juba täiskasvanud hambad" },
-      { id: "d", text: "Trot after mum within minutes", textEt: "Jooksevad ema järel minutitega" },
-    ],
-    correctId: "b",
-    explanation: "Puppies are born blind and deaf. Eyes and ear canals open over the following weeks as the nervous system catches up.",
-    explanationEt: "Kutsikad sünnivad pimedate ja kurtidena. Silmad ja kuulmekäigud avanevad järgnevate nädalate jooksul, kui närvisüsteem järele jõuab.",
-    sourceLabel: "American Kennel Club",
-    sourceUrl: "https://www.akc.org/expert-advice/dog-breeding/puppy-development-stages-from-birth-to-2-years/",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 9,
-    prompt: "“Dogs see only in black and white.” What’s the verdict?",
-    promptEt: "„Koerad näevad ainult must-valget.“ Mis on tõde?",
-    choices: [
-      { id: "a", text: "True — zero colour", textEt: "Tõsi — üldse pole värve" },
-      { id: "b", text: "Myth — they see some colour, especially blue and yellow", textEt: "Müüt — nad näevad mõnda värvi, eriti sinist ja kollast" },
-      { id: "c", text: "True except for poodles", textEt: "Tõsi, välja arvatud puudelid" },
-      { id: "d", text: "Myth — they see more colours than humans", textEt: "Müüt — nad näevad rohkem värve kui inimesed" },
-    ],
-    correctId: "b",
-    explanation: "The black-and-white story is a classic myth. Dogs have fewer colour cones than we do, but the world is not a silent film.",
-    explanationEt: "Must-valge lugu on klassikaline müüt. Koertel on vähem värvikolvikesi kui meil, aga maailm pole tummfilm.",
-    sourceLabel: "American Kennel Club",
-    sourceUrl: "https://www.akc.org/expert-advice/health/are-dogs-color-blind/",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 10,
-    prompt: "A typical house cat sleeps about how long each day?",
-    promptEt: "Kui kaua magab tavaline kodukass ööpäevas?",
-    choices: [
-      { id: "a", text: "4–6 hours", textEt: "4–6 tundi" },
-      { id: "b", text: "8 hours, like many humans", textEt: "8 tundi, nagu paljud inimesed" },
-      { id: "c", text: "12–16 hours", textEt: "12–16 tundi" },
-      { id: "d", text: "22 hours, no exceptions", textEt: "22 tundi, eranditeta" },
-    ],
-    correctId: "c",
-    explanation: "Cats are champion nappers: often 12–16 hours in a 24-hour stretch, in short bursts rather than one long night.",
-    explanationEt: "Kassid on meistrid uinakutest: sageli 12–16 tundi 24 tunni jooksul, lühikeste tsüklitena, mitte ühe pika ööna.",
-    sourceLabel: "Cornell Feline Health Center",
-    sourceUrl: "https://www.vet.cornell.edu/departments-centers-and-institutes/cornell-feline-health-center/health-information/feline-health-topics/normal-sleep-behavior",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 11,
-    prompt: "How far can many cats rotate each ear?",
-    promptEt: "Kui palju suudavad paljud kassid kumbagi kõrva pöörata?",
-    choices: [
-      { id: "a", text: "About 20 degrees", textEt: "Umbes 20 kraadi" },
-      { id: "b", text: "About 90 degrees", textEt: "Umbes 90 kraadi" },
-      { id: "c", text: "Up to 180 degrees", textEt: "Kuni 180 kraadi" },
-      { id: "d", text: "They cannot rotate ears independently", textEt: "Nad ei saa kõrvu iseseisvalt pöörata" },
-    ],
-    correctId: "c",
-    explanation: "Independent, nearly 180° ear swivels let a cat pinpoint a rustle without turning its head — radar dishes with fur.",
-    explanationEt: "Sõltumatud, peaaegu 180° kõrvapöörded lasevad kassil kahinat täpselt paikneda ilma pead keeramata — karvaga radarid.",
-    sourceLabel: "Cornell University College of Veterinary Medicine",
-    sourceUrl: "https://www.vet.cornell.edu/departments-centers-and-institutes/cornell-feline-health-center/health-information/feline-health-topics/feline-behavior-problems-aggression",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 12,
-    prompt: "About how many muscles control each cat ear?",
-    promptEt: "Umbes mitu lihast juhib kumbagi kassi kõrva?",
-    choices: [
-      { id: "a", text: "2", textEt: "2" },
-      { id: "b", text: "8", textEt: "8" },
-      { id: "c", text: "32", textEt: "32" },
-      { id: "d", text: "100", textEt: "100" },
-    ],
-    correctId: "c",
-    explanation: "Roughly 32 muscles per ear give cats that satellite-dish precision. Humans manage with a handful, and most of us can’t even wiggle.",
-    explanationEt: "Umbes 32 lihast kõrva kohta annab kassidele satelliitantenni täpsuse. Inimene saab hakkama käputäiega ja enamik meist ei suuda isegi kõrvu liigutada.",
-    sourceLabel: "Cornell Feline Health Center",
-    sourceUrl: "https://www.vet.cornell.edu/departments-centers-and-institutes/cornell-feline-health-center",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 13,
-    prompt: "A Greyhound at a full sprint can reach about:",
-    promptEt: "Täisgalopis võib hurta joosta umbes:",
-    choices: [
-      { id: "a", text: "20 mph (32 km/h)", textEt: "20 miili tunnis (32 km/h)" },
-      { id: "b", text: "28 mph (45 km/h)", textEt: "28 miili tunnis (45 km/h)" },
-      { id: "c", text: "45 mph (72 km/h)", textEt: "45 miili tunnis (72 km/h)" },
-      { id: "d", text: "70 mph (113 km/h)", textEt: "70 miili tunnis (113 km/h)" },
-    ],
-    correctId: "c",
-    explanation: "Greyhounds are built like springs: around 45 mph in a burst, among the fastest of all dog breeds.",
-    explanationEt: "Hurtad on ehitatud nagu vedrud: purskes umbes 72 km/h, ühed kiireimad koeratõud.",
-    sourceLabel: "American Kennel Club",
-    sourceUrl: "https://www.akc.org/dog-breeds/greyhound/",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 14,
-    prompt: "A healthy cat’s resting heart rate is typically:",
-    promptEt: "Terve kassi puhkeoleku südame löögisagedus on tavaliselt:",
-    choices: [
-      { id: "a", text: "40–60 beats per minute", textEt: "40–60 lööki minutis" },
-      { id: "b", text: "80–100 beats per minute", textEt: "80–100 lööki minutis" },
-      { id: "c", text: "140–220 beats per minute", textEt: "140–220 lööki minutis" },
-      { id: "d", text: "300–400 beats per minute", textEt: "300–400 lööki minutis" },
-    ],
-    correctId: "c",
-    explanation: "Smaller animals run hotter clocks. A calm cat often sits in the 140–220 bpm range — alarmingly fast if you expected a human pulse.",
-    explanationEt: "Väiksemad loomad käivad kiirema taktiga. Rahuliku kassi süda on sageli 140–220 lööki minutis — ehmatavalt kiire, kui ootasid inimese pulssi.",
-    sourceLabel: "VCA Animal Hospitals",
-    sourceUrl: "https://vcahospitals.com/know-your-pet/heart-disease-in-cats",
-    timerSeconds: QUIZ_QUESTION_SECONDS,
-  },
-  {
-    sortOrder: 15,
+    sortOrder: 7,
     prompt: "A wagging tail always means a dog is happy and wants to be petted. True?",
     promptEt: "Saba liputamine tähendab alati, et koer on õnnelik ja tahab pai. Tõsi?",
     choices: [
@@ -296,7 +163,7 @@ export const SEEDED_QUIZ_QUESTIONS: SeedQuestion[] = [
     timerSeconds: QUIZ_QUESTION_SECONDS,
   },
   {
-    sortOrder: 16,
+    sortOrder: 8,
     prompt: "A dog’s nose print is:",
     promptEt: "Koera ninajälg on:",
     choices: [
@@ -313,7 +180,7 @@ export const SEEDED_QUIZ_QUESTIONS: SeedQuestion[] = [
     timerSeconds: QUIZ_QUESTION_SECONDS,
   },
   {
-    sortOrder: 17,
+    sortOrder: 9,
     prompt: "Cats are often described as crepuscular. That means they are most active:",
     promptEt: "Kasse nimetatakse sageli videvikuloomadeks. See tähendab, et nad on kõige aktiivsemad:",
     choices: [
@@ -330,54 +197,57 @@ export const SEEDED_QUIZ_QUESTIONS: SeedQuestion[] = [
     timerSeconds: QUIZ_QUESTION_SECONDS,
   },
   {
-    sortOrder: 18,
-    prompt: "Compared with humans, a dog’s sense of smell is often described as:",
-    promptEt: "Võrreldes inimesega kirjeldatakse koera haistmist sageli kui:",
+    sortOrder: 10,
+    prompt: "Who is the Chief Happiness Officer of StayWithMyPet?",
+    promptEt: "Kes on StayWithMyPeti Chief Happiness Officer?",
     choices: [
-      { id: "a", text: "Slightly weaker", textEt: "Veidi nõrgemat" },
-      { id: "b", text: "About the same", textEt: "Umbes sama" },
-      { id: "c", text: "Thousands to tens of thousands of times more sensitive", textEt: "Tuhandeid kuni kümneid tuhandeid kordi tundlikumat" },
-      { id: "d", text: "Useful only for finding food", textEt: "Kasulikku ainult toidu leidmiseks" },
+      { id: "a", text: "Kush Chadha", textEt: "Kush Chadha" },
+      { id: "b", text: "Gerly Kullamaa", textEt: "Gerly Kullamaa" },
+      { id: "c", text: "Denny", textEt: "Denny" },
+      { id: "d", text: "None of the above", textEt: "Mitte ükski neist" },
     ],
     correctId: "c",
-    explanation: "Estimates often land between 10,000 and 100,000 times more sensitive, depending on breed — enough to detect traces we would never notice.",
-    explanationEt: "Hinnangud jäävad sageli 10 000 kuni 100 000 korda tundlikumaks, olenevalt tõust — piisav, et tabada jälgi, mida meie kunagi ei märkaks.",
-    sourceLabel: "American Kennel Club",
-    sourceUrl: "https://www.akc.org/expert-advice/nutrition/does-your-dog-have-a-good-sense-of-smell/",
+    explanation: "Denny is StayWithMyPet’s Chief Happiness Officer — and the Boston Terrier you may have already spotted at the event! 🐾",
+    explanationEt: "Denny on StayWithMyPeti Chief Happiness Officer — ja Boston terjer, keda võisid juba tänasel üritusel märgata! 🐾",
+    sourceLabel: "StayWithMyPet",
+    sourceUrl: "https://www.staywithmypet.ee/about",
     timerSeconds: QUIZ_QUESTION_SECONDS,
+    imageUrl: DENNY_QUESTION_IMAGE,
   },
   {
-    sortOrder: 19,
-    prompt: "StayWithMyPet is built so that:",
-    promptEt: "StayWithMyPet on loodud selleks, et:",
+    sortOrder: 11,
+    prompt: "What is the main idea behind StayWithMyPet?",
+    promptEt: "Mis on StayWithMyPeti peamine idee?",
     choices: [
-      { id: "a", text: "Only veterinary clinics can book walks", textEt: "Ainult loomakliinikud saaksid jalutuskäike broneerida" },
-      { id: "b", text: "Pet Parents and Pet Friends can connect for trusted pet companionship", textEt: "Lemmikloomaomanikud ja lemmikloomasõbrad saaksid usaldusväärseks seltsiks kokku saada" },
-      { id: "c", text: "Pets are listed for sale", textEt: "Lemmikloomi müüa" },
-      { id: "d", text: "Only professional trainers may join", textEt: "Liituda saaksid ainult professionaalsed treenerid" },
+      { id: "a", text: "An online pet shop", textEt: "Veebipõhine lemmikloomapood" },
+      { id: "b", text: "Connecting pet owners with people who would love to spend time with pets", textEt: "Ühendada lemmikloomaomanikud inimestega, kes tahaksid lemmikutega aega veeta" },
+      { id: "c", text: "A veterinary clinic", textEt: "Loomakliinik" },
+      { id: "d", text: "A dog training school", textEt: "Koerte kool" },
     ],
     correctId: "b",
-    explanation: "It’s a community for people who have pets and people who want to spend time with them — walks, visits, and home-based care, not a pet shop.",
-    explanationEt: "See on kogukond neile, kellel on lemmikloom, ja neile, kes tahavad nendega aega veeta — jalutuskäigud, külaskäigud ja kodune hooldus, mitte lemmikloomapood.",
+    explanation: "StayWithMyPet connects pet parents with pet friends — creating more flexible pet care and more companionship for pets.",
+    explanationEt: "StayWithMyPet ühendab lemmikloomaomanikud lemmikusõpradega, pakkudes paindlikumat lemmikloomahoidu ja rohkem seltsi lemmikutele.",
     sourceLabel: "StayWithMyPet",
     sourceUrl: "https://www.staywithmypet.ee/about",
     timerSeconds: QUIZ_QUESTION_SECONDS,
   },
   {
-    sortOrder: 20,
-    prompt: "If you have a pet and want a trusted person to spend time with them, where do you start on StayWithMyPet?",
-    promptEt: "Kui sul on lemmikloom ja tahad usaldusväärset inimest temaga aega veetma, kust StayWithMyPetis alustad?",
+    sortOrder: 12,
+    prompt: "If you love animals but don't currently have a pet, what can you be on StayWithMyPet?",
+    promptEt: "Kui armastad loomi, kuid sul endal praegu lemmikut pole, kes saad olla StayWithMyPetis?",
     choices: [
-      { id: "a", text: "Find pets", textEt: "Leia lemmikloomi" },
-      { id: "b", text: "Find care", textEt: "Leia hooldust" },
-      { id: "c", text: "The admin dashboard", textEt: "Adminiliides" },
-      { id: "d", text: "Pricing only", textEt: "Ainult hinnakiri" },
+      { id: "a", text: "Pet Friend", textEt: "Lemmikusõber" },
+      { id: "b", text: "Veterinarian", textEt: "Loomaarst" },
+      { id: "c", text: "Pet Shop Manager", textEt: "Lemmikloomapoe juhataja" },
+      { id: "d", text: "You cannot join", textEt: "Liituda ei saa" },
     ],
-    correctId: "b",
-    explanation: "“Find care” is the Pet Parent path. “Find pets” is for people who want to care for a pet. Same community, two doors.",
-    explanationEt: "„Leia hooldust“ on lemmikloomaomaniku tee. „Leia lemmikloomi“ on neile, kes tahavad looma hooldada. Sama kogukond, kaks ust.",
+    correctId: "a",
+    explanation: "You can become a Pet Friend and connect with pet parents who are looking for trusted help and companionship for their pets. 🐾",
+    explanationEt: "Saad olla lemmikusõber ja tutvuda lemmikloomaomanikega, kes otsivad oma lemmikule usaldusväärset abi ja seltsi. 🐾",
     sourceLabel: "StayWithMyPet",
-    sourceUrl: "https://www.staywithmypet.ee/find-care",
+    sourceUrl: "https://www.staywithmypet.ee/find-pets",
     timerSeconds: QUIZ_QUESTION_SECONDS,
   },
 ];
+
+export const SEEDED_QUIZ_QUESTION_COUNT = SEEDED_QUIZ_QUESTIONS.length;

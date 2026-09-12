@@ -22,6 +22,7 @@ const EMPTY: Omit<QuizQuestionRow, "id" | "quizId"> = {
   sourceLabel: "",
   sourceUrl: "",
   timerSeconds: QUIZ_QUESTION_SECONDS,
+  imageUrl: "",
 };
 
 export function QuizEditor({
@@ -207,6 +208,15 @@ export function QuizEditor({
             onChange={(e) => updateQuestion(index, { sourceUrl: e.target.value })}
             className="mt-2 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
           />
+          <label className="mt-4 block text-sm">
+            Optional image URL
+            <input
+              value={question.imageUrl ?? ""}
+              onChange={(e) => updateQuestion(index, { imageUrl: e.target.value || null })}
+              className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+              placeholder="/quiz/denny.jpg"
+            />
+          </label>
         </AdminCard>
       ))}
       <button

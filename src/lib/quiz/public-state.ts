@@ -9,6 +9,7 @@ export type PublicQuestion = {
   prompt: string;
   choices: PublicChoice[];
   timerSeconds: number;
+  imageUrl?: string | null;
   correctId?: "a" | "b" | "c" | "d";
   explanation?: string;
 };
@@ -21,6 +22,7 @@ export function publicQuestionPayload(
     correctId: "a" | "b" | "c" | "d";
     explanation: string;
     timerSeconds?: number;
+    imageUrl?: string | null;
   },
   input: { index: number; total: number; revealed: boolean },
 ): PublicQuestion {
@@ -31,6 +33,7 @@ export function publicQuestionPayload(
     prompt: question.prompt,
     choices: question.choices.map((choice) => ({ id: choice.id, text: choice.text })),
     timerSeconds: QUIZ_QUESTION_SECONDS,
+    imageUrl: question.imageUrl ?? null,
   };
   if (!input.revealed) return base;
   return { ...base, correctId: question.correctId, explanation: question.explanation };
@@ -49,5 +52,6 @@ export function stripAnswerKey(payload: PublicQuestion): PublicQuestion {
     prompt: payload.prompt,
     choices: payload.choices.map((choice) => ({ id: choice.id, text: choice.text })),
     timerSeconds: payload.timerSeconds,
+    imageUrl: payload.imageUrl ?? null,
   };
 }

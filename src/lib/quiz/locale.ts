@@ -26,6 +26,7 @@ export type LocalizedQuizQuestion = {
   correctId: QuizChoiceId;
   explanation: string;
   timerSeconds: number;
+  imageUrl?: string | null;
 };
 
 export function localizeQuestion(question: QuizQuestionRow, locale: QuizLocale): LocalizedQuizQuestion {
@@ -40,6 +41,7 @@ export function localizeQuestion(question: QuizQuestionRow, locale: QuizLocale):
     correctId: question.correctId,
     explanation: et ? question.explanationEt || question.explanationEn : question.explanationEn,
     timerSeconds: QUIZ_QUESTION_SECONDS,
+    imageUrl: question.imageUrl ?? null,
   };
 }
 

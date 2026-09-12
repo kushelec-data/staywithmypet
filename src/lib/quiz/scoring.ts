@@ -1,6 +1,8 @@
 export const QUIZ_POINTS_PER_CORRECT = 200;
-export const QUIZ_MAX_QUESTIONS = 20;
-export const QUIZ_MAX_SCORE = QUIZ_POINTS_PER_CORRECT * QUIZ_MAX_QUESTIONS;
+
+export function quizMaxScore(totalQuestions: number): number {
+  return QUIZ_POINTS_PER_CORRECT * Math.max(0, totalQuestions);
+}
 
 export function scoreCorrectAnswer(_elapsedMs?: number, _limitMs?: number): number {
   return QUIZ_POINTS_PER_CORRECT;

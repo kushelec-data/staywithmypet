@@ -7,6 +7,7 @@ import { isQuestionOpen } from "@/lib/quiz/game-status";
 import type { QuizLocale } from "@/lib/quiz/locale";
 import { QUIZ_QUESTION_SECONDS } from "@/lib/quiz/timer";
 import { useQuizCountdown } from "@/lib/quiz/useQuizCountdown";
+import { QuizQuestionImage } from "@/components/quiz/QuizQuestionImage";
 import { QuizStage } from "@/components/quiz/QuizStage";
 
 type HostState = {
@@ -30,6 +31,7 @@ type HostState = {
   explanation: string | null;
   explanationEn?: string | null;
   explanationEt?: string | null;
+  imageUrl?: string | null;
   distribution: { a: number; b: number; c: number; d: number } | null;
   reactionCounts: Record<QuizReaction, number>;
   players: Array<{ id: string; name: string; score: number }>;
@@ -272,10 +274,13 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
             {Math.min(seconds, QUIZ_QUESTION_SECONDS)}
           </p>
         </div>
-        <h2 className="font-heading mx-auto mt-5 max-w-[40rem] text-center text-[clamp(1.7rem,3.2vw,3rem)] font-semibold leading-snug md:mt-8">
-          {prompt}
-        </h2>
-        <div className="mx-auto mt-5 grid w-full max-w-[920px] flex-1 grid-cols-1 content-center gap-3 sm:grid-cols-2 md:mt-8 md:gap-4">
+        <div className="mx-auto mt-3 flex min-h-0 w-full max-w-[920px] flex-col items-center gap-3 md:mt-5 md:flex-row md:items-center md:justify-center md:gap-6">
+          <h2 className="font-heading min-w-0 flex-1 text-center text-[clamp(1.5rem,2.8vw,2.75rem)] font-semibold leading-snug">
+            {prompt}
+          </h2>
+          <QuizQuestionImage src={state.imageUrl} alt="" compact={false} />
+        </div>
+        <div className="mx-auto mt-3 grid w-full max-w-[920px] flex-1 grid-cols-1 content-center gap-2.5 sm:grid-cols-2 md:mt-5 md:gap-3">
           {choices.map((choice) => (
             <div key={choice.id} className="rounded-2xl border border-[#E5E2D8] bg-white px-4 py-3 shadow-sm md:px-5 md:py-4">
               <p className="text-[clamp(0.95rem,1.4vw,1.2rem)] font-semibold">

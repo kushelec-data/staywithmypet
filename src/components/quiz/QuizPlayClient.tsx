@@ -13,6 +13,7 @@ import { playerCopy } from "@/lib/quiz/player-copy";
 import { QUIZ_QUESTION_SECONDS } from "@/lib/quiz/timer";
 import { useQuizCountdown } from "@/lib/quiz/useQuizCountdown";
 import { ReactionBurst, type ReactionBurstEvent } from "@/components/quiz/ReactionBurst";
+import { QuizQuestionImage } from "@/components/quiz/QuizQuestionImage";
 import { QuizCircleTimer, QuizStatusChip } from "@/components/quiz/QuizVisuals";
 import { QuizStage } from "@/components/quiz/QuizStage";
 
@@ -262,7 +263,7 @@ export function QuizPlayClient() {
 
   const question = state?.question ?? null;
   const questionIndex = question?.index ?? (typeof state?.currentQuestionIndex === "number" ? state.currentQuestionIndex + 1 : null);
-  const questionTotal = question?.total ?? 20;
+  const questionTotal = question?.total ?? 0;
   const questionLabel = questionIndex ? t.questionOf(questionIndex, questionTotal) : null;
   const awaitingReveal = Boolean(state && locked && isQuestionOpen(state.status));
   const stageKey = state
@@ -358,6 +359,9 @@ export function QuizPlayClient() {
             </div>
             <div className="mt-4 shrink-0 rounded-2xl border border-[#E5E2D8] bg-[#FFFDF8] px-4 py-4 shadow-sm">
               <h1 className="font-heading text-center text-lg font-semibold leading-snug sm:text-2xl">{question.prompt}</h1>
+              <div className="mt-3">
+                <QuizQuestionImage src={question.imageUrl} alt="" compact />
+              </div>
             </div>
             <div className="mt-4 grid min-h-0 flex-1 content-start gap-2.5">
               {question.choices.map((choice) => {

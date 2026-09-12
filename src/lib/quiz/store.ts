@@ -61,6 +61,7 @@ function mapQuestion(row: Record<string, unknown>): QuizQuestionRow {
     sourceLabel: String(row.source_label),
     sourceUrl: String(row.source_url),
     timerSeconds: QUIZ_QUESTION_SECONDS,
+    imageUrl: row.image_url ? String(row.image_url) : null,
   };
 }
 
@@ -84,6 +85,7 @@ function questionWritePayload(quizId: string, sortOrder: number, question: QuizQ
     source_label: question.sourceLabel,
     source_url: question.sourceUrl,
     timer_seconds: QUIZ_QUESTION_SECONDS,
+    image_url: question.imageUrl ?? null,
   };
 }
 
@@ -93,7 +95,17 @@ export async function ensureDefaultQuiz(): Promise<string | null> {
   const { data: existing } = await admin.from("quizzes").select("id").order("created_at", { ascending: true }).limit(1);
   if (existing?.[0]?.id) {
     const quizId = String(existing[0].id);
-    const { data: questions } = await admin.from("quiz_questions").select("id, sort_order, prompt_et").eq("quiz_id", quizId);
+    const { data: questions } = await admin.from("quiz_questions").select("id, sort_order, prompt, prompt_et").eq("quiz_id", quizId);
+    const prompts = (questions ?? []).map((row) => String(row.prompt ?? ""));
+    const needsSeedReplace =
+      (questions ?? []).length !== SEEDED_QUIZ_QUESTIONS.length ||
+      !prompts.some((prompt) => prompt.includes("Chief Happiness Officer")) ||
+      prompts.some((prompt) => prompt.includes("Only veterinary clinics") || prompt.includes("If you have a pet and want a trusted person"));
+    if (needsSeedReplace) {
+      await admin.from("quiz_questions").delete().eq("quiz_id", quizId);
+      await admin.from("quiz_questions").insert(seedQuestionRows(quizId));
+      return quizId;
+    }
     for (const row of questions ?? []) {
       if (String(row.prompt_et ?? "").trim()) continue;
       const seed = SEEDED_QUIZ_QUESTIONS.find((item) => item.sortOrder === Number(row.sort_order));
@@ -108,6 +120,7 @@ export async function ensureDefaultQuiz(): Promise<string | null> {
           choice_d_et: seed.choices[3].textEt,
           explanation_et: seed.explanationEt,
           timer_seconds: QUIZ_QUESTION_SECONDS,
+          image_url: seed.imageUrl ?? null,
         })
         .eq("id", row.id);
     }
@@ -119,8 +132,13 @@ export async function ensureDefaultQuiz(): Promise<string | null> {
     .select("id")
     .single();
   if (error || !quiz) return null;
-  const rows = SEEDED_QUIZ_QUESTIONS.map((question) =>
-    questionWritePayload(String(quiz.id), question.sortOrder, {
+  await admin.from("quiz_questions").insert(seedQuestionRows(String(quiz.id)));
+  return String(quiz.id);
+}
+
+function seedQuestionRows(quizId: string) {
+  return SEEDED_QUIZ_QUESTIONS.map((question) =>
+    questionWritePayload(quizId, question.sortOrder, {
       promptEn: question.prompt,
       promptEt: question.promptEt,
       choices: question.choices.map((choice) => ({ id: choice.id, textEn: choice.text, textEt: choice.textEt })),
@@ -131,10 +149,9 @@ export async function ensureDefaultQuiz(): Promise<string | null> {
       sourceUrl: question.sourceUrl,
       timerSeconds: QUIZ_QUESTION_SECONDS,
       sortOrder: question.sortOrder,
+      imageUrl: question.imageUrl ?? null,
     }),
   );
-  await admin.from("quiz_questions").insert(rows);
-  return String(quiz.id);
 }
 
 export async function listQuizzes(): Promise<QuizSummary[]> {
@@ -774,9 +791,10 @@ export async function hostGameState(gameId: string) {
     prompt: live ? english?.prompt ?? null : null,
     promptEn: live ? english?.prompt ?? null : null,
     promptEt: live ? estonian?.prompt ?? null : null,
-    choices: revealed && english ? english.choices : [],
-    choicesEn: revealed && english ? english.choices : [],
-    choicesEt: revealed && estonian ? estonian.choices : [],
+    choices: live && english ? english.choices : [],
+    choicesEn: live && english ? english.choices : [],
+    choicesEt: live && estonian ? estonian.choices : [],
+    imageUrl: live ? question?.imageUrl ?? null : null,
     correctId: revealed && question ? question.correctId : null,
     explanation: revealed && english ? english.explanation : null,
     explanationEn: revealed && english ? english.explanation : null,
