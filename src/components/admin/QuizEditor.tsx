@@ -3,22 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCard } from "@/components/admin/AdminUi";
+import { QUIZ_QUESTION_SECONDS } from "@/lib/quiz/timer";
 import type { QuizQuestionRow } from "@/lib/quiz/types";
 
 const EMPTY: Omit<QuizQuestionRow, "id" | "quizId"> = {
   sortOrder: 1,
-  prompt: "",
+  promptEn: "",
+  promptEt: "",
   choices: [
-    { id: "a", text: "" },
-    { id: "b", text: "" },
-    { id: "c", text: "" },
-    { id: "d", text: "" },
+    { id: "a", textEn: "", textEt: "" },
+    { id: "b", textEn: "", textEt: "" },
+    { id: "c", textEn: "", textEt: "" },
+    { id: "d", textEn: "", textEt: "" },
   ],
   correctId: "a",
-  explanation: "",
+  explanationEn: "",
+  explanationEt: "",
   sourceLabel: "",
   sourceUrl: "",
-  timerSeconds: 15,
+  timerSeconds: QUIZ_QUESTION_SECONDS,
 };
 
 export function QuizEditor({
@@ -48,7 +51,10 @@ export function QuizEditor({
     const res = await fetch(`/api/admin/quiz/${quizId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, questions }),
+      body: JSON.stringify({
+        title,
+        questions: questions.map((question) => ({ ...question, timerSeconds: QUIZ_QUESTION_SECONDS })),
+      }),
     });
     const json = await res.json().catch(() => ({}));
     setMessage(res.ok ? "Saved." : json.error ?? "Could not save");
@@ -70,6 +76,10 @@ export function QuizEditor({
     router.push(`/admin/quiz/host/${json.id}`);
   }
 
+  function updateQuestion(index: number, patch: Partial<QuizQuestionRow>) {
+    setQuestions((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  }
+
   return (
     <div className="space-y-4">
       <AdminCard>
@@ -77,6 +87,7 @@ export function QuizEditor({
           Quiz title
           <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2" />
         </label>
+        <p className="mt-3 text-sm text-muted">Every live question lasts {QUIZ_QUESTION_SECONDS} seconds. Correct answer IDs are shared across English and Estonian.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button type="button" onClick={() => void save()} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
             Save
@@ -100,76 +111,115 @@ export function QuizEditor({
               </button>
             </div>
           </div>
+
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Correct answer</p>
+          <div className="mt-2 flex flex-wrap gap-3 text-sm">
+            {question.choices.map((choice) => (
+              <label key={choice.id} className="inline-flex items-center gap-2">
+                <input
+                  type="radio"
+                  name={`correct-${index}`}
+                  checked={question.correctId === choice.id}
+                  onChange={() => updateQuestion(index, { correctId: choice.id })}
+                />
+                {choice.id.toUpperCase()}
+              </label>
+            ))}
+          </div>
+
+          <p className="mt-6 font-semibold">English</p>
           <textarea
-            value={question.prompt}
-            onChange={(e) => setQuestions((rows) => rows.map((row, i) => (i === index ? { ...row, prompt: e.target.value } : row)))}
-            className="mt-3 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+            value={question.promptEn}
+            onChange={(e) => updateQuestion(index, { promptEn: e.target.value })}
+            className="mt-2 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
             rows={3}
+            placeholder="Question"
           />
           {question.choices.map((choice, choiceIndex) => (
-            <label key={choice.id} className="mt-2 flex items-center gap-2 text-sm">
+            <label key={`en-${choice.id}`} className="mt-2 block text-sm">
+              Answer {choice.id.toUpperCase()}
               <input
-                type="radio"
-                name={`correct-${index}`}
-                checked={question.correctId === choice.id}
-                onChange={() => setQuestions((rows) => rows.map((row, i) => (i === index ? { ...row, correctId: choice.id } : row)))}
-              />
-              <input
-                value={choice.text}
+                value={choice.textEn}
                 onChange={(e) =>
-                  setQuestions((rows) =>
-                    rows.map((row, i) =>
-                      i === index
-                        ? {
-                            ...row,
-                            choices: row.choices.map((item, j) => (j === choiceIndex ? { ...item, text: e.target.value } : item)) as QuizQuestionRow["choices"],
-                          }
-                        : row,
-                    ),
-                  )
+                  updateQuestion(index, {
+                    choices: question.choices.map((item, j) => (j === choiceIndex ? { ...item, textEn: e.target.value } : item)),
+                  })
                 }
-                className="w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+                className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
               />
             </label>
           ))}
           <label className="mt-3 block text-sm">
-            Timer (seconds)
-            <input
-              type="number"
-              min={5}
-              max={120}
-              value={question.timerSeconds}
-              onChange={(e) => setQuestions((rows) => rows.map((row, i) => (i === index ? { ...row, timerSeconds: Number(e.target.value) || 15 } : row)))}
-              className="mt-1 w-32 rounded-xl border border-[#E5E2D8] px-3 py-2"
-            />
-          </label>
-          <label className="mt-3 block text-sm">
             Explanation
             <textarea
-              value={question.explanation}
-              onChange={(e) => setQuestions((rows) => rows.map((row, i) => (i === index ? { ...row, explanation: e.target.value } : row)))}
+              value={question.explanationEn}
+              onChange={(e) => updateQuestion(index, { explanationEn: e.target.value })}
               className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
               rows={2}
             />
           </label>
+
+          <p className="mt-6 font-semibold">Estonian</p>
+          <textarea
+            value={question.promptEt}
+            onChange={(e) => updateQuestion(index, { promptEt: e.target.value })}
+            className="mt-2 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+            rows={3}
+            placeholder="Küsimus"
+          />
+          {question.choices.map((choice, choiceIndex) => (
+            <label key={`et-${choice.id}`} className="mt-2 block text-sm">
+              Vastus {choice.id.toUpperCase()}
+              <input
+                value={choice.textEt}
+                onChange={(e) =>
+                  updateQuestion(index, {
+                    choices: question.choices.map((item, j) => (j === choiceIndex ? { ...item, textEt: e.target.value } : item)),
+                  })
+                }
+                className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+              />
+            </label>
+          ))}
           <label className="mt-3 block text-sm">
+            Selgitus
+            <textarea
+              value={question.explanationEt}
+              onChange={(e) => updateQuestion(index, { explanationEt: e.target.value })}
+              className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
+              rows={2}
+            />
+          </label>
+
+          <label className="mt-4 block text-sm">
             Source
             <input
               value={question.sourceLabel}
-              onChange={(e) => setQuestions((rows) => rows.map((row, i) => (i === index ? { ...row, sourceLabel: e.target.value } : row)))}
+              onChange={(e) => updateQuestion(index, { sourceLabel: e.target.value })}
               className="mt-1 w-full rounded-xl border border-[#E5E2D8] px-3 py-2"
             />
           </label>
           <input
             value={question.sourceUrl}
-            onChange={(e) => setQuestions((rows) => rows.map((row, i) => (i === index ? { ...row, sourceUrl: e.target.value } : row)))}
+            onChange={(e) => updateQuestion(index, { sourceUrl: e.target.value })}
             className="mt-2 w-full rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
           />
         </AdminCard>
       ))}
       <button
         type="button"
-        onClick={() => setQuestions((rows) => [...rows, { ...EMPTY, id: "", quizId, sortOrder: rows.length + 1, choices: EMPTY.choices.map((item) => ({ ...item })) as QuizQuestionRow["choices"] }])}
+        onClick={() =>
+          setQuestions((rows) => [
+            ...rows,
+            {
+              ...EMPTY,
+              id: "",
+              quizId,
+              sortOrder: rows.length + 1,
+              choices: EMPTY.choices.map((item) => ({ ...item })),
+            },
+          ])
+        }
         className="rounded-full border px-4 py-2 text-sm font-semibold"
       >
         Add question

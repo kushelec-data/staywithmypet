@@ -4,10 +4,12 @@ export type QuizQuestionRow = {
   id: string;
   quizId: string;
   sortOrder: number;
-  prompt: string;
-  choices: Array<{ id: QuizChoiceId; text: string }>;
+  promptEn: string;
+  promptEt: string;
+  choices: Array<{ id: QuizChoiceId; textEn: string; textEt: string }>;
   correctId: QuizChoiceId;
-  explanation: string;
+  explanationEn: string;
+  explanationEt: string;
   sourceLabel: string;
   sourceUrl: string;
   timerSeconds: number;

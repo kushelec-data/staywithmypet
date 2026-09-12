@@ -16,8 +16,9 @@ import {
 } from "@/lib/quiz/game-status";
 import { publicQuestionPayload, type PublicQuestion } from "@/lib/quiz/public-state";
 import { scoreAnswer } from "@/lib/quiz/scoring";
-import { applyRoundScores, openQuestionUpdate, remainingFromEndsAt, serverElapsedMs, statusAfterTimerExpiry } from "@/lib/quiz/timer";
+import { applyRoundScores, openQuestionUpdate, QUIZ_QUESTION_SECONDS, remainingFromEndsAt, serverElapsedMs, statusAfterTimerExpiry } from "@/lib/quiz/timer";
 import { stripAnswerKey } from "@/lib/quiz/public-state";
+import { localizeQuestion, parseQuizLocale, type QuizLocale } from "@/lib/quiz/locale";
 import { SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE } from "@/lib/quiz/seed";
 import type { QuizQuestionRow } from "@/lib/quiz/types";
 
@@ -46,18 +47,43 @@ function mapQuestion(row: Record<string, unknown>): QuizQuestionRow {
     id: String(row.id),
     quizId: String(row.quiz_id),
     sortOrder: Number(row.sort_order),
-    prompt: String(row.prompt),
+    promptEn: String(row.prompt ?? ""),
+    promptEt: String(row.prompt_et ?? ""),
     choices: [
-      { id: "a", text: String(row.choice_a) },
-      { id: "b", text: String(row.choice_b) },
-      { id: "c", text: String(row.choice_c) },
-      { id: "d", text: String(row.choice_d) },
+      { id: "a", textEn: String(row.choice_a ?? ""), textEt: String(row.choice_a_et ?? "") },
+      { id: "b", textEn: String(row.choice_b ?? ""), textEt: String(row.choice_b_et ?? "") },
+      { id: "c", textEn: String(row.choice_c ?? ""), textEt: String(row.choice_c_et ?? "") },
+      { id: "d", textEn: String(row.choice_d ?? ""), textEt: String(row.choice_d_et ?? "") },
     ],
     correctId: row.correct_id as "a" | "b" | "c" | "d",
-    explanation: String(row.explanation),
+    explanationEn: String(row.explanation ?? ""),
+    explanationEt: String(row.explanation_et ?? ""),
     sourceLabel: String(row.source_label),
     sourceUrl: String(row.source_url),
-    timerSeconds: Number(row.timer_seconds ?? 15),
+    timerSeconds: QUIZ_QUESTION_SECONDS,
+  };
+}
+
+function questionWritePayload(quizId: string, sortOrder: number, question: QuizQuestionRow | (Omit<QuizQuestionRow, "id" | "quizId"> & { id?: string })) {
+  return {
+    quiz_id: quizId,
+    sort_order: sortOrder,
+    prompt: question.promptEn,
+    prompt_et: question.promptEt,
+    choice_a: question.choices[0]?.textEn ?? "",
+    choice_b: question.choices[1]?.textEn ?? "",
+    choice_c: question.choices[2]?.textEn ?? "",
+    choice_d: question.choices[3]?.textEn ?? "",
+    choice_a_et: question.choices[0]?.textEt ?? "",
+    choice_b_et: question.choices[1]?.textEt ?? "",
+    choice_c_et: question.choices[2]?.textEt ?? "",
+    choice_d_et: question.choices[3]?.textEt ?? "",
+    correct_id: question.correctId,
+    explanation: question.explanationEn,
+    explanation_et: question.explanationEt,
+    source_label: question.sourceLabel,
+    source_url: question.sourceUrl,
+    timer_seconds: QUIZ_QUESTION_SECONDS,
   };
 }
 
@@ -65,27 +91,48 @@ export async function ensureDefaultQuiz(): Promise<string | null> {
   const admin = db();
   if (!admin) return null;
   const { data: existing } = await admin.from("quizzes").select("id").order("created_at", { ascending: true }).limit(1);
-  if (existing?.[0]?.id) return String(existing[0].id);
+  if (existing?.[0]?.id) {
+    const quizId = String(existing[0].id);
+    const { data: questions } = await admin.from("quiz_questions").select("id, sort_order, prompt_et").eq("quiz_id", quizId);
+    for (const row of questions ?? []) {
+      if (String(row.prompt_et ?? "").trim()) continue;
+      const seed = SEEDED_QUIZ_QUESTIONS.find((item) => item.sortOrder === Number(row.sort_order));
+      if (!seed) continue;
+      await admin
+        .from("quiz_questions")
+        .update({
+          prompt_et: seed.promptEt,
+          choice_a_et: seed.choices[0].textEt,
+          choice_b_et: seed.choices[1].textEt,
+          choice_c_et: seed.choices[2].textEt,
+          choice_d_et: seed.choices[3].textEt,
+          explanation_et: seed.explanationEt,
+          timer_seconds: QUIZ_QUESTION_SECONDS,
+        })
+        .eq("id", row.id);
+    }
+    return quizId;
+  }
   const { data: quiz, error } = await admin
     .from("quizzes")
     .insert({ title: SEEDED_QUIZ_TITLE, status: "ready" })
     .select("id")
     .single();
   if (error || !quiz) return null;
-  const rows = SEEDED_QUIZ_QUESTIONS.map((question) => ({
-    quiz_id: quiz.id,
-    sort_order: question.sortOrder,
-    prompt: question.prompt,
-    choice_a: question.choices[0].text,
-    choice_b: question.choices[1].text,
-    choice_c: question.choices[2].text,
-    choice_d: question.choices[3].text,
-    correct_id: question.correctId,
-    explanation: question.explanation,
-    source_label: question.sourceLabel,
-    source_url: question.sourceUrl,
-    timer_seconds: question.timerSeconds,
-  }));
+  const rows = SEEDED_QUIZ_QUESTIONS.map((question) =>
+    questionWritePayload(String(quiz.id), question.sortOrder, {
+      promptEn: question.prompt,
+      promptEt: question.promptEt,
+      choices: question.choices.map((choice) => ({ id: choice.id, textEn: choice.text, textEt: choice.textEt })),
+      correctId: question.correctId,
+      explanationEn: question.explanation,
+      explanationEt: question.explanationEt,
+      sourceLabel: question.sourceLabel,
+      sourceUrl: question.sourceUrl,
+      timerSeconds: QUIZ_QUESTION_SECONDS,
+      sortOrder: question.sortOrder,
+    }),
+  );
   await admin.from("quiz_questions").insert(rows);
   return String(quiz.id);
 }
@@ -154,20 +201,7 @@ export async function saveQuiz(
   }
   let order = 1;
   for (const question of input.questions) {
-    const payload = {
-      quiz_id: quizId,
-      sort_order: order,
-      prompt: question.prompt,
-      choice_a: question.choices[0]?.text ?? "",
-      choice_b: question.choices[1]?.text ?? "",
-      choice_c: question.choices[2]?.text ?? "",
-      choice_d: question.choices[3]?.text ?? "",
-      correct_id: question.correctId,
-      explanation: question.explanation,
-      source_label: question.sourceLabel,
-      source_url: question.sourceUrl,
-      timer_seconds: question.timerSeconds || 15,
-    };
+    const payload = questionWritePayload(quizId, order, question);
     order += 1;
     if (question.id) {
       await admin.from("quiz_questions").update(payload).eq("id", question.id).eq("quiz_id", quizId);
@@ -318,7 +352,7 @@ export async function hostStartQuiz(gameId: string): Promise<{ ok: true } | { er
   const questions = await loadQuestions(admin, game.quiz_id);
   const question = questions[0];
   if (!question) return { error: "No questions" };
-  await admin.from("live_quiz_games").update(openQuestionUpdate({ index: 0, timerSeconds: question.timerSeconds })).eq("id", gameId).eq("status", "lobby");
+  await admin.from("live_quiz_games").update(openQuestionUpdate({ index: 0 })).eq("id", gameId).eq("status", "lobby");
   return { ok: true };
 }
 
@@ -397,7 +431,7 @@ export async function hostNextQuestion(gameId: string): Promise<{ ok: true; fini
   const question = questions[nextIndex];
   await admin
     .from("live_quiz_games")
-    .update(openQuestionUpdate({ index: nextIndex, timerSeconds: question.timerSeconds }))
+    .update(openQuestionUpdate({ index: nextIndex }))
     .eq("id", gameId)
     .eq("status", "leaderboard");
   return { ok: true };
@@ -416,7 +450,8 @@ export async function joinGameWithPin(pinRaw: string): Promise<{ gameId: string;
 export async function registerPlayer(
   pinRaw: string,
   displayNameRaw: string,
-): Promise<{ gameId: string; playerId: string; token: string } | { error: string }> {
+  localeRaw?: unknown,
+): Promise<{ gameId: string; playerId: string; token: string; locale: QuizLocale } | { error: string }> {
   const admin = db();
   if (!admin) return { error: "Unavailable" };
   const joined = await joinGameWithPin(pinRaw);
@@ -428,6 +463,7 @@ export async function registerPlayer(
     return { error: "That name is already in this game" };
   }
   const token = createOpaqueToken();
+  const locale = parseQuizLocale(localeRaw);
   const { data, error } = await admin
     .from("live_quiz_players")
     .insert({
@@ -435,11 +471,12 @@ export async function registerPlayer(
       display_name: name,
       display_name_key: name.toLowerCase(),
       token_hash: hashQuizPlayerToken(token),
+      locale,
     })
     .select("id")
     .single();
   if (error || !data) return { error: error?.message ?? "Could not join" };
-  return { gameId: joined.gameId, playerId: String(data.id), token };
+  return { gameId: joined.gameId, playerId: String(data.id), token, locale };
 }
 
 async function loadReactionCounts(admin: AdminDb, gameId: string, questionId: string) {
@@ -472,6 +509,8 @@ export type PlayerPublicState = {
   status: string;
   pin: string;
   title: string;
+  locale: QuizLocale;
+  serverNow: string;
   answered: number;
   totalPlayers: number;
   question: PublicQuestion | null;
@@ -499,10 +538,11 @@ export async function playerState(token: string): Promise<PlayerPublicState | { 
   if (!admin) return { error: "Unavailable" };
   const { data: player } = await admin
     .from("live_quiz_players")
-    .select("id, game_id, display_name, score")
+    .select("id, game_id, display_name, score, locale")
     .eq("token_hash", hashQuizPlayerToken(token))
     .maybeSingle();
   if (!player) return { error: "Join the game again" };
+  const locale = parseQuizLocale(player.locale);
   const game = await closeQuestionIfDue(String(player.game_id));
   if (!game) return { error: "Game not found" };
   const questions = await loadQuestions(admin, game.quiz_id);
@@ -556,23 +596,27 @@ export async function playerState(token: string): Promise<PlayerPublicState | { 
     answeredCount = count ?? 0;
   }
   const showBoard = game.status === "leaderboard" || game.status === "finished";
-  const payload = showQuestion && question
-    ? publicQuestionPayload(question, {
+  const localized = question ? localizeQuestion(question, locale) : null;
+  const payload = showQuestion && localized
+    ? publicQuestionPayload(localized, {
         index: game.current_index + 1,
         total: questions.length,
         revealed: answerKeyIsPublic(game.status),
       })
     : null;
+  const serverNow = new Date();
   const state: PlayerPublicState = {
     gameId: game.id,
     status: game.status,
     pin: game.pin,
     title: String(quiz?.title ?? SEEDED_QUIZ_TITLE),
+    locale,
+    serverNow: serverNow.toISOString(),
     answered: answeredCount,
     totalPlayers: ranked.length,
     question: payload && !answerKeyIsPublic(game.status) ? stripAnswerKey(payload) : payload,
     endsAt: game.question_ends_at,
-    remainingMs: remainingFromEndsAt(game.question_ends_at),
+    remainingMs: remainingFromEndsAt(game.question_ends_at, serverNow.getTime()),
     currentQuestionIndex: game.current_index,
     you: {
       id: String(player.id),
@@ -617,9 +661,9 @@ export async function submitAnswer(
   const questions = await loadQuestions(admin, game.quiz_id);
   const question = questions[game.current_index];
   if (!question) return { error: "Missing question" };
-  const elapsedMs = serverElapsedMs(game.question_started_at, Date.now(), question.timerSeconds * 1000);
+  const elapsedMs = serverElapsedMs(game.question_started_at, Date.now(), QUIZ_QUESTION_SECONDS * 1000);
   const correct = choiceId === question.correctId;
-  const points = scoreAnswer({ correct, elapsedMs, limitMs: question.timerSeconds * 1000 });
+  const points = scoreAnswer({ correct, elapsedMs, limitMs: QUIZ_QUESTION_SECONDS * 1000 });
   const { error } = await admin.from("live_quiz_answers").insert({
     game_id: game.id,
     player_id: player.id,
@@ -688,22 +732,34 @@ export async function hostGameState(gameId: string) {
     }
   }
   const players = (roster ?? []).map((row) => ({ id: String(row.player_id), name: String(row.display_name), score: Number(row.score) }));
+  const english = question ? localizeQuestion(question, "en") : null;
+  const estonian = question ? localizeQuestion(question, "et") : null;
+  const live = game.status !== "lobby";
+  const serverNow = new Date();
   return {
     gameId: game.id,
     pin: game.pin,
     status: game.status,
     title: String(quiz?.title ?? ""),
+    serverNow: serverNow.toISOString(),
     currentIndex: game.current_index,
     currentQuestionIndex: game.current_index,
     total: questions.length,
-    prompt: game.status === "lobby" ? null : question?.prompt ?? null,
-    choices: revealed && question ? question.choices : [],
+    questionId: question?.id ?? null,
+    prompt: live ? english?.prompt ?? null : null,
+    promptEn: live ? english?.prompt ?? null : null,
+    promptEt: live ? estonian?.prompt ?? null : null,
+    choices: revealed && english ? english.choices : [],
+    choicesEn: revealed && english ? english.choices : [],
+    choicesEt: revealed && estonian ? estonian.choices : [],
     correctId: revealed && question ? question.correctId : null,
-    explanation: revealed && question ? question.explanation : null,
+    explanation: revealed && english ? english.explanation : null,
+    explanationEn: revealed && english ? english.explanation : null,
+    explanationEt: revealed && estonian ? estonian.explanation : null,
     distribution: revealed ? distribution : null,
     reactionCounts: revealed ? reactionCounts : emptyReactionCounts(),
     endsAt: game.question_ends_at,
-    remainingMs: remainingFromEndsAt(game.question_ends_at),
+    remainingMs: remainingFromEndsAt(game.question_ends_at, serverNow.getTime()),
     answered: answeredCount,
     players,
     top5: players.slice(0, 5),

@@ -1,16 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { remainingFromEndsAt } from "@/lib/quiz/timer";
+import { quizEffectiveNowMs, quizServerOffsetMs, remainingQuizSeconds } from "@/lib/quiz/timer";
 
-export function useQuizCountdown(endsAt: string | null): number {
-  const [ms, setMs] = useState(() => remainingFromEndsAt(endsAt));
+export function useQuizCountdown(questionEndsAt: string | null, serverNow?: string | number | Date | null): number {
+  const [seconds, setSeconds] = useState(() =>
+    remainingQuizSeconds(questionEndsAt, quizEffectiveNowMs(quizServerOffsetMs(serverNow))),
+  );
 
   useEffect(() => {
-    setMs(remainingFromEndsAt(endsAt));
-    const id = window.setInterval(() => setMs(remainingFromEndsAt(endsAt)), 200);
+    const tick = () => {
+      const offset = quizServerOffsetMs(serverNow);
+      setSeconds(remainingQuizSeconds(questionEndsAt, quizEffectiveNowMs(offset)));
+    };
+    tick();
+    const id = window.setInterval(tick, 200);
     return () => window.clearInterval(id);
-  }, [endsAt]);
+  }, [questionEndsAt, serverNow]);
 
-  return ms;
+  return seconds;
 }

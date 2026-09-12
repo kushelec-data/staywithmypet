@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { CONTENT_CONTAINER } from "@/lib/layout";
 import { formatDisplayPin, QUIZ_PUBLIC_JOIN_HOST, type QuizReaction } from "@/lib/quiz/pin";
-import { formatHostTimer, isQuestionOpen } from "@/lib/quiz/game-status";
+import { isQuestionOpen } from "@/lib/quiz/game-status";
+import type { QuizLocale } from "@/lib/quiz/locale";
+import { QUIZ_QUESTION_SECONDS } from "@/lib/quiz/timer";
 import { useQuizCountdown } from "@/lib/quiz/useQuizCountdown";
 import { QuizCircleTimer, QuizStatusChip } from "@/components/quiz/QuizVisuals";
 
@@ -13,15 +15,22 @@ type HostState = {
   pin: string;
   status: string;
   title: string;
+  serverNow?: string;
   currentIndex: number;
   total: number;
   prompt: string | null;
+  promptEn?: string | null;
+  promptEt?: string | null;
   endsAt: string | null;
   remainingMs: number;
   answered: number;
   choices: Array<{ id: "a" | "b" | "c" | "d"; text: string }>;
+  choicesEn?: Array<{ id: "a" | "b" | "c" | "d"; text: string }>;
+  choicesEt?: Array<{ id: "a" | "b" | "c" | "d"; text: string }>;
   correctId: "a" | "b" | "c" | "d" | null;
   explanation: string | null;
+  explanationEn?: string | null;
+  explanationEt?: string | null;
   distribution: { a: number; b: number; c: number; d: number } | null;
   reactionCounts: Record<QuizReaction, number>;
   players: Array<{ id: string; name: string; score: number }>;
@@ -59,6 +68,7 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
   const [state, setState] = useState<HostState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [previewLocale, setPreviewLocale] = useState<QuizLocale>("en");
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/admin/quiz/games/${gameId}`);
@@ -95,11 +105,11 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
     };
   }, [gameId, refresh]);
 
-  const remainingMs = useQuizCountdown(state?.endsAt ?? null);
+  const seconds = useQuizCountdown(state?.endsAt ?? null, state?.serverNow ?? null);
 
   useEffect(() => {
-    if (isQuestionOpen(state?.status ?? "") && remainingMs <= 0) void refresh();
-  }, [remainingMs, state?.status, refresh]);
+    if (isQuestionOpen(state?.status ?? "") && seconds <= 0) void refresh();
+  }, [seconds, state?.status, refresh]);
 
   async function action(next: "open" | "close" | "reveal" | "show-leaderboard" | "next") {
     setError(null);
@@ -130,20 +140,39 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
 
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(JOIN_URL)}`;
   const displayPin = formatDisplayPin(state.pin);
-  const timer = formatHostTimer(remainingMs);
-  const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
   const questionNumber = state.currentIndex + 1;
   const lastQuestion = questionNumber >= state.total;
-  const correctText = state.choices.find((row) => row.id === state.correctId)?.text;
+  const prompt = previewLocale === "et" ? state.promptEt || state.promptEn || state.prompt : state.promptEn || state.prompt;
+  const choices = previewLocale === "et" ? state.choicesEt || state.choicesEn || state.choices : state.choicesEn || state.choices;
+  const explanation = previewLocale === "et" ? state.explanationEt || state.explanationEn || state.explanation : state.explanationEn || state.explanation;
+  const correctText = choices.find((row) => row.id === state.correctId)?.text;
   const questionOpen = isQuestionOpen(state.status);
-  const timerProgress = seconds > 15 ? 1 : seconds / 15;
+  const timerProgress = seconds / QUIZ_QUESTION_SECONDS;
 
   return (
     <main className="min-h-[100dvh] bg-[#F6F4EE] pb-28 pt-6 sm:pb-10 sm:pt-8">
       <div className={`${CONTENT_CONTAINER} mx-auto max-w-3xl`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-heading text-xl font-semibold sm:text-3xl">{state.title}</h1>
-          <QuizStatusChip>{STATUS_LABEL[state.status] ?? state.status}</QuizStatusChip>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-full border border-[#E5E2D8] bg-white p-1 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setPreviewLocale("en")}
+                className={`rounded-full px-3 py-1 ${previewLocale === "en" ? "bg-[#2E6B3F] text-white" : "text-muted"}`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewLocale("et")}
+                className={`rounded-full px-3 py-1 ${previewLocale === "et" ? "bg-[#2E6B3F] text-white" : "text-muted"}`}
+              >
+                ET
+              </button>
+            </div>
+            <QuizStatusChip>{STATUS_LABEL[state.status] ?? state.status}</QuizStatusChip>
+          </div>
         </div>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
 
@@ -181,10 +210,10 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
               QUESTION {questionNumber} / {state.total}
             </p>
             <div className="mt-6">
-              <QuizCircleTimer value={timer} progress={timerProgress} urgent={seconds <= 5} />
+              <QuizCircleTimer value={seconds} progress={timerProgress} urgent={seconds <= 5} />
             </div>
             <div className="mt-6 rounded-2xl border border-[#E5E2D8] bg-[#FFFDF8] px-4 py-5 sm:px-6">
-              <h2 className="font-heading text-2xl font-semibold leading-snug sm:text-4xl">{state.prompt}</h2>
+              <h2 className="font-heading text-2xl font-semibold leading-snug sm:text-4xl">{prompt}</h2>
             </div>
             <div className="mt-5 rounded-2xl border border-[#E5E2D8] bg-[#F6F4EE] px-4 py-4 text-center">
               <p className="text-sm font-semibold uppercase tracking-wide text-muted">Answered</p>
@@ -220,11 +249,11 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
             <div className="mt-5 rounded-2xl border border-[#E5E2D8] bg-[#FFFDF8] px-4 py-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">Correct answer</p>
               <p className="mt-1 text-2xl font-semibold sm:text-3xl">{correctText}</p>
-              {state.explanation ? <p className="mt-4 text-base text-muted sm:text-lg">{state.explanation}</p> : null}
+              {explanation ? <p className="mt-4 text-base text-muted sm:text-lg">{explanation}</p> : null}
             </div>
             {state.distribution ? (
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {state.choices.map((choice) => (
+                {choices.map((choice) => (
                   <div
                     key={choice.id}
                     className={`rounded-2xl border px-4 py-3 shadow-sm ${choice.id === state.correctId ? "border-[#2E6B3F] bg-[#E8F2EA]" : "border-[#E5E2D8] bg-[#F6F4EE]"}`}

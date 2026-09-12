@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE } from "@/lib/quiz/seed";
+import { SEEDED_QUIZ_QUESTIONS, SEEDED_QUIZ_TITLE, seedQuestionToRow } from "@/lib/quiz/seed";
 import { QUIZ_MAX_SCORE, scoreAnswer, scoreCorrectAnswer } from "@/lib/quiz/scoring";
 import { displayNamesClash, formatDisplayPin, normalizeDisplayName, normalizeGamePin, parseQuizReaction, pinIsPlayable } from "@/lib/quiz/pin";
 import { payloadLeaksAnswer, publicQuestionPayload, stripAnswerKey } from "@/lib/quiz/public-state";
@@ -12,7 +12,9 @@ import {
   hostMayShowLeaderboard,
   playerMayAnswer,
 } from "@/lib/quiz/game-status";
-import { applyRoundScores, openQuestionUpdate, statusAfterTimerExpiry } from "@/lib/quiz/timer";
+import { applyRoundScores, openQuestionUpdate, QUIZ_QUESTION_SECONDS, remainingQuizSeconds, statusAfterTimerExpiry } from "@/lib/quiz/timer";
+import { localizeQuestion, parseQuizLocale } from "@/lib/quiz/locale";
+import { PLAYER_COPY } from "@/lib/quiz/player-copy";
 
 describe("seeded quiz", () => {
   it("has exactly 20 questions with one correct choice and a source", () => {
@@ -23,7 +25,10 @@ describe("seeded quiz", () => {
       expect(question.choices).toHaveLength(4);
       expect(new Set(question.choices.map((row) => row.id)).size).toBe(4);
       expect(question.choices.some((row) => row.id === question.correctId)).toBe(true);
-      expect(question.timerSeconds).toBe(15);
+      expect(question.timerSeconds).toBe(20);
+      expect(question.promptEt.length).toBeGreaterThan(10);
+      expect(question.explanationEt.length).toBeGreaterThan(20);
+      expect(question.choices.every((choice) => choice.textEt.length > 0)).toBe(true);
       expect(question.sourceUrl.startsWith("http")).toBe(true);
       expect(question.explanation.length).toBeGreaterThan(20);
     }
@@ -93,7 +98,7 @@ describe("hidden answers", () => {
     ],
     correctId: "c" as const,
     explanation: "Because science.",
-    timerSeconds: 15,
+    timerSeconds: 20,
   };
 
   it("hides the correct answer while the question is open", () => {
@@ -165,14 +170,13 @@ describe("quiz security sources", () => {
     expect(sql).toContain("revoke all on public.live_quiz_reactions from anon, authenticated");
     expect(sql).toContain("alter publication supabase_realtime add table public.live_quiz_reaction_counts");
     expect(store).toContain("Wait until the answer is revealed");
-    expect(play).toContain("Answer submitted");
+    expect(play).toContain("answerSubmitted");
     expect(play).not.toContain("sourceUrl");
     expect(play).not.toContain("QuizEditor");
   });
 
   it("keeps reveal, leaderboard, and next-question controls on the admin host API only", () => {
     const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
-    const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
     const playerState = readFileSync(join(process.cwd(), "src/app/api/quiz/state/route.ts"), "utf8");
     const playerAnswer = readFileSync(join(process.cwd(), "src/app/api/quiz/answer/route.ts"), "utf8");
     const playerReact = readFileSync(join(process.cwd(), "src/app/api/quiz/react/route.ts"), "utf8");
@@ -195,9 +199,19 @@ describe("quiz security sources", () => {
     expect(play).not.toContain("Next Question");
     expect(play).not.toContain("Open Question");
     expect(play).not.toContain("Start Quiz");
-    expect(play).toContain("Waiting for the host to reveal the answer");
-    expect(play).toContain("Leave the quiz?");
+    expect(play).toContain("playerCopy");
     expect(play).toContain("QuizStage");
+    expect(play).toContain("useQuizCountdown");
+    const copy = readFileSync(join(process.cwd(), "src/lib/quiz/player-copy.ts"), "utf8");
+    expect(copy).toContain("Leave the quiz?");
+    expect(copy).toContain("Waiting for the host to reveal the answer");
+    expect(copy).toContain("Ootame, kuni mängujuht vastuse avaldab");
+    const joinUi = readFileSync(join(process.cwd(), "src/components/quiz/QuizJoinClient.tsx"), "utf8");
+    expect(joinUi).toContain("Choose language");
+    expect(joinUi).toContain("Vali keel");
+    const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
+    expect(host).toContain("useQuizCountdown");
+    expect(host).toContain("previewLocale");
     const chrome = readFileSync(join(process.cwd(), "src/components/layout/SiteChrome.tsx"), "utf8");
     expect(chrome).toContain('pathname === "/quiz/play"');
     expect(chrome).toContain("hidden md:block");
@@ -240,7 +254,7 @@ describe("kahoot host-controlled game", () => {
     ],
     correctId: "c" as const,
     explanation: "Because science.",
-    timerSeconds: 15,
+    timerSeconds: 20,
   };
 
   it("1. player gets no answer during question_open", () => {
@@ -310,11 +324,11 @@ describe("kahoot host-controlled game", () => {
   });
 
   it("9. next question automatically becomes visible to players", () => {
-    const patch = openQuestionUpdate({ index: 4, timerSeconds: 15, now: new Date("2026-09-11T12:00:00.000Z") });
+    const patch = openQuestionUpdate({ index: 4, now: new Date("2026-09-11T12:00:00.000Z") });
     expect(patch.status).toBe("question_open");
     expect(patch.current_index).toBe(4);
     expect(patch.question_started_at).toBe("2026-09-11T12:00:00.000Z");
-    expect(patch.question_ends_at).toBe("2026-09-11T12:00:15.000Z");
+    expect(patch.question_ends_at).toBe("2026-09-11T12:00:20.000Z");
     const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
     expect(store).toContain("openQuestionUpdate");
     const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
@@ -350,4 +364,89 @@ describe("kahoot host-controlled game", () => {
     expect(play).toContain("/api/quiz/state");
   });
 });
+
+describe("shared 20-second countdown", () => {
+  it("opens every question for exactly 20 seconds", () => {
+    expect(QUIZ_QUESTION_SECONDS).toBe(20);
+    const opened = openQuestionUpdate({ index: 0, timerSeconds: 99, now: new Date("2026-09-12T10:00:00.000Z") });
+    expect(opened.question_started_at).toBe("2026-09-12T10:00:00.000Z");
+    expect(opened.question_ends_at).toBe("2026-09-12T10:00:20.000Z");
+    expect(SEEDED_QUIZ_QUESTIONS.every((row) => row.timerSeconds === 20)).toBe(true);
+  });
+
+  it("gives host and player the same countdown from the same timestamps", () => {
+    const endsAt = "2026-09-12T10:00:20.000Z";
+    const now = Date.parse("2026-09-12T10:00:07.200Z");
+    const hostSeconds = remainingQuizSeconds(endsAt, now);
+    const playerSeconds = remainingQuizSeconds(endsAt, now);
+    expect(hostSeconds).toBe(13);
+    expect(playerSeconds).toBe(hostSeconds);
+  });
+
+  it("does not restart after a refresh 8 seconds in", () => {
+    const started = Date.parse("2026-09-12T10:00:00.000Z");
+    const endsAt = new Date(started + 20_000).toISOString();
+    const afterRefresh = remainingQuizSeconds(endsAt, started + 8_000);
+    expect(afterRefresh).toBe(12);
+    expect(afterRefresh).not.toBe(20);
+  });
+
+  it("does not restart on reconnect and never exceeds 20", () => {
+    const endsAt = "2026-09-12T10:00:20.000Z";
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:01.000Z"))).toBe(19);
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T09:59:50.000Z"))).toBe(20);
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:20.000Z"))).toBe(0);
+  });
+
+  it("expires an open question into waiting_reveal only", () => {
+    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:21.000Z"))).toBe("waiting_reveal");
+    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:20.000Z", Date.parse("2026-09-12T10:00:10.000Z"))).toBe("question_open");
+    expect(statusAfterTimerExpiry("reveal", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:21.000Z"))).toBe("reveal");
+  });
+});
+
+describe("bilingual live quiz", () => {
+  const colour = seedQuestionToRow(SEEDED_QUIZ_QUESTIONS[1], "q-colour");
+
+  it("persists only an explicit player locale", () => {
+    expect(parseQuizLocale("et")).toBe("et");
+    expect(parseQuizLocale("en")).toBe("en");
+    expect(parseQuizLocale("fr")).toBe("en");
+    expect(parseQuizLocale(undefined)).toBe("en");
+    const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    expect(store).toContain("locale");
+    expect(store).toContain("serverNow");
+    const joinApi = readFileSync(join(process.cwd(), "src/app/api/quiz/join/route.ts"), "utf8");
+    expect(joinApi).toContain("locale");
+  });
+
+  it("returns English or Estonian text for the same question id and correct answer", () => {
+    const en = localizeQuestion(colour, "en");
+    const et = localizeQuestion(colour, "et");
+    expect(en.id).toBe(et.id);
+    expect(en.id).toBe("q-colour");
+    expect(en.correctId).toBe("b");
+    expect(et.correctId).toBe("b");
+    expect(en.prompt).toContain("colours");
+    expect(et.prompt).toContain("värvi");
+    expect(en.choices.find((row) => row.id === "b")?.text).toBe("Blue and yellow");
+    expect(et.choices.find((row) => row.id === "b")?.text).toBe("Sinist ja kollast");
+    const enLive = publicQuestionPayload(en, { index: 2, total: 20, revealed: false });
+    const etLive = publicQuestionPayload(et, { index: 2, total: 20, revealed: false });
+    expect(payloadLeaksAnswer(enLive)).toBe(false);
+    expect(payloadLeaksAnswer(etLive)).toBe(false);
+    expect(enLive.id).toBe(etLive.id);
+  });
+
+  it("keeps scoring and leaderboard independent of language", () => {
+    expect(scoreAnswer({ correct: true })).toBe(200);
+    expect(scoreAnswer({ correct: localizeQuestion(colour, "et").correctId === colour.correctId })).toBe(200);
+    const afterEn = applyRoundScores([{ id: "p1", score: 0 }], [{ player_id: "p1", points: 200 }]);
+    const afterEt = applyRoundScores([{ id: "p2", score: 0 }], [{ player_id: "p2", points: 200 }]);
+    expect(afterEn[0].score).toBe(afterEt[0].score);
+    expect(PLAYER_COPY.en.plusPoints(200)).toBe("+200 points");
+    expect(PLAYER_COPY.et.plusPoints(200)).toBe("+200 punkti");
+  });
+});
+
 

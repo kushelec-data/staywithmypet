@@ -1,6 +1,8 @@
 import { isQuestionOpen } from "@/lib/quiz/game-status";
 import { remainingMs } from "@/lib/quiz/scoring";
 
+export const QUIZ_QUESTION_SECONDS = 20;
+
 export function questionHasEnded(endsAt: string | null, nowMs = Date.now()): boolean {
   if (!endsAt) return false;
   return Date.parse(endsAt) <= nowMs;
@@ -19,9 +21,9 @@ export function serverElapsedMs(startedAt: string | null, nowMs = Date.now(), li
   return elapsed;
 }
 
-export function openQuestionUpdate(input: { index: number; timerSeconds: number; now?: Date }) {
+export function openQuestionUpdate(input: { index: number; timerSeconds?: number; now?: Date }) {
   const now = input.now ?? new Date();
-  const ends = new Date(now.getTime() + input.timerSeconds * 1000).toISOString();
+  const ends = new Date(now.getTime() + QUIZ_QUESTION_SECONDS * 1000).toISOString();
   const started = now.toISOString();
   return {
     status: "question_open" as const,
@@ -31,6 +33,27 @@ export function openQuestionUpdate(input: { index: number; timerSeconds: number;
     question_closes_at: ends,
     round_scored: false,
   };
+}
+
+export function quizServerOffsetMs(serverNow: string | number | Date | null | undefined, clientNowMs = Date.now()): number {
+  if (serverNow == null) return 0;
+  const serverMs = typeof serverNow === "number" ? serverNow : Date.parse(String(serverNow));
+  if (!Number.isFinite(serverMs)) return 0;
+  return serverMs - clientNowMs;
+}
+
+export function quizEffectiveNowMs(serverOffsetMs: number, clientNowMs = Date.now()): number {
+  return clientNowMs + serverOffsetMs;
+}
+
+export function remainingQuizSeconds(
+  endsAt: string | null,
+  nowMs = Date.now(),
+  maxSeconds = QUIZ_QUESTION_SECONDS,
+): number {
+  if (!endsAt) return 0;
+  const raw = Math.ceil((Date.parse(endsAt) - nowMs) / 1000);
+  return Math.min(maxSeconds, Math.max(0, raw));
 }
 
 export function remainingFromEndsAt(endsAt: string | null, nowMs = Date.now()): number {
