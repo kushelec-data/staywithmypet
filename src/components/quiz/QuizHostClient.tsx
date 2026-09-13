@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { formatDisplayPin, hostPinStorageKey, QUIZ_PUBLIC_JOIN_HOST, type QuizReaction } from "@/lib/quiz/pin";
 import { isQuestionOpen } from "@/lib/quiz/game-status";
 import type { QuizLocale } from "@/lib/quiz/locale";
+import { answerCountLabel, answerPercentage, previousQuestionPercentLine, totalAnswers } from "@/lib/quiz/percentages";
 import { QUIZ_QUESTION_SECONDS } from "@/lib/quiz/timer";
 import { useQuizCountdown } from "@/lib/quiz/useQuizCountdown";
 import { QuizQuestionImage } from "@/components/quiz/QuizQuestionImage";
@@ -49,7 +50,7 @@ function HostPrimaryButton({ label, onClick }: { label: string; onClick: () => v
       <button
         type="button"
         onClick={onClick}
-        className="btn-interactive mx-auto flex min-h-12 w-full max-w-[420px] items-center justify-center rounded-2xl bg-[#2E6B3F] px-6 text-base font-semibold text-white shadow-sm md:min-h-14 md:max-w-[380px] md:text-lg"
+        className="btn-interactive mx-auto flex min-h-11 w-full max-w-[320px] items-center justify-center rounded-xl bg-[#2E6B3F] px-5 text-sm font-semibold text-white shadow-sm md:min-h-12 md:text-base"
       >
         {label}
       </button>
@@ -59,7 +60,7 @@ function HostPrimaryButton({ label, onClick }: { label: string; onClick: () => v
 
 function Slide({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden px-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 md:px-2 md:pb-4 md:pt-2">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-0.5 md:px-2 md:pb-3 md:pt-1">
       {children}
     </div>
   );
@@ -261,36 +262,36 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
       <Slide>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[clamp(0.7rem,1vw,0.85rem)] font-semibold uppercase tracking-[0.2em] text-[#2E6B3F]">
+            <p className="text-[clamp(0.62rem,0.9vw,0.75rem)] font-semibold uppercase tracking-[0.18em] text-[#2E6B3F]">
               StayWithMyPet Live Quiz
             </p>
-            <p className="mt-1 text-[clamp(1rem,1.8vw,1.25rem)] font-semibold text-muted">
+            <p className="mt-0.5 text-[clamp(0.85rem,1.3vw,1rem)] font-semibold text-muted">
               Question {questionNumber} / {state.total}
             </p>
           </div>
           <p
-            className={`font-heading text-[clamp(2rem,4.5vw,3rem)] font-semibold leading-none ${seconds <= 5 ? "text-[#C62828]" : "text-[#2E6B3F]"}`}
+            className={`font-heading text-[clamp(1.6rem,3vw,2.25rem)] font-semibold leading-none ${seconds <= 5 ? "text-[#C62828]" : "text-[#2E6B3F]"}`}
           >
             {Math.min(seconds, QUIZ_QUESTION_SECONDS)}
           </p>
         </div>
-        <div className="mx-auto mt-3 flex min-h-0 w-full max-w-[920px] flex-col items-center gap-3 md:mt-5 md:flex-row md:items-center md:justify-center md:gap-6">
-          <h2 className="font-heading min-w-0 flex-1 text-center text-[clamp(1.5rem,2.8vw,2.75rem)] font-semibold leading-snug">
+        <div className="mx-auto mt-2 flex min-h-0 w-full max-w-[920px] flex-col items-center gap-2 md:mt-3 md:flex-row md:items-center md:justify-center md:gap-4">
+          <h2 className="font-heading min-w-0 flex-1 text-center text-[clamp(1.35rem,2.4vw,2.25rem)] font-semibold leading-snug">
             {prompt}
           </h2>
-          <QuizQuestionImage src={state.imageUrl} alt="" compact={false} />
+          <QuizQuestionImage src={state.imageUrl} alt="" compact />
         </div>
-        <div className="mx-auto mt-3 grid w-full max-w-[920px] flex-1 grid-cols-1 content-center gap-2.5 sm:grid-cols-2 md:mt-5 md:gap-3">
+        <div className="mx-auto mt-2 grid w-full max-w-[920px] flex-1 grid-cols-1 content-center gap-1.5 sm:grid-cols-2 md:mt-3 md:gap-2">
           {choices.map((choice) => (
-            <div key={choice.id} className="rounded-2xl border border-[#E5E2D8] bg-white px-4 py-3 shadow-sm md:px-5 md:py-4">
-              <p className="text-[clamp(0.95rem,1.4vw,1.2rem)] font-semibold">
+            <div key={choice.id} className="rounded-xl border border-[#E5E2D8] bg-white px-3 py-2 shadow-sm">
+              <p className="text-[clamp(0.9rem,1.2vw,1.1rem)] font-semibold">
                 <span className="mr-2 text-[#2E6B3F]">{choice.id.toUpperCase()}.</span>
                 {choice.text}
               </p>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-center text-[clamp(0.95rem,1.4vw,1.15rem)] text-muted">
+        <p className="mt-2 text-center text-[clamp(0.8rem,1.1vw,0.95rem)] text-muted">
           Answered {state.answered} / {playerCount}
         </p>
         <HostPrimaryButton label="Close Question" onClick={() => void action("close")} />
@@ -299,54 +300,55 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
   } else if (state.status === "waiting_reveal") {
     slide = (
       <Slide>
-        <p className="text-center text-[clamp(0.7rem,1vw,0.85rem)] font-semibold uppercase tracking-[0.2em] text-[#2E6B3F]">
+        <p className="text-center text-[clamp(0.62rem,0.9vw,0.75rem)] font-semibold uppercase tracking-[0.18em] text-[#2E6B3F]">
           StayWithMyPet Live Quiz
         </p>
-        <p className="mt-2 text-center text-[clamp(1rem,1.8vw,1.25rem)] font-semibold text-muted">
+        <p className="mt-1 text-center text-[clamp(0.85rem,1.3vw,1rem)] font-semibold text-muted">
           Question {questionNumber} / {state.total}
         </p>
         <div className="m-auto max-w-xl text-center">
-          <p className="font-heading text-[clamp(2rem,4vw,3rem)] font-semibold">Question closed</p>
-          <p className="mt-4 text-[clamp(1.15rem,2vw,1.5rem)]">
+          <p className="font-heading text-[clamp(1.6rem,3vw,2.25rem)] font-semibold">Question closed</p>
+          <p className="mt-2 text-[clamp(1rem,1.6vw,1.25rem)]">
             {state.answered} / {playerCount} answered
           </p>
-          <p className="mt-3 text-[clamp(1rem,1.6vw,1.25rem)] text-muted">Waiting to reveal the answer</p>
+          <p className="mt-2 text-[clamp(0.9rem,1.3vw,1.1rem)] text-muted">Waiting to reveal the answer</p>
         </div>
         <HostPrimaryButton label="Reveal Answer" onClick={() => void action("reveal")} />
       </Slide>
     );
   } else if (state.status === "reveal") {
-    const totalAnswers = state.distribution ? state.distribution.a + state.distribution.b + state.distribution.c + state.distribution.d : 0;
+    const answeredTotal = state.distribution ? totalAnswers(state.distribution) : 0;
     slide = (
       <Slide>
-        <p className="text-center text-[clamp(1rem,1.8vw,1.25rem)] font-semibold text-muted">
+        <p className="text-center text-[clamp(0.85rem,1.3vw,1rem)] font-semibold text-muted">
           Question {questionNumber} / {state.total}
         </p>
-        <p className="mt-3 text-center text-[clamp(0.7rem,1vw,0.85rem)] font-semibold uppercase tracking-[0.18em] text-muted">
+        <p className="mt-1 text-center text-[clamp(0.62rem,0.9vw,0.75rem)] font-semibold uppercase tracking-[0.16em] text-muted">
           Correct answer
         </p>
-        <p className="font-heading mx-auto mt-2 max-w-[36rem] rounded-2xl border border-[#2E6B3F] bg-[#E8F2EA] px-5 py-3 text-center text-[clamp(1.35rem,2.4vw,2rem)] font-semibold">
+        <p className="font-heading mx-auto mt-1 max-w-[36rem] rounded-xl border border-[#2E6B3F] bg-[#E8F2EA] px-4 py-2 text-center text-[clamp(1.15rem,2vw,1.6rem)] font-semibold">
           {correctText}
         </p>
-        {explanation ? <p className="mx-auto mt-3 max-w-[40rem] text-center text-[clamp(0.95rem,1.4vw,1.15rem)] text-muted">{explanation}</p> : null}
+        {explanation ? <p className="mx-auto mt-1.5 max-w-[40rem] text-center text-[clamp(0.85rem,1.2vw,1rem)] text-muted">{explanation}</p> : null}
         {state.distribution ? (
-          <div className="mx-auto mt-5 grid w-full max-w-[920px] grid-cols-2 gap-2 md:gap-3">
+          <div className="mx-auto mt-3 grid w-full max-w-[920px] grid-cols-2 gap-1.5 md:gap-2">
             {choices.map((choice) => {
               const count = state.distribution?.[choice.id] ?? 0;
-              const pct = totalAnswers ? Math.round((count / totalAnswers) * 100) : 0;
+              const pct = answerPercentage(count, answeredTotal);
               const winner = choice.id === state.correctId;
               return (
                 <div
                   key={choice.id}
-                  className={`overflow-hidden rounded-xl border px-3 py-2 ${winner ? "border-[#2E6B3F] bg-[#E8F2EA]" : "border-[#E5E2D8] bg-white"}`}
+                  className={`overflow-hidden rounded-xl border px-3 py-1.5 ${winner ? "border-[#2E6B3F] bg-[#E8F2EA]" : "border-[#E5E2D8] bg-white"}`}
                 >
-                  <div className="flex items-center justify-between gap-2 text-[clamp(0.8rem,1.1vw,0.95rem)] font-semibold">
-                    <span className="min-w-0 truncate">
-                      {choice.id.toUpperCase()}. {choice.text}
-                    </span>
-                    <span>{count}</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#E8E4DA]">
+                  <p className="truncate text-[clamp(0.78rem,1vw,0.9rem)] font-semibold">
+                    {choice.id.toUpperCase()}. {choice.text}
+                  </p>
+                  <p className="mt-0.5 flex items-center justify-between text-[clamp(0.72rem,0.95vw,0.85rem)] text-muted">
+                    <span>{answerCountLabel(count)}</span>
+                    <span className="font-semibold text-foreground">{pct}%</span>
+                  </p>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#E8E4DA]">
                     <div className={`h-full rounded-full ${winner ? "bg-[#2E6B3F]" : "bg-[#A3B8A8]"}`} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
@@ -354,7 +356,7 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
             })}
           </div>
         ) : null}
-        <p className="mt-4 text-center text-[clamp(1rem,1.5vw,1.2rem)]">
+        <p className="mt-2 text-center text-[clamp(0.85rem,1.2vw,1rem)]">
           ❤️ {state.reactionCounts.love} &nbsp; 😮 {state.reactionCounts.wow} &nbsp; 😂 {state.reactionCounts.funny} &nbsp; 😡{" "}
           {state.reactionCounts.angry}
         </p>
@@ -364,20 +366,25 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
   } else if (state.status === "leaderboard" || state.finished) {
     slide = (
       <Slide>
-        <p className="text-center text-[clamp(0.7rem,1vw,0.85rem)] font-semibold uppercase tracking-[0.2em] text-[#2E6B3F]">
+        <p className="text-center text-[clamp(0.62rem,0.9vw,0.75rem)] font-semibold uppercase tracking-[0.18em] text-[#2E6B3F]">
           StayWithMyPet Live Quiz
         </p>
-        <h2 className="font-heading mt-2 text-center text-[clamp(1.8rem,3.4vw,2.75rem)] font-semibold">
+        <h2 className="font-heading mt-1 text-center text-[clamp(1.45rem,2.6vw,2rem)] font-semibold">
           {state.finished ? "Final results" : "Leaderboard"}
         </h2>
-        <ol className="mx-auto mt-5 w-full max-w-[720px] space-y-2">
+        {!state.finished && state.distribution ? (
+          <p className="mt-1 text-center text-[clamp(0.68rem,0.95vw,0.8rem)] text-muted">
+            Previous question: {previousQuestionPercentLine(state.distribution)}
+          </p>
+        ) : null}
+        <ol className="mx-auto mt-3 w-full max-w-[720px] space-y-1.5">
           {board.map((player, index) => (
             <li
               key={player.id}
-              className={`flex items-center justify-between px-4 ${
+              className={`flex items-center justify-between px-3 ${
                 index < 3
-                  ? "rounded-2xl border border-[#2E6B3F]/20 bg-[#E8F2EA] py-3 text-[clamp(1.15rem,2vw,1.45rem)] font-semibold"
-                  : "rounded-xl border border-[#E5E2D8] bg-white py-2 text-[clamp(1rem,1.5vw,1.15rem)]"
+                  ? "rounded-xl border border-[#2E6B3F]/20 bg-[#E8F2EA] py-2 text-[clamp(1rem,1.6vw,1.25rem)] font-semibold"
+                  : "rounded-lg border border-[#E5E2D8] bg-white py-1.5 text-[clamp(0.9rem,1.3vw,1.05rem)]"
               }`}
             >
               <span className="flex min-w-0 items-center gap-3">

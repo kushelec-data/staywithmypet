@@ -11,7 +11,7 @@ export function QuizCircleTimer({
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
   return (
-    <div className="relative mx-auto h-28 w-28 sm:h-32 sm:w-32">
+    <div className="relative mx-auto h-16 w-16 sm:h-20 sm:w-20">
       <svg viewBox="0 0 100 100" className="-rotate-90" aria-hidden>
         <circle cx="50" cy="50" r={radius} fill="none" stroke="#E8E4DA" strokeWidth="8" />
         <circle
@@ -26,7 +26,7 @@ export function QuizCircleTimer({
           strokeDashoffset={circumference * (1 - clamped)}
         />
       </svg>
-      <span className={`absolute inset-0 flex items-center justify-center font-heading font-semibold ${typeof value === "number" ? "text-4xl sm:text-5xl" : "text-2xl sm:text-3xl"} ${urgent ? "text-[#C62828]" : "text-foreground"}`}>
+      <span className={`absolute inset-0 flex items-center justify-center font-heading font-semibold ${typeof value === "number" ? "text-2xl sm:text-3xl" : "text-lg sm:text-xl"} ${urgent ? "text-[#C62828]" : "text-foreground"}`}>
         {value}
       </span>
     </div>

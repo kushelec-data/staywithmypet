@@ -112,7 +112,7 @@ function PlayFrame({
   return (
     <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#F6F4EE] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))] md:h-auto md:max-h-none md:min-h-[calc(100dvh-0px)] md:overflow-visible md:px-4 md:py-8">
       <div className={`${CONTENT_CONTAINER} mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col`}>
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-1.5 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onExit}
@@ -343,12 +343,12 @@ export function QuizPlayClient() {
     const questionOpen = isQuestionOpen(state.status);
     const selectedReaction = state.you.reaction;
     body = (
-      <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-[#E5E2D8] bg-white p-4 shadow-sm md:p-6">
+      <div className="flex h-full min-h-0 flex-col rounded-2xl border border-[#E5E2D8] bg-white p-3 shadow-sm md:p-4">
         {questionOpen && locked ? (
           <div className="flex flex-1 items-center justify-center">
-            <div className="w-full rounded-2xl bg-[#E8F2EA] px-4 py-12 text-center">
-              <p className="font-heading text-2xl font-semibold text-[#2E6B3F]">✓ {t.answerSubmitted}</p>
-              <p className="mt-3 text-lg text-muted">{t.waitingEveryone}</p>
+            <div className="w-full rounded-xl bg-[#E8F2EA] px-4 py-8 text-center">
+              <p className="font-heading text-xl font-semibold text-[#2E6B3F]">✓ {t.answerSubmitted}</p>
+              <p className="mt-2 text-base text-muted">{t.waitingEveryone}</p>
             </div>
           </div>
         ) : null}
@@ -357,13 +357,13 @@ export function QuizPlayClient() {
             <div className="shrink-0">
               <QuizCircleTimer value={seconds} progress={seconds / QUIZ_QUESTION_SECONDS} urgent={seconds <= 5} />
             </div>
-            <div className="mt-4 shrink-0 rounded-2xl border border-[#E5E2D8] bg-[#FFFDF8] px-4 py-4 shadow-sm">
-              <h1 className="font-heading text-center text-lg font-semibold leading-snug sm:text-2xl">{question.prompt}</h1>
-              <div className="mt-3">
+            <div className="mt-2 shrink-0 px-1">
+              <h1 className="font-heading text-center text-base font-semibold leading-snug sm:text-xl">{question.prompt}</h1>
+              <div className="mt-2">
                 <QuizQuestionImage src={question.imageUrl} alt="" compact />
               </div>
             </div>
-            <div className="mt-4 grid min-h-0 flex-1 content-start gap-2.5">
+            <div className="mt-2 grid min-h-0 flex-1 content-start gap-1.5">
               {question.choices.map((choice) => {
                 const look = ANSWER_LOOK[choice.id];
                 const active = picked === choice.id;
@@ -373,12 +373,12 @@ export function QuizPlayClient() {
                     type="button"
                     disabled={locked}
                     onClick={() => void answer(choice.id)}
-                    className={`btn-interactive flex min-h-[56px] items-center gap-3 border px-3 py-3 text-left text-base font-semibold shadow-sm disabled:opacity-70 sm:min-h-[72px] sm:text-lg ${look.wrap} ${
+                    className={`btn-interactive flex min-h-[44px] items-center gap-2.5 border px-3 py-2 text-left text-sm font-semibold shadow-sm disabled:opacity-70 sm:min-h-[48px] sm:text-base ${look.wrap} ${
                       active ? "border-[#2E6B3F] bg-[#2E6B3F] text-white" : "border-[#E5E2D8] bg-white text-foreground"
                     }`}
                   >
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center text-sm font-bold ${look.badge} ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold ${look.badge} ${
                         active ? "bg-white/20 text-white" : "bg-[#F3F0E8] text-[#2E6B3F]"
                       }`}
                     >

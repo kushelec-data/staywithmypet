@@ -13,6 +13,7 @@ import {
   playerMayAnswer,
 } from "@/lib/quiz/game-status";
 import { applyRoundScores, openQuestionUpdate, QUIZ_QUESTION_SECONDS, remainingQuizSeconds, statusAfterTimerExpiry } from "@/lib/quiz/timer";
+import { answerPercentage, previousQuestionPercentLine } from "@/lib/quiz/percentages";
 import { localizeQuestion, parseQuizLocale } from "@/lib/quiz/locale";
 import { PLAYER_COPY } from "@/lib/quiz/player-copy";
 
@@ -26,7 +27,7 @@ describe("seeded quiz", () => {
       expect(question.choices).toHaveLength(4);
       expect(new Set(question.choices.map((row) => row.id)).size).toBe(4);
       expect(question.choices.some((row) => row.id === question.correctId)).toBe(true);
-      expect(question.timerSeconds).toBe(30);
+      expect(question.timerSeconds).toBe(25);
       expect(question.promptEt.length).toBeGreaterThan(10);
       expect(question.explanationEt.length).toBeGreaterThan(20);
       expect(question.choices.every((choice) => choice.textEt.length > 0)).toBe(true);
@@ -317,7 +318,10 @@ describe("quiz security sources", () => {
     expect(host).toContain("GAME PIN");
     expect(host).toContain("StayWithMyPet Live Quiz");
     expect(host).toContain("Waiting to reveal the answer");
-    expect(host).toContain("max-w-[420px]");
+    expect(host).toContain("max-w-[320px]");
+    expect(host).toContain("answerPercentage");
+    expect(host).toContain("Previous question:");
+    expect(host).toContain("answerCountLabel");
     const chrome = readFileSync(join(process.cwd(), "src/components/layout/SiteChrome.tsx"), "utf8");
     expect(chrome).toContain('pathname === "/quiz/play"');
     expect(chrome).toContain("hidden md:block");
@@ -439,7 +443,7 @@ describe("kahoot host-controlled game", () => {
     expect(patch.status).toBe("question_open");
     expect(patch.current_index).toBe(4);
     expect(patch.question_started_at).toBe("2026-09-11T12:00:00.000Z");
-    expect(patch.question_ends_at).toBe("2026-09-11T12:00:30.000Z");
+    expect(patch.question_ends_at).toBe("2026-09-11T12:00:25.000Z");
     const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
     expect(store).toContain("openQuestionUpdate");
     const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
@@ -476,24 +480,24 @@ describe("kahoot host-controlled game", () => {
   });
 });
 
-describe("shared 30-second countdown", () => {
-  it("opens every question for exactly 30 seconds", () => {
-    expect(QUIZ_QUESTION_SECONDS).toBe(30);
+describe("shared 25-second countdown", () => {
+  it("opens every question for exactly 25 seconds", () => {
+    expect(QUIZ_QUESTION_SECONDS).toBe(25);
     const opened = openQuestionUpdate({ index: 0, timerSeconds: 99, now: new Date("2026-09-12T10:00:00.000Z") });
     expect(opened.question_started_at).toBe("2026-09-12T10:00:00.000Z");
-    expect(opened.question_ends_at).toBe("2026-09-12T10:00:30.000Z");
-    expect(SEEDED_QUIZ_QUESTIONS.every((row) => row.timerSeconds === 30)).toBe(true);
-    const sql = readFileSync(join(process.cwd(), "supabase/migrations/20260912140000_live_quiz_timer_30.sql"), "utf8");
-    expect(sql).toContain("timer_seconds = 30");
-    expect(sql).toContain("set default 30");
+    expect(opened.question_ends_at).toBe("2026-09-12T10:00:25.000Z");
+    expect(SEEDED_QUIZ_QUESTIONS.every((row) => row.timerSeconds === 25)).toBe(true);
+    const sql = readFileSync(join(process.cwd(), "supabase/migrations/20260913070000_live_quiz_timer_25.sql"), "utf8");
+    expect(sql).toContain("timer_seconds = 25");
+    expect(sql).toContain("set default 25");
   });
 
   it("gives host and player the same countdown from the same timestamps", () => {
-    const endsAt = "2026-09-12T10:00:30.000Z";
+    const endsAt = "2026-09-12T10:00:25.000Z";
     const now = Date.parse("2026-09-12T10:00:07.200Z");
     const hostSeconds = remainingQuizSeconds(endsAt, now);
     const playerSeconds = remainingQuizSeconds(endsAt, now);
-    expect(hostSeconds).toBe(23);
+    expect(hostSeconds).toBe(18);
     expect(playerSeconds).toBe(hostSeconds);
     const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
     const play = readFileSync(join(process.cwd(), "src/components/quiz/QuizPlayClient.tsx"), "utf8");
@@ -505,28 +509,67 @@ describe("shared 30-second countdown", () => {
 
   it("does not restart after a refresh 10 seconds in", () => {
     const started = Date.parse("2026-09-12T10:00:00.000Z");
-    const endsAt = new Date(started + 30_000).toISOString();
+    const endsAt = new Date(started + 25_000).toISOString();
     const afterRefresh = remainingQuizSeconds(endsAt, started + 10_000);
-    expect(afterRefresh).toBe(20);
-    expect(afterRefresh).not.toBe(30);
+    expect(afterRefresh).toBe(15);
+    expect(afterRefresh).not.toBe(25);
   });
 
-  it("does not restart on reconnect and never exceeds 30", () => {
-    const endsAt = "2026-09-12T10:00:30.000Z";
-    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:01.000Z"))).toBe(29);
-    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T09:59:50.000Z"))).toBe(30);
-    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:30.000Z"))).toBe(0);
+  it("does not restart on reconnect and never exceeds 25", () => {
+    const endsAt = "2026-09-12T10:00:25.000Z";
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:01.000Z"))).toBe(24);
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T09:59:50.000Z"))).toBe(25);
+    expect(remainingQuizSeconds(endsAt, Date.parse("2026-09-12T10:00:25.000Z"))).toBe(0);
   });
 
   it("expires an open question into waiting_reveal only", () => {
-    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:31.000Z"))).toBe("waiting_reveal");
-    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:30.000Z", Date.parse("2026-09-12T10:00:10.000Z"))).toBe("question_open");
-    expect(statusAfterTimerExpiry("reveal", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:31.000Z"))).toBe("reveal");
+    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:26.000Z"))).toBe("waiting_reveal");
+    expect(statusAfterTimerExpiry("question_open", "2026-09-12T10:00:25.000Z", Date.parse("2026-09-12T10:00:10.000Z"))).toBe("question_open");
+    expect(statusAfterTimerExpiry("reveal", "2026-09-12T10:00:00.000Z", Date.parse("2026-09-12T10:00:26.000Z"))).toBe("reveal");
   });
 
-  it("keeps scoring at +200 after the 30-second timer change", () => {
-    expect(scoreAnswer({ correct: true, elapsedMs: 200, limitMs: 30_000 })).toBe(200);
-    expect(scoreAnswer({ correct: true, elapsedMs: 29_000, limitMs: 30_000 })).toBe(200);
+  it("keeps scoring at +200 after the 25-second timer change", () => {
+    expect(scoreAnswer({ correct: true, elapsedMs: 200, limitMs: 25_000 })).toBe(200);
+    expect(scoreAnswer({ correct: true, elapsedMs: 24_000, limitMs: 25_000 })).toBe(200);
+  });
+});
+
+describe("reveal answer percentages", () => {
+  it("rounds answer counts to whole percentages and zeros when nobody answered", () => {
+    expect(answerPercentage(1, 4)).toBe(25);
+    expect(answerPercentage(2, 4)).toBe(50);
+    expect(answerPercentage(0, 0)).toBe(0);
+    expect(previousQuestionPercentLine({ a: 2, b: 11, c: 6, d: 1 })).toBe("A 10% · B 55% · C 30% · D 5%");
+  });
+
+  it("shows four option percentages only after reveal", () => {
+    const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
+    expect(host).toContain("answerPercentage");
+    expect(host).toContain("{pct}%");
+    expect(host).toContain("answerCountLabel");
+    const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    const hostFn = store.slice(store.indexOf("export async function hostGameState"));
+    expect(hostFn).toContain("distribution: revealed ? distribution : null");
+    expect(answerKeyIsPublic("question_open")).toBe(false);
+    expect(answerKeyIsPublic("waiting_reveal")).toBe(false);
+    expect(answerKeyIsPublic("reveal")).toBe(true);
+    const live = publicQuestionPayload(
+      {
+        prompt: "Demo?",
+        choices: [
+          { id: "a", text: "One" },
+          { id: "b", text: "Two" },
+          { id: "c", text: "Three" },
+          { id: "d", text: "Four" },
+        ],
+        correctId: "c",
+        explanation: "Because science.",
+      },
+      { index: 1, total: SEEDED_QUIZ_QUESTIONS.length, revealed: false },
+    );
+    expect(JSON.stringify(live)).not.toContain("%");
+    expect(payloadLeaksAnswer(live)).toBe(false);
+    expect(SEEDED_QUIZ_QUESTIONS).toHaveLength(12);
   });
 });
 

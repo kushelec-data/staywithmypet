@@ -9,7 +9,7 @@ export function QuizQuestionImage({
 }) {
   if (!src) return null;
   return (
-    <div className={`mx-auto flex w-full items-center justify-center ${compact ? "max-h-28 max-w-[12rem] md:max-h-32" : "max-h-[22vh] max-w-[16rem] md:max-h-[26vh] md:max-w-[18rem]"}`}>
+    <div className={`mx-auto flex w-full items-center justify-center ${compact ? "max-h-20 max-w-[9rem] md:max-h-24" : "max-h-[18vh] max-w-[12rem] md:max-h-[20vh] md:max-w-[14rem]"}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}

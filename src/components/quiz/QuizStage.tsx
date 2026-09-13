@@ -27,7 +27,7 @@ export function QuizStage({ stageKey, children }: { stageKey: string; children: 
     setLeaving(kidsRef.current);
     keyRef.current = stageKey;
     kidsRef.current = incomingRef.current;
-    const timeout = window.setTimeout(() => setLeaving(null), reduced ? 320 : 420);
+    const timeout = window.setTimeout(() => setLeaving(null), reduced ? 250 : 280);
     return () => window.clearTimeout(timeout);
   }, [stageKey, reduced]);
 
