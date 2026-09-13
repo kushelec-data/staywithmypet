@@ -13,7 +13,7 @@ import {
   playerMayAnswer,
 } from "@/lib/quiz/game-status";
 import { applyRoundScores, openQuestionUpdate, QUIZ_QUESTION_SECONDS, remainingQuizSeconds, statusAfterTimerExpiry } from "@/lib/quiz/timer";
-import { answerPercentage, previousQuestionPercentLine } from "@/lib/quiz/percentages";
+import { answerPercentage, leaderboardDistributionRows, previousQuestionPercentLine } from "@/lib/quiz/percentages";
 import { localizeQuestion, parseQuizLocale } from "@/lib/quiz/locale";
 import { PLAYER_COPY } from "@/lib/quiz/player-copy";
 
@@ -320,7 +320,7 @@ describe("quiz security sources", () => {
     expect(host).toContain("Waiting to reveal the answer");
     expect(host).toContain("max-w-[320px]");
     expect(host).toContain("answerPercentage");
-    expect(host).toContain("Previous question:");
+    expect(host).toContain("Previous question results");
     expect(host).toContain("answerCountLabel");
     const chrome = readFileSync(join(process.cwd(), "src/components/layout/SiteChrome.tsx"), "utf8");
     expect(chrome).toContain('pathname === "/quiz/play"');
@@ -570,6 +570,28 @@ describe("reveal answer percentages", () => {
     expect(JSON.stringify(live)).not.toContain("%");
     expect(payloadLeaksAnswer(live)).toBe(false);
     expect(SEEDED_QUIZ_QUESTIONS).toHaveLength(12);
+  });
+
+  it("gives the leaderboard all four previous-question options and highlights the correct one", () => {
+    const rows = leaderboardDistributionRows({ a: 0, b: 1, c: 1, d: 0 }, "b");
+    expect(rows).toHaveLength(4);
+    expect(rows.map((row) => row.id)).toEqual(["a", "b", "c", "d"]);
+    expect(rows[0]).toMatchObject({ percent: 0, count: 0, correct: false });
+    expect(rows[1]).toMatchObject({ percent: 50, count: 1, correct: true });
+    expect(rows[2]).toMatchObject({ percent: 50, count: 1, correct: false });
+    expect(rows[3]).toMatchObject({ percent: 0, count: 0, correct: false });
+    expect(leaderboardDistributionRows(null, null).every((row) => row.percent === 0)).toBe(true);
+    const host = readFileSync(join(process.cwd(), "src/components/quiz/QuizHostClient.tsx"), "utf8");
+    expect(host).toContain("leaderboardDistributionRows");
+    expect(host).toContain("Previous question results");
+    expect(host).toContain("✓ Correct");
+    const store = readFileSync(join(process.cwd(), "src/lib/quiz/store.ts"), "utf8");
+    const hostFn = store.slice(store.indexOf("export async function hostGameState"));
+    expect(hostFn).toContain("distribution: revealed ? distribution : null");
+    expect(hostFn).toContain("correctId: revealed && question ? question.correctId : null");
+    expect(answerKeyIsPublic("question_open")).toBe(false);
+    expect(answerKeyIsPublic("waiting_reveal")).toBe(false);
+    expect(answerKeyIsPublic("leaderboard")).toBe(true);
   });
 });
 

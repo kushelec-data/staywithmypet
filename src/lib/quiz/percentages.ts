@@ -1,5 +1,7 @@
 export type AnswerDistribution = { a: number; b: number; c: number; d: number };
 
+export const QUIZ_CHOICE_IDS = ["a", "b", "c", "d"] as const;
+
 export function answerPercentage(answerCount: number, totalAnswers: number): number {
   if (!totalAnswers) return 0;
   return Math.round((answerCount / totalAnswers) * 100);
@@ -27,4 +29,22 @@ export function previousQuestionPercentLine(distribution: AnswerDistribution): s
 
 export function answerCountLabel(count: number): string {
   return count === 1 ? "1 answer" : `${count} answers`;
+}
+
+export function emptyAnswerDistribution(): AnswerDistribution {
+  return { a: 0, b: 0, c: 0, d: 0 };
+}
+
+export function leaderboardDistributionRows(
+  distribution: AnswerDistribution | null | undefined,
+  correctId?: "a" | "b" | "c" | "d" | null,
+) {
+  const dist = distribution ?? emptyAnswerDistribution();
+  const total = totalAnswers(dist);
+  return QUIZ_CHOICE_IDS.map((id) => ({
+    id,
+    count: dist[id],
+    percent: answerPercentage(dist[id], total),
+    correct: correctId === id,
+  }));
 }

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { formatDisplayPin, hostPinStorageKey, QUIZ_PUBLIC_JOIN_HOST, type QuizReaction } from "@/lib/quiz/pin";
 import { isQuestionOpen } from "@/lib/quiz/game-status";
 import type { QuizLocale } from "@/lib/quiz/locale";
-import { answerCountLabel, answerPercentage, previousQuestionPercentLine, totalAnswers } from "@/lib/quiz/percentages";
+import { answerCountLabel, answerPercentage, leaderboardDistributionRows, totalAnswers } from "@/lib/quiz/percentages";
 import { QUIZ_QUESTION_SECONDS } from "@/lib/quiz/timer";
 import { useQuizCountdown } from "@/lib/quiz/useQuizCountdown";
 import { QuizQuestionImage } from "@/components/quiz/QuizQuestionImage";
@@ -364,37 +364,65 @@ export function QuizHostClient({ gameId }: { gameId: string }) {
       </Slide>
     );
   } else if (state.status === "leaderboard" || state.finished) {
+    const prevRows = leaderboardDistributionRows(state.distribution, state.correctId);
     slide = (
       <Slide>
         <p className="text-center text-[clamp(0.62rem,0.9vw,0.75rem)] font-semibold uppercase tracking-[0.18em] text-[#2E6B3F]">
           StayWithMyPet Live Quiz
         </p>
-        <h2 className="font-heading mt-1 text-center text-[clamp(1.45rem,2.6vw,2rem)] font-semibold">
+        <h2 className="font-heading mt-0.5 text-center text-[clamp(1.35rem,2.4vw,1.85rem)] font-semibold">
           {state.finished ? "Final results" : "Leaderboard"}
         </h2>
-        {!state.finished && state.distribution ? (
-          <p className="mt-1 text-center text-[clamp(0.68rem,0.95vw,0.8rem)] text-muted">
-            Previous question: {previousQuestionPercentLine(state.distribution)}
-          </p>
-        ) : null}
-        <ol className="mx-auto mt-3 w-full max-w-[720px] space-y-1.5">
-          {board.map((player, index) => (
-            <li
-              key={player.id}
-              className={`flex items-center justify-between px-3 ${
-                index < 3
-                  ? "rounded-xl border border-[#2E6B3F]/20 bg-[#E8F2EA] py-2 text-[clamp(1rem,1.6vw,1.25rem)] font-semibold"
-                  : "rounded-lg border border-[#E5E2D8] bg-white py-1.5 text-[clamp(0.9rem,1.3vw,1.05rem)]"
-              }`}
-            >
-              <span className="flex min-w-0 items-center gap-3">
-                <span className="w-8 shrink-0 text-center">{index < 3 ? PODIUM[index] : `${index + 1}.`}</span>
-                <span className="truncate">{player.name}</span>
-              </span>
-              <span className="font-heading font-semibold">{player.score}</span>
-            </li>
-          ))}
-        </ol>
+        <div className="mx-auto flex min-h-0 w-full max-w-[820px] flex-1 flex-col">
+          {!state.finished ? (
+            <div className="flex min-h-0 basis-[38%] flex-col justify-center">
+              <p className="text-center text-[clamp(0.7rem,0.95vw,0.82rem)] font-semibold text-muted">Previous question results</p>
+              <div className="mt-1.5 space-y-1">
+                {prevRows.map((row) => (
+                  <div
+                    key={row.id}
+                    className={`grid grid-cols-[1.25rem_minmax(0,1fr)_2.4rem_1.4rem_4.6rem] items-center gap-2 rounded-md px-2 py-0.5 ${
+                      row.correct ? "bg-[#E8F2EA]" : ""
+                    }`}
+                  >
+                    <span className={`text-[clamp(0.75rem,1vw,0.9rem)] font-semibold ${row.correct ? "text-[#2E6B3F]" : "text-muted"}`}>
+                      {row.id.toUpperCase()}
+                    </span>
+                    <div className="h-2.5 min-w-0 overflow-hidden rounded-full bg-[#E8E4DA]">
+                      <div
+                        className={`h-full rounded-full ${row.correct ? "bg-[#2E6B3F]" : "bg-[#A3B8A8]"}`}
+                        style={{ width: `${row.percent}%` }}
+                      />
+                    </div>
+                    <span className="text-right text-[clamp(0.72rem,0.95vw,0.85rem)] font-semibold">{row.percent}%</span>
+                    <span className="text-right text-[clamp(0.72rem,0.95vw,0.85rem)] text-muted">{row.count}</span>
+                    <span className={`text-right text-[10px] font-semibold uppercase tracking-wide ${row.correct ? "text-[#2E6B3F]" : "invisible"}`}>
+                      ✓ Correct
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <ol className={`mx-auto w-full max-w-[720px] space-y-1.5 overflow-hidden ${state.finished ? "mt-3 flex-1" : "mt-2 flex min-h-0 basis-[62%] flex-col justify-start"}`}>
+            {board.map((player, index) => (
+              <li
+                key={player.id}
+                className={`flex items-center justify-between px-3 ${
+                  index < 3
+                    ? "rounded-xl border border-[#2E6B3F]/20 bg-[#E8F2EA] py-2 text-[clamp(1rem,1.6vw,1.25rem)] font-semibold"
+                    : "rounded-lg border border-[#E5E2D8] bg-white py-1.5 text-[clamp(0.9rem,1.3vw,1.05rem)]"
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="w-8 shrink-0 text-center">{index < 3 ? PODIUM[index] : `${index + 1}.`}</span>
+                  <span className="truncate">{player.name}</span>
+                </span>
+                <span className="font-heading font-semibold">{player.score}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
         {!state.finished ? (
           <HostPrimaryButton label={lastQuestion ? "Show Final Results" : "Next Question"} onClick={() => void action("next")} />
         ) : null}
