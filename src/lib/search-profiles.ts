@@ -1,12 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { resolveCityCenter } from "@/lib/estonia-city-coords";
+import { publicMapPinFromAreaLabel } from "@/lib/estonia-city-coords";
 import { formatNearbyLocation } from "@/lib/location-public";
 import { excludeMarketplaceSelf } from "@/lib/marketplace-membership";
 import { isDiscoverableOnFindCare } from "@/lib/profile-marketplace-eligibility";
 import { isPetFriendFindCareListingEligible } from "@/lib/profile-required-fields";
 import { resolveProfilePublicLocation } from "@/lib/profile-location";
-import { blurCoordinates } from "@/lib/map-privacy";
-import { parseCoord } from "@/lib/parse-coord";
+import {
+  PUBLIC_PROFILE_RELATIONS,
+  PUBLIC_PROFILES_VIEW,
+  fromProfileRelation,
+  shouldFallbackProfileRelation,
+} from "@/lib/profile-relations";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
 import type { PetFriendSearchFilterable } from "@/lib/pet-friend-search-match";
 import { buildPetFriendPreferenceChips } from "@/lib/pet-friend-card-chips";
@@ -35,7 +39,7 @@ export type SearchProfile = PetFriendSearchFilterable & {
   ratingCount: number;
   stayCount: number;
   preferenceChips: string[];
-  /** Privacy-blurred coordinates for public map only (never exact address). */
+  /** City-center map pin from the public area label (never a home coordinate). */
   mapPosition: { lat: number; lng: number } | null;
 };
 
@@ -50,9 +54,9 @@ function isListableProfile(row: PetFriendSearchRow & { is_public?: boolean | nul
     public_location: row.public_location ?? null,
     city: row.city ?? null,
     country: row.country ?? null,
-    google_place_id: row.google_place_id ?? null,
-    latitude: row.latitude as number | null,
-    longitude: row.longitude as number | null,
+    google_place_id: null,
+    latitude: null,
+    longitude: null,
     is_public: row.is_public ?? true,
     role: row.role,
     details: row.details as ProfileDetails | Record<string, unknown> | null | undefined,
@@ -83,8 +87,11 @@ type PetFriendSearchRow = {
 const PET_FRIEND_SEARCH_SELECT =
   "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details, is_public";
 
+const PET_FRIEND_SEARCH_SELECT_PUBLIC_VIEW =
+  "id, display_name, location, public_location, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details, is_public";
+
 const PET_FRIEND_SEARCH_SELECT_FALLBACKS = [
-  "id, display_name, location, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",
+  "id, display_name, location, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, details",
   "id, display_name, location, bio, avatar_url, role, active_mode, rating_avg, rating_count, languages, details",
 ] as const;
 
@@ -106,23 +113,9 @@ export function profileTabForSearchMode(mode: "pets" | "care"): SearchProfileTab
   return mode === "care" ? "pet_friend" : "pet_parent";
 }
 
-/** Resolve profile coords then blur for public map — never expose exact home location. */
-function resolveFriendMapPosition(
-  row: Pick<PetFriendSearchRow, "id" | "location" | "latitude" | "longitude">,
-  locationArea: string | null,
-): { lat: number; lng: number } | null {
-  let lat = parseCoord(row.latitude);
-  let lng = parseCoord(row.longitude);
-
-  if (lat == null || lng == null) {
-    const fallbackLabel = locationArea ?? row.location?.trim() ?? null;
-    const city = resolveCityCenter(fallbackLabel);
-    if (!city) return null;
-    lat = city.lat;
-    lng = city.lng;
-  }
-
-  return blurCoordinates(lat, lng, row.id);
+/** City-center map pin from the public area label — never a member's stored coordinates. */
+function resolveFriendMapPosition(locationArea: string | null): { lat: number; lng: number } | null {
+  return publicMapPinFromAreaLabel(locationArea);
 }
 
 function profileEmailVerified(detailsRaw: unknown): boolean {
@@ -146,7 +139,7 @@ export function mapPetFriendSearchRow(row: PetFriendSearchRow): SearchProfile {
     id: row.id,
     displayName: row.display_name.trim(),
     location: locationArea,
-    mapPosition: resolveFriendMapPosition(row, locationArea),
+    mapPosition: resolveFriendMapPosition(locationArea),
     bio: bio || null,
     avatarUrl: row.avatar_url,
     avatarPosition: resolveAvatarPosition(row.avatar_url, row.details),
@@ -183,29 +176,37 @@ export async function fetchPetFriendSearchProfiles(
   supabase: SupabaseClient,
   options: FetchPetFriendSearchProfilesOptions = {},
 ): Promise<SearchProfile[]> {
-  const selects = [PET_FRIEND_SEARCH_SELECT, ...PET_FRIEND_SEARCH_SELECT_FALLBACKS];
+  for (const relation of PUBLIC_PROFILE_RELATIONS) {
+    const selects =
+      relation === PUBLIC_PROFILES_VIEW
+        ? [PET_FRIEND_SEARCH_SELECT_PUBLIC_VIEW, ...PET_FRIEND_SEARCH_SELECT_FALLBACKS]
+        : [PET_FRIEND_SEARCH_SELECT, ...PET_FRIEND_SEARCH_SELECT_FALLBACKS];
 
-  for (let i = 0; i < selects.length; i += 1) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(selects[i])
-      .eq("is_public", true)
-      .order("created_at", { ascending: false });
+    for (let i = 0; i < selects.length; i += 1) {
+      const { data, error } = await fromProfileRelation(supabase, relation)
+        .select(selects[i])
+        .eq("is_public", true)
+        .order("created_at", { ascending: false });
 
-    if (!error) {
-      const mapped = mapPetFriendSearchRows((data ?? []) as unknown as PetFriendSearchRow[]);
-      return excludeMarketplaceSelf(mapped, options.excludeUserId);
-    }
+      if (!error) {
+        const mapped = mapPetFriendSearchRows((data ?? []) as unknown as PetFriendSearchRow[]);
+        return excludeMarketplaceSelf(mapped, options.excludeUserId);
+      }
 
-    if (!isMissingColumnError(error) || i === selects.length - 1) {
-      throw error;
-    }
+      if (shouldFallbackProfileRelation(error)) {
+        break;
+      }
 
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        "[search-profiles] Using reduced profile columns for /find-care. Run supabase migrations for Google location fields.",
-        error.message,
-      );
+      if (!isMissingColumnError(error) || i === selects.length - 1) {
+        throw error;
+      }
+
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "[search-profiles] Using reduced profile columns for /find-care. Run supabase migrations for Google location fields.",
+          error.message,
+        );
+      }
     }
   }
 

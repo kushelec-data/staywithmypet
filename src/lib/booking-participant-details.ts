@@ -8,6 +8,7 @@ import { publicProfileHref } from "@/lib/profile-completeness";
 import { resolveRecipientEmail } from "@/lib/email-send";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPostgrestError } from "@/lib/supabase-errors";
+import { selectOwnProfileMaybeSingle } from "@/lib/profile-relations";
 import {
   preferredVetClinicFromProfileRow,
   preferredVetClinicFromRpc,
@@ -710,11 +711,11 @@ export async function loadBookingParticipantDetails(
     return { details: null, error: "not_participant" };
   }
 
-  const { data: viewerProfile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data: viewerProfile } = await selectOwnProfileMaybeSingle<{ role?: string | null }>(
+    supabase,
+    user.id,
+    "role",
+  );
 
   devLogContactLoad("loading participant contact", {
     bookingId,

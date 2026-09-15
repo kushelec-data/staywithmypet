@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchUserProfile, formatSupabaseError } from "@/lib/profile-load";
+import { selectOwnProfileMaybeSingle } from "@/lib/profile-relations";
 import { parseProfileDetails } from "@/lib/profile-details";
 import {
   mergePetFriendIntoDetails,
@@ -29,11 +30,11 @@ export async function saveProfilePreferences(
   currentProfile: ProfileRow,
 ): Promise<ProfileRow> {
   void currentProfile;
-  const { data: row, error: loadError } = await supabase
-    .from("profiles")
-    .select("details")
-    .eq("id", userId)
-    .maybeSingle();
+  const { data: row, error: loadError } = await selectOwnProfileMaybeSingle<{ details?: unknown }>(
+    supabase,
+    userId,
+    "details",
+  );
 
   if (loadError) {
     throw new Error(formatSupabaseError(loadError));

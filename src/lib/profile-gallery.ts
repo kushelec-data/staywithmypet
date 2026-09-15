@@ -3,6 +3,7 @@ import {
   fetchUserProfile,
   formatSupabaseError,
 } from "@/lib/profile-load";
+import { selectOwnProfileMaybeSingle } from "@/lib/profile-relations";
 import { parseProfileDetails } from "@/lib/profile-details";
 import type { ProfileRow } from "@/lib/profile-utils";
 import {
@@ -90,7 +91,11 @@ async function loadDetails(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Record<string, unknown>> {
-  const { data, error } = await supabase.from("profiles").select("details").eq("id", userId).maybeSingle();
+  const { data, error } = await selectOwnProfileMaybeSingle<{ details?: unknown }>(
+    supabase,
+    userId,
+    "details",
+  );
   if (error) throw new Error(formatSupabaseError(error));
   const raw = data?.details;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {

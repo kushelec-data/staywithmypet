@@ -11,6 +11,10 @@ import type { ProfileRole } from "@/lib/profile-setup";
 import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils";
 import { appDevSpan } from "@/lib/app-dev-perf";
 import { toFriendlyClientMessage } from "@/lib/security/errors";
+import {
+  probeOwnProfileSelect,
+  selectOwnProfileMaybeSingle,
+} from "@/lib/profile-relations";
 import { isMissingColumnError, supabaseErrorDetail } from "@/lib/supabase-errors";
 
 /** Columns present in committed Supabase migrations (safe default read list). */
@@ -73,7 +77,7 @@ let trustColumnsReadable: boolean | null = null;
 
 async function profilesTrustColumnsReadable(supabase: SupabaseClient): Promise<boolean> {
   if (trustColumnsReadable !== null) return trustColumnsReadable;
-  const { error } = await supabase.from("profiles").select("phone_e164").limit(1);
+  const { error } = await probeOwnProfileSelect(supabase, "phone_e164");
   trustColumnsReadable = !error;
   return trustColumnsReadable;
 }
@@ -85,11 +89,11 @@ async function enrichProfileDbRowWithTrustColumns(
 ): Promise<ProfileDbRow> {
   if (!(await profilesTrustColumnsReadable(supabase))) return row;
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(PROFILE_SELECT_TRUST)
-    .eq("id", userId)
-    .maybeSingle();
+  const { data, error } = await selectOwnProfileMaybeSingle(
+    supabase,
+    userId,
+    PROFILE_SELECT_TRUST,
+  );
 
   if (error || !data) return row;
   return { ...row, ...(data as Partial<ProfileDbRow>) };
@@ -279,11 +283,7 @@ export async function fetchUserProfile(
 
   for (let i = 0; i < selects.length; i += 1) {
     const select = selects[i];
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(select)
-      .eq("id", userId)
-      .maybeSingle();
+    const { data, error } = await selectOwnProfileMaybeSingle(supabase, userId, select);
 
     if (!error) {
       if (!data) return null;

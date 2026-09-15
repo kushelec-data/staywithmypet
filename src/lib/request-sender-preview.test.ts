@@ -79,6 +79,8 @@ describe("request query includes sender preview fields", () => {
     expect(REQUEST_SENDER_PROFILE_SELECT).toContain("stay_count");
     expect(REQUEST_SENDER_PROFILE_SELECT).not.toContain("phone");
     expect(REQUEST_SENDER_PROFILE_SELECT).not.toContain("email");
+    expect(REQUEST_SENDER_PROFILE_SELECT).not.toContain("google_place_id");
+    expect(REQUEST_SENDER_PROFILE_SELECT).not.toContain("city");
     expect(REQUEST_SELECT_WITH_RELATIONS).toContain(REQUEST_SENDER_PROFILE_SELECT);
   });
 });

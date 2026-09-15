@@ -3,6 +3,11 @@ import { resolveProfilePublicLocation } from "@/lib/profile-location";
 import { profileDisplayNameOrFallback } from "@/lib/profile-display";
 import { publicProfileHref } from "@/lib/profile-completeness";
 import { REQUEST_SENDER_PROFILE_SELECT } from "@/types/database";
+import {
+  PUBLIC_PROFILE_RELATIONS,
+  fromProfileRelation,
+  shouldFallbackProfileRelation,
+} from "@/lib/profile-relations";
 
 export { REQUEST_SENDER_PROFILE_SELECT };
 
@@ -91,17 +96,26 @@ export async function loadRequestSenderProfilesById(
   const map = new Map<string, RequestSenderPreview>();
   if (!profileIds.length) return map;
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(REQUEST_SENDER_PROFILE_SELECT)
-    .in("id", profileIds);
+  let lastError: { message?: string } | null = null;
+  for (const relation of PUBLIC_PROFILE_RELATIONS) {
+    const { data, error } = await fromProfileRelation(supabase, relation)
+      .select(REQUEST_SENDER_PROFILE_SELECT)
+      .in("id", profileIds);
 
-  if (error) throw error;
+    if (!error) {
+      for (const row of data ?? []) {
+        const preview = mapProfileRowToRequestSenderPreview(row as RequestSenderProfileRow);
+        if (preview) map.set(preview.id, preview);
+      }
+      return map;
+    }
 
-  for (const row of data ?? []) {
-    const preview = mapProfileRowToRequestSenderPreview(row as RequestSenderProfileRow);
-    if (preview) map.set(preview.id, preview);
+    lastError = error;
+    if (!shouldFallbackProfileRelation(error)) {
+      throw error;
+    }
   }
 
+  if (lastError) throw lastError;
   return map;
 }

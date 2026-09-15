@@ -2,12 +2,18 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { computeProfileCompleteness } from "@/lib/profile-completeness";
 import { formatNearbyLocation } from "@/lib/location-public";
 import { resolveProfilePublicLocation } from "@/lib/profile-location";
+import { publicMapPinFromAreaLabel } from "@/lib/estonia-city-coords";
 import { fetchOwnerPetIntros, type PetIntroDisplay } from "@/lib/pet-intro";
 
 export { formatNearbyLocation } from "@/lib/location-public";
 export type { PetIntroDisplay as PublicPetSummary } from "@/lib/pet-intro";
 import { formatSupabaseError, mapProfileRow, type ProfileDbRow } from "@/lib/profile-load";
 import { PUBLIC_PROFILE_COLUMNS } from "@/lib/security/sanitize-public-profile";
+import {
+  PUBLIC_PROFILE_RELATIONS,
+  fromProfileRelation,
+  shouldFallbackProfileRelation,
+} from "@/lib/profile-relations";
 import type { ProfileDetails } from "@/lib/profile-details";
 import { parseProfileDetails } from "@/lib/profile-details";
 import { countCompletedBookingsForUser } from "@/lib/bookings-stats";
@@ -21,10 +27,10 @@ import { isBioCompleteForProfile } from "@/lib/profile-completeness";
 import { calculateTrustScore } from "@/lib/trust-score";
 import { countReviewsAsReviewee } from "@/lib/bookings-stats";
 
-/** No raw phone numbers on public fetch. */
+/** No raw phone numbers or coordinates on public fetch. */
 const PUBLIC_PROFILE_SELECT_TIERS = [
   PUBLIC_PROFILE_COLUMNS,
-  "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude",
+  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details",
   "id, display_name, avatar_url, bio, location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details",
 ] as const;
 
@@ -34,29 +40,33 @@ async function queryPublicProfileRow(
 ): Promise<ProfileDbRow | null> {
   let lastError: PostgrestError | null = null;
 
-  for (const select of PUBLIC_PROFILE_SELECT_TIERS) {
-    const result = await supabase
-      .from("profiles")
-      .select(select as string)
-      .eq("id", profileId)
-      .maybeSingle();
+  for (const relation of PUBLIC_PROFILE_RELATIONS) {
+    for (const select of PUBLIC_PROFILE_SELECT_TIERS) {
+      const result = await fromProfileRelation(supabase, relation)
+        .select(select as string)
+        .eq("id", profileId)
+        .maybeSingle();
 
-    if (!result.error) {
-      if (process.env.NODE_ENV === "development") {
-        console.info("[public-profile] profiles", { tier: select.slice(0, 48) });
+      if (!result.error) {
+        if (process.env.NODE_ENV === "development") {
+          console.info("[public-profile]", { relation, tier: select.slice(0, 48) });
+        }
+        return result.data as unknown as ProfileDbRow | null;
       }
-      return result.data as unknown as ProfileDbRow | null;
-    }
 
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[public-profile] profiles query failed", result.error.message);
-    }
+      lastError = result.error;
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[public-profile] query failed", relation, result.error.message);
+      }
 
-    if (!/column/i.test(result.error.message)) {
-      throw new Error(formatSupabaseError(result.error));
-    }
+      if (shouldFallbackProfileRelation(result.error)) {
+        break;
+      }
 
-    lastError = result.error;
+      if (!/column/i.test(result.error.message)) {
+        throw new Error(formatSupabaseError(result.error));
+      }
+    }
   }
 
   if (lastError) {
@@ -117,41 +127,6 @@ export type PublicTrustBadgeId =
   | "completed_bookings"
   | "emergency_contact";
 
-function hashUnit(id: string, salt: string): number {
-  let h = 0;
-  const s = `${id}:${salt}`;
-  for (let i = 0; i < s.length; i += 1) {
-    h = (h * 31 + s.charCodeAt(i)) | 0;
-  }
-  return (Math.abs(h) % 1000) / 1000;
-}
-
-/** Round and slightly offset coordinates so the map shows an approximate area only. */
-export function approximateMapCoordinates(
-  lat: number,
-  lng: number,
-  profileId: string,
-): { lat: number; lng: number } {
-  const roundedLat = Math.round(lat * 100) / 100;
-  const roundedLng = Math.round(lng * 100) / 100;
-  const latOff = (hashUnit(profileId, "lat") - 0.5) * 0.06;
-  const lngOff = (hashUnit(profileId, "lng") - 0.5) * 0.06;
-  return {
-    lat: Math.round((roundedLat + latOff) * 100) / 100,
-    lng: Math.round((roundedLng + lngOff) * 100) / 100,
-  };
-}
-
-function parseCoord(v: unknown): number | null {
-  if (v == null) return null;
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim()) {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
-
 export function toPublicProfileView(
   row: ProfileDbRow,
   options: {
@@ -162,11 +137,6 @@ export function toPublicProfileView(
 ): PublicProfileView {
   const role = row.role ?? "pet_friend";
   const details = parseProfileDetails(row.details);
-  const lat = parseCoord(row.latitude);
-  const lng = parseCoord(row.longitude);
-  const approximateMap =
-    lat != null && lng != null ? approximateMapCoordinates(lat, lng, row.id) : null;
-
   const mapped = mapProfileRow(row);
   const activeMode = resolveActiveMode(role, row.active_mode);
   const completeness = computeProfileCompleteness(mapped, {
@@ -223,6 +193,9 @@ export function toPublicProfileView(
 
   const flagsForVerified = { emailVerified, phoneVerified: phoneVerifiedPublic };
 
+  const nearbyLocation =
+    resolveProfilePublicLocation(row) ?? formatNearbyLocation(row.location);
+
   return {
     id: row.id,
     display_name: row.display_name,
@@ -237,9 +210,8 @@ export function toPublicProfileView(
     created_at: typeof row.created_at === "string" ? row.created_at : null,
     details,
     profilePhotos: (details.profile_photos ?? []).slice(0, 6),
-    nearbyLocation:
-      resolveProfilePublicLocation(row) ?? formatNearbyLocation(row.location),
-    approximateMap,
+    nearbyLocation,
+    approximateMap: publicMapPinFromAreaLabel(nearbyLocation),
     email_verified: emailVerified,
     phone_verified: phoneVerifiedPublic,
     is_verified: isProfileVerified(flagsForVerified),
@@ -254,15 +226,15 @@ export async function fetchPublicProfile(
   supabase: SupabaseClient,
   profileId: string,
 ): Promise<PublicProfileView | null> {
-  const data = await queryPublicProfileRow(supabase, profileId);
-  if (!data) return null;
+  const row = await queryPublicProfileRow(supabase, profileId);
+  if (!row) return null;
 
   const pets = await fetchPublicPetsForOwner(supabase, profileId);
   const [completed, reviewsAsReviewee] = await Promise.all([
     countCompletedBookingsForUser(supabase, profileId),
     countReviewsAsReviewee(supabase, profileId),
   ]);
-  return toPublicProfileView(data, {
+  return toPublicProfileView(row, {
     petsCount: pets.length,
     completedBookings: completed,
     reviewsAsRevieweeCount: reviewsAsReviewee,

@@ -31,6 +31,11 @@ import {
 import { ensureUserProfile } from "@/lib/profile";
 import { fetchUserPets } from "@/lib/pet-data";
 import { fetchUserProfile } from "@/lib/profile-load";
+import {
+  PUBLIC_PROFILE_RELATIONS,
+  fromProfileRelation,
+  shouldFallbackProfileRelation,
+} from "@/lib/profile-relations";
 import { isBookingOverlapError } from "@/lib/bookings";
 import {
   assertSelectedDatesNotBlocked,
@@ -650,14 +655,21 @@ async function loadAllowedRequestDates(
   input: CreateCareRequestInput,
 ): Promise<Set<string>> {
   if (input.senderId === input.petParentId) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("details")
-      .eq("id", input.petFriendId)
-      .maybeSingle();
-    if (error) throw error;
-    const details = parseProfileDetails(data?.details);
-    return new Set(profileCalendarSelectedDates(details));
+    let lastError: { message?: string } | null = null;
+    for (const relation of PUBLIC_PROFILE_RELATIONS) {
+      const { data, error } = await fromProfileRelation(supabase, relation)
+        .select("details")
+        .eq("id", input.petFriendId)
+        .maybeSingle();
+      if (!error) {
+        const details = parseProfileDetails(data?.details);
+        return new Set(profileCalendarSelectedDates(details));
+      }
+      lastError = error;
+      if (!shouldFallbackProfileRelation(error)) throw error;
+    }
+    if (lastError) throw lastError;
+    return new Set();
   }
 
   const { data, error } = await supabase

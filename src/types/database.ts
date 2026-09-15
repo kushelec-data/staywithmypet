@@ -236,7 +236,7 @@ export const REQUEST_SELECT =
 
 /** Public-safe sender profile columns for incoming request cards. */
 export const REQUEST_SENDER_PROFILE_SELECT =
-  "id, display_name, avatar_url, bio, public_location, city, country, google_place_id, rating_avg, rating_count, stay_count" as const;
+  "id, display_name, avatar_url, bio, public_location, rating_avg, rating_count, stay_count" as const;
 
 /** Requests with sender/receiver profiles and pet (PostgREST FK hints). */
 export const REQUEST_SELECT_WITH_RELATIONS = `${REQUEST_SELECT}, sender:profiles!requests_sender_id_fkey(${REQUEST_SENDER_PROFILE_SELECT}), receiver:profiles!requests_receiver_id_fkey(id, display_name), pet:pets(id, name, species, breed)` as const;

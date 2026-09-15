@@ -2,6 +2,7 @@ import { normalizeFullName } from "@/lib/name-format";
 import { mergeDetailsTrustFlags } from "@/lib/profile-details";
 import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { selectOwnProfileMaybeSingle } from "@/lib/profile-relations";
 
 export type EnsureProfileOptions = {
   displayName?: string;
@@ -26,11 +27,11 @@ export async function ensureUserProfile(
   const avatarUrl =
     typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : null;
 
-  const { data: existing, error: selectError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data: existing, error: selectError } = await selectOwnProfileMaybeSingle<{ id: string }>(
+    supabase,
+    user.id,
+    "id",
+  );
 
   if (selectError) throw selectError;
 
@@ -65,11 +66,11 @@ export async function syncProfileEmailVerified(
 ): Promise<boolean> {
   const emailVerified = Boolean(user.email_confirmed_at);
 
-  const { data: row, error: loadError } = await supabase
-    .from("profiles")
-    .select("details")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data: row, error: loadError } = await selectOwnProfileMaybeSingle<{ details?: unknown }>(
+    supabase,
+    user.id,
+    "details",
+  );
 
   if (loadError || !row) return false;
 

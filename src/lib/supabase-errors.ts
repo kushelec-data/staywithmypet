@@ -77,7 +77,17 @@ export function isMissingRelationError(error: PostgrestError): boolean {
     error.code === "42P01" ||
     error.code === "PGRST205" ||
     /relation.*does not exist/i.test(error.message) ||
+    /could not find the table/i.test(error.message) ||
     /schema cache/i.test(error.message)
+  );
+}
+
+/** Column or table SELECT privilege missing (e.g. private profile columns). */
+export function isPermissionDeniedError(error: PostgrestError): boolean {
+  return (
+    error.code === "42501" ||
+    /permission denied/i.test(error.message) ||
+    /insufficientprivilege/i.test(error.message)
   );
 }
 

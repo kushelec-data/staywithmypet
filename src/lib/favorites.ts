@@ -10,6 +10,12 @@ import {
   type SavedPetRowInput,
 } from "@/lib/saved-items-filter";
 import { isMissingRelationError, isPostgrestError } from "@/lib/supabase-errors";
+import {
+  PUBLIC_PROFILE_RELATIONS,
+  PUBLIC_PROFILES_VIEW,
+  fromProfileRelation,
+  shouldFallbackProfileRelation,
+} from "@/lib/profile-relations";
 
 export type FavoriteTarget =
   | { type: "pet"; id: string }
@@ -114,12 +120,29 @@ export async function fetchSavedItems(
           .in("id", petIdList)
       : Promise.resolve({ data: [], error: null }),
     friendIdList.length
-      ? supabase
-          .from("profiles")
-          .select(
-            "id, display_name, location, public_location, city, country, google_place_id, latitude, longitude, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, is_public",
-          )
-          .in("id", friendIdList)
+      ? (async () => {
+          const selects = [
+            "id, display_name, location, public_location, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, is_public",
+            "id, display_name, location, public_location, city, country, google_place_id, bio, avatar_url, role, active_mode, rating_avg, rating_count, stay_count, languages, is_public",
+          ] as const;
+          for (const relation of PUBLIC_PROFILE_RELATIONS) {
+            const select =
+              relation === PUBLIC_PROFILES_VIEW ? selects[0] : selects[1];
+            const result = await fromProfileRelation(supabase, relation)
+              .select(select as string)
+              .in("id", friendIdList);
+            if (!result.error) {
+              return result;
+            }
+            if (!shouldFallbackProfileRelation(result.error)) {
+              return result;
+            }
+          }
+          return {
+            data: [],
+            error: { message: "Could not load saved friends" },
+          };
+        })()
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -150,38 +173,57 @@ export async function fetchSavedItems(
 
   const pets = filterVisibleSavedPets(savedPetInputs);
 
-  const savedFriendInputs: SavedFriendRowInput[] = (friendsResult.data ?? []).map((row) => ({
-    profile: mapPetFriendSearchRow({
-      id: row.id,
-      display_name: row.display_name?.trim() ?? "Member",
-      location: row.location,
-      public_location: row.public_location,
-      city: row.city,
-      country: row.country,
-      google_place_id: row.google_place_id,
-      latitude: row.latitude,
-      longitude: row.longitude,
-      bio: row.bio,
-      avatar_url: row.avatar_url,
-      role: row.role as ProfileRole,
-      active_mode: row.active_mode,
-      rating_avg: row.rating_avg,
-      rating_count: row.rating_count,
-      stay_count: row.stay_count,
-      languages: row.languages,
-      details: undefined,
-    }),
-    display_name: row.display_name?.trim() ?? "Member",
-    bio: row.bio,
-    location: row.location,
-    public_location: row.public_location,
-    city: row.city,
-    country: row.country,
-    google_place_id: row.google_place_id,
-    latitude: typeof row.latitude === "number" ? row.latitude : null,
-    longitude: typeof row.longitude === "number" ? row.longitude : null,
-    is_public: row.is_public,
-    role: row.role as ProfileRole,
+  const savedFriendInputs: SavedFriendRowInput[] = (
+    (friendsResult.data ?? []) as unknown as Array<{
+      id: string;
+      display_name?: string | null;
+      location?: string | null;
+      public_location?: string | null;
+      city?: string | null;
+      country?: string | null;
+      google_place_id?: string | null;
+      bio?: string | null;
+      avatar_url?: string | null;
+      role?: string | null;
+      active_mode?: string | null;
+      rating_avg?: number | string | null;
+      rating_count?: number | null;
+      stay_count?: number | null;
+      languages?: string[] | null;
+      is_public?: boolean | null;
+    }>
+  ).map((friend) => ({
+    profile: mapPetFriendSearchRow(
+      {
+        id: friend.id,
+        display_name: friend.display_name?.trim() ?? "Member",
+        location: friend.location ?? null,
+        public_location: friend.public_location,
+        city: friend.city,
+        country: friend.country,
+        google_place_id: friend.google_place_id,
+        bio: friend.bio ?? null,
+        avatar_url: friend.avatar_url ?? null,
+        role: friend.role as ProfileRole,
+        active_mode: friend.active_mode ?? null,
+        rating_avg: friend.rating_avg ?? null,
+        rating_count: friend.rating_count ?? null,
+        stay_count: friend.stay_count ?? null,
+        languages: friend.languages ?? null,
+        details: undefined,
+      },
+    ),
+    display_name: friend.display_name?.trim() ?? "Member",
+    bio: friend.bio ?? null,
+    location: friend.location ?? null,
+    public_location: friend.public_location ?? null,
+    city: friend.city ?? null,
+    country: friend.country ?? null,
+    google_place_id: friend.google_place_id ?? null,
+    latitude: null,
+    longitude: null,
+    is_public: friend.is_public ?? null,
+    role: friend.role as ProfileRole,
   }));
 
   const friends = filterVisibleSavedFriends(savedFriendInputs);

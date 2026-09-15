@@ -25,7 +25,17 @@ function normalizeLocationKey(value: string): string {
     .trim();
 }
 
-/** Match a city name inside a location label and return approximate center coords. */
+/**
+ * Published city-center coordinates for a public area label.
+ * Same pin for every listing in that city — never a member's home coordinates.
+ */
+export function publicMapPinFromAreaLabel(
+  location: string | null | undefined,
+): { lat: number; lng: number } | null {
+  return resolveCityCenter(location);
+}
+
+/** Match a city name inside a location label and return that city's published center. */
 export function resolveCityCenter(
   location: string | null | undefined,
 ): { lat: number; lng: number } | null {

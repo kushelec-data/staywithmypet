@@ -1,5 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { fetchUserProfile } from "@/lib/profile-load";
+import { selectOwnProfileMaybeSingle } from "@/lib/profile-relations";
 import {
   normalizePhotoPosition,
   syncAvatarPositionInDetails,
@@ -367,7 +368,11 @@ async function loadProfileDetailsForUpdate(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Record<string, unknown>> {
-  const { data, error } = await supabase.from("profiles").select("details").eq("id", userId).maybeSingle();
+  const { data, error } = await selectOwnProfileMaybeSingle<{ details?: unknown }>(
+    supabase,
+    userId,
+    "details",
+  );
   if (error) {
     throw mapProfileUpdateError(error as PostgrestError);
   }

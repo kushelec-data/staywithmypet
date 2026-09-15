@@ -78,6 +78,6 @@ export function sanitizePublicProfile<T extends Record<string, unknown>>(
   return out as SanitizedPublicProfile<T>;
 }
 
-/** Narrow select list for public profile queries (keeps RLS + column exposure minimal). */
+/** Allowlisted public_profiles columns. No numeric coordinates. */
 export const PUBLIC_PROFILE_COLUMNS =
-  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, created_at, details, latitude, longitude" as const;
+  "id, display_name, avatar_url, bio, public_location, role, active_mode, role_chosen_at, languages, is_public, rating_avg, rating_count, stay_count, created_at, details" as const;

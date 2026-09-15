@@ -2,13 +2,16 @@ import { formatCareTypeLabels } from "@/lib/care-type-options";
 import { parseProfileDetails, resolvedCareLocationPreference } from "@/lib/profile-details";
 import { excludeMarketplaceOwnPets } from "@/lib/marketplace-membership";
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import { resolveCityCenter } from "@/lib/estonia-city-coords";
+import { publicMapPinFromAreaLabel } from "@/lib/estonia-city-coords";
 import { formatPetAvailabilitySummary, normalizeAvailabilityDates } from "@/lib/pet-availability";
 import { getPetCardTagline } from "@/lib/pet-card-tagline";
 import { mapRowToPetIntro, type PetIntroDisplay, type PetIntroRow } from "@/lib/pet-intro";
 import { pickCareTypesFromRow } from "@/lib/pet-care-type";
-import { blurCoordinates } from "@/lib/map-privacy";
-import { parseCoord } from "@/lib/parse-coord";
+import {
+  PUBLIC_PROFILES_VIEW,
+  fromProfileRelation,
+  shouldFallbackProfileRelation,
+} from "@/lib/profile-relations";
 import type { SearchMapMarker } from "@/lib/search-map-markers";
 import { isPetMarketplaceMinimumEligible } from "@/lib/profile-marketplace-eligibility";
 import { formatSupabaseError } from "@/lib/profile-load";
@@ -34,7 +37,7 @@ export type { SearchMapMarker as PetMapMarker } from "@/lib/search-map-markers";
 
 export type PublicSearchPet = PetIntroDisplay &
   PetSearchFilterable & {
-    /** Privacy-blurred coordinates for public map only (never exact address). */
+    /** City-center map pin from the public area label (never a home coordinate). */
     mapPosition: { lat: number; lng: number } | null;
     ownerId: string;
     ownerName: string;
@@ -98,8 +101,8 @@ const PUBLIC_PET_PHOTO_SELECT =
 const PUBLIC_PET_PHOTO_SELECT_LEGACY = "pet_photos ( public_url, is_primary, sort_order )";
 
 const PUBLIC_PET_SELECT =
-  "id, name, species, breed, other_breed, age_label, date_of_birth, size_label, location, latitude, longitude, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, " +
-  `${PUBLIC_PET_PHOTO_SELECT}, profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, location, latitude, longitude, details, rating_avg, rating_count )`;
+  "id, name, species, breed, other_breed, age_label, date_of_birth, size_label, location, temperament, energy_level, requires_medication, feeding_schedule, eating_habits, walk_needs, health_characteristics, positive_traits, challenging_traits, additional_notes, friend_requirements, care_type, care_location, availability, availability_dates, is_active, is_public, price_per_night_cents, rating_avg, rating_count, owner_id, details, " +
+  `${PUBLIC_PET_PHOTO_SELECT}, profiles!pets_owner_id_fkey ( id, display_name, avatar_url, is_public, role, languages, rating_avg, rating_count )`;
 
 const PUBLIC_PET_SELECT_WITHOUT_OTHER = PUBLIC_PET_SELECT.replace("other_breed, ", "");
 
@@ -144,8 +147,7 @@ type OwnerJoin = {
   role?: string | null;
   languages?: string[] | null;
   location?: string | null;
-  latitude?: unknown;
-  longitude?: unknown;
+  public_location?: string | null;
   details?: unknown;
   rating_avg?: number | null;
   rating_count?: number | null;
@@ -157,30 +159,15 @@ function strFrom(value: unknown): string | null {
   return t || null;
 }
 
-/** Resolve true coords then blur for public map — never expose exact home location. */
+/** City-center map pin from public area labels — never stored pet or owner coordinates. */
 function resolvePublicMapPosition(
   row: PetIntroRow,
   owner: OwnerJoin | null,
-  petId: string,
   locationArea: string | null,
 ): { lat: number; lng: number } | null {
-  let lat = parseCoord(row.latitude);
-  let lng = parseCoord(row.longitude);
-
-  if (lat == null || lng == null) {
-    lat = parseCoord(owner?.latitude);
-    lng = parseCoord(owner?.longitude);
-  }
-
-  if (lat == null || lng == null) {
-    const fallbackLabel = locationArea ?? strFrom(row.location) ?? strFrom(owner?.location);
-    const city = resolveCityCenter(fallbackLabel);
-    if (!city) return null;
-    lat = city.lat;
-    lng = city.lng;
-  }
-
-  return blurCoordinates(lat, lng, petId);
+  const fallbackLabel =
+    locationArea ?? strFrom(row.location) ?? strFrom(owner?.public_location) ?? strFrom(owner?.location);
+  return publicMapPinFromAreaLabel(fallbackLabel);
 }
 
 function detailsOf(raw: unknown): Record<string, unknown> {
@@ -256,6 +243,51 @@ function resolveOwner(profiles: OwnerJoin | OwnerJoin[] | null): OwnerJoin | nul
   return profiles;
 }
 
+async function attachPublicOwnerProfiles(
+  supabase: SupabaseClient,
+  rows: PetIntroRow[],
+): Promise<PetIntroRow[]> {
+  const ownerIds = [
+    ...new Set(
+      rows
+        .map((row) => String(row.owner_id ?? ""))
+        .filter((id) => id.length > 0),
+    ),
+  ];
+  if (!ownerIds.length) return rows;
+
+  const result = await fromProfileRelation(supabase, PUBLIC_PROFILES_VIEW)
+    .select(
+      "id, details, public_location, languages, display_name, avatar_url, is_public, role, rating_avg, rating_count",
+    )
+    .in("id", ownerIds);
+
+  if (result.error) {
+    if (!shouldFallbackProfileRelation(result.error) && process.env.NODE_ENV === "development") {
+      console.warn("[find-pets] public_profiles owner enrich failed", result.error.message);
+    }
+    return rows;
+  }
+
+  const byId = new Map(
+    (result.data ?? []).map((owner) => [String((owner as OwnerJoin).id), owner as OwnerJoin]),
+  );
+
+  return rows.map((row) => {
+    const pub = byId.get(String(row.owner_id ?? ""));
+    if (!pub) return row;
+    const existing = resolveOwner((row.profiles as OwnerJoin | OwnerJoin[] | null) ?? null);
+    return {
+      ...row,
+      profiles: {
+        ...existing,
+        ...pub,
+        location: pub.public_location ?? existing?.location ?? null,
+      },
+    };
+  });
+}
+
 type MapPublicPetOptions = {
   /** Owner preview from dashboard — skip public listing checks. */
   skipVisibilityFilters?: boolean;
@@ -302,11 +334,9 @@ function mapRowToPublicSearchPet(
     parseProfileDetails(owner.details),
   );
 
-  const petId = String(row.id ?? "");
-
   return {
     ...intro,
-    mapPosition: resolvePublicMapPosition(row, owner, petId, intro.locationArea),
+    mapPosition: resolvePublicMapPosition(row, owner, intro.locationArea),
     speciesForm: strFrom(details.species_form),
     breed: intro.breed,
     storedBreed: strFrom(row.breed),
@@ -449,8 +479,13 @@ export async function fetchPublicSearchPets(
     throw new PublicPetSearchQueryError(result.error);
   }
 
-  const mapped = (result.data ?? [])
-    .map((row) => mapRowToPublicSearchPet(row as unknown as PetIntroRow))
+  const withOwners = await attachPublicOwnerProfiles(
+    supabase,
+    (result.data ?? []) as unknown as PetIntroRow[],
+  );
+
+  const mapped = withOwners
+    .map((row) => mapRowToPublicSearchPet(row))
     .filter((p): p is PublicSearchPet => p !== null);
 
   return excludeMarketplaceOwnPets(mapped, options.excludeOwnerId);
@@ -468,7 +503,10 @@ export async function fetchPublicSearchPetById(
 
     if (!result.error) {
       if (!result.data) return null;
-      const pet = mapRowToPublicSearchPet(result.data as unknown as PetIntroRow, options);
+      const [withOwner] = await attachPublicOwnerProfiles(supabase, [
+        result.data as unknown as PetIntroRow,
+      ]);
+      const pet = mapRowToPublicSearchPet(withOwner ?? (result.data as unknown as PetIntroRow), options);
       if (!pet) return null;
       return pet;
     }

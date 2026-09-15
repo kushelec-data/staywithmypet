@@ -17,6 +17,10 @@ import {
   formatSupabaseError,
   upsertProfileRowAndReload,
 } from "@/lib/profile-load";
+import {
+  probeOwnProfileSelect,
+  selectOwnProfileMaybeSingle,
+} from "@/lib/profile-relations";
 import { applyMarketplaceVisibility } from "@/lib/profile-marketplace-visibility";
 import {
   mergeDetailsGooglePlace,
@@ -88,15 +92,15 @@ function isMissingProfilesColumnError(error: { message?: string } | null): boole
 }
 
 async function profilesGeoColumnsWritable(supabase: SupabaseClient): Promise<boolean> {
-  const { error } = await supabase.from("profiles").select("address,latitude,longitude").limit(1);
+  const { error } = await probeOwnProfileSelect(supabase, "address,latitude,longitude");
   return !isMissingProfilesColumnError(error);
 }
 
 async function profilesLocationColumnsWritable(supabase: SupabaseClient): Promise<boolean> {
-  const { error } = await supabase
-    .from("profiles")
-    .select("formatted_address,google_place_id,public_location,city,country,postal_code")
-    .limit(1);
+  const { error } = await probeOwnProfileSelect(
+    supabase,
+    "formatted_address,google_place_id,public_location,city,country,postal_code",
+  );
   return !isMissingProfilesColumnError(error);
 }
 
@@ -217,13 +221,11 @@ export async function saveUserProfile(
   const now = new Date().toISOString();
   const role = context.preserveRole ?? input.role;
 
-  const { data: existingRow, error: detailsLoadError } = await supabase
-    .from("profiles")
-    .select(
-      "details, phone_e164, phone_verified, avatar_url, bio, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164",
-    )
-    .eq("id", userId)
-    .maybeSingle();
+  const { data: existingRow, error: detailsLoadError } = await selectOwnProfileMaybeSingle(
+    supabase,
+    userId,
+    "details, phone_e164, phone_verified, avatar_url, bio, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164",
+  );
 
   type TrustLoadRow = {
     details?: unknown;
@@ -240,11 +242,7 @@ export async function saveUserProfile(
   let rowForTrust: TrustLoadRow | null = existingRow as TrustLoadRow | null;
 
   if (detailsLoadError && /column/i.test(detailsLoadError.message)) {
-    const minimal = await supabase
-      .from("profiles")
-      .select("details, avatar_url, bio")
-      .eq("id", userId)
-      .maybeSingle();
+    const minimal = await selectOwnProfileMaybeSingle(supabase, userId, "details, avatar_url, bio");
     if (minimal.error) {
       console.error("[profile] details load error", minimal.error);
       throw new Error(formatSupabaseError(minimal.error));
@@ -477,22 +475,20 @@ async function loadProfileTrustRow(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ProfileTrustLoadRow | null> {
-  const { data: existingRow, error: detailsLoadError } = await supabase
-    .from("profiles")
-    .select(
-      "details, phone_e164, phone_verified, avatar_url, bio, role, display_name, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164",
-    )
-    .eq("id", userId)
-    .maybeSingle();
+  const { data: existingRow, error: detailsLoadError } = await selectOwnProfileMaybeSingle(
+    supabase,
+    userId,
+    "details, phone_e164, phone_verified, avatar_url, bio, role, display_name, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164",
+  );
 
   let rowForTrust: ProfileTrustLoadRow | null = existingRow as ProfileTrustLoadRow | null;
 
   if (detailsLoadError && /column/i.test(detailsLoadError.message)) {
-    const minimal = await supabase
-      .from("profiles")
-      .select("details, avatar_url, bio, role, display_name")
-      .eq("id", userId)
-      .maybeSingle();
+    const minimal = await selectOwnProfileMaybeSingle(
+      supabase,
+      userId,
+      "details, avatar_url, bio, role, display_name",
+    );
     if (minimal.error) {
       console.error("[profile] details load error", minimal.error);
       throw new Error(formatSupabaseError(minimal.error));
