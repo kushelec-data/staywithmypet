@@ -55,7 +55,14 @@ describe("buildNewMessageNotificationEmail", () => {
 
     expect(template.subject).toBe("Andreas H sent you a message on StayWithMyPet");
     expect(template.text).toContain("Open conversation");
-    expect(template.text).toContain("/messages?conversation=conv-123");
+    expect(template.text).toContain(
+      "https://www.staywithmypet.ee/messages?conversation=conv-123",
+    );
+    expect(template.html).toContain(
+      "https://www.staywithmypet.ee/messages?conversation=conv-123",
+    );
+    expect(template.text).not.toContain("vercel.app");
+    expect(template.html).not.toContain("vercel.app");
     expect(template.text).toContain("Pet: Denny");
     expect(template.text).toContain("Preview:");
     expect(template.text).not.toContain("See you tomorrow".repeat(2));
@@ -74,5 +81,37 @@ describe("buildNewMessageNotificationEmail", () => {
 
     expect(template.subject).toBe("Andreas H saatis sulle StayWithMyPetis sõnumi");
     expect(template.text).toContain("Ava vestlus");
+    expect(template.text).toContain(
+      "https://www.staywithmypet.ee/messages?conversation=conv-123",
+    );
+  });
+
+  it("does not use a Vercel deployment host when NEXT_PUBLIC_SITE_URL is ephemeral", () => {
+    const prevSite = process.env.NEXT_PUBLIC_SITE_URL;
+    const prevVercel = process.env.VERCEL_URL;
+    const prevEmailBase = process.env.EMAIL_PUBLIC_BASE_URL;
+    process.env.NEXT_PUBLIC_SITE_URL = "https://staywithmypet-5296.vercel.app";
+    process.env.VERCEL_URL = "staywithmypet-5296.vercel.app";
+    process.env.EMAIL_PUBLIC_BASE_URL = "";
+
+    try {
+      const template = buildNewMessageNotificationEmail(
+        {
+          recipientName: "Gerly",
+          senderName: "Andreas H",
+          conversationId: "conv-123",
+        },
+        "en",
+      );
+      expect(template.text).toContain(
+        "https://www.staywithmypet.ee/messages?conversation=conv-123",
+      );
+      expect(template.text).not.toContain("staywithmypet-5296.vercel.app");
+      expect(template.html).not.toContain("vercel.app");
+    } finally {
+      process.env.NEXT_PUBLIC_SITE_URL = prevSite;
+      process.env.VERCEL_URL = prevVercel;
+      process.env.EMAIL_PUBLIC_BASE_URL = prevEmailBase;
+    }
   });
 });

@@ -31,6 +31,7 @@ import {
 } from "@/lib/email-campaigns/html";
 import { personalizeCampaignHtml, clickTrackingUrl, openTrackingUrl } from "@/lib/email-campaigns/personalize";
 import {
+  getTransactionalEmailOrigin,
   isEphemeralOrLocalEmailOrigin,
   requireCampaignEmailOrigin,
   resolveCampaignEmailOrigin,
@@ -516,5 +517,19 @@ describe("campaign email public base URL", () => {
     });
     expect(resolved.ok).toBe(true);
     if (resolved.ok) expect(resolved.origin).toBe("https://www.staywithmypet.ee");
+  });
+
+  it("uses the canonical www origin for transactional emails even if site URL is a Vercel host", () => {
+    expect(
+      getTransactionalEmailOrigin({
+        NEXT_PUBLIC_SITE_URL: "https://staywithmypet-5296.vercel.app",
+        VERCEL_URL: "staywithmypet-5296.vercel.app",
+      }),
+    ).toBe("https://www.staywithmypet.ee");
+    expect(
+      getTransactionalEmailOrigin({
+        EMAIL_PUBLIC_BASE_URL: "https://staywithmypet-5296.vercel.app",
+      }),
+    ).toBe("https://www.staywithmypet.ee");
   });
 });

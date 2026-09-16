@@ -84,6 +84,20 @@ export function requireCampaignEmailOrigin(
   return resolved;
 }
 
+/**
+ * Origin for user-facing transactional email links (messages, bookings, membership).
+ * Uses EMAIL_PUBLIC_BASE_URL when it is the canonical production host.
+ * Never uses VERCEL_URL, preview deployments, or NEXT_PUBLIC_SITE_URL when those
+ * point at ephemeral hosts.
+ */
+export function getTransactionalEmailOrigin(
+  env: Record<string, string | undefined> = process.env,
+): string {
+  const resolved = resolveCampaignEmailOrigin(env);
+  if (resolved.ok) return resolved.origin;
+  return CANONICAL_CAMPAIGN_EMAIL_ORIGIN;
+}
+
 export function campaignEmailAssetUrl(path: string, origin = CANONICAL_CAMPAIGN_EMAIL_ORIGIN): string {
   const base = origin.replace(/\/$/, "");
   return path.startsWith("http") ? path : `${base}${path.startsWith("/") ? path : `/${path}`}`;

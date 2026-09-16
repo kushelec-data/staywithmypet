@@ -1,7 +1,7 @@
-import { getSiteOrigin } from "@/lib/site-url";
+import { getTransactionalEmailOrigin } from "@/lib/email-campaigns/public-base";
 
 export function siteBaseUrl(): string {
-  return getSiteOrigin();
+  return getTransactionalEmailOrigin();
 }
 
 export function absoluteUrl(path: string): string {
