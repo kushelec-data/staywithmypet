@@ -26,7 +26,13 @@ export async function GET(_request: Request, context: RouteContext) {
     })),
   );
   const consent = campaignConsentSummary(
-    withConsent.recipients.map((row) => ({ status: row.status, consented: row.consented === true })),
+    withConsent.recipients.map((row) => ({
+      email: row.email,
+      status: row.status,
+      unsubscribed: row.unsubscribed === true,
+      suppressed: row.suppressed === true,
+      newsletterSubscribed: row.newsletterSubscribed === true,
+    })),
   );
   const payload = {
     from: CAMPAIGN_FROM_HEADER,
@@ -40,8 +46,17 @@ export async function GET(_request: Request, context: RouteContext) {
     failures: withConsent.recipients
       .filter((row) => row.status === "failed")
       .map((row) => ({ email: row.email, reason: row.failureReason })),
-    consent: { missingConsent: consent.blocked, eligible: consent.eligible, warning: consent.warning },
-    bulkSendEnabled: consent.blocked === 0,
+    consent: {
+      missingConsent: consent.blocked,
+      eligible: consent.eligible,
+      warning: consent.warning,
+      csvRecipients: consent.csvRecipients,
+      explicitlyUnsubscribed: consent.explicitlyUnsubscribed,
+      suppressed: consent.suppressed,
+      invalid: consent.invalid,
+      duplicates: consent.duplicates,
+    },
+    bulkSendEnabled: consent.eligible > 0,
   };
   if (jsonLooksLikeSecretDump(payload)) {
     return NextResponse.json({ error: "Refusing to return secrets." }, { status: 500 });

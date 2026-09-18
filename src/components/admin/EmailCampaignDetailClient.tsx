@@ -9,8 +9,8 @@ import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
 import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE } from "@/lib/email-campaigns/template-config";
-import { campaignRecipientSummary, formatSendCompletedMessage, storedLanguageCounts, type CampaignLanguageMode } from "@/lib/email-campaigns/send-language";
-import { campaignConsentSummary, canEnableCampaignSend } from "@/lib/email-campaigns/consent-summary";
+import { campaignRecipientSummary, englishOnlyCampaignNotice, formatSendCompletedMessage, showCampaignEstonianPreview, storedLanguageCounts, type CampaignLanguageMode } from "@/lib/email-campaigns/send-language";
+import { campaignConsentSummary, campaignEligibilityLines, canEnableCampaignSend } from "@/lib/email-campaigns/consent-summary";
 import {
   CAMPAIGN_SCHEDULE_TIMEZONE,
   campaignStatusLabel,
@@ -117,7 +117,13 @@ export function EmailCampaignDetailClient({
   const consent = useMemo(
     () =>
       campaignConsentSummary(
-        recipients.map((row) => ({ status: row.status, consented: row.consented === true })),
+        recipients.map((row) => ({
+          email: row.email,
+          status: row.status,
+          unsubscribed: row.unsubscribed === true,
+          suppressed: row.suppressed === true,
+          newsletterSubscribed: row.newsletterSubscribed === true,
+        })),
       ),
     [recipients],
   );
@@ -147,9 +153,9 @@ export function EmailCampaignDetailClient({
     [recipients, query, tableFilter],
   );
   const canSendNow = canEnableCampaignSend({
-    recipientCount: recipients.length,
-    blockedCount: consent.blocked,
+    eligible: consent.eligible,
     pendingCount: pending,
+    recipientCount: recipients.length,
   });
 
   async function loadActivity(recipientId: string) {
@@ -520,18 +526,27 @@ export function EmailCampaignDetailClient({
       ) : null}
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Send / Test</h2>
-        <p className="mt-1 text-sm">Viewing: {previewLang === "et" ? "Estonian" : "English"}</p>
-        <p className="mt-1 text-sm text-muted">Preview only changes what you see. Each person still receives their CSV language.</p>
-        <p className="mt-3 text-sm">Eligible recipients: {consent.eligible}</p>
-        <p className="text-sm">Blocked recipients: {consent.blocked}</p>
+        <p className="mt-1 text-sm">Viewing: {englishOnly || previewLang === "en" ? "English" : "Estonian"}</p>
+        <p className="mt-1 text-sm text-muted">
+          {englishOnly
+            ? englishOnlyCampaignNotice()
+            : "Preview only changes what you see. Each person still receives their CSV language."}
+        </p>
+        {campaignEligibilityLines(consent).map((line) => (
+          <p key={line} className="mt-1 text-sm">
+            {line}
+          </p>
+        ))}
         {consent.warning ? <p className="mt-2 text-sm text-red-700">{consent.warning}</p> : null}
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button type="button" onClick={() => setPreviewLang("en")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
             Preview English
           </button>
-          <button type="button" onClick={() => setPreviewLang("et")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
-            Preview Estonian
-          </button>
+          {showCampaignEstonianPreview(languageMode) ? (
+            <button type="button" onClick={() => setPreviewLang("et")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
+              Preview Estonian
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={peopleCount === 0}
@@ -618,7 +633,7 @@ export function EmailCampaignDetailClient({
           </button>
         ) : null}
         {message ? <p className="mt-3 whitespace-pre-line text-sm">{message}</p> : null}
-        <iframe title="Campaign preview" className="mt-4 h-[480px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={previewLang === "et" ? htmlEt : htmlEn} />
+        <iframe title="Campaign preview" className="mt-4 h-[480px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={englishOnly || previewLang !== "et" ? htmlEn : htmlEt} />
       </AdminCard>
       {confirmKind ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -674,14 +689,15 @@ export function EmailCampaignDetailClient({
             ) : (
               <>
                 <p className="text-sm">
-                  Send campaign to {sendMode === "failed" ? failedCount : sendMode === "resume" ? remainingUnsent : peopleCount} recipients?
+                  Send campaign to {sendMode === "failed" ? failedCount : sendMode === "resume" ? remainingUnsent : consent.eligible} eligible recipients?
                 </p>
                 <p className="mt-2 text-sm">{recipientLanguageSummary}</p>
-                <p className="mt-2 text-sm">
-                  {englishOnly
-                    ? "Every recipient will receive the English email."
-                    : "Each recipient will automatically receive the correct language."}
-                </p>
+                <p className="mt-2 text-sm">{englishOnly ? englishOnlyCampaignNotice() : "Each recipient will automatically receive the correct language."}</p>
+                {campaignEligibilityLines(consent).map((line) => (
+                  <p key={line} className="mt-1 text-sm">
+                    {line}
+                  </p>
+                ))}
                 <div className="mt-4 flex gap-3">
                   <button type="button" onClick={() => setConfirmKind(null)} className="rounded-full border px-4 py-2 text-sm">
                     Cancel

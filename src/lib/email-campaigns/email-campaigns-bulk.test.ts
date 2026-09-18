@@ -1,15 +1,19 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion } from "@/lib/email-campaigns/versioning";
 import {
   bilingualCampaignDisplayName,
   campaignLanguageModeFromRecord,
   campaignRecipientSummary,
+  englishOnlyCampaignNotice,
   formatSendCompletedMessage,
   parseSendLanguageMode,
   recipientSendRouting,
   resolveRecipientSendLanguage,
   resolveSendLanguage,
   sendActionLabel,
+  showCampaignEstonianPreview,
 } from "@/lib/email-campaigns/send-language";
 import { parseCampaignCsv, mapCampaignCsvLanguage } from "@/lib/email-campaigns/csv-import";
 import { resolveDuplicateRecipientImport } from "@/lib/email-campaigns/recipient-upsert";
@@ -22,7 +26,8 @@ import {
   runSequentialSends,
   selectSendableRecipientIds,
 } from "@/lib/email-campaigns/send-queue";
-import { bulkSendConsentGate, filterMarketingEligible, hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
+import { bulkSendConsentGate, canDeliverCampaignRecipient, classifyCampaignRecipientDelivery, filterDeliverableCampaignRecipients, filterMarketingEligible, hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
+import { campaignEligibilityBreakdown, campaignEligibilityLines } from "@/lib/email-campaigns/consent-summary";
 import { htmlHasExpectedLanguageMarkers, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
 import { clickTrackingUrl, openTrackingUrl, personalizeCampaignHtml, unsubscribeUrl } from "@/lib/email-campaigns/personalize";
 import { jsonLooksLikeSecretDump } from "@/lib/email-campaigns/dto";
@@ -141,6 +146,32 @@ describe("english_only campaign language mode", () => {
     );
     expect(campaignRecipientSummary(2, "english_only")).toBe("2 recipients · English email");
     expect(htmlHasExpectedLanguageMarkers(fields.htmlEn, "en")).toBe(true);
+    expect(englishOnlyCampaignNotice()).toBe("This campaign will be sent in English to all eligible recipients.");
+    expect(showCampaignEstonianPreview("english_only")).toBe(false);
+    expect(showCampaignEstonianPreview("automatic")).toBe(true);
+  });
+
+  it("sends English to an EN CSV recipient on english_only campaigns", () => {
+    expect(
+      resolveRecipientSendLanguage({
+        campaignLanguageMode: "english_only",
+        sendLanguageMode: "automatic",
+        recipientLanguage: "en",
+      }),
+    ).toBe("en");
+    expect(selectCampaignContent("en", fields).html).toBe(fields.htmlEn);
+  });
+
+  it("sends English to an ET CSV recipient on english_only campaigns", () => {
+    expect(
+      resolveRecipientSendLanguage({
+        campaignLanguageMode: "english_only",
+        sendLanguageMode: "automatic",
+        recipientLanguage: "et",
+      }),
+    ).toBe("en");
+    expect(selectCampaignContent("en", fields).html).toBe(fields.htmlEn);
+    expect(selectCampaignContent("en", fields).html).not.toBeUndefined();
   });
 
   it("keeps bilingual campaigns on automatic EN/ET routing", () => {
@@ -358,24 +389,138 @@ describe("tracking tokens", () => {
   });
 });
 
-describe("marketing opt-out", () => {
-  it("excludes unsubscribed and non-newsletter emails from bulk send", () => {
+describe("CSV campaign recipient eligibility", () => {
+  it("allows a CSV recipient without a newsletter_subscribers row", () => {
+    const classified = classifyCampaignRecipientDelivery("csv-only@example.com", {
+      newsletterSubscribed: false,
+      unsubscribed: false,
+    });
+    expect(classified.missingNewsletter).toBe(true);
+    expect(classified.canDeliver).toBe(true);
+    expect(classified.blockReason).toBeNull();
+    expect(canDeliverCampaignRecipient("csv-only@example.com", { newsletterSubscribed: false, unsubscribed: false })).toBe(true);
+    expect(hasMarketingEmailConsent({ email: "csv-only@example.com", newsletterSubscribed: false, unsubscribed: false })).toBe(
+      false,
+    );
+  });
+
+  it("blocks a CSV recipient with an explicit unsubscribe", () => {
+    const classified = classifyCampaignRecipientDelivery("out@example.com", {
+      newsletterSubscribed: true,
+      unsubscribed: true,
+    });
+    expect(classified.canDeliver).toBe(false);
+    expect(classified.blockReason).toBe("unsubscribed");
+  });
+
+  it("always blocks explicit unsubscribe, even without a newsletter row", () => {
+    expect(
+      canDeliverCampaignRecipient("always-out@example.com", { newsletterSubscribed: false, unsubscribed: true }),
+    ).toBe(false);
+    expect(
+      canDeliverCampaignRecipient("always-out@example.com", { newsletterSubscribed: true, unsubscribed: true, suppressed: false }),
+    ).toBe(false);
+    expect(
+      classifyCampaignRecipientDelivery("suppressed@example.com", {
+        newsletterSubscribed: false,
+        unsubscribed: false,
+        suppressed: true,
+      }).blockReason,
+    ).toBe("suppressed");
+  });
+
+  it("does not group missing newsletter signup with unsubscribed", () => {
     const rows = [
       { email: "ok@example.com" },
-      { email: "nope@example.com" },
+      { email: "missing-news@example.com" },
       { email: "out@example.com" },
     ];
     const consent = new Map([
       ["ok@example.com", { newsletterSubscribed: true, unsubscribed: false }],
-      ["nope@example.com", { newsletterSubscribed: false, unsubscribed: false }],
+      ["missing-news@example.com", { newsletterSubscribed: false, unsubscribed: false }],
       ["out@example.com", { newsletterSubscribed: true, unsubscribed: true }],
     ]);
-    const filtered = filterMarketingEligible(rows, consent);
-    expect(filtered.eligible.map((row) => row.email)).toEqual(["ok@example.com"]);
-    expect(hasMarketingEmailConsent({ email: "ok@example.com", newsletterSubscribed: true, unsubscribed: false })).toBe(true);
+    const registered = filterMarketingEligible(rows, consent);
+    expect(registered.eligible.map((row) => row.email)).toEqual(["ok@example.com"]);
+    const csv = filterDeliverableCampaignRecipients(rows, consent);
+    expect(csv.eligible.map((row) => row.email)).toEqual(["ok@example.com", "missing-news@example.com"]);
+    expect(csv.excluded.map((row) => row.email)).toEqual(["out@example.com"]);
     expect(bulkSendConsentGate([{ email: "ok@example.com", consented: true }]).allowed).toBe(true);
-    expect(bulkSendConsentGate([{ email: "nope@example.com", consented: false }]).allowed).toBe(false);
     expect(bulkSendConsentGate([]).allowed).toBe(true);
+  });
+
+  it("reports correct eligibility counts for a 138-person CSV campaign", () => {
+    const rows = Array.from({ length: 138 }, (_, index) => ({
+      email: index === 0 ? "unsubscribed@example.com" : `person${index}@example.com`,
+      status: "pending",
+      newsletterSubscribed: index === 1,
+      unsubscribed: index === 0,
+      suppressed: false,
+    }));
+    const counts = campaignEligibilityBreakdown(rows);
+    expect(campaignEligibilityLines(counts)).toEqual([
+      "CSV recipients: 138",
+      "Explicitly unsubscribed: 1",
+      "Suppressed/opted out: 0",
+      "Invalid: 0",
+      "Duplicates: 0",
+      "Eligible to send: 137",
+    ]);
+    expect(counts.warning).toBe("1 explicitly unsubscribed. These recipients will not be emailed.");
+    expect(counts.warning).not.toContain("not subscribed to marketing emails");
+    const withDupes = campaignEligibilityBreakdown([
+      { email: "a@example.com", status: "pending", unsubscribed: false },
+      { email: "A@example.com", status: "pending", unsubscribed: false },
+      { email: "bad", status: "pending", unsubscribed: false },
+      { email: "suppressed@example.com", status: "pending", suppressed: true },
+      { email: "out@example.com", status: "pending", unsubscribed: true },
+    ]);
+    expect(withDupes).toMatchObject({
+      csvRecipients: 5,
+      duplicates: 1,
+      invalid: 1,
+      suppressed: 1,
+      explicitlyUnsubscribed: 1,
+      eligible: 1,
+    });
+  });
+
+  it("never writes newsletter or unsubscribe records during CSV import or send", () => {
+    const files = [
+      "src/lib/email-campaigns/csv-import.ts",
+      "src/lib/email-campaigns/send.ts",
+      "src/app/api/admin/email-campaigns/[campaignId]/recipients/route.ts",
+    ];
+    for (const relative of files) {
+      const source = readFileSync(join(process.cwd(), relative), "utf8");
+      expect(source).not.toMatch(/newsletter_subscribers/);
+      expect(source).not.toMatch(/email_marketing_unsubscribes/);
+    }
+    const storeBulk = readFileSync(join(process.cwd(), "src/lib/email-campaigns/store-bulk.ts"), "utf8");
+    const addRecipientsFn = storeBulk.slice(
+      storeBulk.indexOf("export async function addRecipientsToExistingCampaign"),
+      storeBulk.indexOf("export async function removeDraftRecipient"),
+    );
+    expect(addRecipientsFn).not.toMatch(/newsletter_subscribers/);
+    expect(addRecipientsFn).not.toMatch(/email_marketing_unsubscribes/);
+    expect(storeBulk).toMatch(/from\("newsletter_subscribers"\)\.select\("email"\)/);
+    expect(storeBulk).not.toMatch(/from\("newsletter_subscribers"\)\.(insert|upsert|update|delete)/);
+    const send = readFileSync(join(process.cwd(), "src/lib/email-campaigns/send.ts"), "utf8");
+    expect(send.lastIndexOf("await classifyRecipientForDelivery")).toBeLessThan(send.indexOf("sendCampaignSmtpEmail({"));
+    expect(send.split("classifyRecipientForDelivery(").length - 1).toBeGreaterThanOrEqual(3);
+    expect(send).toContain('html.includes("swmp.invalid")');
+    expect(send).toContain("unsubscribeToken");
+  });
+
+  it("hides Preview Estonian and uses English-only copy on the campaign screen", () => {
+    const source = readFileSync(join(process.cwd(), "src/components/admin/EmailCampaignDetailClient.tsx"), "utf8");
+    expect(source).toContain("showCampaignEstonianPreview(languageMode)");
+    expect(source).toContain("englishOnlyCampaignNotice()");
+    expect(source).toContain("campaignEligibilityLines(consent)");
+    expect(source).not.toContain("Eligible recipients:");
+    expect(source).not.toContain("Blocked recipients:");
+    expect(source).not.toContain("not subscribed to marketing emails or have unsubscribed");
+    expect(source).toMatch(/englishOnly\s*\?[\s\S]*englishOnlyCampaignNotice\(\)[\s\S]*Each person still receives their CSV language/);
   });
 });
 

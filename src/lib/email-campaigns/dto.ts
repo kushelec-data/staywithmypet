@@ -49,6 +49,8 @@ export type CampaignRecipientDto = {
   failureReason: string | null;
   consented?: boolean;
   unsubscribed?: boolean;
+  suppressed?: boolean;
+  newsletterSubscribed?: boolean;
 };
 
 export type CampaignEventDto = {

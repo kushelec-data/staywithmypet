@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import { trackedLinksFromTemplateConfig } from "@/lib/email-campaigns/events";
 import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
-import { hasMarketingEmailConsent, normalizeMarketingEmail } from "@/lib/email-campaigns/marketing-consent";
+import { classifyCampaignRecipientDelivery, hasMarketingEmailConsent, normalizeMarketingEmail } from "@/lib/email-campaigns/marketing-consent";
 import {
   deriveBulkCampaignStatus,
   isSendLeaseActive,
@@ -20,26 +20,28 @@ function db(): AdminDb | null {
   return createAdminClient();
 }
 
-export async function loadMarketingConsentMap(emails: string[]): Promise<Map<string, { newsletterSubscribed: boolean; unsubscribed: boolean }>> {
+export async function loadMarketingConsentMap(
+  emails: string[],
+): Promise<Map<string, { newsletterSubscribed: boolean; unsubscribed: boolean; suppressed: boolean }>> {
   const admin = db();
-  const map = new Map<string, { newsletterSubscribed: boolean; unsubscribed: boolean }>();
+  const map = new Map<string, { newsletterSubscribed: boolean; unsubscribed: boolean; suppressed: boolean }>();
   const unique = [...new Set(emails.map(normalizeMarketingEmail).filter(Boolean))];
   for (const email of unique) {
-    map.set(email, { newsletterSubscribed: false, unsubscribed: false });
+    map.set(email, { newsletterSubscribed: false, unsubscribed: false, suppressed: false });
   }
   if (!admin || unique.length === 0) return map;
 
   const { data: news } = await admin.from("newsletter_subscribers").select("email").in("email", unique);
   for (const row of news ?? []) {
     const email = normalizeMarketingEmail(String(row.email));
-    const current = map.get(email) ?? { newsletterSubscribed: false, unsubscribed: false };
+    const current = map.get(email) ?? { newsletterSubscribed: false, unsubscribed: false, suppressed: false };
     map.set(email, { ...current, newsletterSubscribed: true });
   }
   const unsub = await admin.from("email_marketing_unsubscribes").select("email").in("email", unique);
   if (!unsub.error) {
     for (const row of unsub.data ?? []) {
       const email = normalizeMarketingEmail(String(row.email));
-      const current = map.get(email) ?? { newsletterSubscribed: false, unsubscribed: false };
+      const current = map.get(email) ?? { newsletterSubscribed: false, unsubscribed: false, suppressed: false };
       map.set(email, { ...current, unsubscribed: true });
     }
   }
@@ -347,11 +349,14 @@ export async function attachRecipientConsent(detail: CampaignDetailDto): Promise
   return {
     ...detail,
     recipients: detail.recipients.map((row) => {
-      const entry = consent.get(row.email.trim().toLowerCase()) ?? { newsletterSubscribed: false, unsubscribed: false };
+      const entry = consent.get(normalizeMarketingEmail(row.email)) ?? { newsletterSubscribed: false, unsubscribed: false };
+      const classified = classifyCampaignRecipientDelivery(row.email, entry);
       return {
         ...row,
-        consented: hasMarketingEmailConsent({ email: row.email, ...entry }),
-        unsubscribed: entry.unsubscribed,
+        consented: classified.canDeliver,
+        unsubscribed: classified.unsubscribed,
+        suppressed: classified.suppressed,
+        newsletterSubscribed: classified.newsletterSubscribed,
       };
     }),
   };

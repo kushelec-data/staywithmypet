@@ -21,31 +21,31 @@ import { canStartBulkSend } from "@/lib/email-campaigns/send-queue";
 import { isCampaignContentLocked } from "@/lib/email-campaigns/versioning";
 
 describe("consent warning", () => {
-  it("shows no warning when blockedCount is 0", () => {
-    expect(campaignConsentWarning(0)).toBeNull();
+  it("shows no warning when nobody is unsubscribed or suppressed", () => {
+    expect(campaignConsentWarning({ explicitlyUnsubscribed: 0, suppressed: 0, invalid: 0 })).toBeNull();
     const summary = campaignConsentSummary([
-      { status: "pending", consented: true },
-      { status: "pending", consented: true },
+      { email: "a@example.com", status: "pending", newsletterSubscribed: false, unsubscribed: false },
+      { email: "b@example.com", status: "pending", newsletterSubscribed: true, unsubscribed: false },
     ]);
     expect(summary.blocked).toBe(0);
     expect(summary.warning).toBeNull();
     expect(summary.eligible).toBe(2);
-    expect(canEnableCampaignSend({ recipientCount: 2, blockedCount: 0, pendingCount: 2 })).toBe(true);
+    expect(summary.csvRecipients).toBe(2);
+    expect(canEnableCampaignSend({ eligible: 2, pendingCount: 2 })).toBe(true);
     expect(bulkSendConsentGate([]).allowed).toBe(true);
   });
 
-  it("shows a clear warning when blockedCount is greater than 0", () => {
+  it("warns only for explicit unsubscribe, not missing newsletter signup", () => {
     const summary = campaignConsentSummary([
-      { status: "pending", consented: true },
-      { status: "pending", consented: false },
-      { status: "pending", consented: false },
+      { email: "ok@example.com", status: "pending", newsletterSubscribed: false, unsubscribed: false },
+      { email: "out@example.com", status: "pending", newsletterSubscribed: true, unsubscribed: true },
+      { email: "also-out@example.com", status: "pending", newsletterSubscribed: false, unsubscribed: true },
     ]);
     expect(summary.blocked).toBe(2);
     expect(summary.eligible).toBe(1);
-    expect(summary.warning).toBe(
-      "2 recipients cannot receive this campaign because they are not subscribed to marketing emails or have unsubscribed.",
-    );
-    expect(campaignConsentWarning(2)).toContain("not subscribed to marketing emails");
+    expect(summary.explicitlyUnsubscribed).toBe(2);
+    expect(summary.warning).toBe("2 explicitly unsubscribed. These recipients will not be emailed.");
+    expect(summary.warning).not.toContain("not subscribed to marketing emails");
   });
 });
 

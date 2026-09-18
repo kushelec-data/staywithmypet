@@ -32,6 +32,14 @@ export function resolveRecipientSendLanguage(input: {
   return resolveSendLanguage(input.sendLanguageMode, input.recipientLanguage);
 }
 
+export function englishOnlyCampaignNotice(): string {
+  return "This campaign will be sent in English to all eligible recipients.";
+}
+
+export function showCampaignEstonianPreview(languageMode: CampaignLanguageMode): boolean {
+  return languageMode !== "english_only";
+}
+
 export function campaignRecipientSummary(
   recipientCount: number,
   languageMode: CampaignLanguageMode,

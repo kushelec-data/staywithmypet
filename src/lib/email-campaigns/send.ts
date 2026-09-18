@@ -21,7 +21,7 @@ import {
   resolveRecipientSendLanguage,
   type SendLanguageMode,
 } from "@/lib/email-campaigns/send-language";
-import { hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
+import { classifyCampaignRecipientDelivery } from "@/lib/email-campaigns/marketing-consent";
 import { runSequentialSends, type SendMode } from "@/lib/email-campaigns/send-queue";
 import {
   claimCampaignSendLease,
@@ -42,6 +42,13 @@ function smtpFailureReason(result: { ok: false; reason: string; detail?: string 
   const detail = result.detail?.replace(/\bpass(word)?=[^,\s]+/gi, "password=[redacted]") ?? "";
   if (!detail) return result.reason;
   return `${result.reason}:${detail.slice(0, 180)}`;
+}
+
+async function classifyRecipientForDelivery(email: string) {
+  const consent = await loadMarketingConsentMap([email]);
+  const key = email.trim().toLowerCase();
+  const entry = consent.get(key) ?? { newsletterSubscribed: false, unsubscribed: false, suppressed: false };
+  return classifyCampaignRecipientDelivery(email, entry);
 }
 
 export async function sendToRecipient(
@@ -72,24 +79,21 @@ export async function sendToRecipient(
     };
   }
 
-  if (options?.enforceMarketingConsent) {
-    const consent = await loadMarketingConsentMap([packed.recipient.email as string]);
-    const key = String(packed.recipient.email).trim().toLowerCase();
-    const entry = consent.get(key) ?? { newsletterSubscribed: false, unsubscribed: false };
-    if (!hasMarketingEmailConsent({ email: packed.recipient.email as string, ...entry })) {
-      await recordSendResult({
-        campaignId: packed.campaign.id as string,
-        recipientId,
-        ok: false,
-        reason: "marketing_consent_missing",
-      });
-      return {
-        ok: false,
-        reason: "marketing_consent_missing",
-        email: packed.recipient.email as string,
-        smtpCalled: false,
-      };
-    }
+  const classified = await classifyRecipientForDelivery(packed.recipient.email as string);
+  if (!classified.canDeliver) {
+    const reason = classified.blockReason ?? "unsubscribed";
+    await recordSendResult({
+      campaignId: packed.campaign.id as string,
+      recipientId,
+      ok: false,
+      reason,
+    });
+    return {
+      ok: false,
+      reason,
+      email: packed.recipient.email as string,
+      smtpCalled: false,
+    };
   }
 
   await syncRecipientClickTokens(recipientId);
@@ -162,6 +166,23 @@ export async function sendToRecipient(
   const expectedOk = htmlHasExpectedLanguageMarkers(html, sendLanguage);
   const unresolvedPlaceholder = html.includes("swmp.invalid");
   const brokenTracking = htmlContainsBrokenCampaignTracking(html);
+  const preDelivery = await classifyRecipientForDelivery(packed.recipient.email as string);
+  if (!preDelivery.canDeliver) {
+    const reason = preDelivery.blockReason ?? "unsubscribed";
+    await recordSendResult({
+      campaignId: packed.campaign.id as string,
+      recipientId,
+      ok: false,
+      reason,
+    });
+    return {
+      ok: false,
+      reason,
+      email: plan.email,
+      smtpCalled: false,
+      plan,
+    };
+  }
   if (unresolvedPlaceholder || brokenTracking || !expectedOk) {
     const reason = unresolvedPlaceholder
       ? "unresolved_tracking_placeholder"
