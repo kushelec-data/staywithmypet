@@ -6,6 +6,9 @@ import {
   DEFAULT_TEST_RECIPIENTS,
   ESTONIAN_TEST_RECIPIENTS,
   RESEND_TEST_RECIPIENTS,
+  LIVING_WELL_20_SEP_EN_CAMPAIGN_NAME,
+  LIVING_WELL_20_SEP_EN_SUBJECT,
+  LIVING_WELL_20_SEP_EN_TEMPLATE_KEY,
   SEPTEMBER_ESTONIAN_CAMPAIGN_NAME,
   SEPTEMBER_SUBJECT_EN,
   SEPTEMBER_SUBJECT_ET,
@@ -14,6 +17,7 @@ import {
   type CampaignTrackedLink,
 } from "@/lib/email-campaigns/events";
 import { defaultSeptemberBodies, defaultCampaignCopy, resolveCampaignCopy, type CampaignCopyFields } from "@/lib/email-campaigns/html";
+import { defaultLivingWellEnglishBodies, livingWellEnglishCopy } from "@/lib/email-campaigns/living-well-html";
 import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
 import { createOpaqueToken } from "@/lib/email-campaigns/tokens";
 import {
@@ -118,6 +122,7 @@ export type CampaignDetailDto = {
   subjectEt: string;
   htmlEn: string;
   htmlEt: string;
+  templateKey: string | null;
   createdAt: string;
   updatedAt: string;
   versionNumber: number;
@@ -141,7 +146,7 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
   let campaignQuery = await admin
     .from("email_campaigns")
     .select(
-      "id, name, status, subject_en, subject_et, html_en, html_et, created_at, updated_at, family_id, version_number, template_config, scheduled_at, scheduled_timezone, scheduled_by, sent_at",
+      "id, name, status, subject_en, subject_et, html_en, html_et, created_at, updated_at, family_id, version_number, template_config, template_key, scheduled_at, scheduled_timezone, scheduled_by, sent_at",
     )
     .eq("id", campaignId)
     .maybeSingle();
@@ -180,6 +185,7 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
     subjectEt: campaign.subject_et as string,
     htmlEn: campaign.html_en as string,
     htmlEt: campaign.html_et as string,
+    templateKey: "template_key" in campaign && campaign.template_key ? String(campaign.template_key) : null,
     createdAt: campaign.created_at as string,
     updatedAt,
     versionNumber,
@@ -498,11 +504,18 @@ export async function updateCampaignContent(
       return { error: `Unsafe sponsor URL for ${sponsor.label}` };
     }
   }
-  const bodies = defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
-    ...templateConfig.copy,
-    subjectEn: input.subjectEn,
-    subjectEt: input.subjectEt,
-  });
+  const bodies =
+    detail.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY
+      ? defaultLivingWellEnglishBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
+          ...templateConfig.copy,
+          subjectEn: input.subjectEn,
+          subjectEt: input.subjectEt,
+        })
+      : defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
+          ...templateConfig.copy,
+          subjectEn: input.subjectEn,
+          subjectEt: input.subjectEt,
+        });
   const { error } = await admin
     .from("email_campaigns")
     .update({
@@ -548,11 +561,40 @@ export async function duplicateCampaignVersion(
     createdBy,
     recipients: [],
     allowEmptyRecipients: true,
-    templateKey: SEPTEMBER_TEMPLATE_KEY,
+    templateKey: source.templateKey ?? SEPTEMBER_TEMPLATE_KEY,
     templateConfig,
     copy: source.copy,
     familyId: source.familyId,
     versionNumber,
+  });
+}
+
+export async function createLivingWellEnglishDraft(
+  createdBy: string,
+  templateConfig?: CampaignTemplateConfig,
+): Promise<{ id: string } | { error: string }> {
+  const copy = livingWellEnglishCopy();
+  const config = { ...mergeSeptemberTemplateConfig(templateConfig), copy };
+  const bodies = defaultLivingWellEnglishBodies(campaignEmailAssetUrl("/logo.png"), config, {
+    ...copy,
+    subjectEn: LIVING_WELL_20_SEP_EN_SUBJECT,
+    subjectEt: LIVING_WELL_20_SEP_EN_SUBJECT,
+  });
+  return createCampaign({
+    name: LIVING_WELL_20_SEP_EN_CAMPAIGN_NAME,
+    subjectEn: LIVING_WELL_20_SEP_EN_SUBJECT,
+    subjectEt: LIVING_WELL_20_SEP_EN_SUBJECT,
+    htmlEn: bodies.htmlEn,
+    htmlEt: bodies.htmlEt,
+    createdBy,
+    templateKey: LIVING_WELL_20_SEP_EN_TEMPLATE_KEY,
+    templateConfig: config,
+    copy,
+    recipients: DEFAULT_TEST_RECIPIENTS.map((row) => ({
+      displayName: row.displayName,
+      email: row.email,
+      language: row.language,
+    })),
   });
 }
 

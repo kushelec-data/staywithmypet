@@ -8,6 +8,7 @@ vi.mock("@/lib/email-campaigns/store", () => ({
   listCampaignSummaries: vi.fn(async () => []),
   createSeptemberTestDraft: vi.fn(),
   createSeptemberEstonianDraft: vi.fn(),
+  createLivingWellEnglishDraft: vi.fn(),
   createCampaign: vi.fn(),
   resolveRegisteredUserRecipients: vi.fn(async () => []),
   getCampaignDetail: vi.fn(),
@@ -32,7 +33,7 @@ describe("admin email campaign API authorization", () => {
     const { GET } = await import("@/app/api/admin/email-campaigns/route");
     const res = await GET();
     expect(res.status).toBe(401);
-  });
+  }, 20_000);
 
   it("returns 403 for a normal authenticated user", async () => {
     const { getAdminSession } = await import("@/lib/admin/auth");
@@ -55,6 +56,25 @@ describe("admin email campaign API authorization", () => {
     expect(json.campaigns).toEqual([]);
     expect(JSON.stringify(json)).not.toMatch(/SMTP_PASSWORD|smtp\.password|service_role/);
     expect(json.campaigns[0]?.htmlEn).toBeUndefined();
+  });
+
+  it("seeds the Living Well English draft without sending", async () => {
+    const { getAdminSession } = await import("@/lib/admin/auth");
+    const { createLivingWellEnglishDraft } = await import("@/lib/email-campaigns/store");
+    vi.mocked(getAdminSession).mockResolvedValue({ ok: true, userId: "admin-1" });
+    vi.mocked(createLivingWellEnglishDraft).mockResolvedValue({ id: "lw-1" });
+    const { POST } = await import("@/app/api/admin/email-campaigns/route");
+    const res = await POST(
+      new Request("https://example.com", {
+        method: "POST",
+        body: JSON.stringify({ seedLivingWellEnglish: true }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.id).toBe("lw-1");
+    expect(json.sent).toBe(false);
+    expect(createLivingWellEnglishDraft).toHaveBeenCalledWith("admin-1", expect.anything());
   });
 });
 

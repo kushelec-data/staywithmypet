@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { campaignLanguageFromPreferredLocale, eventButtonLabel, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
 import {
@@ -8,6 +10,7 @@ import {
   EVENT_13_SEP_URL,
   EVENT_20_SEP_URL,
   EVENT_27_SEP_URL,
+  LIVING_WELL_20_SEP_EN_PHOTO_PATHS,
   SEPTEMBER_EVENT_LINKS,
   SEPTEMBER_SPONSOR_LINKS,
   UNLINKED_SPONSORS,
@@ -29,6 +32,7 @@ import {
   OPEN_PIXEL_PLACEHOLDER,
   renderSeptemberCampaignHtml,
 } from "@/lib/email-campaigns/html";
+import { defaultLivingWellEnglishBodies } from "@/lib/email-campaigns/living-well-html";
 import { personalizeCampaignHtml, clickTrackingUrl, openTrackingUrl } from "@/lib/email-campaigns/personalize";
 import {
   getTransactionalEmailOrigin,
@@ -531,5 +535,67 @@ describe("campaign email public base URL", () => {
         EMAIL_PUBLIC_BASE_URL: "https://staywithmypet-5296.vercel.app",
       }),
     ).toBe("https://www.staywithmypet.ee");
+  });
+});
+
+describe("Living Well English 20 September invitation", () => {
+  const { htmlEn, htmlEt } = defaultLivingWellEnglishBodies("https://www.staywithmypet.ee/logo.png");
+
+  it("reuses the campaign chrome, 20 September tracking CTA, and September sponsor line", () => {
+    expect(htmlEn).toContain("max-width:600px");
+    expect(htmlEn).toContain("Stay With My Pet");
+    expect(htmlEn).toContain("This Sunday: Living Well With Pets");
+    expect(htmlEn).toContain("Free expert talks, dog-friendly treats and a relaxed Sunday at Moon.");
+    expect(htmlEn).toContain("SEE EVENT &amp; JOIN US →");
+    expect(htmlEn).toContain("Unsubscribe from marketing emails");
+    expect(htmlEn).toContain(OPEN_PIXEL_PLACEHOLDER);
+    expect(htmlEn).toContain(clickPlaceholder("event_20_sep"));
+    expect(htmlEn.split(clickPlaceholder("event_20_sep")).length - 1).toBe(2);
+    expect(htmlEn).not.toContain(clickPlaceholder("event_13_sep"));
+    expect(htmlEn).not.toContain(clickPlaceholder("event_27_sep"));
+    expect(htmlEn).not.toContain("facebook.com");
+    expect(htmlEn).toContain("01_event-wide.jpg");
+    expect(htmlEn).toContain("DSC00139.jpg");
+    expect(htmlEn).toContain("02_dog-icecream.JPG");
+    expect(htmlEn).toContain("DSC00201.jpg");
+    expect(htmlEn).toContain("DSC00132(1).jpg");
+    expect(htmlEn).toContain("03_dog-human.jpg");
+    expect(htmlEn).toContain("04_expert-talk.JPG");
+    expect(htmlEn.indexOf("01_event-wide.jpg")).toBeLessThan(htmlEn.indexOf("DSC00139.jpg"));
+    expect(htmlEn.indexOf("DSC00139.jpg")).toBeLessThan(htmlEn.indexOf("04_expert-talk.JPG"));
+    expect(htmlEn.indexOf("04_expert-talk.JPG")).toBeLessThan(htmlEn.indexOf("02_dog-icecream.JPG"));
+    expect(htmlEn.indexOf("02_dog-icecream.JPG")).toBeLessThan(htmlEn.indexOf("DSC00201.jpg"));
+    expect(htmlEn.indexOf("DSC00201.jpg")).toBeLessThan(htmlEn.indexOf("DSC00132(1).jpg"));
+    expect(htmlEn.indexOf("DSC00132(1).jpg")).toBeLessThan(htmlEn.indexOf("03_dog-human.jpg"));
+    expect(htmlEn).toContain("padding:0 12px 0 0");
+    expect(htmlEn).toContain("https://www.staywithmypet.ee/images/campaigns/living-well-20-sep/");
+    expect(htmlEn).toContain("WITH A LITTLE HELP FROM OUR FRIENDS");
+    expect(htmlEn).toMatch(/PetCity[\s\S]*Platinum[\s\S]*ViWell[\s\S]*Semu[\s\S]*YOOK[\s\S]*Gelato Ladies[\s\S]*Moon/);
+    expect(htmlEn).toContain(clickPlaceholder("sponsor_yook"));
+    expect(htmlEn).toContain(clickPlaceholder("sponsor_gelato_ladies"));
+    expect(htmlEn).toContain(clickPlaceholder("sponsor_petcity"));
+    expect(htmlEn).toContain(clickPlaceholder("sponsor_moon"));
+    expect(htmlEn).toContain("swmp-stack");
+    expect(htmlEn).toContain("border-radius:12px");
+    expect(htmlEt).toBe(htmlEn);
+    expect(destinationForLinkKey("event_20_sep")).toBe(EVENT_20_SEP_URL);
+  });
+
+  it("references seven local event photos that exist on disk", () => {
+    const filenames = Object.values(LIVING_WELL_20_SEP_EN_PHOTO_PATHS).map((path) => path.split("/").pop());
+    expect(filenames).toEqual([
+      "01_event-wide.jpg",
+      "DSC00139.jpg",
+      "02_dog-icecream.JPG",
+      "DSC00201.jpg",
+      "DSC00132(1).jpg",
+      "03_dog-human.jpg",
+      "04_expert-talk.JPG",
+    ]);
+    for (const publicPath of Object.values(LIVING_WELL_20_SEP_EN_PHOTO_PATHS)) {
+      expect(htmlEn).toContain(publicPath);
+      const localPath = join(process.cwd(), "public", publicPath.replace(/^\//, ""));
+      expect(existsSync(localPath), localPath).toBe(true);
+    }
   });
 });

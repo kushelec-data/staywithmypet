@@ -115,6 +115,22 @@ export const SEPTEMBER_TEMPLATE_KEY = "september_community_events";
 export const SEPTEMBER_CAMPAIGN_NAME = "September community events";
 export const SEPTEMBER_ESTONIAN_CAMPAIGN_NAME = SEPTEMBER_CAMPAIGN_NAME;
 
+export const LIVING_WELL_20_SEP_EN_TEMPLATE_KEY = "living_well_20_sep_en";
+export const LIVING_WELL_20_SEP_EN_CAMPAIGN_NAME = "Living Well With Pets – English – 20 September";
+export const LIVING_WELL_20_SEP_EN_SUBJECT = "This Sunday: Living Well With Pets 🐾";
+export const LIVING_WELL_20_SEP_EN_PREHEADER =
+  "Free expert talks, dog-friendly treats and a relaxed Sunday at Moon.";
+export const LIVING_WELL_20_SEP_EN_CTA = "SEE EVENT & JOIN US →";
+export const LIVING_WELL_20_SEP_EN_PHOTO_PATHS = {
+  hero: "/images/campaigns/living-well-20-sep/01_event-wide.jpg",
+  atmosphere: "/images/campaigns/living-well-20-sep/DSC00139.jpg",
+  iceCream: "/images/campaigns/living-well-20-sep/02_dog-icecream.JPG",
+  dogPortrait: "/images/campaigns/living-well-20-sep/DSC00201.jpg",
+  dogOwner: "/images/campaigns/living-well-20-sep/DSC00132(1).jpg",
+  community: "/images/campaigns/living-well-20-sep/03_dog-human.jpg",
+  talk: "/images/campaigns/living-well-20-sep/04_expert-talk.JPG",
+} as const;
+
 export const SEPTEMBER_SUBJECT_EN =
   "🐾 Join us for a relaxed and inspiring Sunday all about life with pets!";
 export const SEPTEMBER_SUBJECT_ET =

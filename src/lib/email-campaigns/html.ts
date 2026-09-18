@@ -45,7 +45,7 @@ function eventCard(language: CampaignLanguage, link: SeptemberEventCard, href: s
 const SPONSOR_LINK_STYLE =
   "color:#1a6b5c;font-weight:600;text-decoration:none;cursor:pointer;";
 
-function sponsorLine(clickHrefs: Record<string, string>, config: CampaignTemplateConfig): string {
+export function sponsorLine(clickHrefs: Record<string, string>, config: CampaignTemplateConfig): string {
   const parts = config.sponsors.map((item) =>
     item.destinationUrl
       ? sponsorAnchor(item.label, item.key, clickHrefs)
@@ -59,7 +59,7 @@ function sponsorAnchor(label: string, key: string, clickHrefs: Record<string, st
   return `<a href="${escapeHtml(href)}" target="_blank" style="${SPONSOR_LINK_STYLE}">${escapeHtml(label)}</a>`;
 }
 
-function defaultClickHrefs(config: CampaignTemplateConfig): Record<string, string> {
+export function defaultClickHrefs(config: CampaignTemplateConfig): Record<string, string> {
   return Object.fromEntries(trackedLinksFromTemplateConfig(config).map((link) => [link.key, clickPlaceholder(link.key)]));
 }
 
@@ -331,6 +331,12 @@ export function wrapCampaignEmail(opts: {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <title>${headline}</title>
+  <style type="text/css">
+    @media only screen and (max-width:620px) {
+      .swmp-stack { display:block !important; width:100% !important; max-width:100% !important; padding-left:0 !important; padding-right:0 !important; }
+      img { height:auto !important; }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#f7f5f0;">
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${preheader}</div>

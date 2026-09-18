@@ -5,6 +5,7 @@ import { OPEN_TRACKING_DISCLAIMER } from "@/lib/email-campaigns/dto";
 import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
 import {
   createCampaign,
+  createLivingWellEnglishDraft,
   createSeptemberEstonianDraft,
   createSeptemberTestDraft,
   listCampaignSummaries,
@@ -37,6 +38,15 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+
+  if (body.seedLivingWellEnglish === true) {
+    const created = await createLivingWellEnglishDraft(
+      gate.session.userId,
+      mergeSeptemberTemplateConfig(body.templateConfig),
+    );
+    if ("error" in created) return NextResponse.json({ error: created.error }, { status: 400 });
+    return NextResponse.json({ id: created.id, sent: false, status: "draft" });
+  }
 
   if (body.seedSeptemberTest === true) {
     const created = await createSeptemberTestDraft(gate.session.userId, mergeSeptemberTemplateConfig(body.templateConfig));

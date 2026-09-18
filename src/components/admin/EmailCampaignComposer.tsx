@@ -71,6 +71,27 @@ export function EmailCampaignComposer() {
     router.refresh();
   }
 
+  async function seedLivingWellEnglish() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/email-campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        seedLivingWellEnglish: true,
+        templateConfig,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) {
+      setError(json.error ?? "Could not create Living Well English draft");
+      return;
+    }
+    router.push(`/admin/email-campaigns/${json.id}`);
+    router.refresh();
+  }
+
   async function preview(nextLanguage: "en" | "et") {
     setLanguage(nextLanguage);
     setBusy(true);
@@ -111,6 +132,14 @@ export function EmailCampaignComposer() {
           className="mt-4 rounded-full bg-[#2E6B3F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           Save Draft
+        </button>
+        <button
+          type="button"
+          onClick={() => void seedLivingWellEnglish()}
+          disabled={busy}
+          className="mt-4 ml-2 rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F] disabled:opacity-50"
+        >
+          Create Living Well English draft
         </button>
       </AdminCard>
 
