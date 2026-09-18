@@ -1,10 +1,53 @@
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { LIVING_WELL_20_SEP_EN_TEMPLATE_KEY } from "@/lib/email-campaigns/events";
 
 export type SendLanguageMode = "automatic" | "en" | "et";
+export type CampaignLanguageMode = "automatic" | "english_only";
 
 export function parseSendLanguageMode(value: unknown): SendLanguageMode {
   if (value === "en" || value === "et" || value === "automatic") return value;
   return "automatic";
+}
+
+export function parseCampaignLanguageMode(value: unknown): CampaignLanguageMode {
+  return value === "english_only" ? "english_only" : "automatic";
+}
+
+export function campaignLanguageModeFromRecord(input: {
+  languageMode?: unknown;
+  templateKey?: string | null;
+}): CampaignLanguageMode {
+  if (parseCampaignLanguageMode(input.languageMode) === "english_only") return "english_only";
+  if (input.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY) return "english_only";
+  return "automatic";
+}
+
+/** Campaign english_only overrides send-mode and recipient locale for BODY selection only. */
+export function resolveRecipientSendLanguage(input: {
+  campaignLanguageMode: CampaignLanguageMode;
+  sendLanguageMode: SendLanguageMode;
+  recipientLanguage: string | null | undefined;
+}): CampaignLanguage {
+  if (input.campaignLanguageMode === "english_only") return "en";
+  return resolveSendLanguage(input.sendLanguageMode, input.recipientLanguage);
+}
+
+export function campaignRecipientSummary(
+  recipientCount: number,
+  languageMode: CampaignLanguageMode,
+  stored?: { english: number; estonian: number },
+): string {
+  if (languageMode === "english_only") {
+    return `${recipientCount} recipient${recipientCount === 1 ? "" : "s"} · English email`;
+  }
+  return `${stored?.english ?? 0} English · ${stored?.estonian ?? 0} Estonian`;
+}
+
+function safeFailureLine(row: { email?: string; reason?: string }): string {
+  const reason = String(row.reason ?? "send_failed")
+    .replace(/\b(?:SMTP_)?PASS(?:WORD)?[=:][^\s,;]+/gi, "[redacted]")
+    .replace(/\bSMTP_PASSWORD\b/gi, "[redacted]");
+  return row.email ? `${row.email}: ${reason}` : reason;
 }
 
 /** Campaign title is never used. Preview language is never used. */
@@ -40,10 +83,15 @@ export type RecipientRoutingRow = {
 export function recipientSendRouting(
   rows: Array<{ name: string; email: string; language: string }>,
   mode: SendLanguageMode,
+  campaignLanguageMode: CampaignLanguageMode = "automatic",
 ): RecipientRoutingRow[] {
   return rows.map((row) => {
     const storedLanguage = campaignLanguageFromPreferredLocale(row.language);
-    const sendLanguage = resolveSendLanguage(mode, row.language);
+    const sendLanguage = resolveRecipientSendLanguage({
+      campaignLanguageMode,
+      sendLanguageMode: mode,
+      recipientLanguage: row.language,
+    });
     return {
       name: row.name,
       email: row.email,
@@ -67,9 +115,29 @@ export function routingHeading(mode: SendLanguageMode): string {
 
 export function formatSendCompletedMessage(
   _kind: "test" | "campaign",
-  stats: { sent: number; failed: number; sentEstonian: number; sentEnglish: number },
+  stats: {
+    sent: number;
+    failed: number;
+    sentEstonian?: number;
+    sentEnglish?: number;
+    languageMode?: CampaignLanguageMode;
+    failures?: Array<{ email?: string; reason?: string }>;
+  },
 ): string {
-  return `Email sent successfully\n${stats.sent} sent\n${stats.sentEnglish} English · ${stats.sentEstonian} Estonian\n${stats.failed} failed`;
+  const sent = Number(stats.sent) || 0;
+  const failed = Number(stats.failed) || 0;
+  const failureLines = (stats.failures ?? []).slice(0, 8).map(safeFailureLine);
+
+  if (sent === 0 && failed === 0) {
+    return "No eligible recipients were found";
+  }
+  if (sent === 0) {
+    return ["No emails were sent", ...failureLines].join("\n");
+  }
+  if (failed === 0) {
+    return sent === 1 ? "1 email sent successfully" : `${sent} emails sent successfully`;
+  }
+  return [`${sent} sent · ${failed} failed`, ...failureLines].join("\n");
 }
 
 export function bilingualCampaignDisplayName(name: string): string {

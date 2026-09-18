@@ -76,6 +76,7 @@ export default async function AdminEmailCampaignDetailPage({
           bodyBeforeEt: detail.copy.bodyBeforeEt,
           bodyAfterEt: detail.copy.bodyAfterEt,
         }}
+        languageMode={detail.languageMode}
       />
     </AdminShell>
   );

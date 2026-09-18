@@ -9,7 +9,7 @@ import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
 import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE } from "@/lib/email-campaigns/template-config";
-import { formatSendCompletedMessage, storedLanguageCounts } from "@/lib/email-campaigns/send-language";
+import { campaignRecipientSummary, formatSendCompletedMessage, storedLanguageCounts, type CampaignLanguageMode } from "@/lib/email-campaigns/send-language";
 import { campaignConsentSummary, canEnableCampaignSend } from "@/lib/email-campaigns/consent-summary";
 import {
   CAMPAIGN_SCHEDULE_TIMEZONE,
@@ -57,6 +57,7 @@ export function EmailCampaignDetailClient({
   scheduledTimezone,
   sentAt,
   links,
+  languageMode = "automatic",
 }: {
   campaignId: string;
   name: string;
@@ -70,6 +71,7 @@ export function EmailCampaignDetailClient({
   language: string;
   contentLocked: boolean;
   copy: CampaignCopyFormValue;
+  languageMode?: CampaignLanguageMode;
   subjectEn: string;
   subjectEt: string;
   scheduledAt: string | null;
@@ -250,20 +252,17 @@ export function EmailCampaignDetailClient({
       body: JSON.stringify({ confirm: true, sendLanguageMode: "automatic" }),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const blocked = json.blocked ? ` ${json.blocked}` : "";
-      const failures = Array.isArray(json.failures)
-        ? json.failures.map((row: { email?: string; reason?: string }) => `${row.email ?? "recipient"}: ${row.reason ?? "failed"}`).join("; ")
-        : "";
-      setMessage(`${json.error ?? "Send test failed."}${blocked}${failures ? ` ${failures}` : ""}`);
+    if (json.blocked) {
+      setMessage(json.blocked);
+      router.refresh();
       return;
     }
     setMessage(
       formatSendCompletedMessage("test", {
         sent: Number(json.sent ?? 0),
         failed: Number(json.failed ?? 0),
-        sentEstonian: Number(json.sentEstonian ?? 0),
-        sentEnglish: Number(json.sentEnglish ?? 0),
+        failures: Array.isArray(json.failures) ? json.failures : [],
+        languageMode,
       }),
     );
     router.refresh();
@@ -316,8 +315,7 @@ export function EmailCampaignDetailClient({
           formatSendCompletedMessage("campaign", {
             sent: Number(json.sent ?? 0) + (progress?.sent ?? 0),
             failed: Number(json.failed ?? 0) + (progress?.failed ?? 0),
-            sentEstonian: languageCounts.estonian,
-            sentEnglish: languageCounts.english,
+            languageMode,
           }),
         );
         router.refresh();
@@ -362,6 +360,8 @@ export function EmailCampaignDetailClient({
   const peopleCount = languageCounts.recipients;
   const englishCount = languageCounts.english;
   const estonianCount = languageCounts.estonian;
+  const recipientLanguageSummary = campaignRecipientSummary(peopleCount, languageMode, languageCounts);
+  const englishOnly = languageMode === "english_only";
   const isScheduled = (live?.status ?? status) === "scheduled";
   const scheduledLabel = formatScheduledFor(scheduledAt, scheduledTimezone || CAMPAIGN_SCHEDULE_TIMEZONE);
 
@@ -432,8 +432,7 @@ export function EmailCampaignDetailClient({
             {formatSendCompletedMessage("campaign", {
               sent: live.sent,
               failed: live.failed,
-              sentEstonian: live.estonian,
-              sentEnglish: live.english,
+              languageMode,
             })}
           </p>
         </AdminCard>
@@ -443,10 +442,12 @@ export function EmailCampaignDetailClient({
         <p className="mt-1 text-sm">
           {peopleCount} {peopleCount === 1 ? "person" : "people"}
         </p>
-        <p className="text-sm">
-          {englishCount} English · {estonianCount} Estonian
-        </p>
-        <p className="mt-1 text-sm text-muted">Languages are automatically selected from the CSV.</p>
+        <p className="text-sm">{recipientLanguageSummary}</p>
+        {englishOnly ? (
+          <p className="mt-1 text-sm text-muted">Every recipient receives the English event email. Stored profile languages are not changed.</p>
+        ) : (
+          <p className="mt-1 text-sm text-muted">Languages are automatically selected from the CSV.</p>
+        )}
         {!contentLocked ? (
           <div className="mt-3">
             <CampaignCsvImport busy={csvBusy} showSummary={false} onCsvReady={(text) => void importCsv(text)} />
@@ -625,8 +626,14 @@ export function EmailCampaignDetailClient({
             {confirmKind === "test" ? (
               <>
                 <p className="text-sm">Send test email to {peopleCount} {peopleCount === 1 ? "person" : "people"}?</p>
-                <p className="mt-2 text-sm">{englishCount} will receive English</p>
-                <p className="text-sm">{estonianCount} will receive Estonian</p>
+                {englishOnly ? (
+                  <p className="mt-2 text-sm">{recipientLanguageSummary}</p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm">{englishCount} will receive English</p>
+                    <p className="text-sm">{estonianCount} will receive Estonian</p>
+                  </>
+                )}
                 <div className="mt-4 flex gap-3">
                   <button type="button" onClick={() => setConfirmKind(null)} className="rounded-full border px-4 py-2 text-sm">
                     Cancel
@@ -653,9 +660,7 @@ export function EmailCampaignDetailClient({
                 </p>
                 <div className="mt-4 text-sm">
                   <p className="font-semibold">Summary</p>
-                  <p>{peopleCount} recipients</p>
-                  <p>{englishCount} English</p>
-                  <p>{estonianCount} Estonian</p>
+                  <p>{recipientLanguageSummary}</p>
                 </div>
                 <div className="mt-4 flex gap-3">
                   <button type="button" onClick={() => setConfirmKind(null)} className="rounded-full border px-4 py-2 text-sm">
@@ -671,9 +676,12 @@ export function EmailCampaignDetailClient({
                 <p className="text-sm">
                   Send campaign to {sendMode === "failed" ? failedCount : sendMode === "resume" ? remainingUnsent : peopleCount} recipients?
                 </p>
-                <p className="mt-2 text-sm">{englishCount} English</p>
-                <p className="text-sm">{estonianCount} Estonian</p>
-                <p className="mt-2 text-sm">Each recipient will automatically receive the correct language.</p>
+                <p className="mt-2 text-sm">{recipientLanguageSummary}</p>
+                <p className="mt-2 text-sm">
+                  {englishOnly
+                    ? "Every recipient will receive the English email."
+                    : "Each recipient will automatically receive the correct language."}
+                </p>
                 <div className="mt-4 flex gap-3">
                   <button type="button" onClick={() => setConfirmKind(null)} className="rounded-full border px-4 py-2 text-sm">
                     Cancel

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { campaignLanguageFromPreferredLocale, eventButtonLabel, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
+import { campaignLanguageFromPreferredLocale, eventButtonLabel, htmlHasExpectedLanguageMarkers, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
 import {
   CAMPAIGN_TRACKED_LINKS,
   DEFAULT_TEST_RECIPIENTS,
@@ -547,6 +547,8 @@ describe("Living Well English 20 September invitation", () => {
     expect(htmlEn).toContain("This Sunday: Living Well With Pets");
     expect(htmlEn).toContain("Free expert talks, dog-friendly treats and a relaxed Sunday at Moon.");
     expect(htmlEn).toContain("SEE EVENT &amp; JOIN US →");
+    expect(htmlHasExpectedLanguageMarkers(htmlEn, "en")).toBe(true);
+    expect(htmlEn.includes("VIEW EVENT")).toBe(false);
     expect(htmlEn).toContain("Unsubscribe from marketing emails");
     expect(htmlEn).toContain(OPEN_PIXEL_PLACEHOLDER);
     expect(htmlEn).toContain(clickPlaceholder("event_20_sep"));

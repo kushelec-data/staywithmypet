@@ -33,7 +33,7 @@ import {
   type CampaignTemplateConfig,
 } from "@/lib/email-campaigns/template-config";
 import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion, versionLabel } from "@/lib/email-campaigns/versioning";
-import { bilingualCampaignDisplayName } from "@/lib/email-campaigns/send-language";
+import { bilingualCampaignDisplayName, campaignLanguageModeFromRecord, type CampaignLanguageMode } from "@/lib/email-campaigns/send-language";
 
 type AdminDb = NonNullable<ReturnType<typeof createAdminClient>>;
 
@@ -135,6 +135,7 @@ export type CampaignDetailDto = {
   sentAt: string | null;
   copy: CampaignCopyFields;
   templateConfig: CampaignTemplateConfig;
+  languageMode: CampaignLanguageMode;
   summary: ReturnType<typeof summarizeCampaignRecipients>;
   recipients: CampaignRecipientDto[];
 };
@@ -201,6 +202,10 @@ export async function getCampaignDetail(campaignId: string): Promise<CampaignDet
     sentAt: "sent_at" in campaign && campaign.sent_at ? String(campaign.sent_at) : null,
     copy,
     templateConfig,
+    languageMode: campaignLanguageModeFromRecord({
+      languageMode: templateConfig.languageMode,
+      templateKey: "template_key" in campaign && campaign.template_key ? String(campaign.template_key) : null,
+    }),
     summary: summarizeCampaignRecipients(rows as Array<{ status: string; first_opened_at: string | null; first_clicked_at: string | null }>),
     recipients: rows.map((row) => toRecipientDto(row as Parameters<typeof toRecipientDto>[0])),
   };
@@ -498,6 +503,10 @@ export async function updateCampaignContent(
     copy: resolveCampaignCopy(input.copy),
     familyId: detail.familyId,
     versionNumber: detail.versionNumber,
+    languageMode:
+      detail.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY || detail.languageMode === "english_only"
+        ? "english_only"
+        : "automatic",
   };
   for (const sponsor of templateConfig.sponsors) {
     if (sponsor.destinationUrl && !isSafeCampaignDestination(sponsor.destinationUrl)) {
@@ -574,7 +583,7 @@ export async function createLivingWellEnglishDraft(
   templateConfig?: CampaignTemplateConfig,
 ): Promise<{ id: string } | { error: string }> {
   const copy = livingWellEnglishCopy();
-  const config = { ...mergeSeptemberTemplateConfig(templateConfig), copy };
+  const config = { ...mergeSeptemberTemplateConfig(templateConfig), copy, languageMode: "english_only" as const };
   const bodies = defaultLivingWellEnglishBodies(campaignEmailAssetUrl("/logo.png"), config, {
     ...copy,
     subjectEn: LIVING_WELL_20_SEP_EN_SUBJECT,
@@ -708,7 +717,7 @@ export async function loadRecipientForSend(recipientId: string) {
 
   let campaignQuery = await admin
     .from("email_campaigns")
-    .select("id, subject_en, subject_et, html_en, html_et, status, template_config")
+    .select("id, subject_en, subject_et, html_en, html_et, status, template_config, template_key")
     .eq("id", recipient.campaign_id)
     .maybeSingle();
   if (campaignQuery.error) {
@@ -720,9 +729,10 @@ export async function loadRecipientForSend(recipientId: string) {
   }
   const campaign = campaignQuery.data;
   if (!campaign) return null;
-  const catalog = trackedLinksFromTemplateConfig(
-    mergeSeptemberTemplateConfig("template_config" in campaign ? campaign.template_config : undefined),
+  const templateConfig = mergeSeptemberTemplateConfig(
+    "template_config" in campaign ? campaign.template_config : undefined,
   );
+  const catalog = trackedLinksFromTemplateConfig(templateConfig);
 
   let clickQuery: { data: Array<Record<string, unknown>> | null; error: { message: string } | null };
   clickQuery = await admin
@@ -750,6 +760,8 @@ export async function loadRecipientForSend(recipientId: string) {
     clickTokens: Object.fromEntries(clickRows.map((row) => [row.link_key, row.token])),
     clickRows,
     destinationsOk,
+    languageMode: templateConfig.languageMode,
+    templateKey: "template_key" in campaign && campaign.template_key ? String(campaign.template_key) : null,
   };
 }
 

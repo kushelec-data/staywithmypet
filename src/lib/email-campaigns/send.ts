@@ -12,12 +12,13 @@ import {
   remintClickTokensIfInvalid,
 } from "@/lib/email-campaigns/store";
 import { htmlContainsBrokenCampaignTracking, requireCampaignEmailOrigin } from "@/lib/email-campaigns/public-base";
-import { planRecipientSend, selectCampaignContent, type RecipientSendPlan } from "@/lib/email-campaigns/locale";
+import { planRecipientSend, selectCampaignContent, htmlHasExpectedLanguageMarkers, type RecipientSendPlan } from "@/lib/email-campaigns/locale";
 import {
+  campaignLanguageModeFromRecord,
   countSentByTemplate,
   parseSendLanguageMode,
+  resolveRecipientSendLanguage,
   type SendLanguageMode,
-  resolveSendLanguage,
 } from "@/lib/email-campaigns/send-language";
 import { hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
 import { runSequentialSends, type SendMode } from "@/lib/email-campaigns/send-queue";
@@ -96,7 +97,14 @@ export async function sendToRecipient(
   }
   if (!packed) return { ok: false, reason: "recipient_not_found", smtpCalled: false };
 
-  const sendLanguage = resolveSendLanguage(options?.sendLanguageMode ?? "automatic", packed.recipient.language as string);
+  const sendLanguage = resolveRecipientSendLanguage({
+    campaignLanguageMode: campaignLanguageModeFromRecord({
+      languageMode: packed.languageMode,
+      templateKey: packed.templateKey,
+    }),
+    sendLanguageMode: options?.sendLanguageMode ?? "automatic",
+    recipientLanguage: packed.recipient.language as string,
+  });
   const plan = planRecipientSend({
     email: packed.recipient.email as string,
     language: sendLanguage,
@@ -146,9 +154,8 @@ export async function sendToRecipient(
     origin: origin.origin,
     unsubscribeToken,
   });
-  const expectedMarker = selected.template === "ET" ? "VAATA SÜNDMUST" : "VIEW EVENT";
-  const wrongMarker = selected.template === "ET" ? "VIEW EVENT" : "VAATA SÜNDMUST";
-  if (htmlContainsBrokenCampaignTracking(html) || !html.includes(expectedMarker) || html.includes(wrongMarker)) {
+  const expectedOk = htmlHasExpectedLanguageMarkers(html, sendLanguage);
+  if (htmlContainsBrokenCampaignTracking(html) || !expectedOk) {
     const reason = htmlContainsBrokenCampaignTracking(html) ? "ephemeral_tracking_url" : "template_mismatch";
     await recordSendResult({
       campaignId: packed.campaign.id as string,

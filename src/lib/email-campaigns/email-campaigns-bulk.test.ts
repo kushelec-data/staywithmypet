@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion } from "@/lib/email-campaigns/versioning";
 import {
   bilingualCampaignDisplayName,
+  campaignLanguageModeFromRecord,
+  campaignRecipientSummary,
   formatSendCompletedMessage,
   parseSendLanguageMode,
   recipientSendRouting,
+  resolveRecipientSendLanguage,
   resolveSendLanguage,
   sendActionLabel,
 } from "@/lib/email-campaigns/send-language";
@@ -20,10 +23,10 @@ import {
   selectSendableRecipientIds,
 } from "@/lib/email-campaigns/send-queue";
 import { bulkSendConsentGate, filterMarketingEligible, hasMarketingEmailConsent } from "@/lib/email-campaigns/marketing-consent";
-import { planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
+import { htmlHasExpectedLanguageMarkers, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
 import { clickTrackingUrl, openTrackingUrl, personalizeCampaignHtml, unsubscribeUrl } from "@/lib/email-campaigns/personalize";
 import { jsonLooksLikeSecretDump } from "@/lib/email-campaigns/dto";
-import { CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
+import { LIVING_WELL_20_SEP_EN_SUBJECT, LIVING_WELL_20_SEP_EN_TEMPLATE_KEY, CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
 import { createOpaqueToken, trackingUrlContainsIdentityLeak } from "@/lib/email-campaigns/tokens";
 import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
 
@@ -76,10 +79,85 @@ describe("send language mode", () => {
       { email: "umut@example.com", subject: "EN subject", html: fields.htmlEn, template: "EN", previewLanguage: "et" },
     ]);
     expect(formatSendCompletedMessage("test", { sent: 4, failed: 0, sentEstonian: 2, sentEnglish: 2 })).toBe(
-      "Email sent successfully\n4 sent\n2 English · 2 Estonian\n0 failed",
+      "4 emails sent successfully",
     );
+    expect(formatSendCompletedMessage("test", { sent: 0, failed: 0 })).toBe("No eligible recipients were found");
+    expect(formatSendCompletedMessage("test", { sent: 0, failed: 2, failures: [{ email: "a@b.com", reason: "template_mismatch" }] })).toBe(
+      "No emails were sent\na@b.com: template_mismatch",
+    );
+    expect(formatSendCompletedMessage("test", { sent: 1, failed: 1 })).toBe("1 sent · 1 failed");
+    expect(formatSendCompletedMessage("test", { sent: 0, failed: 1, failures: [{ reason: "SMTP_PASSWORD=secret" }] })).not.toContain("secret");
+    expect(formatSendCompletedMessage("test", { sent: 0, failed: 1 })).not.toContain("Email sent successfully");
     expect(recipientSendRouting(savedRows, "en").every((row) => row.sendLanguage === "en")).toBe(true);
     expect(recipientSendRouting(savedRows, "et").every((row) => row.sendLanguage === "et")).toBe(true);
+  });
+});
+
+describe("english_only campaign language mode", () => {
+  const fields = {
+    subjectEn: LIVING_WELL_20_SEP_EN_SUBJECT,
+    subjectEt: LIVING_WELL_20_SEP_EN_SUBJECT,
+    htmlEn: "<p>SEE EVENT &amp; JOIN US →</p>",
+    htmlEt: "<p>SEE EVENT &amp; JOIN US →</p>",
+  };
+
+  it("sends English HTML to EN and ET recipients without changing stored language", () => {
+    const gerlyStored = "et";
+    const kushStored = "en";
+    const gerlySend = resolveRecipientSendLanguage({
+      campaignLanguageMode: "english_only",
+      sendLanguageMode: "automatic",
+      recipientLanguage: gerlyStored,
+    });
+    const kushSend = resolveRecipientSendLanguage({
+      campaignLanguageMode: "english_only",
+      sendLanguageMode: "automatic",
+      recipientLanguage: kushStored,
+    });
+    expect(gerlySend).toBe("en");
+    expect(kushSend).toBe("en");
+    expect(gerlyStored).toBe("et");
+    expect(kushStored).toBe("en");
+    expect(selectCampaignContent(gerlySend, fields)).toMatchObject({
+      language: "en",
+      subject: LIVING_WELL_20_SEP_EN_SUBJECT,
+      html: fields.htmlEn,
+      template: "EN",
+    });
+    expect(selectCampaignContent(kushSend, fields).html).toBe(fields.htmlEn);
+    const routing = recipientSendRouting(
+      [
+        { name: "Gerly", email: "gerly@example.com", language: "et" },
+        { name: "Kush", email: "kush@example.com", language: "en" },
+      ],
+      "automatic",
+      "english_only",
+    );
+    expect(routing.every((row) => row.sendLanguage === "en")).toBe(true);
+    expect(routing.find((row) => row.email === "gerly@example.com")?.storedLanguage).toBe("et");
+    expect(campaignLanguageModeFromRecord({ templateKey: LIVING_WELL_20_SEP_EN_TEMPLATE_KEY })).toBe("english_only");
+    expect(campaignLanguageModeFromRecord({ languageMode: "automatic", templateKey: "september_community_events" })).toBe(
+      "automatic",
+    );
+    expect(campaignRecipientSummary(2, "english_only")).toBe("2 recipients · English email");
+    expect(htmlHasExpectedLanguageMarkers(fields.htmlEn, "en")).toBe(true);
+  });
+
+  it("keeps bilingual campaigns on automatic EN/ET routing", () => {
+    expect(resolveRecipientSendLanguage({ campaignLanguageMode: "automatic", sendLanguageMode: "automatic", recipientLanguage: "et" })).toBe(
+      "et",
+    );
+    expect(resolveRecipientSendLanguage({ campaignLanguageMode: "automatic", sendLanguageMode: "automatic", recipientLanguage: "en" })).toBe(
+      "en",
+    );
+    const bilingual = {
+      subjectEn: "EN subject",
+      subjectEt: "ET subject",
+      htmlEn: "<p>VIEW EVENT</p>",
+      htmlEt: "<p>VAATA SÜNDMUST</p>",
+    };
+    expect(selectCampaignContent("et", bilingual).template).toBe("ET");
+    expect(selectCampaignContent("en", bilingual).template).toBe("EN");
   });
 });
 

@@ -14,6 +14,12 @@ export function eventButtonLabel(language: CampaignLanguage): string {
   return language === "et" ? "VAATA SÜNDMUST →" : "VIEW EVENT →";
 }
 
+export function htmlHasExpectedLanguageMarkers(html: string, language: CampaignLanguage): boolean {
+  const hasEtCta = html.includes("VAATA SÜNDMUST");
+  const hasEnCta = html.includes("VIEW EVENT") || html.includes("SEE EVENT");
+  return language === "et" ? hasEtCta : hasEnCta;
+}
+
 export type CampaignContentFields = {
   subjectEn: string;
   subjectEt: string;
