@@ -10,6 +10,7 @@ import {
   markCampaignStatus,
   recordSendResult,
   remintClickTokensIfInvalid,
+  syncRecipientClickTokens,
 } from "@/lib/email-campaigns/store";
 import { htmlContainsBrokenCampaignTracking, requireCampaignEmailOrigin } from "@/lib/email-campaigns/public-base";
 import { planRecipientSend, selectCampaignContent, htmlHasExpectedLanguageMarkers, type RecipientSendPlan } from "@/lib/email-campaigns/locale";
@@ -91,6 +92,10 @@ export async function sendToRecipient(
     }
   }
 
+  await syncRecipientClickTokens(recipientId);
+  packed = await loadRecipientForSend(recipientId);
+  if (!packed) return { ok: false, reason: "recipient_not_found", smtpCalled: false };
+
   if (!packed.destinationsOk.ok) {
     const reminted = await remintClickTokensIfInvalid(recipientId);
     if (reminted) packed = await loadRecipientForSend(recipientId);
@@ -155,8 +160,14 @@ export async function sendToRecipient(
     unsubscribeToken,
   });
   const expectedOk = htmlHasExpectedLanguageMarkers(html, sendLanguage);
-  if (htmlContainsBrokenCampaignTracking(html) || !expectedOk) {
-    const reason = htmlContainsBrokenCampaignTracking(html) ? "ephemeral_tracking_url" : "template_mismatch";
+  const unresolvedPlaceholder = html.includes("swmp.invalid");
+  const brokenTracking = htmlContainsBrokenCampaignTracking(html);
+  if (unresolvedPlaceholder || brokenTracking || !expectedOk) {
+    const reason = unresolvedPlaceholder
+      ? "unresolved_tracking_placeholder"
+      : brokenTracking
+        ? "ephemeral_tracking_url"
+        : "template_mismatch";
     await recordSendResult({
       campaignId: packed.campaign.id as string,
       recipientId,

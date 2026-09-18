@@ -14,6 +14,16 @@ export function clickPlaceholder(linkKey: string): string {
   return `${TRACK_PLACEHOLDER_PREFIX}${linkKey}`;
 }
 
+/** Keys still using the template-only click host. Must be empty after personalization. */
+export function clickPlaceholderKeysInHtml(html: string): string[] {
+  const keys = new Set<string>();
+  const pattern = /https:\/\/swmp\.invalid\/track\/click\/([A-Za-z0-9_]+)/g;
+  for (const match of html.matchAll(pattern)) {
+    keys.add(match[1]);
+  }
+  return [...keys];
+}
+
 /** Email-client compatible button: whole cell is the clickable <a>. Destination URL is never printed. */
 export function tableEventButton(label: string, href: string): string {
   const safeHref = escapeHtml(href);

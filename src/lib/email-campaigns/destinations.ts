@@ -1,4 +1,5 @@
 import { CAMPAIGN_TRACKED_LINKS, catalogLinkByKey, type CampaignTrackedLink } from "@/lib/email-campaigns/events";
+import { clickPlaceholderKeysInHtml } from "@/lib/email-campaigns/html";
 import { defaultSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
 
 function hostnameOf(url: string): string | null {
@@ -83,6 +84,33 @@ export function clickTokensMatchCatalog(
   }
   if (rows.length === 0) {
     errors.push("no click tokens");
+  }
+  return errors.length === 0 ? { ok: true } : { ok: false, errors };
+}
+
+/** Catalog match plus every placeholder actually present in stored HTML. */
+export function clickTokensReadyForSend(
+  rows: Array<{ link_key: string; destination_url: string; token: string }>,
+  catalog: CampaignTrackedLink[] = CAMPAIGN_TRACKED_LINKS,
+  html = "",
+): { ok: true } | { ok: false; errors: string[] } {
+  const base = clickTokensMatchCatalog(rows, catalog);
+  const errors = base.ok ? [] : [...base.errors];
+  const byKey = new Map(rows.map((row) => [row.link_key, row]));
+  for (const key of clickPlaceholderKeysInHtml(html)) {
+    const link = catalog.find((item) => item.key === key) ?? catalogLinkByKey(key);
+    if (!link) {
+      errors.push(`unregistered placeholder ${key}`);
+      continue;
+    }
+    const row = byKey.get(key);
+    if (!row) {
+      errors.push(`missing token for placeholder ${key}`);
+      continue;
+    }
+    if (row.destination_url !== link.destinationUrl) {
+      errors.push(`destination mismatch for placeholder ${key}`);
+    }
   }
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
 }

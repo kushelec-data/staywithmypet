@@ -15,10 +15,11 @@ import {
   SEPTEMBER_SPONSOR_LINKS,
   UNLINKED_SPONSORS,
 } from "@/lib/email-campaigns/events";
-import { clickRedirectFromTokenRow, clickTokensMatchCatalog } from "@/lib/email-campaigns/destinations";
+import { clickRedirectFromTokenRow, clickTokensMatchCatalog, clickTokensReadyForSend } from "@/lib/email-campaigns/destinations";
 import {
   applyTrackingToHtml,
   clickPlaceholder,
+  clickPlaceholderKeysInHtml,
   campaignBodyTextToHtml,
   DEFAULT_CAMPAIGN_BODY_EN,
   DEFAULT_CAMPAIGN_BODY_ET,
@@ -33,9 +34,10 @@ import {
   renderSeptemberCampaignHtml,
 } from "@/lib/email-campaigns/html";
 import { defaultLivingWellEnglishBodies } from "@/lib/email-campaigns/living-well-html";
-import { personalizeCampaignHtml, clickTrackingUrl, openTrackingUrl } from "@/lib/email-campaigns/personalize";
+import { personalizeCampaignHtml, clickTrackingUrl, openTrackingUrl, unsubscribeUrl } from "@/lib/email-campaigns/personalize";
 import {
   getTransactionalEmailOrigin,
+  htmlContainsBrokenCampaignTracking,
   isEphemeralOrLocalEmailOrigin,
   requireCampaignEmailOrigin,
   resolveCampaignEmailOrigin,
@@ -279,6 +281,7 @@ describe("september HTML", () => {
   it("personalizes with tracking URLs and no identity leak", () => {
     const openToken = createOpaqueToken();
     const clickTokens = Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((l) => [l.key, createOpaqueToken()]));
+    const unsubscribeToken = createOpaqueToken();
     const { html } = personalizeCampaignHtml({
       htmlEn,
       htmlEt,
@@ -286,10 +289,12 @@ describe("september HTML", () => {
       openToken,
       clickTokens,
       origin: "https://www.staywithmypet.ee",
+      unsubscribeToken,
     });
     const hrefs = hrefsInHtml(html);
     const buttonHrefs = hrefs.filter((href) => href.includes("/api/email/track/click/"));
     expect(buttonHrefs).toHaveLength(10);
+    expect(html).not.toContain("swmp.invalid");
     expect(html).toContain(`/api/email/track/open/${openToken}`);
     expect(html).not.toContain("fb.me");
     expect(html).not.toContain("facebook.com/events");
@@ -569,6 +574,7 @@ describe("Living Well English 20 September invitation", () => {
     expect(htmlEn.indexOf("03_dog-human.jpg")).toBeLessThan(htmlEn.indexOf("08_pet-friend-dog.jpg"));
     expect(htmlEn).toContain("Visit us at");
     expect(htmlEn).toContain(">StayWithMyPet.ee</a>");
+    expect(htmlEn).toContain('font-size:12px;line-height:18px;color:#888888;">Visit us at');
     expect(htmlEn).toContain(clickPlaceholder("staywithmypet_website"));
     expect(htmlEn.indexOf("DSC00139.jpg")).toBeLessThan(htmlEn.indexOf("04_expert-talk.JPG"));
     expect(htmlEn.indexOf("04_expert-talk.JPG")).toBeLessThan(htmlEn.indexOf("02_dog-icecream.JPG"));
@@ -606,5 +612,84 @@ describe("Living Well English 20 September invitation", () => {
       const localPath = join(process.cwd(), "public", publicPath.replace(/^\//, ""));
       expect(existsSync(localPath), localPath).toBe(true);
     }
+  });
+
+  it("resolves every Living Well tracked link and refuses leftover swmp.invalid placeholders", () => {
+    const origin = "https://www.staywithmypet.ee";
+    const livingWellKeys = [
+      "event_20_sep",
+      "staywithmypet_website",
+      "sponsor_petcity",
+      "sponsor_platinum",
+      "sponsor_viwell",
+      "sponsor_semu",
+      "sponsor_yook",
+      "sponsor_gelato_ladies",
+      "sponsor_moon",
+    ];
+    expect(clickPlaceholderKeysInHtml(htmlEn).sort()).toEqual([...livingWellKeys].sort());
+    expect(destinationForLinkKey("staywithmypet_website")).toBe("https://www.staywithmypet.ee/");
+    for (const key of livingWellKeys) {
+      expect(destinationForLinkKey(key), key).toMatch(/^https:\/\//);
+      expect(CAMPAIGN_TRACKED_LINKS.some((link) => link.key === key)).toBe(true);
+    }
+
+    const catalogRows = CAMPAIGN_TRACKED_LINKS.map((link) => ({
+      link_key: link.key,
+      destination_url: link.destinationUrl,
+      token: "t".repeat(43),
+    }));
+    expect(clickTokensMatchCatalog(catalogRows).ok).toBe(true);
+    expect(clickTokensReadyForSend(catalogRows, CAMPAIGN_TRACKED_LINKS, htmlEn).ok).toBe(true);
+    expect(
+      clickTokensReadyForSend(
+        catalogRows.filter((row) => row.link_key !== "staywithmypet_website"),
+        CAMPAIGN_TRACKED_LINKS,
+        htmlEn,
+      ).ok,
+    ).toBe(false);
+
+    const clickTokens = Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((link) => [link.key, createOpaqueToken()]));
+    const unsubscribeToken = createOpaqueToken();
+    const sendReady = personalizeCampaignHtml({
+      htmlEn,
+      htmlEt,
+      language: "en",
+      openToken: createOpaqueToken(),
+      clickTokens,
+      origin,
+      unsubscribeToken,
+    });
+    expect(sendReady.html).not.toContain("swmp.invalid");
+    expect(htmlContainsBrokenCampaignTracking(sendReady.html)).toBe(false);
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.event_20_sep, origin));
+    expect(sendReady.html.split(clickTrackingUrl(clickTokens.event_20_sep, origin)).length - 1).toBe(2);
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.staywithmypet_website, origin));
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.sponsor_petcity, origin));
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.sponsor_platinum, origin));
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.sponsor_viwell, origin));
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.sponsor_semu, origin));
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.sponsor_yook, origin));
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.sponsor_gelato_ladies, origin));
+    expect(sendReady.html).toContain(clickTrackingUrl(clickTokens.sponsor_moon, origin));
+    expect(sendReady.html).toContain(unsubscribeUrl(unsubscribeToken, origin));
+    expect(hrefsInHtml(sendReady.html).filter((href) => href.includes("/api/email/track/click/")).every((href) =>
+      /^https:\/\/www\.staywithmypet\.ee\/api\/email\/track\/click\/[A-Za-z0-9_-]{40,64}$/.test(href),
+    )).toBe(true);
+
+    const { staywithmypet_website: _omit, ...withoutWebsite } = clickTokens;
+    void _omit;
+    const brokenTestSend = personalizeCampaignHtml({
+      htmlEn,
+      htmlEt,
+      language: "en",
+      openToken: createOpaqueToken(),
+      clickTokens: withoutWebsite,
+      origin,
+      unsubscribeToken,
+    });
+    expect(brokenTestSend.html).toContain(clickPlaceholder("staywithmypet_website"));
+    expect(brokenTestSend.html).toContain("swmp.invalid");
+    expect(htmlContainsBrokenCampaignTracking(brokenTestSend.html)).toBe(true);
   });
 });

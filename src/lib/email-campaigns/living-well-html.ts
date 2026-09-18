@@ -169,7 +169,7 @@ ${heading("WITH A LITTLE HELP FROM OUR FRIENDS ❤️")}
 ${sponsorLine(hrefs, config)}
 ${p("See you at Moon! 🐾")}
 <p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; the Stay With My Pet team</p>
-<p style="margin:16px 0 0;text-align:center;font-size:14px;line-height:1.6;color:#333333;">Visit us at <a href="${escapeHtml(websiteHref)}" target="_blank" style="color:#1a6b5c;font-weight:600;text-decoration:underline;">StayWithMyPet.ee</a> 🐾</p>`;
+<p style="margin:16px 0 0;text-align:center;font-size:12px;line-height:18px;color:#888888;">Visit us at <a href="${escapeHtml(websiteHref)}" target="_blank" style="color:#1a6b5c;font-weight:400;text-decoration:underline;">StayWithMyPet.ee</a> 🐾</p>`;
 }
 
 export function livingWellEnglishCopy(): CampaignCopyFields {

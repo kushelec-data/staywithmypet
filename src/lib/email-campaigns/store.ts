@@ -15,8 +15,9 @@ import {
   SEPTEMBER_TEMPLATE_KEY,
   trackedLinksFromTemplateConfig,
   type CampaignTrackedLink,
+  catalogLinkByKey,
 } from "@/lib/email-campaigns/events";
-import { defaultSeptemberBodies, defaultCampaignCopy, resolveCampaignCopy, type CampaignCopyFields } from "@/lib/email-campaigns/html";
+import { defaultSeptemberBodies, defaultCampaignCopy, resolveCampaignCopy, type CampaignCopyFields, clickPlaceholderKeysInHtml } from "@/lib/email-campaigns/html";
 import { defaultLivingWellEnglishBodies, livingWellEnglishCopy } from "@/lib/email-campaigns/living-well-html";
 import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
 import { createOpaqueToken } from "@/lib/email-campaigns/tokens";
@@ -26,7 +27,7 @@ import {
   sendOutcomeUpdate,
   summarizeCampaignRecipients,
 } from "@/lib/email-campaigns/tracking";
-import { clickRedirectFromTokenRow, clickTokensMatchCatalog, isSafeCampaignDestination } from "@/lib/email-campaigns/destinations";
+import { clickRedirectFromTokenRow, clickTokensMatchCatalog, clickTokensReadyForSend, isSafeCampaignDestination } from "@/lib/email-campaigns/destinations";
 import { toRecipientDto, type CampaignEventDto, type CampaignListItemDto, type CampaignRecipientDto } from "@/lib/email-campaigns/dto";
 import {
   mergeSeptemberTemplateConfig,
@@ -36,6 +37,36 @@ import { campaignLanguageLabel, isCampaignContentLocked, nextCampaignVersion, ve
 import { bilingualCampaignDisplayName, campaignLanguageModeFromRecord, type CampaignLanguageMode } from "@/lib/email-campaigns/send-language";
 
 type AdminDb = NonNullable<ReturnType<typeof createAdminClient>>;
+
+function clickTokenInsertRows(recipientId: string, trackedLinks: CampaignTrackedLink[]) {
+  return trackedLinks.map((link) => ({
+    token: createOpaqueToken(),
+    recipient_id: recipientId,
+    link_key: link.key,
+    link_type: link.type,
+    label: link.label,
+    destination_url: link.destinationUrl,
+  }));
+}
+
+async function insertClickTokenRows(
+  admin: AdminDb,
+  rows: Array<{
+    token: string;
+    recipient_id: string;
+    link_key: string;
+    link_type: string;
+    label: string;
+    destination_url: string;
+  }>,
+): Promise<boolean> {
+  if (rows.length === 0) return true;
+  const { error } = await admin.from("email_campaign_click_tokens").insert(rows);
+  if (!error) return true;
+  const withoutMeta = rows.map(({ link_type: _t, label: _l, ...row }) => row);
+  const retry = await admin.from("email_campaign_click_tokens").insert(withoutMeta);
+  return !retry.error;
+}
 
 function db(): AdminDb | null {
   return createAdminClient();
@@ -374,20 +405,9 @@ async function insertRecipientWithTokens(
   const { data: inserted, error } = insert;
   if (error || !inserted) throw new Error(error?.message ?? "recipient_insert_failed");
 
-  const clickRows = trackedLinks.map((link) => ({
-    token: createOpaqueToken(),
-    recipient_id: inserted.id as string,
-    link_key: link.key,
-    link_type: link.type,
-    label: link.label,
-    destination_url: link.destinationUrl,
-  }));
-  const { error: clickError } = await admin.from("email_campaign_click_tokens").insert(clickRows);
-  if (clickError) {
-    const fallback = clickRows.map(({ link_type: _t, label: _l, ...row }) => row);
-    const retry = await admin.from("email_campaign_click_tokens").insert(fallback);
-    if (retry.error) throw new Error(retry.error.message);
-  }
+  const clickRows = clickTokenInsertRows(inserted.id as string, trackedLinks);
+  const insertedClicks = await insertClickTokenRows(admin, clickRows);
+  if (!insertedClicks) throw new Error("click_token_insert_failed");
   return inserted.id as string;
 }
 
@@ -538,6 +558,10 @@ export async function updateCampaignContent(
     })
     .eq("id", campaignId);
   if (error) return { error: error.message };
+  const { data: recipientRows } = await admin.from("email_campaign_recipients").select("id").eq("campaign_id", campaignId);
+  for (const row of recipientRows ?? []) {
+    await syncRecipientClickTokens(row.id as string);
+  }
   return { ok: true };
 }
 
@@ -752,7 +776,11 @@ export async function loadRecipientForSend(recipientId: string) {
     link_key: row.link_key as string,
     destination_url: row.destination_url as string,
   }));
-  const destinationsOk = clickTokensMatchCatalog(clickRows, catalog);
+  const destinationsOk = clickTokensReadyForSend(
+    clickRows,
+    catalog,
+    `${String(campaign.html_en ?? "")}\n${String(campaign.html_et ?? "")}`,
+  );
 
   return {
     recipient,
@@ -778,31 +806,37 @@ export async function ensureUnsubscribeToken(recipientId: string): Promise<strin
 }
 
 export async function remintClickTokensIfInvalid(recipientId: string): Promise<boolean> {
+  return syncRecipientClickTokens(recipientId);
+}
+
+export async function syncRecipientClickTokens(recipientId: string): Promise<boolean> {
   const packed = await loadRecipientForSend(recipientId);
   if (!packed) return false;
-  if (packed.destinationsOk.ok) return false;
   const admin = db();
   if (!admin) return false;
   const templateConfig = mergeSeptemberTemplateConfig(
     "template_config" in packed.campaign ? packed.campaign.template_config : undefined,
   );
   const trackedLinks = trackedLinksFromTemplateConfig(templateConfig);
-  await admin.from("email_campaign_click_tokens").delete().eq("recipient_id", recipientId);
-  const clickRows = trackedLinks.map((link) => ({
-    token: createOpaqueToken(),
-    recipient_id: recipientId,
-    link_key: link.key,
-    link_type: link.type,
-    label: link.label,
-    destination_url: link.destinationUrl,
-  }));
-  const { error: clickError } = await admin.from("email_campaign_click_tokens").insert(clickRows);
-  if (clickError) {
-    const fallback = clickRows.map(({ link_type: _t, label: _l, ...row }) => row);
-    const retry = await admin.from("email_campaign_click_tokens").insert(fallback);
-    if (retry.error) return false;
+  const html = `${String(packed.campaign.html_en ?? "")}\n${String(packed.campaign.html_et ?? "")}`;
+  const neededKeys = new Set([...trackedLinks.map((link) => link.key), ...clickPlaceholderKeysInHtml(html)]);
+  const have = new Set(packed.clickRows.map((row) => row.link_key));
+  const missingLinks: CampaignTrackedLink[] = [];
+  for (const key of neededKeys) {
+    if (have.has(key)) continue;
+    const link = trackedLinks.find((item) => item.key === key) ?? catalogLinkByKey(key);
+    if (!link) return false;
+    missingLinks.push(link);
   }
-  return true;
+  const catalogOk = clickTokensMatchCatalog(packed.clickRows, trackedLinks);
+  if (catalogOk.ok && missingLinks.length === 0) return true;
+
+  if (catalogOk.ok && missingLinks.length > 0) {
+    return insertClickTokenRows(admin, clickTokenInsertRows(recipientId, missingLinks));
+  }
+
+  await admin.from("email_campaign_click_tokens").delete().eq("recipient_id", recipientId);
+  return insertClickTokenRows(admin, clickTokenInsertRows(recipientId, trackedLinks));
 }
 
 export async function recordSendResult(input: {
