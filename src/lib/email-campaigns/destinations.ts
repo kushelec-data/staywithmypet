@@ -93,6 +93,7 @@ export function describeClickLink(linkKey: string | null): { type: string; label
   if (catalog) return { type: catalog.type, label: catalog.label };
   const fromConfig = defaultSeptemberTemplateConfig().sponsors.find((item) => item.key === linkKey);
   if (fromConfig) return { type: "sponsor", label: fromConfig.label };
+  if (linkKey === "staywithmypet_website") return { type: "site", label: "StayWithMyPet.ee" };
   if (linkKey.startsWith("sponsor_")) return { type: "sponsor", label: linkKey };
   return { type: "event", label: linkKey };
 }

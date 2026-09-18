@@ -114,7 +114,9 @@ export function assembleLivingWellEnglishInnerHtml(
     dogOwner: campaignEmailAssetUrl(LIVING_WELL_20_SEP_EN_PHOTO_PATHS.dogOwner),
     community: campaignEmailAssetUrl(LIVING_WELL_20_SEP_EN_PHOTO_PATHS.community),
     talk: campaignEmailAssetUrl(LIVING_WELL_20_SEP_EN_PHOTO_PATHS.talk),
+    petFriend: campaignEmailAssetUrl(LIVING_WELL_20_SEP_EN_PHOTO_PATHS.petFriend),
   };
+  const websiteHref = hrefs.staywithmypet_website ?? clickPlaceholder("staywithmypet_website");
 
   return `
 ${p("Hi!")}
@@ -150,6 +152,10 @@ ${photoPair(
     { src: photos.dogOwner, alt: "A guest and their dog at the event" },
     { src: photos.community, alt: "A dog with their person in the Stay With My Pet community" },
   )}
+${photoPair(
+    { src: photos.petFriend, alt: "A Pet Friend with a dog at Stay With My Pet" },
+    { src: photos.community, alt: "A dog with their person in the Stay With My Pet community" },
+  )}
 ${p("Last Sunday, dogs met new friends, people met new people, and our four-legged guests discovered that attending an event can apparently involve ice cream. 😉")}
 ${p("There were expert talks, questions, conversations, treats and plenty of dog-to-dog introductions.")}
 ${p("And this Sunday, we’re doing it all again — in English.")}
@@ -162,7 +168,8 @@ ${p("Free entry — just come, meet, learn and enjoy the afternoon with us.")}
 ${heading("WITH A LITTLE HELP FROM OUR FRIENDS ❤️")}
 ${sponsorLine(hrefs, config)}
 ${p("See you at Moon! 🐾")}
-<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; the Stay With My Pet team</p>`;
+<p style="margin:0 0 8px;font-size:15px;line-height:1.65;color:#333333;">Gerly &amp; the Stay With My Pet team</p>
+<p style="margin:16px 0 0;text-align:center;font-size:14px;line-height:1.6;color:#333333;">Visit us at <a href="${escapeHtml(websiteHref)}" target="_blank" style="color:#1a6b5c;font-weight:600;text-decoration:underline;">StayWithMyPet.ee</a> 🐾</p>`;
 }
 
 export function livingWellEnglishCopy(): CampaignCopyFields {

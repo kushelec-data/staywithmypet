@@ -5,7 +5,7 @@ import {
   type CampaignTemplateConfig,
 } from "@/lib/email-campaigns/template-config";
 
-export type CampaignLinkType = "event" | "sponsor";
+export type CampaignLinkType = "event" | "sponsor" | "site";
 
 export type CampaignTrackedLink = {
   key: string;
@@ -68,6 +68,14 @@ export const SEPTEMBER_EVENT_LINKS: SeptemberEventCard[] = [
   },
 ];
 
+export const STAYWITHMYPET_WEBSITE_URL = "https://www.staywithmypet.ee/";
+export const STAYWITHMYPET_WEBSITE_LINK: CampaignTrackedLink = {
+  key: "staywithmypet_website",
+  type: "site",
+  label: "StayWithMyPet.ee",
+  destinationUrl: STAYWITHMYPET_WEBSITE_URL,
+};
+
 export function trackedLinksFromTemplateConfig(
   config: CampaignTemplateConfig = defaultSeptemberTemplateConfig(),
 ): CampaignTrackedLink[] {
@@ -79,6 +87,7 @@ export function trackedLinksFromTemplateConfig(
       destinationUrl,
     })),
     ...trackedSponsorsFromConfig(config),
+    STAYWITHMYPET_WEBSITE_LINK,
   ];
 }
 
@@ -129,6 +138,7 @@ export const LIVING_WELL_20_SEP_EN_PHOTO_PATHS = {
   dogOwner: "/images/campaigns/living-well-20-sep/DSC00132(1).jpg",
   community: "/images/campaigns/living-well-20-sep/03_dog-human.jpg",
   talk: "/images/campaigns/living-well-20-sep/04_expert-talk.JPG",
+  petFriend: "/images/campaigns/living-well-20-sep/08_pet-friend-dog.jpg",
 } as const;
 
 export const SEPTEMBER_SUBJECT_EN =
