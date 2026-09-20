@@ -531,6 +531,7 @@ export const en = {
       messages: "Messages",
       editProfile: "Edit Profile",
       setupProfile: "Set up your profile",
+      matches: "Matches",
       profile: "Profile",
       membership: "Membership",
       changePassword: "Change password",
@@ -1382,6 +1383,8 @@ export const en = {
     petFallback: "Pet",
     dashboardBanner: "{count} new matches for you.",
     viewMatches: "View matches",
+    lockedTitle: "Complete your profile to start getting matches.",
+    lockedCta: "Complete my profile",
   },
   notifications: {
     bellLabel: "Notifications",

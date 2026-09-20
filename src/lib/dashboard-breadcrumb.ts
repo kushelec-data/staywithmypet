@@ -39,6 +39,9 @@ export function dashboardBreadcrumbFromPath(
   if (pathname === "/messages") {
     return { title: labels.messages };
   }
+  if (pathname === "/matches") {
+    return { title: labels.matches };
+  }
 
   if (pathname === "/profile/edit") {
     return { title: labels.editProfile };

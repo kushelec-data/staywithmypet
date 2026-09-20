@@ -531,6 +531,7 @@ export const et = {
       messages: "Sõnumid",
       editProfile: "Muuda profiili",
       setupProfile: "Seadista profiil",
+      matches: "Sobivused",
       profile: "Profiil",
       membership: "Liikmelisus",
       changePassword: "Muuda parooli",
@@ -1390,6 +1391,8 @@ export const et = {
     petFallback: "Lemmik",
     dashboardBanner: "{count} uut sobivust sinule.",
     viewMatches: "Vaata sobivusi",
+    lockedTitle: "Täida oma profiil, et hakata sobivusi saama.",
+    lockedCta: "Täida minu profiil",
   },
   notifications: {
     bellLabel: "Teavitused",

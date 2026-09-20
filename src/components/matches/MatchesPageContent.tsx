@@ -7,6 +7,7 @@ import { AppImage } from "@/components/ui/AppImage";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useProfile } from "@/context/ProfileContext";
 import { createClient } from "@/lib/supabase";
 import {
   dismissMatchSuggestion,
@@ -37,15 +38,21 @@ export function MatchesPageContent() {
   const { t } = useLanguage();
   const copy = t.matches;
   const { user, loading: authLoading } = useAuth();
+  const { isIncomplete, loading: profileLoading } = useProfile();
   const supabase = useMemo(() => createClient(), []);
   const [rows, setRows] = useState<MatchSuggestionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || profileLoading) return;
     if (!user) {
       router.replace("/login");
+      return;
+    }
+    if (isIncomplete) {
+      setRows([]);
+      setLoading(false);
       return;
     }
     const userId = user.id;
@@ -73,7 +80,7 @@ export function MatchesPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, supabase, router, copy.loadError]);
+  }, [authLoading, profileLoading, isIncomplete, user, supabase, router, copy.loadError]);
 
   async function onDismiss(id: string) {
     if (!user) return;
@@ -106,7 +113,14 @@ export function MatchesPageContent() {
           {error}
         </p>
       ) : null}
-      {loading ? (
+      {isIncomplete ? (
+        <AccountEmptyState
+          icon="✨"
+          title={copy.lockedTitle}
+          description=""
+          actions={[{ href: "/profile/setup", label: copy.lockedCta }]}
+        />
+      ) : loading ? (
         <p className="text-center text-muted">{copy.loading}</p>
       ) : rows.length === 0 ? (
         <AccountEmptyState icon="✨" title={copy.emptyTitle} description={copy.emptyDescription} />
