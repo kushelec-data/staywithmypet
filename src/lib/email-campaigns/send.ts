@@ -13,7 +13,7 @@ import {
   syncRecipientClickTokens,
 } from "@/lib/email-campaigns/store";
 import { htmlContainsBrokenCampaignTracking, requireCampaignEmailOrigin } from "@/lib/email-campaigns/public-base";
-import { planRecipientSend, selectCampaignContent, htmlHasExpectedLanguageMarkers, type RecipientSendPlan } from "@/lib/email-campaigns/locale";
+import { planRecipientSend, selectCampaignContent, htmlHasExpectedLanguageMarkers, russianBodiesFromTemplateConfig, type RecipientSendPlan } from "@/lib/email-campaigns/locale";
 import {
   campaignLanguageModeFromRecord,
   countSentByTemplate,
@@ -114,13 +114,21 @@ export async function sendToRecipient(
     sendLanguageMode: options?.sendLanguageMode ?? "automatic",
     recipientLanguage: packed.recipient.language as string,
   });
-  const plan = planRecipientSend({
-    email: packed.recipient.email as string,
-    language: sendLanguage,
+  const russian = russianBodiesFromTemplateConfig(
+    "template_config" in packed.campaign ? packed.campaign.template_config : undefined,
+  );
+  const contentFields = {
     subjectEn: packed.campaign.subject_en as string,
     subjectEt: packed.campaign.subject_et as string,
     htmlEn: packed.campaign.html_en as string,
     htmlEt: packed.campaign.html_et as string,
+    subjectRu: russian.subjectRu,
+    htmlRu: russian.htmlRu,
+  };
+  const plan = planRecipientSend({
+    email: packed.recipient.email as string,
+    language: sendLanguage,
+    ...contentFields,
     linkKeys: packed.clickRows.map((row) => row.link_key),
     destinationsOk: packed.destinationsOk.ok,
   });
@@ -146,17 +154,14 @@ export async function sendToRecipient(
     return { ok: false, reason: "destination_mismatch", email: plan.email, smtpCalled: false, plan };
   }
 
-  const selected = selectCampaignContent(sendLanguage, {
-    subjectEn: packed.campaign.subject_en as string,
-    subjectEt: packed.campaign.subject_et as string,
-    htmlEn: packed.campaign.html_en as string,
-    htmlEt: packed.campaign.html_et as string,
-  });
+  const selected = selectCampaignContent(sendLanguage, contentFields);
   const unsubscribeToken =
     (packed.recipient.unsubscribe_token as string | null | undefined) ?? (await ensureUnsubscribeToken(recipientId));
   const { html, text } = personalizeCampaignHtml({
-    htmlEn: packed.campaign.html_en as string,
-    htmlEt: packed.campaign.html_et as string,
+    htmlEn: contentFields.htmlEn,
+    htmlEt: contentFields.htmlEt,
+    htmlRu: contentFields.htmlRu,
+    subjectRu: contentFields.subjectRu,
     language: sendLanguage,
     openToken: packed.recipient.open_token as string,
     clickTokens: packed.clickTokens,
@@ -225,8 +230,9 @@ export async function sendTestCampaign(
   failed: number;
   sentEstonian: number;
   sentEnglish: number;
+  sentRussian: number;
   sendLanguageMode: SendLanguageMode;
-  deliveries: Array<{ email?: string; language?: string; subject?: string; template?: "ET" | "EN" }>;
+  deliveries: Array<{ email?: string; language?: string; subject?: string; template?: "ET" | "EN" | "RU" }>;
   failures: Array<{ email?: string; reason: string }>;
   blocked?: string;
 }> {
@@ -240,6 +246,7 @@ export async function sendTestCampaign(
       failed: 0,
       sentEstonian: 0,
       sentEnglish: 0,
+      sentRussian: 0,
       sendLanguageMode: mode,
       deliveries: [],
       failures: [],
@@ -250,7 +257,7 @@ export async function sendTestCampaign(
   let sent = 0;
   let failed = 0;
   const failures: Array<{ email?: string; reason: string }> = [];
-  const deliveries: Array<{ email?: string; language?: string; subject?: string; template?: "ET" | "EN" }> = [];
+  const deliveries: Array<{ email?: string; language?: string; subject?: string; template?: "ET" | "EN" | "RU" }> = [];
   for (const id of recipientIds) {
     const result = await sendToRecipient(id, { sendLanguageMode: mode });
     if (result.ok) {

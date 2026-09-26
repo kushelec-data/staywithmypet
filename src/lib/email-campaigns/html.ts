@@ -333,7 +333,12 @@ export function wrapCampaignEmail(opts: {
   const logo = escapeHtml(opts.logoUrl);
   const pixel = escapeHtml(opts.openPixelUrl);
   const unsub = escapeHtml(opts.unsubscribeUrl ?? UNSUBSCRIBE_PLACEHOLDER);
-  const unsubLabel = opts.language === "et" ? "Loobu turunduskirjadest" : "Unsubscribe from marketing emails";
+  const unsubLabel =
+    opts.language === "et"
+      ? "Loobu turunduskirjadest"
+      : opts.language === "ru"
+        ? "Отписаться от маркетинговых писем"
+        : "Unsubscribe from marketing emails";
   return `<!DOCTYPE html>
 <html lang="${opts.language}">
 <head>

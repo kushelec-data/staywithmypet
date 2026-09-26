@@ -108,6 +108,13 @@ export const DEFAULT_TEST_RECIPIENTS = [
   { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" as const },
 ];
 
+/** Third language test uses Gmail plus-addressing so EN/RU can share Kush's inbox. */
+export const LIVING_WELL_27_SEP_TEST_RECIPIENTS = [
+  { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "et" as const },
+  { displayName: "Kush Chadha", email: "kusheducation@gmail.com", language: "en" as const },
+  { displayName: "Kush Chadha", email: "kusheducation+ru@gmail.com", language: "ru" as const },
+];
+
 /** Same first-test people; languages stay mixed so Automatic send can route EN/ET. */
 export const ESTONIAN_TEST_RECIPIENTS = [
   { displayName: "Gerly Kullamaa", email: "gerlykullamaa@gmail.com", language: "et" as const },
@@ -130,6 +137,36 @@ export const LIVING_WELL_20_SEP_EN_SUBJECT = "This Sunday: Living Well With Pets
 export const LIVING_WELL_20_SEP_EN_PREHEADER =
   "Free expert talks, dog-friendly treats and a relaxed Sunday at Moon.";
 export const LIVING_WELL_20_SEP_EN_CTA = "SEE EVENT & JOIN US →";
+export const LIVING_WELL_27_SEP_TEMPLATE_KEY = "living_well_27_sep";
+export const LIVING_WELL_27_SEP_CAMPAIGN_NAME = "Living Well With Pets – 27 September";
+export const LIVING_WELL_27_SEP_HEADLINE = {
+  en: "Spend your Sunday with people who love animals 🐾",
+  et: "Veeda pühapäev koos inimestega, kes armastavad loomi 🐾",
+  ru: "Проведите воскресенье с людьми, которые любят животных 🐾",
+} as const;
+export const LIVING_WELL_27_SEP_PREHEADER = {
+  en: "This Sunday's event will be held in Russian. 27 September at Moon.",
+  et: "This Sunday's event will be held in Russian. 27 September at Moon.",
+  ru: "This Sunday's event will be held in Russian. 27 September at Moon.",
+} as const;
+export const LIVING_WELL_27_SEP_CTA = {
+  en: "SEE EVENT & JOIN US →",
+  et: "SEE EVENT & JOIN US →",
+  ru: "SEE EVENT & JOIN US →",
+} as const;
+export const LIVING_WELL_27_SEP_PHOTO_PATHS = {
+  venueWide: "/images/campaigns/living-well-27-sep/09-venue-wide.JPG",
+  eventWide: "/images/campaigns/living-well-27-sep/01-event-wide.JPG",
+  guestDog: "/images/campaigns/living-well-27-sep/10-guest-dog.JPG",
+  expert: "/images/campaigns/living-well-27-sep/02-expert-talk.JPG",
+  community: "/images/campaigns/living-well-27-sep/03-community.JPG",
+  whiteDog: "/images/campaigns/living-well-27-sep/04-white-dog.JPG",
+  dogAndGuest: "/images/campaigns/living-well-27-sep/05-dog-and-guest.JPG",
+  dogsMeeting: "/images/campaigns/living-well-27-sep/06-dogs-meeting.JPG",
+  communityDog: "/images/campaigns/living-well-27-sep/07-community-dog.JPG",
+  friendlyDogs: "/images/campaigns/living-well-27-sep/08-friendly-dogs.JPG",
+} as const;
+
 export const LIVING_WELL_20_SEP_EN_PHOTO_PATHS = {
   hero: "/images/campaigns/living-well-20-sep/01_event-wide.jpg",
   atmosphere: "/images/campaigns/living-well-20-sep/DSC00139.jpg",

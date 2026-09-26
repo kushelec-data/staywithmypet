@@ -1,8 +1,8 @@
 import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
-import { LIVING_WELL_20_SEP_EN_TEMPLATE_KEY } from "@/lib/email-campaigns/events";
+import { LIVING_WELL_20_SEP_EN_TEMPLATE_KEY, LIVING_WELL_27_SEP_TEMPLATE_KEY } from "@/lib/email-campaigns/events";
 
 export type SendLanguageMode = "automatic" | "en" | "et";
-export type CampaignLanguageMode = "automatic" | "english_only";
+export type CampaignLanguageMode = "automatic" | "english_only" | "combined";
 
 export function parseSendLanguageMode(value: unknown): SendLanguageMode {
   if (value === "en" || value === "et" || value === "automatic") return value;
@@ -10,25 +10,29 @@ export function parseSendLanguageMode(value: unknown): SendLanguageMode {
 }
 
 export function parseCampaignLanguageMode(value: unknown): CampaignLanguageMode {
-  return value === "english_only" ? "english_only" : "automatic";
+  if (value === "english_only") return "english_only";
+  if (value === "combined") return "combined";
+  return "automatic";
 }
 
 export function campaignLanguageModeFromRecord(input: {
   languageMode?: unknown;
   templateKey?: string | null;
 }): CampaignLanguageMode {
+  if (input.templateKey === LIVING_WELL_27_SEP_TEMPLATE_KEY) return "combined";
+  if (parseCampaignLanguageMode(input.languageMode) === "combined") return "combined";
   if (parseCampaignLanguageMode(input.languageMode) === "english_only") return "english_only";
   if (input.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY) return "english_only";
   return "automatic";
 }
 
-/** Campaign english_only overrides send-mode and recipient locale for BODY selection only. */
+/** Combined and english_only override send-mode and recipient locale for BODY selection only. */
 export function resolveRecipientSendLanguage(input: {
   campaignLanguageMode: CampaignLanguageMode;
   sendLanguageMode: SendLanguageMode;
   recipientLanguage: string | null | undefined;
 }): CampaignLanguage {
-  if (input.campaignLanguageMode === "english_only") return "en";
+  if (input.campaignLanguageMode === "english_only" || input.campaignLanguageMode === "combined") return "en";
   return resolveSendLanguage(input.sendLanguageMode, input.recipientLanguage);
 }
 
@@ -36,17 +40,28 @@ export function englishOnlyCampaignNotice(): string {
   return "This campaign will be sent in English to all eligible recipients.";
 }
 
+export function combinedCampaignNotice(): string {
+  return "Every recipient receives one Combined EN + ET + RU email. Stored profile languages are not changed.";
+}
+
 export function showCampaignEstonianPreview(languageMode: CampaignLanguageMode): boolean {
-  return languageMode !== "english_only";
+  return languageMode === "automatic";
 }
 
 export function campaignRecipientSummary(
   recipientCount: number,
   languageMode: CampaignLanguageMode,
-  stored?: { english: number; estonian: number },
+  stored?: { english: number; estonian: number; russian?: number },
 ): string {
+  if (languageMode === "combined") {
+    return `${recipientCount} recipient${recipientCount === 1 ? "" : "s"} · Combined EN + ET + RU email`;
+  }
   if (languageMode === "english_only") {
     return `${recipientCount} recipient${recipientCount === 1 ? "" : "s"} · English email`;
+  }
+  const russian = stored?.russian ?? 0;
+  if (russian > 0) {
+    return `${stored?.english ?? 0} English · ${stored?.estonian ?? 0} Estonian · ${russian} Russian`;
   }
   return `${stored?.english ?? 0} English · ${stored?.estonian ?? 0} Estonian`;
 }
@@ -76,8 +91,10 @@ export function sendActionLabel(kind: "test" | "campaign", mode: SendLanguageMod
   return kind === "test" ? `Send test — ${suffix}` : `Send campaign — ${suffix}`;
 }
 
-export function languageWord(language: CampaignLanguage): "Estonian" | "English" {
-  return language === "et" ? "Estonian" : "English";
+export function languageWord(language: CampaignLanguage): "Estonian" | "English" | "Russian" {
+  if (language === "et") return "Estonian";
+  if (language === "ru") return "Russian";
+  return "English";
 }
 
 export type RecipientRoutingRow = {
@@ -85,7 +102,7 @@ export type RecipientRoutingRow = {
   email: string;
   storedLanguage: CampaignLanguage;
   sendLanguage: CampaignLanguage;
-  sendLabel: "Estonian" | "English";
+  sendLabel: "Estonian" | "English" | "Russian";
 };
 
 export function recipientSendRouting(
@@ -110,9 +127,15 @@ export function recipientSendRouting(
   });
 }
 
-export function storedLanguageCounts(rows: Array<{ language: string }>): { recipients: number; estonian: number; english: number } {
+export function storedLanguageCounts(rows: Array<{ language: string }>): {
+  recipients: number;
+  estonian: number;
+  english: number;
+  russian: number;
+} {
   const estonian = rows.filter((row) => campaignLanguageFromPreferredLocale(row.language) === "et").length;
-  return { recipients: rows.length, estonian, english: rows.length - estonian };
+  const russian = rows.filter((row) => campaignLanguageFromPreferredLocale(row.language) === "ru").length;
+  return { recipients: rows.length, estonian, russian, english: rows.length - estonian - russian };
 }
 
 export function routingHeading(mode: SendLanguageMode): string {
@@ -152,9 +175,12 @@ export function bilingualCampaignDisplayName(name: string): string {
   return name.replace(/\s*\((Estonian|English)\)\s*$/i, "").trim() || name;
 }
 
-export function countSentByTemplate(templates: Array<"ET" | "EN" | undefined>): { sentEstonian: number; sentEnglish: number } {
+export function countSentByTemplate(
+  templates: Array<"ET" | "EN" | "RU" | undefined>,
+): { sentEstonian: number; sentEnglish: number; sentRussian: number } {
   return {
     sentEstonian: templates.filter((value) => value === "ET").length,
     sentEnglish: templates.filter((value) => value === "EN").length,
+    sentRussian: templates.filter((value) => value === "RU").length,
   };
 }

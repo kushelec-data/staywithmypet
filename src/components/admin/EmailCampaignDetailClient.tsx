@@ -9,7 +9,7 @@ import { CampaignCsvImport } from "@/components/admin/CampaignCsvImport";
 import { EmailCampaignCopyFields, type CampaignCopyFormValue } from "@/components/admin/EmailCampaignCopyFields";
 import { SEPTEMBER_EVENT_LINKS } from "@/lib/email-campaigns/events";
 import { SEPTEMBER_SPONSOR_LINE } from "@/lib/email-campaigns/template-config";
-import { campaignRecipientSummary, englishOnlyCampaignNotice, formatSendCompletedMessage, showCampaignEstonianPreview, storedLanguageCounts, type CampaignLanguageMode } from "@/lib/email-campaigns/send-language";
+import { campaignRecipientSummary, combinedCampaignNotice, englishOnlyCampaignNotice, formatSendCompletedMessage, showCampaignEstonianPreview, storedLanguageCounts, type CampaignLanguageMode } from "@/lib/email-campaigns/send-language";
 import { campaignConsentSummary, campaignEligibilityLines, canEnableCampaignSend } from "@/lib/email-campaigns/consent-summary";
 import {
   CAMPAIGN_SCHEDULE_TIMEZONE,
@@ -368,6 +368,8 @@ export function EmailCampaignDetailClient({
   const estonianCount = languageCounts.estonian;
   const recipientLanguageSummary = campaignRecipientSummary(peopleCount, languageMode, languageCounts);
   const englishOnly = languageMode === "english_only";
+  const combined = languageMode === "combined";
+  const singleBody = englishOnly || combined;
   const isScheduled = (live?.status ?? status) === "scheduled";
   const scheduledLabel = formatScheduledFor(scheduledAt, scheduledTimezone || CAMPAIGN_SCHEDULE_TIMEZONE);
 
@@ -381,7 +383,7 @@ export function EmailCampaignDetailClient({
       {contentLocked && !isScheduled ? (
         <p className="text-sm">This version has already been sent. Duplicate it to edit a new draft.</p>
       ) : null}
-      <EmailCampaignOverview overview={overview.recipients ? overview : { ...overview, recipients: summary.recipients, sent: summary.sent, opened: summary.opened, clicked: summary.uniqueClicks, failed: summary.failed }} links={links} />
+      <EmailCampaignOverview combined={combined} overview={overview.recipients ? overview : { ...overview, recipients: summary.recipients, sent: summary.sent, opened: summary.opened, clicked: summary.uniqueClicks, failed: summary.failed }} links={links} />
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Email</h2>
         <label className="mt-3 block text-sm">
@@ -394,7 +396,11 @@ export function EmailCampaignDetailClient({
           />
         </label>
         <div className="mt-4">
-          <EmailCampaignCopyFields value={copy} onChange={setCopy} disabled={contentLocked} />
+          {combined ? (
+            <p className="text-sm">{combinedCampaignNotice()}</p>
+          ) : (
+            <EmailCampaignCopyFields value={copy} onChange={setCopy} disabled={contentLocked} />
+          )}
         </div>
         <h3 className="mt-6 font-heading text-base font-semibold">Event cards</h3>
         <ul className="mt-2 space-y-2 text-sm">
@@ -449,7 +455,9 @@ export function EmailCampaignDetailClient({
           {peopleCount} {peopleCount === 1 ? "person" : "people"}
         </p>
         <p className="text-sm">{recipientLanguageSummary}</p>
-        {englishOnly ? (
+        {combined ? (
+          <p className="mt-1 text-sm text-muted">{combinedCampaignNotice()}</p>
+        ) : englishOnly ? (
           <p className="mt-1 text-sm text-muted">Every recipient receives the English event email. Stored profile languages are not changed.</p>
         ) : (
           <p className="mt-1 text-sm text-muted">Languages are automatically selected from the CSV.</p>
@@ -468,7 +476,7 @@ export function EmailCampaignDetailClient({
           className="rounded-xl border border-[#E5E2D8] px-3 py-2 text-sm"
         />
         <div className="flex flex-wrap gap-2">
-          {FILTERS.map((item) => (
+          {FILTERS.filter((item) => (combined ? item.id !== "en" && item.id !== "et" : true)).map((item) => (
             <button
               key={item.id}
               type="button"
@@ -526,11 +534,13 @@ export function EmailCampaignDetailClient({
       ) : null}
       <AdminCard>
         <h2 className="font-heading text-lg font-semibold">Send / Test</h2>
-        <p className="mt-1 text-sm">Viewing: {englishOnly || previewLang === "en" ? "English" : "Estonian"}</p>
+        <p className="mt-1 text-sm">Viewing: {combined ? "Combined EN + ET + RU email" : englishOnly || previewLang === "en" ? "English" : "Estonian"}</p>
         <p className="mt-1 text-sm text-muted">
-          {englishOnly
-            ? englishOnlyCampaignNotice()
-            : "Preview only changes what you see. Each person still receives their CSV language."}
+          {combined
+            ? combinedCampaignNotice()
+            : englishOnly
+              ? englishOnlyCampaignNotice()
+              : "Preview only changes what you see. Each person still receives their CSV language."}
         </p>
         {campaignEligibilityLines(consent).map((line) => (
           <p key={line} className="mt-1 text-sm">
@@ -539,9 +549,11 @@ export function EmailCampaignDetailClient({
         ))}
         {consent.warning ? <p className="mt-2 text-sm text-red-700">{consent.warning}</p> : null}
         <div className="mt-4 flex flex-wrap items-center gap-3">
+          {combined ? null : (
           <button type="button" onClick={() => setPreviewLang("en")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
             Preview English
           </button>
+          )}
           {showCampaignEstonianPreview(languageMode) ? (
             <button type="button" onClick={() => setPreviewLang("et")} className="rounded-full border border-[#2E6B3F] px-4 py-2 text-sm font-semibold text-[#2E6B3F]">
               Preview Estonian
@@ -633,7 +645,7 @@ export function EmailCampaignDetailClient({
           </button>
         ) : null}
         {message ? <p className="mt-3 whitespace-pre-line text-sm">{message}</p> : null}
-        <iframe title="Campaign preview" className="mt-4 h-[480px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={englishOnly || previewLang !== "et" ? htmlEn : htmlEt} />
+        <iframe title="Campaign preview" className="mt-4 h-[480px] w-full rounded-xl border border-[#E5E2D8] bg-[#f7f5f0]" srcDoc={singleBody || previewLang !== "et" ? htmlEn : htmlEt} />
       </AdminCard>
       {confirmKind ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -641,7 +653,7 @@ export function EmailCampaignDetailClient({
             {confirmKind === "test" ? (
               <>
                 <p className="text-sm">Send test email to {peopleCount} {peopleCount === 1 ? "person" : "people"}?</p>
-                {englishOnly ? (
+                {singleBody ? (
                   <p className="mt-2 text-sm">{recipientLanguageSummary}</p>
                 ) : (
                   <>
@@ -692,7 +704,7 @@ export function EmailCampaignDetailClient({
                   Send campaign to {sendMode === "failed" ? failedCount : sendMode === "resume" ? remainingUnsent : consent.eligible} eligible recipients?
                 </p>
                 <p className="mt-2 text-sm">{recipientLanguageSummary}</p>
-                <p className="mt-2 text-sm">{englishOnly ? englishOnlyCampaignNotice() : "Each recipient will automatically receive the correct language."}</p>
+                <p className="mt-2 text-sm">{combined ? combinedCampaignNotice() : englishOnly ? englishOnlyCampaignNotice() : "Each recipient will automatically receive the correct language."}</p>
                 {campaignEligibilityLines(consent).map((line) => (
                   <p key={line} className="mt-1 text-sm">
                     {line}

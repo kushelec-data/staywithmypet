@@ -1,7 +1,9 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { defaultLivingWellEnglishBodies, livingWellEnglishCopy } from "@/lib/email-campaigns/living-well-html";
+import { defaultLivingWell27SepBodies, livingWell27SepCopy } from "@/lib/email-campaigns/living-well-27-sep-html";
+import { campaignLanguageFromPreferredLocale, russianBodiesFromTemplateConfig, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import {
   DEFAULT_TEST_RECIPIENTS,
   ESTONIAN_TEST_RECIPIENTS,
@@ -9,6 +11,9 @@ import {
   LIVING_WELL_20_SEP_EN_CAMPAIGN_NAME,
   LIVING_WELL_20_SEP_EN_SUBJECT,
   LIVING_WELL_20_SEP_EN_TEMPLATE_KEY,
+  LIVING_WELL_27_SEP_CAMPAIGN_NAME,
+  LIVING_WELL_27_SEP_HEADLINE,
+  LIVING_WELL_27_SEP_TEMPLATE_KEY,
   SEPTEMBER_ESTONIAN_CAMPAIGN_NAME,
   SEPTEMBER_SUBJECT_EN,
   SEPTEMBER_SUBJECT_ET,
@@ -18,7 +23,6 @@ import {
   catalogLinkByKey,
 } from "@/lib/email-campaigns/events";
 import { defaultSeptemberBodies, defaultCampaignCopy, resolveCampaignCopy, type CampaignCopyFields, clickPlaceholderKeysInHtml } from "@/lib/email-campaigns/html";
-import { defaultLivingWellEnglishBodies, livingWellEnglishCopy } from "@/lib/email-campaigns/living-well-html";
 import { campaignEmailAssetUrl } from "@/lib/email-campaigns/public-base";
 import { createOpaqueToken } from "@/lib/email-campaigns/tokens";
 import {
@@ -448,6 +452,8 @@ export async function createCampaign(input: {
     copy,
     familyId: input.familyId,
     versionNumber,
+    htmlRu: input.templateConfig?.htmlRu,
+    subjectRu: input.templateConfig?.subjectRu,
   };
   for (const sponsor of templateConfig.sponsors) {
     if (sponsor.destinationUrl && !isSafeCampaignDestination(sponsor.destinationUrl)) {
@@ -524,9 +530,11 @@ export async function updateCampaignContent(
     familyId: detail.familyId,
     versionNumber: detail.versionNumber,
     languageMode:
-      detail.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY || detail.languageMode === "english_only"
-        ? "english_only"
-        : "automatic",
+      detail.templateKey === LIVING_WELL_27_SEP_TEMPLATE_KEY || detail.languageMode === "combined"
+        ? "combined"
+        : detail.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY || detail.languageMode === "english_only"
+          ? "english_only"
+          : "automatic",
   };
   for (const sponsor of templateConfig.sponsors) {
     if (sponsor.destinationUrl && !isSafeCampaignDestination(sponsor.destinationUrl)) {
@@ -534,17 +542,19 @@ export async function updateCampaignContent(
     }
   }
   const bodies =
-    detail.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY
-      ? defaultLivingWellEnglishBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
-          ...templateConfig.copy,
-          subjectEn: input.subjectEn,
-          subjectEt: input.subjectEt,
-        })
-      : defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
-          ...templateConfig.copy,
-          subjectEn: input.subjectEn,
-          subjectEt: input.subjectEt,
-        });
+    detail.templateKey === LIVING_WELL_27_SEP_TEMPLATE_KEY
+      ? defaultLivingWell27SepBodies(campaignEmailAssetUrl("/logo.png"), templateConfig)
+      : detail.templateKey === LIVING_WELL_20_SEP_EN_TEMPLATE_KEY
+        ? defaultLivingWellEnglishBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
+            ...templateConfig.copy,
+            subjectEn: input.subjectEn,
+            subjectEt: input.subjectEt,
+          })
+        : defaultSeptemberBodies(campaignEmailAssetUrl("/logo.png"), templateConfig, {
+            ...templateConfig.copy,
+            subjectEn: input.subjectEn,
+            subjectEt: input.subjectEt,
+          });
   const { error } = await admin
     .from("email_campaigns")
     .update({
@@ -621,6 +631,37 @@ export async function createLivingWellEnglishDraft(
     htmlEt: bodies.htmlEt,
     createdBy,
     templateKey: LIVING_WELL_20_SEP_EN_TEMPLATE_KEY,
+    templateConfig: config,
+    copy,
+    recipients: DEFAULT_TEST_RECIPIENTS.map((row) => ({
+      displayName: row.displayName,
+      email: row.email,
+      language: row.language,
+    })),
+  });
+}
+
+export async function createLivingWell27SepDraft(
+  createdBy: string,
+  templateConfig?: CampaignTemplateConfig,
+): Promise<{ id: string } | { error: string }> {
+  const copy = livingWell27SepCopy();
+  const config: CampaignTemplateConfig = {
+    ...mergeSeptemberTemplateConfig(templateConfig),
+    copy,
+    languageMode: "combined",
+  };
+  const bodies = defaultLivingWell27SepBodies(campaignEmailAssetUrl("/logo.png"), config);
+  config.htmlRu = bodies.htmlRu;
+  config.subjectRu = LIVING_WELL_27_SEP_HEADLINE.en;
+  return createCampaign({
+    name: LIVING_WELL_27_SEP_CAMPAIGN_NAME,
+    subjectEn: LIVING_WELL_27_SEP_HEADLINE.en,
+    subjectEt: LIVING_WELL_27_SEP_HEADLINE.en,
+    htmlEn: bodies.htmlEn,
+    htmlEt: bodies.htmlEt,
+    createdBy,
+    templateKey: LIVING_WELL_27_SEP_TEMPLATE_KEY,
     templateConfig: config,
     copy,
     recipients: DEFAULT_TEST_RECIPIENTS.map((row) => ({
@@ -729,6 +770,13 @@ export async function resolveRegisteredUserRecipients(userIds: string[]): Promis
   return results;
 }
 
+function storedCampaignHtml(campaign: Record<string, unknown>): string {
+  const russian = russianBodiesFromTemplateConfig(
+    "template_config" in campaign ? campaign.template_config : undefined,
+  );
+  return `${String(campaign.html_en ?? "")}\n${String(campaign.html_et ?? "")}\n${russian.htmlRu}`;
+}
+
 export async function loadRecipientForSend(recipientId: string) {
   const admin = db();
   if (!admin) return null;
@@ -779,7 +827,7 @@ export async function loadRecipientForSend(recipientId: string) {
   const destinationsOk = clickTokensReadyForSend(
     clickRows,
     catalog,
-    `${String(campaign.html_en ?? "")}\n${String(campaign.html_et ?? "")}`,
+    storedCampaignHtml(campaign as Record<string, unknown>),
   );
 
   return {
@@ -818,7 +866,7 @@ export async function syncRecipientClickTokens(recipientId: string): Promise<boo
     "template_config" in packed.campaign ? packed.campaign.template_config : undefined,
   );
   const trackedLinks = trackedLinksFromTemplateConfig(templateConfig);
-  const html = `${String(packed.campaign.html_en ?? "")}\n${String(packed.campaign.html_et ?? "")}`;
+  const html = storedCampaignHtml(packed.campaign as Record<string, unknown>);
   const neededKeys = new Set([...trackedLinks.map((link) => link.key), ...clickPlaceholderKeysInHtml(html)]);
   const have = new Set(packed.clickRows.map((row) => row.link_key));
   const missingLinks: CampaignTrackedLink[] = [];

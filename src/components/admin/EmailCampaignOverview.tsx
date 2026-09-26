@@ -4,9 +4,11 @@ import type { CampaignOverviewStats, LinkClickRow } from "@/lib/email-campaigns/
 export function EmailCampaignOverview({
   overview,
   links,
+  combined = false,
 }: {
   overview: CampaignOverviewStats;
   links: LinkClickRow[];
+  combined?: boolean;
 }) {
   return (
     <>
@@ -24,8 +26,14 @@ export function EmailCampaignOverview({
         </div>
         <div className="mt-4 text-sm">
           <p className="font-semibold">Language</p>
-          <p>English: {overview.english}</p>
-          <p>Estonian: {overview.estonian}</p>
+          {combined ? (
+            <p>Combined EN + ET + RU email</p>
+          ) : (
+            <>
+              <p>English: {overview.english}</p>
+              <p>Estonian: {overview.estonian}</p>
+            </>
+          )}
         </div>
       </AdminCard>
       <AdminCard>

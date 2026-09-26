@@ -11,6 +11,8 @@ import {
   EVENT_20_SEP_URL,
   EVENT_27_SEP_URL,
   LIVING_WELL_20_SEP_EN_PHOTO_PATHS,
+  LIVING_WELL_27_SEP_HEADLINE,
+  LIVING_WELL_27_SEP_PHOTO_PATHS,
   SEPTEMBER_EVENT_LINKS,
   SEPTEMBER_SPONSOR_LINKS,
   UNLINKED_SPONSORS,
@@ -34,6 +36,7 @@ import {
   renderSeptemberCampaignHtml,
 } from "@/lib/email-campaigns/html";
 import { defaultLivingWellEnglishBodies } from "@/lib/email-campaigns/living-well-html";
+import { defaultLivingWell27SepBodies } from "@/lib/email-campaigns/living-well-27-sep-html";
 import { personalizeCampaignHtml, clickTrackingUrl, openTrackingUrl, unsubscribeUrl } from "@/lib/email-campaigns/personalize";
 import {
   getTransactionalEmailOrigin,
@@ -53,7 +56,8 @@ describe("campaign language", () => {
     expect(campaignLanguageFromPreferredLocale("et")).toBe("et");
     expect(campaignLanguageFromPreferredLocale("et-EE")).toBe("et");
     expect(campaignLanguageFromPreferredLocale("en")).toBe("en");
-    expect(campaignLanguageFromPreferredLocale("ru")).toBe("en");
+    expect(campaignLanguageFromPreferredLocale("ru")).toBe("ru");
+    expect(campaignLanguageFromPreferredLocale("ru-RU")).toBe("ru");
     expect(campaignLanguageFromPreferredLocale(null)).toBe("en");
   });
 
@@ -73,6 +77,11 @@ describe("campaign language", () => {
     expect(selectCampaignContent("ET", fields).html).toContain("VAATA SÜNDMUST");
     expect(selectCampaignContent("en", fields)).toMatchObject({ language: "en", subject: "English subject", template: "EN" });
     expect(selectCampaignContent("ru", fields).template).toBe("EN");
+    expect(selectCampaignContent("ru", { ...fields, subjectRu: "RU subject", htmlRu: "<p>ПОСМОТРЕТЬ СОБЫТИЕ</p>" })).toMatchObject({
+      language: "ru",
+      subject: "RU subject",
+      template: "RU",
+    });
     expect(selectCampaignContent(null, fields).template).toBe("EN");
   });
 
@@ -691,5 +700,90 @@ describe("Living Well English 20 September invitation", () => {
     expect(brokenTestSend.html).toContain(clickPlaceholder("staywithmypet_website"));
     expect(brokenTestSend.html).toContain("swmp.invalid");
     expect(htmlContainsBrokenCampaignTracking(brokenTestSend.html)).toBe(true);
+  });
+});
+
+describe("Living Well 27 September invitation", () => {
+  const bodies = defaultLivingWell27SepBodies("https://www.staywithmypet.ee/logo.png");
+  const photoFiles = Object.values(LIVING_WELL_27_SEP_PHOTO_PATHS).map((path) => join(process.cwd(), "public", path.replace(/^\//, "")));
+
+  it("builds one combined EN then ET then RU email with a Russian-language event notice", () => {
+    expect(bodies.htmlEn).toBe(bodies.htmlEt);
+    expect(bodies.htmlEn).toBe(bodies.htmlRu);
+    expect(bodies.htmlEn).toContain(LIVING_WELL_27_SEP_HEADLINE.en);
+    expect(bodies.htmlEn).toContain(LIVING_WELL_27_SEP_HEADLINE.et);
+    expect(bodies.htmlEn).toContain(LIVING_WELL_27_SEP_HEADLINE.ru);
+    expect(bodies.htmlEn.indexOf("English")).toBeLessThan(bodies.htmlEn.indexOf("Eesti"));
+    expect(bodies.htmlEn.indexOf("Eesti")).toBeLessThan(bodies.htmlEn.indexOf("Русский"));
+    expect(bodies.htmlEn).toContain("THIS SUNDAY'S EVENT WILL BE HELD IN RUSSIAN.");
+    expect(bodies.htmlEn).toContain("SEL PÜHAPÄEVAL TOIMUB ÜRITUS VENE KEELES.");
+    expect(bodies.htmlEn).toContain("В ЭТО ВОСКРЕСЕНЬЕ МЕРОПРИЯТИЕ ПРОЙДЁТ НА РУССКОМ ЯЗЫКЕ.");
+    expect(bodies.htmlEn).toContain("Event language: Russian");
+    expect(bodies.htmlEn).toContain("Ürituse keel: vene keel");
+    expect(bodies.htmlEn).toContain("Язык мероприятия: русский");
+    expect(bodies.htmlEn).toContain("SEE EVENT &amp; JOIN US →");
+    expect(bodies.htmlEn.match(/SEE EVENT &amp; JOIN US →/g)?.length).toBe(1);
+    expect(bodies.htmlEn).not.toContain("VAATA ÜRITUST");
+    expect(htmlHasExpectedLanguageMarkers(bodies.htmlEn, "en")).toBe(true);
+    expect(bodies.htmlEn).toContain(clickPlaceholder("event_27_sep"));
+    expect(bodies.htmlEn).not.toContain(clickPlaceholder("event_20_sep"));
+    expect(bodies.htmlEn).not.toContain("facebook.com");
+    expect(bodies.htmlEn).toContain("https://www.staywithmypet.ee/images/campaigns/living-well-27-sep/");
+    expect(bodies.htmlEn).not.toContain("/public/");
+    expect(bodies.htmlEn).not.toContain("file://");
+    expect(bodies.htmlEn).not.toContain("localhost");
+    expect(bodies.htmlEn).toContain("Visit us at");
+    expect(bodies.htmlEn).toContain(clickPlaceholder("staywithmypet_website"));
+    expect(bodies.htmlEn).toContain("Unsubscribe from marketing emails");
+  });
+
+  it("uses the selected last-Sunday photos in the requested visual order", () => {
+    for (const file of photoFiles) {
+      expect(existsSync(file)).toBe(true);
+    }
+    const html = bodies.htmlEn;
+    const order = [
+      "09-venue-wide.JPG",
+      "01-event-wide.JPG",
+      "10-guest-dog.JPG",
+      "02-expert-talk.JPG",
+      "03-community.JPG",
+      "04-white-dog.JPG",
+      "05-dog-and-guest.JPG",
+      "06-dogs-meeting.JPG",
+      "07-community-dog.JPG",
+      "08-friendly-dogs.JPG",
+    ];
+    for (const name of order) {
+      expect(html).toContain(name);
+    }
+    expect(html.indexOf("Русский")).toBeLessThan(html.indexOf("LAST SUNDAY"));
+    expect(html.indexOf("LAST SUNDAY")).toBeLessThan(html.indexOf("09-venue-wide.JPG"));
+    expect(html.indexOf("09-venue-wide.JPG")).toBeLessThan(html.indexOf("01-event-wide.JPG"));
+    expect(html.indexOf("01-event-wide.JPG")).toBeLessThan(html.indexOf("10-guest-dog.JPG"));
+    expect(html.indexOf("10-guest-dog.JPG")).toBeLessThan(html.indexOf("02-expert-talk.JPG"));
+    expect(html.indexOf("08-friendly-dogs.JPG")).toBeLessThan(html.indexOf("SEE EVENT"));
+    expect(html).toContain("swmp-stack");
+  });
+
+  it("personalizes the combined email to production tracking URLs without swmp.invalid", () => {
+    const origin = "https://www.staywithmypet.ee";
+    const clickTokens = Object.fromEntries(CAMPAIGN_TRACKED_LINKS.map((link) => [link.key, createOpaqueToken()]));
+    const personalized = personalizeCampaignHtml({
+      htmlEn: bodies.htmlEn,
+      htmlEt: bodies.htmlEt,
+      language: "et",
+      openToken: createOpaqueToken(),
+      clickTokens,
+      origin,
+      unsubscribeToken: createOpaqueToken(),
+    });
+    expect(personalized.html).toContain("THIS SUNDAY'S EVENT WILL BE HELD IN RUSSIAN.");
+    expect(personalized.html).toContain("SEL PÜHAPÄEVAL TOIMUB ÜRITUS VENE KEELES.");
+    expect(personalized.html).toContain("В ЭТО ВОСКРЕСЕНЬЕ МЕРОПРИЯТИЕ ПРОЙДЁТ НА РУССКОМ ЯЗЫКЕ.");
+    expect(personalized.html).toContain(`${origin}/api/email/track/click/`);
+    expect(personalized.html).toContain(`${origin}/images/campaigns/living-well-27-sep/`);
+    expect(personalized.html).not.toContain("swmp.invalid");
+    expect(htmlContainsBrokenCampaignTracking(personalized.html)).toBe(false);
   });
 });

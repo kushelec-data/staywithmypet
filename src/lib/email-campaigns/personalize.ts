@@ -31,6 +31,8 @@ export function unsubscribeUrl(token: string, origin?: string): string {
 export function personalizeCampaignHtml(input: {
   htmlEn: string;
   htmlEt: string;
+  htmlRu?: string;
+  subjectRu?: string;
   language: string | null | undefined;
   openToken: string;
   clickTokens: Record<string, string>;
@@ -41,8 +43,10 @@ export function personalizeCampaignHtml(input: {
   const selected = selectCampaignContent(input.language, {
     subjectEn: "",
     subjectEt: "",
+    subjectRu: input.subjectRu,
     htmlEn: input.htmlEn,
     htmlEt: input.htmlEt,
+    htmlRu: input.htmlRu,
   });
   const clickUrls = Object.fromEntries(
     Object.entries(input.clickTokens).map(([key, token]) => [key, clickTrackingUrl(token, origin)]),

@@ -27,7 +27,9 @@ export type CampaignTemplateConfig = {
   };
   familyId?: string;
   versionNumber?: number;
-  languageMode?: "automatic" | "english_only";
+  languageMode?: "automatic" | "english_only" | "combined";
+  htmlRu?: string;
+  subjectRu?: string;
 };
 
 export type TrackedSponsorLink = {
@@ -84,7 +86,14 @@ export function parseTemplateConfig(raw: unknown): CampaignTemplateConfig {
     copy,
     familyId: optionalString(record.familyId),
     versionNumber: typeof record.versionNumber === "number" ? record.versionNumber : undefined,
-    languageMode: record.languageMode === "english_only" ? "english_only" : "automatic",
+    languageMode:
+      record.languageMode === "combined"
+        ? "combined"
+        : record.languageMode === "english_only"
+          ? "english_only"
+          : "automatic",
+    htmlRu: optionalString(record.htmlRu),
+    subjectRu: optionalString(record.subjectRu),
   };
 }
 
@@ -108,7 +117,9 @@ export function mergeSeptemberTemplateConfig(raw: unknown): CampaignTemplateConf
     copy: parsed.copy,
     familyId: parsed.familyId,
     versionNumber: parsed.versionNumber,
-    languageMode: parsed.languageMode === "english_only" ? "english_only" : "automatic",
+    languageMode: parsed.languageMode ?? "automatic",
+    htmlRu: parsed.htmlRu,
+    subjectRu: parsed.subjectRu,
   };
 }
 

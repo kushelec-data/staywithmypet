@@ -6,6 +6,7 @@ import {
   bilingualCampaignDisplayName,
   campaignLanguageModeFromRecord,
   campaignRecipientSummary,
+  combinedCampaignNotice,
   englishOnlyCampaignNotice,
   formatSendCompletedMessage,
   parseSendLanguageMode,
@@ -31,7 +32,7 @@ import { campaignEligibilityBreakdown, campaignEligibilityLines } from "@/lib/em
 import { htmlHasExpectedLanguageMarkers, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
 import { clickTrackingUrl, openTrackingUrl, personalizeCampaignHtml, unsubscribeUrl } from "@/lib/email-campaigns/personalize";
 import { jsonLooksLikeSecretDump } from "@/lib/email-campaigns/dto";
-import { LIVING_WELL_20_SEP_EN_SUBJECT, LIVING_WELL_20_SEP_EN_TEMPLATE_KEY, CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
+import { LIVING_WELL_20_SEP_EN_SUBJECT, LIVING_WELL_20_SEP_EN_TEMPLATE_KEY, LIVING_WELL_27_SEP_TEMPLATE_KEY, CAMPAIGN_TRACKED_LINKS } from "@/lib/email-campaigns/events";
 import { createOpaqueToken, trackingUrlContainsIdentityLeak } from "@/lib/email-campaigns/tokens";
 import { defaultSeptemberBodies } from "@/lib/email-campaigns/html";
 
@@ -151,6 +152,35 @@ describe("english_only campaign language mode", () => {
     expect(showCampaignEstonianPreview("automatic")).toBe(true);
   });
 
+  it("sends one combined EN + ET + RU email regardless of stored recipient language", () => {
+    const routing = recipientSendRouting(
+      [
+        { name: "Gerly", email: "gerly@example.com", language: "et" },
+        { name: "Kush", email: "kush@example.com", language: "en" },
+        { name: "Anna", email: "anna@example.com", language: "ru" },
+      ],
+      "automatic",
+      "combined",
+    );
+    expect(routing.every((row) => row.sendLanguage === "en")).toBe(true);
+    expect(routing.find((row) => row.email === "gerly@example.com")?.storedLanguage).toBe("et");
+    expect(routing.find((row) => row.email === "anna@example.com")?.storedLanguage).toBe("ru");
+    expect(
+      resolveRecipientSendLanguage({
+        campaignLanguageMode: "combined",
+        sendLanguageMode: "automatic",
+        recipientLanguage: "ru",
+      }),
+    ).toBe("en");
+    expect(campaignLanguageModeFromRecord({ templateKey: LIVING_WELL_27_SEP_TEMPLATE_KEY })).toBe("combined");
+    expect(campaignLanguageModeFromRecord({ languageMode: "automatic", templateKey: LIVING_WELL_27_SEP_TEMPLATE_KEY })).toBe(
+      "combined",
+    );
+    expect(campaignRecipientSummary(3, "combined")).toBe("3 recipients · Combined EN + ET + RU email");
+    expect(combinedCampaignNotice()).toContain("Combined EN + ET + RU email");
+    expect(showCampaignEstonianPreview("combined")).toBe(false);
+  });
+
   it("sends English to an EN CSV recipient on english_only campaigns", () => {
     expect(
       resolveRecipientSendLanguage({
@@ -180,6 +210,9 @@ describe("english_only campaign language mode", () => {
     );
     expect(resolveRecipientSendLanguage({ campaignLanguageMode: "automatic", sendLanguageMode: "automatic", recipientLanguage: "en" })).toBe(
       "en",
+    );
+    expect(resolveRecipientSendLanguage({ campaignLanguageMode: "automatic", sendLanguageMode: "automatic", recipientLanguage: "ru" })).toBe(
+      "ru",
     );
     const bilingual = {
       subjectEn: "EN subject",
@@ -239,6 +272,8 @@ Kush,Chadha,kusheducation@gmail.com,English`);
     expect(mapCampaignCsvLanguage("Estonian")).toBe("et");
     expect(mapCampaignCsvLanguage("English")).toBe("en");
     expect(mapCampaignCsvLanguage("et")).toBe("et");
+    expect(mapCampaignCsvLanguage("Russian")).toBe("ru");
+    expect(mapCampaignCsvLanguage("ru")).toBe("ru");
     const parsed = parseCampaignCsv(`First Name,Last Name,E-mail address,Keel
 Kush,Chadha,kusheducation@gmail.com,Estonian
 Gerly,Kullamaa,gerlykullamaa@gmail.com,Estonian
@@ -516,6 +551,8 @@ describe("CSV campaign recipient eligibility", () => {
     const source = readFileSync(join(process.cwd(), "src/components/admin/EmailCampaignDetailClient.tsx"), "utf8");
     expect(source).toContain("showCampaignEstonianPreview(languageMode)");
     expect(source).toContain("englishOnlyCampaignNotice()");
+    expect(source).toContain("combinedCampaignNotice()");
+    expect(source).toContain("Combined EN + ET + RU email");
     expect(source).toContain("campaignEligibilityLines(consent)");
     expect(source).not.toContain("Eligible recipients:");
     expect(source).not.toContain("Blocked recipients:");

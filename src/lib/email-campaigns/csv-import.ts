@@ -12,6 +12,7 @@ export type CsvImportResult = {
   duplicatesRemoved: number;
   estonian: number;
   english: number;
+  russian: number;
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,6 +24,7 @@ export function isValidCampaignEmail(value: string): boolean {
 export function mapCampaignCsvLanguage(raw: string | null | undefined): CampaignLanguage {
   const value = String(raw ?? "").trim().toLowerCase();
   if (value === "et" || value === "et-ee" || value === "estonian" || value === "eesti") return "et";
+  if (value === "ru" || value === "ru-ru" || value === "russian" || value === "русский" || value === "vene") return "ru";
   return "en";
 }
 
@@ -68,7 +70,7 @@ export function parseCampaignCsv(text: string): CsvImportResult {
   const invalid: CsvImportResult["invalid"] = [];
   const recipients: CsvRecipient[] = [];
   if (lines.length === 0) {
-    return { recipients, invalid, duplicatesRemoved: 0, estonian: 0, english: 0 };
+    return { recipients, invalid, duplicatesRemoved: 0, estonian: 0, english: 0, russian: 0 };
   }
 
   const first = splitCsvLine(lines[0]);
@@ -112,13 +114,20 @@ export function parseCampaignCsv(text: string): CsvImportResult {
     duplicatesRemoved,
     estonian: recipients.filter((row) => row.language === "et").length,
     english: recipients.filter((row) => row.language === "en").length,
+    russian: recipients.filter((row) => row.language === "ru").length,
   };
 }
 
-export function summarizeRecipientLanguages(rows: Array<{ language: string }>): { total: number; estonian: number; english: number } {
+export function summarizeRecipientLanguages(rows: Array<{ language: string }>): {
+  total: number;
+  estonian: number;
+  english: number;
+  russian: number;
+} {
   return {
     total: rows.length,
     estonian: rows.filter((row) => campaignLanguageFromPreferredLocale(row.language) === "et").length,
-    english: rows.filter((row) => campaignLanguageFromPreferredLocale(row.language) !== "et").length,
+    russian: rows.filter((row) => campaignLanguageFromPreferredLocale(row.language) === "ru").length,
+    english: rows.filter((row) => campaignLanguageFromPreferredLocale(row.language) === "en").length,
   };
 }
