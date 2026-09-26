@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { campaignLanguageFromPreferredLocale, eventButtonLabel, htmlHasExpectedLanguageMarkers, planRecipientSend, selectCampaignContent } from "@/lib/email-campaigns/locale";
+import { campaignLanguageFromPreferredLocale, eventButtonLabel, htmlHasExpectedLanguageMarkers, planRecipientSend, selectCampaignContent, storedCampaignRecipientLanguage } from "@/lib/email-campaigns/locale";
 import {
   CAMPAIGN_TRACKED_LINKS,
   DEFAULT_TEST_RECIPIENTS,
@@ -59,6 +59,9 @@ describe("campaign language", () => {
     expect(campaignLanguageFromPreferredLocale("ru")).toBe("ru");
     expect(campaignLanguageFromPreferredLocale("ru-RU")).toBe("ru");
     expect(campaignLanguageFromPreferredLocale(null)).toBe("en");
+    expect(storedCampaignRecipientLanguage("ru")).toBe("en");
+    expect(storedCampaignRecipientLanguage("et")).toBe("et");
+    expect(storedCampaignRecipientLanguage("en")).toBe("en");
   });
 
   it("uses EN or ET button labels", () => {

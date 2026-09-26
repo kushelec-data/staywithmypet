@@ -3,7 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { defaultLivingWellEnglishBodies, livingWellEnglishCopy } from "@/lib/email-campaigns/living-well-html";
 import { defaultLivingWell27SepBodies, livingWell27SepCopy } from "@/lib/email-campaigns/living-well-27-sep-html";
-import { campaignLanguageFromPreferredLocale, russianBodiesFromTemplateConfig, type CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { campaignLanguageFromPreferredLocale, russianBodiesFromTemplateConfig, storedCampaignRecipientLanguage, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import {
   DEFAULT_TEST_RECIPIENTS,
   ESTONIAN_TEST_RECIPIENTS,
@@ -376,7 +376,7 @@ async function insertRecipientWithTokens(
   recipient: NewRecipientInput,
   trackedLinks: CampaignTrackedLink[],
 ) {
-  const language = recipient.language ?? "en";
+  const language = storedCampaignRecipientLanguage(recipient.language ?? "en");
   const openToken = createOpaqueToken();
   const unsubscribeToken = createOpaqueToken();
   let insert = await admin

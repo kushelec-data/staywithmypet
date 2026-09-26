@@ -2,7 +2,13 @@ import { CAMPAIGN_FROM_HEADER } from "@/lib/email-campaigns/from";
 import { CANONICAL_CAMPAIGN_EMAIL_ORIGIN } from "@/lib/email-campaigns/public-base";
 
 export type CampaignLanguage = "en" | "et" | "ru";
+export type StoredCampaignLanguage = "en" | "et";
 export type CampaignTemplate = "EN" | "ET" | "RU";
+
+/** Recipient rows can only store EN/ET. Combined campaigns still keep stored RU as EN. */
+export function storedCampaignRecipientLanguage(locale: string | null | undefined): StoredCampaignLanguage {
+  return campaignLanguageFromPreferredLocale(locale) === "et" ? "et" : "en";
+}
 
 /** ET/RU use that language's template; anything else (including unknown) uses English. */
 export function campaignLanguageFromPreferredLocale(locale: string | null | undefined): CampaignLanguage {

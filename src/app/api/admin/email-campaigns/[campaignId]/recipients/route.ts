@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/require-api";
 import { parseCampaignCsv } from "@/lib/email-campaigns/csv-import";
-import { campaignLanguageFromPreferredLocale } from "@/lib/email-campaigns/locale";
+import { storedCampaignRecipientLanguage } from "@/lib/email-campaigns/locale";
 import {
   addRecipientsToExistingCampaign,
   listRegisteredCampaignAudience,
@@ -27,7 +27,7 @@ export async function POST(request: Request, context: RouteContext) {
     csvInvalid = parsed.invalid.length;
     csvDuplicates = parsed.duplicatesRemoved;
     for (const row of parsed.recipients) {
-      incoming.push({ displayName: row.displayName, email: row.email, language: row.language });
+      incoming.push({ displayName: row.displayName, email: row.email, language: storedCampaignRecipientLanguage(row.language) });
     }
   }
 
@@ -36,7 +36,7 @@ export async function POST(request: Request, context: RouteContext) {
       incoming.push({
         displayName: String(row.displayName ?? row.name ?? "").trim() || String(row.email ?? ""),
         email: String(row.email ?? "").trim().toLowerCase(),
-        language: campaignLanguageFromPreferredLocale(String(row.language ?? "en")),
+        language: storedCampaignRecipientLanguage(String(row.language ?? "en")),
       });
     }
   }
@@ -49,7 +49,7 @@ export async function POST(request: Request, context: RouteContext) {
       incoming.push({
         displayName: row.displayName,
         email: row.email,
-        language: row.language,
+        language: storedCampaignRecipientLanguage(row.language),
         userId: row.userId,
       });
     }

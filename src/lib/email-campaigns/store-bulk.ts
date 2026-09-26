@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { campaignLanguageFromPreferredLocale, type CampaignLanguage } from "@/lib/email-campaigns/locale";
+import { campaignLanguageFromPreferredLocale, storedCampaignRecipientLanguage, type CampaignLanguage } from "@/lib/email-campaigns/locale";
 import { trackedLinksFromTemplateConfig } from "@/lib/email-campaigns/events";
 import { mergeSeptemberTemplateConfig } from "@/lib/email-campaigns/template-config";
 import { classifyCampaignRecipientDelivery, hasMarketingEmailConsent, normalizeMarketingEmail } from "@/lib/email-campaigns/marketing-consent";
@@ -178,7 +178,7 @@ export async function addRecipientsToExistingCampaign(
       const { error } = await admin
         .from("email_campaign_recipients")
         .update({
-          language: recipient.language ?? "en",
+          language: storedCampaignRecipientLanguage(recipient.language ?? "en"),
           display_name: recipient.displayName,
           user_id: recipient.userId ?? null,
         })
