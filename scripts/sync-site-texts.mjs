@@ -1130,6 +1130,9 @@ function parseAbout(rows) {
       bioEt: bio.et,
     };
   });
+  if (!founders.some((row) => row.name === DENNY_TEAM_MEMBER.name)) {
+    founders.push(DENNY_TEAM_MEMBER);
+  }
 
   const values = [];
   for (let r = 41; r <= 55; r++) {
@@ -1192,6 +1195,18 @@ function parseAbout(rows) {
 const FOUNDER_IMAGES = {
   "Gerly Kullamaa": "/images/founders/gerly-kullamaa.jpg",
   "Kush Chadha": "/images/founders/kush-chadha.jpg",
+  "Magia Dilore Dancer Denny": "/images/team/denny.jpg",
+};
+
+const DENNY_TEAM_MEMBER = {
+  name: "Magia Dilore Dancer Denny",
+  roleEn: "Chief Happiness Officer 🐾",
+  roleEt: "Chief Happiness Officer 🐾",
+  bioEn:
+    "Denny is the heart of Stay With My Pet and our most important four-legged team member. He keeps us focused on what really matters — happy pets, caring people, new friendships and plenty of tail wags.\n\nWhen he's not supervising the team, Denny takes his role as Chief Happiness Officer very seriously: meeting new friends, testing treats and making sure there's never a dull moment.",
+  bioEt:
+    "Denny on Stay With My Peti süda ja meie kõige olulisem neljajalgne meeskonnaliige. Ta hoiab meid keskendununa sellele, mis tegelikult loeb — õnnelikud lemmikud, hoolivad inimesed, uued sõprussuhted ja palju saba liputamist.\n\nKui ta just meeskonda ei juhenda, võtab Denny oma Chief Happiness Officeri rolli väga tõsiselt: kohtub uute sõpradega, testib maiuseid ja hoolitseb, et hetkegi ei jääks igavaks.",
+  badge: "Chief Happiness Officer",
 };
 
 function parseContact(rows) {
@@ -1475,6 +1490,7 @@ const siteEnPartial = {
       role: f.roleEn,
       bio: f.bioEn,
       image: FOUNDER_IMAGES[f.name],
+      ...(f.badge ? { badge: f.badge } : {}),
     })),
     whyChooseItems: about.whyChooseItems.map((item) => ({
       title: item.titleEn,
@@ -1590,6 +1606,7 @@ const siteEtPartial = {
       role: track(`about.founders[${i}].role`, f.roleEn, f.roleEt),
       bio: track(`about.founders[${i}].bio`, f.bioEn, f.bioEt),
       image: FOUNDER_IMAGES[f.name],
+      ...(f.badge ? { badge: f.badge } : {}),
     })),
     whyChooseItems: about.whyChooseItems.map((item, i) => ({
       title: track(`about.whyChoose[${i}].title`, item.titleEn, item.titleEt),

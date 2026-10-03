@@ -6,42 +6,38 @@ type FounderCardProps = {
   role: string;
   bio: string;
   image: string;
-  coFounderLabel?: string;
+  badge?: string;
 };
 
-export function FounderCard({ name, role, bio, image, coFounderLabel }: FounderCardProps) {
+export function FounderCard({ name, role, bio, image, badge }: FounderCardProps) {
   return (
-    <article className={PUBLIC_CARD_MINT}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-        <div className="relative mx-auto h-[220px] w-full max-w-[220px] shrink-0 overflow-hidden rounded-2xl bg-cream shadow-sm ring-2 ring-white/80 sm:mx-0 sm:w-[200px]">
-          <div className="relative h-full w-full">
-            <AppImage
-              src={image}
-              alt={name}
-              seed={name}
-              fallbackCaption={coFounderLabel ? `${name} · ${coFounderLabel}` : name}
-              captionOnlyFallback
-              sizes="220px"
-              className="object-contain object-[center_top]"
-            />
-          </div>
-        </div>
-        <div className="min-w-0 flex-1 text-center sm:text-left">
-          {coFounderLabel ? (
-            <span className="inline-flex rounded-full bg-brand-teal/10 px-2.5 py-0.5 text-xs font-semibold text-brand-teal">
-              {coFounderLabel}
-            </span>
-          ) : null}
-          <h3
-            className={`font-heading text-lg font-semibold text-foreground sm:text-xl ${
-              coFounderLabel ? "mt-2" : ""
-            }`}
-          >
-            {name}
-          </h3>
-          <p className="mt-1 text-sm font-semibold text-brand-teal">{role}</p>
-          <p className="mt-3 text-sm leading-relaxed text-muted">{bio}</p>
-        </div>
+    <article className={`${PUBLIC_CARD_MINT} flex h-full min-w-0 flex-col`}>
+      <div className="relative mx-auto aspect-square w-full max-w-[200px] shrink-0 overflow-hidden rounded-2xl bg-cream shadow-sm ring-2 ring-white/80">
+        <AppImage
+          src={image}
+          alt={name}
+          seed={name}
+          fallbackCaption={badge ? `${name} · ${badge}` : name}
+          captionOnlyFallback
+          sizes="200px"
+          className="object-cover object-[center_18%]"
+        />
+      </div>
+      <div className="mt-4 flex min-w-0 flex-1 flex-col text-center">
+        {badge ? (
+          <span className="mx-auto inline-flex rounded-full bg-brand-teal/10 px-2.5 py-0.5 text-xs font-semibold text-brand-teal">
+            {badge}
+          </span>
+        ) : null}
+        <h3
+          className={`font-heading text-balance text-lg font-semibold text-foreground sm:text-xl ${
+            badge ? "mt-2" : ""
+          }`}
+        >
+          {name}
+        </h3>
+        {role ? <p className="mt-1 text-sm font-semibold text-brand-teal">{role}</p> : null}
+        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{bio}</p>
       </div>
     </article>
   );

@@ -130,6 +130,13 @@ export const siteEtPartial = {
         bio: "Minu taust on teaduse ja tehnoloogia valdkonnas ning mind inspireerib innovatsiooni kasutamine päriseluliste probleemide lahendamisel. Olen eluaegne loomaarmastaja ning mõistan nii lemmikloomade hoolduse emotsionaalset kui praktilist poolt. Minu eesmärk on luua turvaline ja usaldusväärne platvorm, mis aitab inimestel jagada armastust ja vastutust nutikal ja tähenduslikul viisil.",
         image: "/images/founders/kush-chadha.jpg",
       },
+      {
+        name: "Magia Dilore Dancer Denny",
+        role: "Chief Happiness Officer 🐾",
+        badge: "Chief Happiness Officer",
+        bio: "Denny on Stay With My Peti süda ja meie kõige olulisem neljajalgne meeskonnaliige. Ta hoiab meid keskendununa sellele, mis tegelikult loeb — õnnelikud lemmikud, hoolivad inimesed, uued sõprussuhted ja palju saba liputamist.\n\nKui ta just meeskonda ei juhenda, võtab Denny oma Chief Happiness Officeri rolli väga tõsiselt: kohtub uute sõpradega, testib maiuseid ja hoolitseb, et hetkegi ei jääks igavaks.",
+        image: "/images/team/denny.jpg",
+      },
     ],
     whyChooseItems: [
       {

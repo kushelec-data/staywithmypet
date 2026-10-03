@@ -130,6 +130,13 @@ export const siteEnPartial = {
         bio: "With a background in science and technology, I’m passionate about using innovation to solve real-world problems. As a lifelong animal lover, I understand both the emotional and practical sides of pet care. My goal is to build a safe, reliable platform that helps people share love and responsibility — in a smart, meaningful way.",
         image: "/images/founders/kush-chadha.jpg",
       },
+      {
+        name: "Magia Dilore Dancer Denny",
+        role: "Chief Happiness Officer 🐾",
+        badge: "Chief Happiness Officer",
+        bio: "Denny is the heart of Stay With My Pet and our most important four-legged team member. He keeps us focused on what really matters — happy pets, caring people, new friendships and plenty of tail wags.\n\nWhen he's not supervising the team, Denny takes his role as Chief Happiness Officer very seriously: meeting new friends, testing treats and making sure there's never a dull moment.",
+        image: "/images/team/denny.jpg",
+      },
     ],
     whyChooseItems: [
       {

@@ -88,7 +88,10 @@ export function AboutPageClient() {
             <h2 className={PUBLIC_SECTION_TITLE}>{a.teamTitle}</h2>
             <p className="mx-auto mt-2 max-w-2xl text-sm text-muted sm:text-base">{a.teamIntro}</p>
           </div>
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+          <div
+            data-about-team
+            className="mx-auto mt-6 grid w-full max-w-[980px] grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {founders.map((founder) => (
               <FounderCard
                 key={`${locale}-${founder.name}`}
@@ -96,7 +99,10 @@ export function AboutPageClient() {
                 role={founder.role}
                 bio={founder.bio}
                 image={founder.image}
-                coFounderLabel={a.coFounderBadge}
+                badge={
+                  founder.badge ??
+                  (/co-founder|kaasasutaja/i.test(founder.role) ? a.coFounderBadge : undefined)
+                }
               />
             ))}
           </div>
