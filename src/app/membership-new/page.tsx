@@ -23,12 +23,10 @@ export default async function MembershipNewPage() {
   return (
     <main style={{ padding: "1.5rem", fontFamily: "system-ui, sans-serif" }}>
       <h1>Membership (test)</h1>
-      <p>NEXT_PUBLIC_ENABLE_STRIPE: {stripeEnabled ? "enabled" : "disabled (test access code)"}</p>
+      <p>NEXT_PUBLIC_ENABLE_STRIPE: {stripeEnabled ? "enabled" : "disabled"}</p>
       {!stripeEnabled ? (
         <p>
-          Stripe checkout is off. Use{" "}
-          <Link href="/membership">/membership</Link> or{" "}
-          <Link href="/test-access-code">/test-access-code</Link>.
+          Stripe checkout is off. Use <Link href="/membership">/membership</Link>.
         </p>
       ) : null}
       <p>STRIPE_SECRET_KEY present: {envPresentLabel("STRIPE_SECRET_KEY")}</p>

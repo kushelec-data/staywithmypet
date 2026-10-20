@@ -15,7 +15,17 @@ export type RateLimitAction =
   | "contact_form"
   | "newsletter_signup"
   | "email_campaign_track"
-  | "api_default";
+  | "api_default"
+  | "quiz_join"
+  | "quiz_join_pin_fail"
+  | "quiz_answer"
+  | "quiz_answer_ip"
+  | "quiz_react"
+  | "quiz_react_ip"
+  | "quiz_state"
+  | "quiz_state_ip"
+  | "access_code_activate"
+  | "access_code_activate_ip";
 
 const LIMITS: Record<RateLimitAction, { max: number; windowMs: number }> = {
   auth_login: { max: 10, windowMs: 15 * 60 * 1000 },
@@ -28,6 +38,17 @@ const LIMITS: Record<RateLimitAction, { max: number; windowMs: number }> = {
   newsletter_signup: { max: 10, windowMs: 60 * 60 * 1000 },
   email_campaign_track: { max: 120, windowMs: 60 * 1000 },
   api_default: { max: 120, windowMs: 60 * 1000 },
+  // 50-player venue on one NAT: 50 PIN checks + 50 registers + retries.
+  quiz_join: { max: 200, windowMs: 15 * 60 * 1000 },
+  quiz_join_pin_fail: { max: 25, windowMs: 15 * 60 * 1000 },
+  quiz_answer: { max: 40, windowMs: 60 * 1000 },
+  quiz_answer_ip: { max: 400, windowMs: 60 * 1000 },
+  quiz_react: { max: 60, windowMs: 60 * 1000 },
+  quiz_react_ip: { max: 500, windowMs: 60 * 1000 },
+  quiz_state: { max: 30, windowMs: 60 * 1000 },
+  quiz_state_ip: { max: 800, windowMs: 60 * 1000 },
+  access_code_activate: { max: 8, windowMs: 15 * 60 * 1000 },
+  access_code_activate_ip: { max: 30, windowMs: 15 * 60 * 1000 },
 };
 
 export type RateLimitResult = { ok: true } | { ok: false; retryAfterSec: number };
@@ -196,4 +217,22 @@ export async function assertRateLimitShared(
   if (!result.ok) {
     throw new Error(rateLimitMessage(result.retryAfterSec));
   }
+}
+
+export function clientIpFromRequest(request: Request): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    "unknown"
+  );
+}
+
+export async function firstExceededRateLimit(
+  checks: Array<{ action: RateLimitAction; identity: string }>,
+): Promise<RateLimitResult> {
+  for (const check of checks) {
+    const result = await checkRateLimitShared(check.action, check.identity);
+    if (!result.ok) return result;
+  }
+  return { ok: true };
 }

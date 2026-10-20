@@ -617,6 +617,25 @@ export const en = {
         viewPlans: "View plans",
         closeLabel: "Dismiss membership helper banner",
       },
+      promotionCode: {
+        title: "Have a promotional code?",
+        pageTitle: "Redeem promotional code",
+        pageDescription:
+          "New members can redeem a promotional code for 2 months of complimentary membership.",
+        description:
+          "If you registered after this offer started, you can redeem a code for 2 months of free Pet Parent or Pet Friend membership. Existing accounts and previous redemptions are not eligible.",
+        codeLabel: "Promotional code",
+        codePlaceholder: "Enter your code",
+        codeHint: "One redemption per person. This is not a Stripe coupon.",
+        roleLabel: "Membership role",
+        activateButton: "Redeem code",
+        activating: "Redeeming…",
+        backToPlans: "Back to membership plans",
+        success: "Your complimentary 2-month membership is active.",
+        termsRequired: "Please accept the Terms of Use before redeeming.",
+        invalidCode: "Invalid promotional code.",
+        notSignedIn: "Sign in to redeem a promotional code.",
+      },
     },
     profileSetup: {
       pageTitle: "Set up your profile",
@@ -1717,39 +1736,6 @@ export const en = {
       "Plan cancellation is not available yet. Please contact support.",
     activeMembershipConflict:
       "You already have an active membership for this role. Manage or cancel it before purchasing another plan.",
-  },
-  testAccess: {
-    invitedSection: {
-      title: "Have an access code?",
-      description:
-        "Redeem your code to unlock exclusive offers, discounts or membership access.",
-      activateButton: "Redeem code",
-    },
-    alreadyHaveAccessCode: "Already have an access code?",
-    accessCodePanelTitle: "Platform access code",
-    accessCodePanelDescription:
-      "Enter your platform access code to activate {role} membership for {plan}. This is separate from Stripe payment.",
-    closeAccessCode: "Close",
-    membershipBanner:
-      "You can activate membership with an access code — no card required.",
-    membershipIntro:
-      "Choose a {role} plan below. You will enter your platform access code on the next step — no payment required.",
-    pageTitle: "Enter platform access code",
-    pageDescription:
-      "Enter your platform access code to activate membership for the selected plan.",
-    selectedPlanLabel: "Selected plan",
-    singleRoleSummary: "{role} — {plan}",
-    dualRoleSummary:
-      "Both Pet Parent and Pet Friend — {plan} (3 months for each role)",
-    freeAccessNote:
-      "Your membership will be active for the period included with your access code. No Stripe checkout is required.",
-    codeLabel: "Platform access code",
-    codePlaceholder: "Enter your code",
-    codeHint: "Use the access code provided by StayWithMyPet. This is not a Stripe coupon.",
-    invalidCode: "Invalid access code. Check the code and try again.",
-    activateButton: "Activate membership",
-    activating: "Activating…",
-    backToPlans: "Back to plans",
   },
   membershipUpgradeModal: {
     badge: "Launch offer",

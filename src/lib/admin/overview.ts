@@ -56,7 +56,12 @@ export const OVERVIEW_ATTENTION_LIMIT = 5;
 export type MembershipChannel = "paid" | "access_code" | "manual" | "unknown";
 
 const PAID_SOURCES = new Set(["stripe_checkout", "stripe_subscription", "stripe"]);
-const ACCESS_SOURCES = new Set(["platform_access_code", "test_code", "access_code"]);
+const ACCESS_SOURCES = new Set([
+  "platform_access_code",
+  "test_code",
+  "access_code",
+  "membership_promotion",
+]);
 const MANUAL_SOURCES = new Set(["manual", "admin", "admin/manual"]);
 
 export function parseOverviewRange(raw: string | null | undefined): OverviewRange {

@@ -36,15 +36,9 @@ describe("membership promotion copy", () => {
     expect(et.membershipUpsell.notNow).toBe("Mitte praegu");
   });
 
-  it("uses general access-code wording instead of invited test-user labels", () => {
-    expect(en.testAccess.invitedSection.title).toBe("Have an access code?");
-    expect(en.testAccess.invitedSection.activateButton).toBe("Redeem code");
-    expect(en.testAccess.invitedSection.title).not.toMatch(/test user/i);
-    expect(en.testAccess.invitedSection.activateButton).not.toMatch(/Invited/i);
-
-    expect(et.testAccess.invitedSection.title).toBe("Kas sul on sooduskood?");
-    expect(et.testAccess.invitedSection.activateButton).toBe("Kasuta koodi");
-    expect(et.testAccess.invitedSection.title).not.toMatch(/testkasutaja/i);
+  it("does not expose retired access-code copy keys", () => {
+    expect(en).not.toHaveProperty("testAccess");
+    expect(et).not.toHaveProperty("testAccess");
   });
 
   it("does not expose removed frontend price-calculation copy keys", () => {
@@ -68,32 +62,18 @@ describe("membership promotion copy", () => {
     }
   });
 
-  it("places launch offer first, then access code, then membership plans", () => {
+  it("places launch offer before membership plans", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/membership/MembershipPageContent.tsx"),
       "utf8",
     );
     const launchOfferIndex = source.indexOf('data-membership-section="launch-offer"');
-    const accessCodeIndex = source.indexOf('data-membership-section="access-code"');
     const plansIndex = source.indexOf('data-membership-section="membership-plans"');
     expect(launchOfferIndex).toBeGreaterThan(-1);
-    expect(accessCodeIndex).toBeGreaterThan(-1);
     expect(plansIndex).toBeGreaterThan(-1);
-    expect(launchOfferIndex).toBeLessThan(accessCodeIndex);
-    expect(accessCodeIndex).toBeLessThan(plansIndex);
+    expect(launchOfferIndex).toBeLessThan(plansIndex);
+    expect(source).not.toContain('data-membership-section="access-code"');
+    expect(source).toContain("MembershipPromotionCodePanel");
     expect(source).toContain("sectionId={MEMBERSHIP_PLANS_SECTION_ID}");
-  });
-
-  it("uses compact horizontal access code layout on md+ and stacked layout on mobile", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/components/membership/InvitedTestUserSection.tsx"),
-      "utf8",
-    );
-    expect(source).toContain("flex flex-col");
-    expect(source).toContain("md:flex-row");
-    expect(source).toContain("md:items-center");
-    expect(source).toContain("md:justify-between");
-    expect(source).toMatch(/w-full.*md:w-auto/);
-    expect(source).not.toMatch(/order-\d/);
   });
 });

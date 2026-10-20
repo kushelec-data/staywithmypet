@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   MEMBERSHIP_AUTO_STRIPE_CHECKOUT_ON_LOAD,
-  invitedTestAccessCodeHref,
   resolveMembershipPlanCheckoutProps,
 } from "@/lib/membership-invited-access";
 import { isPlanCheckoutLoading } from "@/lib/membership-plan-checkout-state";
@@ -18,6 +17,7 @@ import {
   stripeCheckoutModeForPlanId,
   stripePlanTypeForPlanId,
 } from "@/lib/stripe-plans";
+import { stripeCheckoutIdempotencyKey } from "@/lib/stripe-checkout-idempotency";
 import { buildStripeCheckoutMetadata } from "@/lib/stripe-webhook-resolve";
 
 const TEST_ENV = {
@@ -189,18 +189,17 @@ describe("Webhook idempotency contract", () => {
   });
 });
 
-describe("Invited 3-month access-code flow", () => {
-  it("remains available for invited 3-month plans only", () => {
-    expect(invitedTestAccessCodeHref("pet_friend")).toContain("3-month-friend");
-    expect(invitedTestAccessCodeHref("pet_parent")).toContain("3-month-owner");
+describe("public membership activation", () => {
+  it("uses Stripe checkout only for purchasable 3-month plans", () => {
     expect(isMembershipPlanPurchasable("3-month-friend")).toBe(true);
     const ui = resolveMembershipPlanCheckoutProps({
       stripeEnabled: true,
       stripePayEnabled: true,
       isActive: false,
     });
-    expect(ui.showInvitedAccessSection).toBe(true);
-    expect(ui.useTestAccessFlowOnCards).toBe(false);
+    expect(ui.enableStripeCheckout).toBe(true);
+    expect(ui).not.toHaveProperty("showInvitedAccessSection");
+    expect(ui).not.toHaveProperty("useTestAccessFlowOnCards");
   });
 });
 
@@ -216,5 +215,32 @@ describe("Membership page checkout UX contract", () => {
     expect(planShowsOpeningCheckout("one-time-friend", "one-time-friend")).toBe(true);
     expect(planShowsOpeningCheckout("one-time-friend", "3-month-friend")).toBe(false);
     expect(planShowsOpeningCheckout(null, "3-month-friend")).toBe(false);
+  });
+});
+
+describe("Stripe checkout idempotency", () => {
+  it("reuses the same key for double-clicks inside the window", () => {
+    const now = 1_700_000_015_000;
+    const a = stripeCheckoutIdempotencyKey({
+      userId: "user-1",
+      role: "pet_parent",
+      planId: "3-month-owner",
+      nowMs: now,
+    });
+    const b = stripeCheckoutIdempotencyKey({
+      userId: "user-1",
+      role: "pet_parent",
+      planId: "3-month-owner",
+      nowMs: now + 10_000,
+    });
+    const later = stripeCheckoutIdempotencyKey({
+      userId: "user-1",
+      role: "pet_parent",
+      planId: "3-month-owner",
+      nowMs: now + 31_000,
+    });
+    expect(a).toBe(b);
+    expect(later).not.toBe(a);
+    expect(a.startsWith("swmp_chk_")).toBe(true);
   });
 });

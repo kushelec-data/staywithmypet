@@ -11,43 +11,6 @@ import { cancelUserMembershipAsAdmin } from "@/lib/membership-activate";
 import { resolveUserMemberships } from "@/lib/membership-load";
 import { createClient } from "@/lib/supabase/server";
 
-export type ActivateMembershipInput = {
-  role: MembershipRole;
-  planId: string;
-  planName?: string;
-  endDate?: string | null;
-  autoRenew?: boolean;
-  status?: "active";
-};
-
-/**
- * Manual / demo activation. Paid checkout is fulfilled by Stripe webhooks
- * (`/api/stripe/webhook`) via `upsertUserMembershipAsAdmin`.
- */
-export async function activateMembershipAction(
-  input: ActivateMembershipInput,
-): Promise<{ ok: true; membership: UserMembership } | { ok: false; error: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { ok: false, error: "Not signed in." };
-  }
-
-  const { upsertUserMembershipAsAdmin } = await import("@/lib/membership-activate");
-  return upsertUserMembershipAsAdmin({
-    userId: user.id,
-    role: input.role,
-    planId: input.planId,
-    planName: input.planName,
-    status: input.status ?? "active",
-    endDate: input.endDate,
-    autoRenew: input.autoRenew,
-  });
-}
-
 /** Refreshes membership snapshot for ProfileContext consumers after mode switch. */
 export async function refreshProfileMembershipsAction(): Promise<{ ok: boolean }> {
   const supabase = await createClient();

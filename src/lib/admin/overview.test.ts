@@ -45,6 +45,11 @@ describe("admin overview membership classification", () => {
     ).toBe("access_code");
     expect(
       classifyMembershipChannel(
+        membership({ source: "membership_promotion", stripe_checkout_session_id: null, stripe_subscription_id: null }),
+      ),
+    ).toBe("access_code");
+    expect(
+      classifyMembershipChannel(
         membership({ source: "manual", stripe_checkout_session_id: null, stripe_subscription_id: null }),
       ),
     ).toBe("manual");

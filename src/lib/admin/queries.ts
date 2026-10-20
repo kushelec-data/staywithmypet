@@ -80,7 +80,7 @@ async function loadPets(admin: NonNullable<ReturnType<typeof createAdminClient>>
   return withDates.data ?? [];
 }
 
-async function loadAccessCodeRedemptions(
+async function loadHistoricalAccessCodeRedemptions(
   admin: NonNullable<ReturnType<typeof createAdminClient>>,
 ): Promise<AccessCodeRedemptionLite[]> {
   const [redemptionsRes, codesRes] = await Promise.all([
@@ -103,9 +103,61 @@ async function loadAccessCodeRedemptions(
   }));
 }
 
-export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
+async function loadMembershipPromotionRedemptions(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+): Promise<AccessCodeRedemptionLite[]> {
+  const [redemptionsRes, promotionsRes] = await Promise.all([
+    admin
+      .from("membership_promotion_redemptions")
+      .select("user_id, membership_role, plan_id, redeemed_at, promotion_id"),
+    admin.from("membership_promotions").select("id, code_normalized"),
+  ]);
+  if (redemptionsRes.error) {
+    if (isPostgrestError(redemptionsRes.error) && isMissingRelationError(redemptionsRes.error)) return [];
+    return [];
+  }
+  const codes = new Map(
+    (promotionsRes.data ?? []).map((row) => [String(row.id), String(row.code_normalized ?? "")]),
+  );
+  return (redemptionsRes.data ?? []).map((row) => ({
+    user_id: String(row.user_id),
+    membership_role: String(row.membership_role),
+    plan_id: String(row.plan_id ?? ""),
+    redeemed_at: String(row.redeemed_at),
+    code_normalized: codes.get(String(row.promotion_id)) || null,
+  }));
+}
+
+async function loadAccessCodeRedemptions(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+): Promise<AccessCodeRedemptionLite[]> {
+  const [historical, promotions] = await Promise.all([
+    loadHistoricalAccessCodeRedemptions(admin),
+    loadMembershipPromotionRedemptions(admin),
+  ]);
+  return [...historical, ...promotions];
+}
+
+export type LoadAdminCatalogOptions = {
+  includeMessages?: boolean;
+  includeNotifications?: boolean;
+  includeFavorites?: boolean;
+  includeMatches?: boolean;
+  includeMemberships?: boolean;
+  includeAccessCodes?: boolean;
+};
+
+export async function loadAdminCatalog(
+  options: LoadAdminCatalogOptions = {},
+): Promise<AdminCatalog | null> {
   const admin = createAdminClient();
   if (!admin) return null;
+  const includeMessages = options.includeMessages !== false;
+  const includeNotifications = options.includeNotifications !== false;
+  const includeFavorites = options.includeFavorites !== false;
+  const includeMatches = options.includeMatches !== false;
+  const includeMemberships = options.includeMemberships !== false;
+  const includeAccessCodes = options.includeAccessCodes !== false;
 
   const [
     profilesRes,
@@ -134,14 +186,22 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
       .from("bookings")
       .select("id, request_id, pet_id, pet_parent_id, pet_friend_id, status, created_at, start_date, end_date, completed_at, cancelled_at"),
     admin.from("conversations").select("id, request_id, created_at"),
-    admin.from("messages").select("id, conversation_id, sender_id, created_at"),
-    admin
-      .from("match_suggestions")
-      .select("id, pet_parent_id, pet_friend_id, pet_id, score, reasons, status, created_at, viewed_at, clicked_at, emailed_at"),
-    loadMembershipRows(admin),
-    loadAccessCodeRedemptions(admin),
-    admin.from("favorites").select("id, user_id, pet_id, friend_profile_id, created_at"),
-    admin.from("notifications").select("id, user_id, type, created_at, read_at"),
+    includeMessages
+      ? admin.from("messages").select("id, conversation_id, sender_id, created_at")
+      : Promise.resolve({ data: [] }),
+    includeMatches
+      ? admin
+          .from("match_suggestions")
+          .select("id, pet_parent_id, pet_friend_id, pet_id, score, reasons, status, created_at, viewed_at, clicked_at, emailed_at")
+      : Promise.resolve({ data: [] }),
+    includeMemberships ? loadMembershipRows(admin) : Promise.resolve([]),
+    includeAccessCodes ? loadAccessCodeRedemptions(admin) : Promise.resolve([]),
+    includeFavorites
+      ? admin.from("favorites").select("id, user_id, pet_id, friend_profile_id, created_at")
+      : Promise.resolve({ data: [] }),
+    includeNotifications
+      ? admin.from("notifications").select("id, user_id, type, created_at, read_at")
+      : Promise.resolve({ data: [] }),
     listAuthUsers(admin),
   ]);
 
@@ -211,6 +271,29 @@ export async function loadAdminCatalog(): Promise<AdminCatalog | null> {
       consumed_at: row.consumed_at == null ? null : String(row.consumed_at),
     })),
     accessCodeRedemptions,
+    favorites: (favoritesRes.data ?? []) as AdminCatalog["favorites"],
+    notifications: (notificationsRes.data ?? []) as AdminCatalog["notifications"],
+  };
+}
+
+export async function loadAdminProfileNames(): Promise<Map<string, string>> {
+  const admin = createAdminClient();
+  if (!admin) return new Map();
+  const { data } = await admin.from("profiles").select("id, display_name");
+  return new Map((data ?? []).map((row) => [String(row.id), String(row.display_name ?? "")]));
+}
+
+export async function loadAdminUserSideFacts(userId: string): Promise<{
+  favorites: AdminCatalog["favorites"];
+  notifications: AdminCatalog["notifications"];
+}> {
+  const admin = createAdminClient();
+  if (!admin) return { favorites: [], notifications: [] };
+  const [favoritesRes, notificationsRes] = await Promise.all([
+    admin.from("favorites").select("id, user_id, pet_id, friend_profile_id, created_at").eq("user_id", userId),
+    admin.from("notifications").select("id, user_id, type, created_at, read_at").eq("user_id", userId),
+  ]);
+  return {
     favorites: (favoritesRes.data ?? []) as AdminCatalog["favorites"],
     notifications: (notificationsRes.data ?? []) as AdminCatalog["notifications"],
   };

@@ -17,12 +17,8 @@ export function TestPetParentCheckoutButton({ userId, planId }: Props) {
   if (!stripeEnabled) {
     return (
       <div>
-        <p>Stripe checkout is disabled. Use membership test access codes instead.</p>
+        <p>Stripe checkout is disabled.</p>
         <p>
-          <Link href={`/test-access-code?planId=${encodeURIComponent(planId)}&role=parent`}>
-            Go to test access code
-          </Link>
-          {" · "}
           <Link href="/membership">Membership page</Link>
         </p>
       </div>

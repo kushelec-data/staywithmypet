@@ -618,6 +618,25 @@ export const et = {
         viewPlans: "Vaata pakette",
         closeLabel: "Sulge liikmelisuse abibänner",
       },
+      promotionCode: {
+        title: "Kas sul on sooduskood?",
+        pageTitle: "Lunasta sooduskood",
+        pageDescription:
+          "Uued liikmed saavad lunastada sooduskoodi 2 kuu tasuta liikmelisuse jaoks.",
+        description:
+          "Kui registreerusid pärast selle pakkumise algust, saad lunastada koodi 2 kuu tasuta loomaomaniku või loomasõbra liikmelisuse jaoks. Olemasolevad kontod ja varasemad lunastused ei ole abikõlbulikud.",
+        codeLabel: "Sooduskood",
+        codePlaceholder: "Sisesta kood",
+        codeHint: "Üks lunastus inimese kohta. See ei ole Stripe'i kupong.",
+        roleLabel: "Liikmelisuse roll",
+        activateButton: "Lunasta kood",
+        activating: "Lunastan…",
+        backToPlans: "Tagasi liikmelisuse paketide juurde",
+        success: "Sinu 2-kuuline tasuta liikmelisus on aktiivne.",
+        termsRequired: "Enne lunastamist nõustu kasutustingimustega.",
+        invalidCode: "Vale sooduskood.",
+        notSignedIn: "Logi sisse, et lunastada sooduskood.",
+      },
     },
     profileSetup: {
       pageTitle: "Seadista profiil",
@@ -1727,39 +1746,6 @@ export const et = {
       "Paketi tühistamine pole veel saadaval. Palun võta ühendust toega.",
     activeMembershipConflict:
       "Sul on juba aktiivne liikmelisus selles rollis. Halda või tühista see enne uue paketi ostmist.",
-  },
-  testAccess: {
-    invitedSection: {
-      title: "Kas sul on sooduskood?",
-      description:
-        "Sisesta oma sooduskood, et kasutada kampaaniapakkumist või aktiveerida liikmelisus.",
-      activateButton: "Kasuta koodi",
-    },
-    alreadyHaveAccessCode: "Kas sul on juba ligipääsukood?",
-    accessCodePanelTitle: "Platvormi ligipääsukood",
-    accessCodePanelDescription:
-      "Sisesta platvormi ligipääsukood, et aktiveerida {role} liikmelisus paketile {plan}. See on Stripe maksest eraldi.",
-    closeAccessCode: "Sulge",
-    membershipBanner:
-      "Liikmelisuse saad aktiveerida sooduskoodiga — kaarti pole vaja.",
-    membershipIntro:
-      "Vali allpool {role} pakett. Järgmisel sammul sisestad platvormi ligipääsukoodi — makset pole vaja.",
-    pageTitle: "Sisesta platvormi ligipääsukood",
-    pageDescription:
-      "Sisesta platvormi ligipääsukood, et aktiveerida valitud paketi liikmelisus.",
-    selectedPlanLabel: "Valitud pakett",
-    singleRoleSummary: "{role} — {plan}",
-    dualRoleSummary:
-      "Nii lemmiklooma vanem kui ka sõber — {plan} (mõlema rolli jaoks)",
-    freeAccessNote:
-      "Sinu liikmelisus kehtib ligipääsukoodiga kaasasoleva perioodi jooksul. Stripe makset pole vaja.",
-    codeLabel: "Platvormi ligipääsukood",
-    codePlaceholder: "Sisesta kood",
-    codeHint: "Kasuta StayWithMyPet poolt antud ligipääsukoodi. See ei ole Stripe kupong.",
-    invalidCode: "Vale ligipääsukood. Kontrolli koodi ja proovi uuesti.",
-    activateButton: "Aktiveeri liikmelisus",
-    activating: "Aktiveerin…",
-    backToPlans: "Tagasi pakettide juurde",
   },
   membershipUpgradeModal: {
     badge: "Avamispakkumine",

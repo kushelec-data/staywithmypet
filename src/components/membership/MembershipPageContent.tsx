@@ -42,9 +42,9 @@ import {
 } from "@/lib/membership";
 import { cancelMembershipAction } from "@/app/actions/membership";
 import { CancelMembershipConfirmModal } from "@/components/membership/CancelMembershipConfirmModal";
-import { InvitedTestUserSection } from "@/components/membership/InvitedTestUserSection";
 import { MembershipReturnNotice } from "@/components/membership/MembershipReturnNotice";
 import { MembershipWelcomeOfferHero } from "@/components/membership/MembershipWelcomeOfferHero";
+import { MembershipPromotionCodePanel } from "@/components/membership/MembershipPromotionCodePanel";
 import { MembershipFloatingDogBanner } from "@/components/membership/MembershipFloatingDogBanner";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import { resolveMembershipPlanCheckoutProps } from "@/lib/membership-invited-access";
@@ -526,12 +526,6 @@ export function MembershipPageContent({
           </div>
         ) : null}
 
-        {planCheckout.showInvitedAccessSection ? (
-          <div data-membership-section="access-code">
-            <InvitedTestUserSection role={modeRole} />
-          </div>
-        ) : null}
-
         <div data-testid="membership-page-title">
           <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             {pageTitle}
@@ -582,12 +576,6 @@ export function MembershipPageContent({
           </div>
         ) : null}
 
-        {planCheckout.useTestAccessFlowOnCards && !isActive ? (
-          <p className="text-sm text-foreground" role="status">
-            {t.testAccess.membershipBanner}
-          </p>
-        ) : null}
-
         {checkoutBanner ? (
           <p className={`px-4 py-3 text-sm text-foreground ${ACCOUNT_ALERT_SUCCESS_CLASS}`} role="status">
             {checkoutBanner}
@@ -609,9 +597,9 @@ export function MembershipPageContent({
         {stripeCheckoutBlocked ? (
           <p className={`rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`} role="alert">
             {deployDiagnostics?.showBanner
-              ? `Stripe checkout is blocked for ${membershipRoleTitle(modeRole)}: ${stripeConfigMessage ?? "configuration incomplete"}. Use an access code if you have one.`
+              ? `Stripe checkout is blocked for ${membershipRoleTitle(modeRole)}: ${stripeConfigMessage ?? "configuration incomplete"}.`
               : (stripeConfigMessage ??
-                "Stripe checkout is not configured yet. Use an access code if you have one.")}
+                "Stripe checkout is not configured yet.")}
           </p>
         ) : null}
 
@@ -619,6 +607,10 @@ export function MembershipPageContent({
           <p className={`rounded-2xl px-4 py-3 ${STATUS_ALERT_WARNING_CLASS}`} role="alert">
             {stripeConfigMessage}
           </p>
+        ) : null}
+
+        {user && !isActive ? (
+          <MembershipPromotionCodePanel role={modeRole} returnTo={returnTo} />
         ) : null}
 
         <div data-membership-section="membership-plans">
@@ -635,7 +627,6 @@ export function MembershipPageContent({
             checkoutRole={modeRole}
             roleHasActiveMembership={hasActiveMembershipForRole(memberships, modeRole)}
             enableCheckout={planCheckout.enableStripeCheckout}
-            useTestAccessFlow={planCheckout.useTestAccessFlowOnCards}
             activateMembershipLabel={t.membershipCheckout.activateMembership}
             promotionDisplayMode={welcomeOfferDisplayMode}
             promotionBadgeLabel={t.newMemberPromotion.planBadge}

@@ -1,16 +1,16 @@
 import { CommonLoadingFallback } from "@/components/i18n/SuspenseFallbacks";
-import { TestAccessCodePageClient } from "@/app/test-access-code/TestAccessCodePageClient";
+import { RedeemPromotionCodeClient } from "@/app/test-access-code/RedeemPromotionCodeClient";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Test access code",
+  title: "Redeem promotional code",
 };
 
 export default function TestAccessCodePage() {
   return (
     <Suspense fallback={<CommonLoadingFallback />}>
-      <TestAccessCodePageClient />
+      <RedeemPromotionCodeClient />
     </Suspense>
   );
 }

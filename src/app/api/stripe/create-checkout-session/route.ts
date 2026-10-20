@@ -19,6 +19,7 @@ import { membershipRoleToPageQuery } from "@/lib/membership-upsell";
 import { buildStripeCheckoutMetadata, parseMembershipRoleInput } from "@/lib/stripe-webhook-resolve";
 import { getRequestOrigin } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe";
+import { stripeCheckoutIdempotencyKey } from "@/lib/stripe-checkout-idempotency";
 import { isStripeCheckoutEnabled } from "@/lib/stripe-feature";
 import { checkRateLimitShared, rateLimitMessage } from "@/lib/security/rate-limit";
 import { isSafeDebugLoggingEnabled, safeLogError, safeLogInfo } from "@/lib/security/safe-log";
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
 
   if (!isStripeCheckoutEnabled()) {
     return NextResponse.json(
-      { error: "Stripe checkout is temporarily disabled. Use test access code." },
+      { error: "Stripe checkout is temporarily disabled." },
       { status: 403 },
     );
   }
@@ -282,7 +283,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await stripe.checkout.sessions.create(sessionParams, {
+      idempotencyKey: stripeCheckoutIdempotencyKey({
+        userId: sessionUserId,
+        role,
+        planId: trimmedPlanId,
+      }),
+    });
     safeLogInfo("stripe checkout session created", {
       sessionId: session.id,
       mode,

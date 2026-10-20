@@ -51,8 +51,6 @@ type MembershipPlansProps = {
   planCheckoutErrors?: Record<string, string | null>;
   /** After checkout, return user to this path (e.g. pet booking page). */
   checkoutReturnTo?: string | null;
-  /** Legacy redirect to /test-access-code when Stripe is disabled. */
-  useTestAccessFlow?: boolean;
   /** Label for Stripe checkout CTA (account page). */
   payWithStripeLabel?: string;
   /** Preferred checkout CTA label (e.g. Activate membership). */
@@ -62,9 +60,6 @@ type MembershipPlansProps = {
   promotionBadgeLabel?: string;
   promotionDiscountHeadline?: string;
   promotionCheckoutNote?: string;
-  /** Secondary link to open platform access code form. */
-  onOpenAccessCode?: (plan: PricingPlan) => void;
-  accessCodeLinkLabel?: string;
   /** Active membership end date (shown on the current plan card). */
   activePlanEndDate?: string | null;
   activePlanEndDateLabel?: string;
@@ -117,7 +112,6 @@ function PlanCard({
   activeMembershipExistsLabel,
   popularBadge,
   enableCheckout,
-  useTestAccessFlow,
   checkoutUserId,
   checkoutRole,
   roleHasActiveMembership = false,
@@ -131,8 +125,6 @@ function PlanCard({
   promotionBadgeLabel,
   promotionDiscountHeadline,
   promotionCheckoutNote,
-  onOpenAccessCode,
-  accessCodeLinkLabel,
   activePlanEndDate,
   activePlanEndDateLabel,
   cancelPlanLabel,
@@ -154,7 +146,6 @@ function PlanCard({
   activeMembershipExistsLabel: string;
   popularBadge: string;
   enableCheckout?: boolean;
-  useTestAccessFlow?: boolean;
   checkoutUserId?: string;
   checkoutRole?: MembershipRole;
   roleHasActiveMembership?: boolean;
@@ -168,8 +159,6 @@ function PlanCard({
   promotionBadgeLabel?: string;
   promotionDiscountHeadline?: string;
   promotionCheckoutNote?: string;
-  onOpenAccessCode?: (plan: PricingPlan) => void;
-  accessCodeLinkLabel?: string;
   activePlanEndDate?: string | null;
   activePlanEndDateLabel?: string;
   cancelPlanLabel?: string;
@@ -191,7 +180,7 @@ function PlanCard({
   const purchaseDisabled = !isMembershipPlanPurchasable(plan.id);
   const canCheckout =
     variant === "account" &&
-    (enableCheckout || useTestAccessFlow) &&
+    enableCheckout &&
     !isCurrent &&
     !blockedByActiveMembership &&
     !purchaseDisabled &&
@@ -207,14 +196,6 @@ function PlanCard({
     Boolean(cancelPlanLabel?.trim());
 
   const showComingSoon = purchaseDisabled && !isCurrent;
-
-  const canOpenAccessCode =
-    variant === "account" &&
-    Boolean(onOpenAccessCode) &&
-    Boolean(accessCodeLinkLabel) &&
-    !isCurrent &&
-    !purchaseDisabled &&
-    !useTestAccessFlow;
 
   const isAccount = variant === "account";
   const checkoutCtaLabel =
@@ -360,9 +341,7 @@ function PlanCard({
             className={`mt-5 w-full sm:mt-6 ${showComingSoon || blockedByActiveMembership ? "cursor-not-allowed opacity-60" : isAccount ? "" : "sm:mt-8"}`}
             size={isAccount ? "sm" : "lg"}
             data-testid={
-              canCheckout && enableCheckout && !useTestAccessFlow
-                ? "membership-stripe-checkout-button"
-                : undefined
+              canCheckout && enableCheckout ? "membership-stripe-checkout-button" : undefined
             }
             disabled={
               showComingSoon || blockedByActiveMembership
@@ -380,7 +359,7 @@ function PlanCard({
             }}
           >
             {isLoading
-              ? enableCheckout && !useTestAccessFlow
+              ? enableCheckout
                 ? openingCheckoutLabel
                 : redirectingLabel
               : showComingSoon
@@ -397,15 +376,6 @@ function PlanCard({
                         ? checkoutCtaLabel
                         : planConfigError ?? checkoutUnavailableLabel}
           </Button>
-          {canOpenAccessCode ? (
-            <button
-              type="button"
-              onClick={() => onOpenAccessCode!(plan)}
-              className="mt-3 w-full text-center text-sm text-muted underline-offset-2 hover:text-foreground hover:underline"
-            >
-              {accessCodeLinkLabel}
-            </button>
-          ) : null}
         </>
       )}
     </article>
@@ -444,15 +414,12 @@ export function MembershipPlans({
   enableCheckout = false,
   planCheckoutErrors,
   checkoutReturnTo,
-  useTestAccessFlow = false,
   payWithStripeLabel,
   activateMembershipLabel,
   promotionDisplayMode = "none",
   promotionBadgeLabel,
   promotionDiscountHeadline,
   promotionCheckoutNote,
-  onOpenAccessCode,
-  accessCodeLinkLabel,
   activePlanEndDate,
   activePlanEndDateLabel,
   cancelPlanLabel,
@@ -504,18 +471,6 @@ export function MembershipPlans({
     if (!isMembershipPlanPurchasable(selectedPlanId)) return;
     setCheckoutErrors((prev) => clearPlanCheckoutError(prev, selectedPlanId));
     setCheckoutLoadingPlanId(selectedPlanId);
-
-    if (useTestAccessFlow) {
-      const params = new URLSearchParams({
-        planId: selectedPlanId,
-        role: effectiveCheckoutRole === "pet_parent" ? "parent" : "friend",
-      });
-      if (checkoutReturnTo) {
-        params.set("returnTo", checkoutReturnTo);
-      }
-      window.location.href = `/test-access-code?${params.toString()}`;
-      return;
-    }
 
     try {
       const res = await fetch("/api/stripe/create-checkout-session", {
@@ -588,21 +543,18 @@ export function MembershipPlans({
           activeMembershipExistsLabel={t.pricing.activeMembershipExists}
           popularBadge={t.pricing.mostPopular}
           enableCheckout={enableCheckout}
-          useTestAccessFlow={useTestAccessFlow}
           checkoutUserId={checkoutUserId}
           checkoutRole={effectiveCheckoutRole}
           checkoutLoadingPlanId={checkoutLoadingPlanId}
           checkoutError={checkoutRuntimeErrorForPlan(checkoutErrors, plan.id)}
           planConfigError={planConfigErrorForPlan(planCheckoutErrors, plan.id)}
-          onChoosePlan={enableCheckout || useTestAccessFlow ? handleChoosePlan : undefined}
+          onChoosePlan={enableCheckout ? handleChoosePlan : undefined}
           payWithStripeLabel={payWithStripeLabel}
           activateMembershipLabel={activateMembershipLabel}
           promotionDisplayMode={promotionDisplayMode}
           promotionBadgeLabel={promotionBadgeLabel}
           promotionDiscountHeadline={promotionDiscountHeadline}
           promotionCheckoutNote={promotionCheckoutNote}
-          onOpenAccessCode={onOpenAccessCode}
-          accessCodeLinkLabel={accessCodeLinkLabel}
           activePlanEndDate={activePlanEndDate}
           activePlanEndDateLabel={activePlanEndDateLabel}
           cancelPlanLabel={cancelPlanLabel}

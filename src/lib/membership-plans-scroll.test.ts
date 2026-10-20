@@ -124,16 +124,14 @@ describe("MembershipWelcomeOfferHero activate membership", () => {
     expect(heroSource).not.toContain("font-mono text-base");
   });
 
-  it("wires account membership page with launch offer before access code and plans anchor", () => {
+  it("wires account membership page with launch offer before plans anchor", () => {
     expect(pageSource).toContain("MembershipWelcomeOfferHero");
-    expect(pageSource).toContain("InvitedTestUserSection");
+    expect(pageSource).not.toContain("InvitedTestUserSection");
     expect(pageSource).toContain("MEMBERSHIP_PLANS_SECTION_ID");
     expect(pageSource).not.toContain('variant="strip"');
     const launchOfferIndex = pageSource.indexOf('data-membership-section="launch-offer"');
-    const accessCodeIndex = pageSource.indexOf('data-membership-section="access-code"');
     const plansIndex = pageSource.indexOf('data-membership-section="membership-plans"');
-    expect(launchOfferIndex).toBeLessThan(accessCodeIndex);
-    expect(accessCodeIndex).toBeLessThan(plansIndex);
+    expect(launchOfferIndex).toBeLessThan(plansIndex);
     expect(plansSource).toContain('data-membership-plan-focus');
     expect(plansSource).toContain('data-membership-plan-popular');
     expect(plansSource).toContain("sectionId");
