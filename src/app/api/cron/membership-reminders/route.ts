@@ -1,21 +1,21 @@
 import { membershipEmailContext } from "@/lib/membership-emails";
 import { sendTransactionalEmail } from "@/lib/email-send";
 import type { UserMembership } from "@/lib/membership";
-import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
+import { createCronHandlers } from "@/lib/cron-handler";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 /**
+ * GET+POST /api/cron/membership-reminders
  * Scheduled job: send 7-day expiry and 2-day auto-renewal reminders.
  *
- * Vercel Cron (see vercel.json): daily at 09:00 UTC — POST /api/cron/membership-reminders
+ * Vercel Cron (see vercel.json): daily at 09:00 UTC. Cron issues HTTP GET.
  * Auth: Authorization: Bearer CRON_SECRET (Vercel) or x-email-internal-secret / x-cron-secret
  */
-export async function POST(request: Request) {
-  if (!isInternalSecretAuthorized(request, { allowEmailInternalHeader: true })) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function run(_request: Request) {
   const admin = createAdminClient();
   if (!admin) {
     return NextResponse.json({ error: "Admin client not configured" }, { status: 503 });
@@ -94,3 +94,5 @@ export async function POST(request: Request) {
     renewal_target_date: renewalDay,
   });
 }
+
+export const { GET, POST } = createCronHandlers(run, { allowEmailInternalHeader: true });

@@ -1,12 +1,12 @@
 import { processDueScheduledCampaigns } from "@/lib/email-campaigns/scheduled-send";
-import { isInternalSecretAuthorized } from "@/lib/security/internal-secret-auth";
-import { NextResponse } from "next/server";
+import { createCronHandlers } from "@/lib/cron-handler";
 
-export async function POST(request: Request) {
-  if (!isInternalSecretAuthorized(request, { allowEmailInternalHeader: true })) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
+async function run(_request: Request) {
   const result = await processDueScheduledCampaigns();
-  return NextResponse.json({ ok: true, ...result });
+  return Response.json({ ok: true, ...result });
 }
+
+export const { GET, POST } = createCronHandlers(run, { allowEmailInternalHeader: true });

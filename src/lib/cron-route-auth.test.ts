@@ -5,7 +5,17 @@ vi.mock("@/lib/booking-review-emails", () => ({
 }));
 
 vi.mock("@/lib/email-send", () => ({
-  processDueScheduledEmails: vi.fn(async () => ({ processed: 0 })),
+  processDueScheduledEmails: vi.fn(async () => ({ processed: 0, sent: 0, skipped: 0 })),
+  sendTransactionalEmail: vi.fn(async () => ({ sent: false, skipped: true })),
+}));
+
+vi.mock("@/lib/email-campaigns/scheduled-send", () => ({
+  processDueScheduledCampaigns: vi.fn(async () => ({
+    claimed: 0,
+    continued: 0,
+    finished: 0,
+    skipped: 0,
+  })),
 }));
 
 vi.mock("@/lib/matchmaking/run-weekly", () => ({
@@ -21,10 +31,35 @@ vi.mock("@/lib/matchmaking/run-weekly", () => ({
   })),
 }));
 
-import { POST as bookingReviewPost } from "@/app/api/cron/booking-review-emails/route";
-import { POST as scheduledEmailsPost } from "@/app/api/cron/process-scheduled-emails/route";
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => null,
+}));
+
+import {
+  GET as bookingReviewGet,
+  POST as bookingReviewPost,
+} from "@/app/api/cron/booking-review-emails/route";
+import {
+  GET as scheduledEmailsGet,
+  POST as scheduledEmailsPost,
+} from "@/app/api/cron/process-scheduled-emails/route";
+import {
+  GET as scheduledCampaignsGet,
+  POST as scheduledCampaignsPost,
+} from "@/app/api/cron/process-scheduled-campaigns/route";
+import {
+  GET as membershipRemindersGet,
+  POST as membershipRemindersPost,
+} from "@/app/api/cron/membership-reminders/route";
 import { POST as emailSendPost } from "@/app/api/emails/send/route";
-import { POST as weeklyMatchPost } from "@/app/api/cron/weekly-matchmaking/route";
+import {
+  GET as weeklyMatchGet,
+  POST as weeklyMatchPost,
+} from "@/app/api/cron/weekly-matchmaking/route";
+import { processDueScheduledEmails } from "@/lib/email-send";
+import { processPendingBookingReviewEmails } from "@/lib/booking-review-emails";
+import { processDueScheduledCampaigns } from "@/lib/email-campaigns/scheduled-send";
+import { runWeeklyMatchmaking } from "@/lib/matchmaking/run-weekly";
 
 describe("cron/internal route authorization", () => {
   const envBackup = { ...process.env };
@@ -33,6 +68,10 @@ describe("cron/internal route authorization", () => {
     process.env = { ...envBackup };
     delete process.env.CRON_SECRET;
     delete process.env.EMAIL_INTERNAL_SECRET;
+    vi.mocked(processDueScheduledEmails).mockClear();
+    vi.mocked(processPendingBookingReviewEmails).mockClear();
+    vi.mocked(processDueScheduledCampaigns).mockClear();
+    vi.mocked(runWeeklyMatchmaking).mockClear();
   });
 
   afterEach(() => {
@@ -87,5 +126,87 @@ describe("cron/internal route authorization", () => {
       new Request("https://example.com/api/cron/weekly-matchmaking", { method: "POST" }),
     );
     expect(response.status).toBe(401);
+  });
+
+  it("accepts authenticated cron GET and runs the same processor as POST", async () => {
+    process.env.CRON_SECRET = "cron-secret";
+    const getResponse = await scheduledEmailsGet(
+      new Request("https://example.com/api/cron/process-scheduled-emails", {
+        method: "GET",
+        headers: { authorization: "Bearer cron-secret" },
+      }),
+    );
+    const postResponse = await scheduledEmailsPost(
+      new Request("https://example.com/api/cron/process-scheduled-emails", {
+        method: "POST",
+        headers: { authorization: "Bearer cron-secret" },
+      }),
+    );
+    expect(getResponse.status).toBe(200);
+    expect(postResponse.status).toBe(200);
+    expect(processDueScheduledEmails).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects unauthorized cron GET", async () => {
+    process.env.CRON_SECRET = "cron-secret";
+    const missing = await scheduledEmailsGet(
+      new Request("https://example.com/api/cron/process-scheduled-emails", { method: "GET" }),
+    );
+    const wrong = await scheduledEmailsGet(
+      new Request("https://example.com/api/cron/process-scheduled-emails", {
+        method: "GET",
+        headers: { authorization: "Bearer wrong-secret" },
+      }),
+    );
+    expect(missing.status).toBe(401);
+    expect(wrong.status).toBe(401);
+    expect(processDueScheduledEmails).not.toHaveBeenCalled();
+  });
+
+  it("exposes authenticated GET on the other cron routes", async () => {
+    process.env.CRON_SECRET = "cron-secret";
+    const headers = { authorization: "Bearer cron-secret" };
+
+    expect(
+      (
+        await bookingReviewGet(
+          new Request("https://example.com/api/cron/booking-review-emails", { method: "GET", headers }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await weeklyMatchGet(
+          new Request("https://example.com/api/cron/weekly-matchmaking", { method: "GET", headers }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await scheduledCampaignsGet(
+          new Request("https://example.com/api/cron/process-scheduled-campaigns", { method: "GET", headers }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await scheduledCampaignsPost(
+          new Request("https://example.com/api/cron/process-scheduled-campaigns", { method: "POST", headers }),
+        )
+      ).status,
+    ).toBe(200);
+
+    const membershipGet = await membershipRemindersGet(
+      new Request("https://example.com/api/cron/membership-reminders", { method: "GET", headers }),
+    );
+    const membershipPost = await membershipRemindersPost(
+      new Request("https://example.com/api/cron/membership-reminders", { method: "POST", headers }),
+    );
+    expect(membershipGet.status).toBe(503);
+    expect(membershipPost.status).toBe(503);
+
+    expect(processPendingBookingReviewEmails).toHaveBeenCalledTimes(1);
+    expect(runWeeklyMatchmaking).toHaveBeenCalledTimes(1);
+    expect(processDueScheduledCampaigns).toHaveBeenCalledTimes(2);
   });
 });

@@ -8,6 +8,11 @@ import {
   type EmailTemplateContext,
 } from "@/lib/emails";
 import { resolveEmailLocale } from "@/lib/email-templates/locale";
+import {
+  evaluateBookingReminderSend,
+  isBookingStartsTomorrowEvent,
+  type BookingReminderSnapshot,
+} from "@/lib/booking-reminder-eligibility";
 import { hydrateScheduledEmailContext } from "@/lib/email-scheduled-context";
 import { readSmtpConfig, transactionalEmailFrom } from "@/lib/smtp-config";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -30,7 +35,15 @@ export type SendTransactionalEmailResult = {
   sent: boolean;
   skipped: boolean;
   scheduled?: boolean;
-  reason?: "duplicate" | "no_email" | "no_api_key" | "no_admin" | "send_failed" | "scheduled" | "review_submitted";
+  reason?:
+    | "duplicate"
+    | "no_email"
+    | "no_api_key"
+    | "no_admin"
+    | "send_failed"
+    | "scheduled"
+    | "review_submitted"
+    | "stale_booking";
 };
 
 type EmailEventLogMeta = {
@@ -224,6 +237,108 @@ async function markEmailEventSent(uniqueKey: string): Promise<void> {
   }
 }
 
+async function claimScheduledEmail(uniqueKey: string): Promise<boolean> {
+  const admin = createAdminClient();
+  if (!admin) return false;
+
+  const { data, error } = await admin
+    .from("email_events")
+    .update({ sent_at: new Date().toISOString() })
+    .eq("unique_key", uniqueKey)
+    .is("sent_at", null)
+    .select("id");
+
+  if (error) {
+    if (!isMissingRelationError(error)) {
+      console.error("[email] claim scheduled failed", error.message);
+    }
+    return false;
+  }
+
+  return Array.isArray(data) && data.length > 0;
+}
+
+async function unclaimScheduledEmail(uniqueKey: string): Promise<void> {
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  const { error } = await admin
+    .from("email_events")
+    .update({ sent_at: null })
+    .eq("unique_key", uniqueKey);
+
+  if (error && !isMissingRelationError(error)) {
+    console.error("[email] unclaim scheduled failed", error.message);
+  }
+}
+
+async function loadBookingReminderSnapshot(
+  bookingId: string | null | undefined,
+  requestId: string | null | undefined,
+): Promise<BookingReminderSnapshot | null> {
+  const admin = createAdminClient();
+  if (!admin) return null;
+
+  let id = bookingId?.trim() || null;
+  if (!id && requestId?.trim()) {
+    const { data: byRequest } = await admin
+      .from("bookings")
+      .select("id")
+      .eq("request_id", requestId.trim())
+      .maybeSingle();
+    id = (byRequest?.id as string | undefined) ?? null;
+  }
+  if (!id) return null;
+
+  const { data, error } = await admin
+    .from("bookings")
+    .select("id, status, start_date, cancelled_at, pet_parent_id, pet_friend_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as BookingReminderSnapshot;
+}
+
+async function skipBookingStartsTomorrowIfIneligible(
+  input: SendTransactionalEmailInput,
+  uniqueKey: string,
+  logMeta: EmailEventLogMeta,
+): Promise<SendTransactionalEmailResult | null> {
+  if (!isBookingStartsTomorrowEvent(input.eventType)) return null;
+
+  const booking = await loadBookingReminderSnapshot(input.bookingId, input.requestId);
+  const decision = evaluateBookingReminderSend({
+    eventType: input.eventType,
+    userId: input.userId,
+    booking,
+  });
+  if (decision.send) return null;
+
+  console.info("[email] skip booking reminder", {
+    eventType: input.eventType,
+    uniqueKey,
+    bookingId: input.bookingId ?? null,
+    reason: decision.reason,
+  });
+
+  if (await hasEmailEvent(uniqueKey)) {
+    await markEmailEventSent(uniqueKey);
+  } else {
+    await recordEmailEvent({
+      userId: input.userId,
+      eventType: input.eventType,
+      uniqueKey,
+      requestId: input.requestId,
+      bookingId: input.bookingId,
+    });
+  }
+
+  const result = { sent: false, skipped: true, reason: "stale_booking" as const };
+  logEmailEventSendResult(input.eventType, logMeta, result);
+  return result;
+}
+
 export async function scheduleTransactionalEmail(
   input: SendTransactionalEmailInput,
 ): Promise<SendTransactionalEmailResult> {
@@ -328,6 +443,9 @@ export async function sendTransactionalEmail(
   const reviewSkip = await skipReviewReminderIfSubmitted(input, uniqueKey, logMeta);
   if (reviewSkip) return reviewSkip;
 
+  const bookingSkip = await skipBookingStartsTomorrowIfIneligible(input, uniqueKey, logMeta);
+  if (bookingSkip) return bookingSkip;
+
   if (await hasEmailEvent(uniqueKey)) {
     const admin = createAdminClient();
     if (admin) {
@@ -419,6 +537,9 @@ async function sendScheduledRow(
   const reviewSkip = await skipReviewReminderIfSubmitted(input, uniqueKey, logMeta);
   if (reviewSkip) return reviewSkip;
 
+  const bookingSkip = await skipBookingStartsTomorrowIfIneligible(input, uniqueKey, logMeta);
+  if (bookingSkip) return bookingSkip;
+
   const to = await resolveRecipientEmail(input.userId);
   logEmailEventRecipient(input.eventType, { ...logMeta, email: to });
   if (!to) {
@@ -437,6 +558,13 @@ async function sendScheduledRow(
     return result;
   }
 
+  const claimed = await claimScheduledEmail(uniqueKey);
+  if (!claimed) {
+    const result = { sent: false, skipped: true, reason: "duplicate" as const };
+    logEmailEventSendResult(input.eventType, logMeta, result);
+    return result;
+  }
+
   const sent = await sendViaSmtp({
     to,
     subject: template.subject,
@@ -447,12 +575,12 @@ async function sendScheduledRow(
   });
 
   if (!sent) {
+    await unclaimScheduledEmail(uniqueKey);
     const result = { sent: false, skipped: false, reason: "send_failed" as const };
     logEmailEventSendResult(input.eventType, logMeta, result);
     return result;
   }
 
-  await markEmailEventSent(uniqueKey);
   const successResult = { sent: true, skipped: false };
   logEmailEventSendResult(input.eventType, logMeta, successResult);
   return successResult;
@@ -488,11 +616,39 @@ export async function fetchDueScheduledEmails(limit = 50): Promise<DueScheduledE
   return (data ?? []) as DueScheduledEmailRow[];
 }
 
-export async function processDueScheduledEmails(): Promise<{ processed: number; sent: number }> {
+export async function processDueScheduledEmails(): Promise<{
+  processed: number;
+  sent: number;
+  skipped: number;
+}> {
   const due = await fetchDueScheduledEmails();
   let sent = 0;
+  let skipped = 0;
 
   for (const row of due) {
+    if (isBookingStartsTomorrowEvent(row.event_type)) {
+      const booking = await loadBookingReminderSnapshot(
+        row.related_booking_id,
+        row.related_request_id,
+      );
+      const decision = evaluateBookingReminderSend({
+        eventType: row.event_type,
+        userId: row.user_id,
+        booking,
+      });
+      if (!decision.send) {
+        console.info("[email] skip booking reminder", {
+          eventType: row.event_type,
+          uniqueKey: row.unique_key,
+          bookingId: row.related_booking_id,
+          reason: decision.reason,
+        });
+        await markEmailEventSent(row.unique_key);
+        skipped += 1;
+        continue;
+      }
+    }
+
     const context = (await hydrateScheduledEmailContext(row)) ?? undefined;
     const result = await sendTransactionalEmail({
       eventType: row.event_type,
@@ -503,9 +659,10 @@ export async function processDueScheduledEmails(): Promise<{ processed: number; 
       context,
     });
     if (result.sent) sent += 1;
+    else if (result.skipped) skipped += 1;
   }
 
-  return { processed: due.length, sent };
+  return { processed: due.length, sent, skipped };
 }
 
 /** Fire-and-forget wrapper for mutation paths — never throws to callers. */

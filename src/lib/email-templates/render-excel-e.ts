@@ -90,7 +90,14 @@ function replacePlaceholders(text: string, vars: EmailTemplateVars, ctx: EmailTe
 
 function ctaHrefForLabel(label: string, vars: EmailTemplateVars): string {
   const lower = label.toLowerCase();
-  if (lower.includes("sõnum") || lower.includes("message")) return vars.messageLinkWithConversation;
+  if (
+    lower.includes("sõnum") ||
+    lower.includes("message") ||
+    lower.includes("vestlus") ||
+    lower.includes("conversation")
+  ) {
+    return vars.messageLinkWithConversation;
+  }
   if (lower.includes("broneering") || lower.includes("booking")) return vars.viewBookingUrl;
   if (lower.includes("taotl") || lower.includes("request")) return vars.viewIncomingRequestUrl;
   if (lower.includes("tagasiside") || lower.includes("review")) return vars.reviewLink;

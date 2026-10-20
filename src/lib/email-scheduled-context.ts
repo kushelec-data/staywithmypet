@@ -85,6 +85,12 @@ export async function hydrateScheduledEmailContext(
     .eq("id", otherId)
     .maybeSingle();
 
+  const { data: conversation } = await admin
+    .from("conversations")
+    .select("id")
+    .eq("request_id", booking.request_id)
+    .maybeSingle();
+
   return {
     recipientName: profileDisplayName(profile as { display_name: string } | null) ?? undefined,
     recipientRole: role,
@@ -95,6 +101,7 @@ export async function hydrateScheduledEmailContext(
     dateTo: (request?.date_to as string | null) ?? booking.end_date,
     requestedDates: (request?.requested_dates as string[] | null) ?? null,
     bookingId: booking.id,
+    conversationId: (conversation?.id as string | undefined) ?? undefined,
     otherPartyName:
       profileDisplayName(otherProfile as { display_name: string } | null) ?? "Member",
   };

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { bookingStartsTomorrowAt } from "@/lib/booking-reminder-eligibility";
 import { sendBookingEmailAsync } from "@/lib/emails/send-booking";
 import { queueEmailEvent } from "@/lib/email-send";
 import { messageEmailDedupeKey } from "@/lib/message-notification-email";
@@ -355,18 +356,6 @@ export async function triggerRequestCancelledEmails(requestId: string): Promise<
       requestId: row.id,
     }),
   ]);
-}
-
-function bookingStartsTomorrowAt(startDate: string): Date | null {
-  const parts = startDate.slice(0, 10).split("-").map(Number);
-  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
-  const [year, month, day] = parts;
-  const start = new Date(Date.UTC(year, month - 1, day));
-  const reminder = new Date(start);
-  reminder.setUTCDate(reminder.getUTCDate() - 1);
-  reminder.setUTCHours(9, 0, 0, 0);
-  if (reminder.getTime() <= Date.now()) return null;
-  return reminder;
 }
 
 async function scheduleBookingStartsTomorrowEmail(
