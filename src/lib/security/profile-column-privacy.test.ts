@@ -113,6 +113,18 @@ describe("application reads use allowlisted profile interfaces", () => {
     expect(readSource("src/lib/profile-relations.ts")).toContain(MY_PROFILE_VIEW);
   });
 
+  it("owner profile save updates the session row instead of upserting private columns", () => {
+    const source = readSource("src/lib/profile-load.ts");
+    expect(source).not.toMatch(/\.upsert\(/);
+    expect(source).toContain("saveOwnProfileRowAndReload");
+    expect(source).toContain(".update(payload)");
+    expect(source).toContain('.eq("id", sessionUserId)');
+    expect(source).toContain('from("profiles").insert(stub)');
+    expect(source).toContain("PROFILE_PUBLIC_CREATE_COLUMNS");
+    expect(readSource("src/lib/profile-setup.ts")).toContain("saveOwnProfileRowAndReload");
+    expect(readSource("src/lib/profile-setup.ts")).not.toMatch(/from\("profiles"\)\.upsert/);
+  });
+
   it("public profile and Find Care use public_profiles without numeric coordinates", () => {
     const search = readSource("src/lib/search-profiles.ts");
     expect(search).toContain("PUBLIC_PROFILES_VIEW");

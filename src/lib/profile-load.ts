@@ -1,4 +1,4 @@
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient, User } from "@supabase/supabase-js";
 import {
   DEMO_MEMBERSHIP_LABEL,
   emptyMembershipsByRole,
@@ -6,10 +6,12 @@ import {
 import { NO_WELCOME_OFFER_ELIGIBLE, resolveMembershipSnapshot } from "@/lib/membership-load";
 import { isAvatarUrlOwnedByUser } from "@/lib/profile-avatar-display";
 import { parseProfileDetails } from "@/lib/profile-details";
+import { resolveProfileDisplayName } from "@/lib/profile-display-name";
 import { resolveActiveMode } from "@/lib/profile-mode";
 import type { ProfileRole } from "@/lib/profile-setup";
 import { applyMembershipsToProfile, type ProfileRow } from "@/lib/profile-utils";
 import { appDevSpan } from "@/lib/app-dev-perf";
+import { AuthRequiredError, ForbiddenError } from "@/lib/security/assert-owner";
 import { toFriendlyClientMessage } from "@/lib/security/errors";
 import {
   probeOwnProfileSelect,
@@ -24,6 +26,8 @@ export const PROFILE_SELECT =
 /** Optional trust/phone columns (RUN_THIS_trust_phase1.sql only — not in all databases). */
 const PROFILE_SELECT_TRUST =
   "phone_country_code, phone_number, phone_e164, phone_verified, emergency_contact_name, emergency_contact_phone_country_code, emergency_contact_phone_number, emergency_contact_phone_e164, trust_score, preferred_vet_clinic_name, preferred_vet_veterinarian_name, preferred_vet_phone, preferred_vet_emergency_phone, preferred_vet_email, preferred_vet_address, preferred_vet_city, preferred_vet_postal_code, preferred_vet_opening_hours, preferred_vet_notes, share_preferred_vet_during_booking";
+
+export const PROFILE_SELECT_WITH_TRUST = `${PROFILE_SELECT}, ${PROFILE_SELECT_TRUST}`;
 
 const PROFILE_SELECT_FALLBACKS = [
   "id, display_name, avatar_url, bio, location, address, latitude, longitude, role, active_mode, role_chosen_at, languages, phone, is_public, rating_avg, rating_count, membership_status, details, created_at",
@@ -230,34 +234,122 @@ function stripProfileWriteColumns(row: Record<string, unknown>): Record<string, 
   return next;
 }
 
-/** Upsert profile row without `.select()` (avoids 400s when optional columns are absent). */
-export async function upsertProfileRowAndReload(
+function withoutProfileId(row: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...row };
+  delete next.id;
+  return next;
+}
+
+function isUniqueViolationError(error: PostgrestError): boolean {
+  return error.code === "23505";
+}
+
+async function requireAuthUser(supabase: SupabaseClient): Promise<User> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user?.id) {
+    throw new AuthRequiredError();
+  }
+
+  return user;
+}
+
+/**
+ * Columns that remain SELECT-granted on public.profiles after column-privacy.
+ * INSERT of these is safe; private-column UPSERT is not.
+ */
+export const PROFILE_PUBLIC_CREATE_COLUMNS = ["id", "display_name", "avatar_url"] as const;
+
+function publicProfileCreateRow(user: User, row: Record<string, unknown>): Record<string, unknown> {
+  const displayName =
+    typeof row.display_name === "string" && row.display_name.trim()
+      ? row.display_name.trim()
+      : resolveProfileDisplayName(user, null);
+  const avatarFromPayload =
+    typeof row.avatar_url === "string" && row.avatar_url.trim() ? row.avatar_url.trim() : null;
+  const avatarFromMeta =
+    typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : null;
+
+  return {
+    id: user.id,
+    display_name: displayName,
+    avatar_url: avatarFromPayload ?? avatarFromMeta,
+  };
+}
+
+async function insertOwnPublicProfileRow(
+  supabase: SupabaseClient,
+  user: User,
+  row: Record<string, unknown>,
+): Promise<void> {
+  const stub = publicProfileCreateRow(user, row);
+  const { error } = await supabase.from("profiles").insert(stub);
+  if (!error) return;
+  if (isUniqueViolationError(error)) return;
+  console.error("[profile] public profile create error", supabaseErrorDetail(error));
+  throw new Error(formatSupabaseError(error));
+}
+
+async function updateOwnProfileRow(
+  supabase: SupabaseClient,
+  sessionUserId: string,
+  payload: Record<string, unknown>,
+): Promise<{ updated: boolean; error: PostgrestError | null }> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(payload)
+    .eq("id", sessionUserId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { updated: false, error };
+  if (data?.id && data.id !== sessionUserId) {
+    throw new Error("Profile session mismatch");
+  }
+  return { updated: Boolean(data?.id), error: null };
+}
+
+/**
+ * Owner-scoped profile save. Uses UPDATE (not UPSERT) so private columns remain
+ * writable after the column-privacy migration. Creates a missing row with
+ * public columns only, then UPDATEs the rest.
+ */
+export async function saveOwnProfileRowAndReload(
   supabase: SupabaseClient,
   userId: string,
   row: Record<string, unknown>,
   logLabel: string,
 ): Promise<ProfileRow> {
-  let payload = { ...row };
+  const user = await requireAuthUser(supabase);
+  if (userId !== user.id) {
+    throw new ForbiddenError();
+  }
+
+  let payload = withoutProfileId(row);
   let strippedOptional = false;
+  let createdPublicRow = false;
 
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const { updated, error } = await updateOwnProfileRow(supabase, user.id, payload);
 
-    if (!error) {
-      const reloaded = await fetchUserProfile(supabase, userId);
+    if (!error && updated) {
+      const reloaded = await fetchUserProfile(supabase, user.id);
       if (!reloaded) {
         throw new Error("Profile saved but could not be loaded.");
       }
       return reloaded;
     }
 
-    if (isMissingColumnError(error) && !strippedOptional) {
+    if (error && isMissingColumnError(error) && !strippedOptional) {
       payload = stripProfileWriteColumns(payload);
       strippedOptional = true;
       continue;
     }
 
-    if (isMissingColumnError(error)) {
+    if (error && isMissingColumnError(error)) {
       const next = { ...payload };
       const match = error.message.match(/'([^']+)'/);
       const missing = match?.[1];
@@ -268,12 +360,25 @@ export async function upsertProfileRowAndReload(
       }
     }
 
-    console.error(`[profile] ${logLabel} error`, supabaseErrorDetail(error));
-    throw new Error(formatSupabaseError(error));
+    if (error) {
+      console.error(`[profile] ${logLabel} error`, supabaseErrorDetail(error));
+      throw new Error(formatSupabaseError(error));
+    }
+
+    if (!createdPublicRow) {
+      await insertOwnPublicProfileRow(supabase, user, payload);
+      createdPublicRow = true;
+      continue;
+    }
+
+    throw new Error("Profile could not be saved.");
   }
 
   throw new Error("Profile could not be saved.");
 }
+
+/** @deprecated Use saveOwnProfileRowAndReload — kept for existing setup/edit callers. */
+export const upsertProfileRowAndReload = saveOwnProfileRowAndReload;
 
 export async function fetchUserProfile(
   supabase: SupabaseClient,

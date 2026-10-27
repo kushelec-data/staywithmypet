@@ -15,7 +15,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import {
   fetchUserProfile,
   formatSupabaseError,
-  upsertProfileRowAndReload,
+  saveOwnProfileRowAndReload,
 } from "@/lib/profile-load";
 import {
   probeOwnProfileSelect,
@@ -432,7 +432,7 @@ export async function saveUserProfile(
 
   console.log("[profile] save payload", { ...row, details: "[merged]" });
 
-  const saved = await upsertProfileRowAndReload(supabase, userId, row, "save");
+  const saved = await saveOwnProfileRowAndReload(supabase, userId, row, "save");
   await applyMarketplaceVisibility(supabase, userId);
   return saved;
 }
@@ -650,7 +650,7 @@ async function persistProfilePartial(
   logLabel: string,
 ): Promise<ProfileRow> {
   console.log(`[profile] ${logLabel} payload`, { ...row, details: row.details ? "[merged]" : undefined });
-  const saved = await upsertProfileRowAndReload(supabase, userId, row, logLabel);
+  const saved = await saveOwnProfileRowAndReload(supabase, userId, row, logLabel);
   await applyMarketplaceVisibility(supabase, userId);
   return saved;
 }
