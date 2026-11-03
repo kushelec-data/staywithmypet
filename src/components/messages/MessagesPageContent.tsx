@@ -15,6 +15,7 @@ import {
   formatMessagingError,
   conversationSummariesShareThread,
   markConversationFullyRead,
+  resolveSelectedConversationId,
   sortConversationSummaries,
   subscribeToInboxIncomingMessages,
   type ConversationSummary,
@@ -24,16 +25,6 @@ import { createClient } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-function pickConversationId(
-  rows: ConversationSummary[],
-  preferredId: string | null,
-  currentId: string | null,
-): string | null {
-  if (preferredId && rows.some((r) => r.id === preferredId)) return preferredId;
-  if (currentId && rows.some((r) => r.id === currentId)) return currentId;
-  return rows[0]?.id ?? null;
-}
 
 export function MessagesPageContent() {
   const router = useRouter();
@@ -72,7 +63,7 @@ export function MessagesPageContent() {
         listLoadedRef.current = true;
         setConversations(rows);
 
-        const nextId = pickConversationId(rows, preferredId, selectedIdRef.current);
+        const nextId = resolveSelectedConversationId(rows, preferredId, selectedIdRef.current);
         setSelectedId(nextId);
 
         if (nextId && urlSyncedRef.current !== nextId) {

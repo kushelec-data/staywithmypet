@@ -140,6 +140,14 @@ function conversationIdsFor(summary: Pick<ConversationSummary, "id" | "conversat
   return [...new Set(ids)];
 }
 
+export function conversationSummaryIncludesId(
+  conversation: Pick<ConversationSummary, "id" | "conversationIds">,
+  conversationId: string | null | undefined,
+): boolean {
+  if (!conversationId) return false;
+  return conversationIdsFor(conversation).includes(conversationId);
+}
+
 /** True when two inbox rows represent the same merged thread. */
 export function conversationSummariesShareThread(
   a: Pick<ConversationSummary, "id" | "conversationIds">,
@@ -147,6 +155,23 @@ export function conversationSummariesShareThread(
 ): boolean {
   const aIds = new Set(conversationIdsFor(a));
   return conversationIdsFor(b).some((id) => aIds.has(id));
+}
+
+/** Resolve which inbox row an email/notification deep link should open. */
+export function resolveSelectedConversationId(
+  rows: Pick<ConversationSummary, "id" | "conversationIds">[],
+  preferredId: string | null,
+  currentId: string | null,
+): string | null {
+  if (preferredId) {
+    const match = rows.find((row) => conversationSummaryIncludesId(row, preferredId));
+    if (match) return match.id;
+  }
+  if (currentId) {
+    const match = rows.find((row) => conversationSummaryIncludesId(row, currentId));
+    if (match) return match.id;
+  }
+  return rows[0]?.id ?? null;
 }
 
 export function notifyConversationRead(
@@ -698,7 +723,33 @@ async function fetchRequestForConversation(
   return null;
 }
 
-const REQUEST_CONVERSATION_STATUSES: RequestStatus[] = ["pending", "accepted", "completed"];
+/** Statuses that may create a new conversation row. */
+const REQUEST_CONVERSATION_CREATE_STATUSES: RequestStatus[] = [
+  "pending",
+  "accepted",
+  "completed",
+];
+
+/**
+ * Statuses whose existing conversation history remains visible in the inbox.
+ * Declined/cancelled threads are readable so notification emails can open the
+ * saved messages; sending stays blocked separately.
+ */
+const REQUEST_INBOX_VISIBLE_STATUSES: RequestStatus[] = [
+  "pending",
+  "accepted",
+  "completed",
+  "declined",
+  "cancelled",
+];
+
+export function canCreateConversationForRequestStatus(status: RequestStatus): boolean {
+  return REQUEST_CONVERSATION_CREATE_STATUSES.includes(status);
+}
+
+export function isInboxVisibleRequestStatus(status: RequestStatus): boolean {
+  return REQUEST_INBOX_VISIBLE_STATUSES.includes(status);
+}
 
 /** Create or return conversation for a request that allows messaging (RPC + client upsert fallback). */
 export async function ensureConversationForRequest(
@@ -707,7 +758,7 @@ export async function ensureConversationForRequest(
 ): Promise<string | null> {
   const request = await fetchRequestForConversation(supabase, requestId);
   if (!request) return null;
-  if (!REQUEST_CONVERSATION_STATUSES.includes(request.status)) return null;
+  if (!canCreateConversationForRequestStatus(request.status)) return null;
 
   const { data: rpcData, error: rpcError } = await supabase.rpc(
     "ensure_conversation_for_request",
@@ -833,7 +884,7 @@ export async function syncAcceptedRequestConversations(
   const { data: requests, error } = await supabase
     .from("requests")
     .select("id")
-    .in("status", REQUEST_CONVERSATION_STATUSES)
+    .in("status", REQUEST_CONVERSATION_CREATE_STATUSES)
     .or(`pet_parent_id.eq.${userId},pet_friend_id.eq.${userId}`);
 
   if (error) {
@@ -935,7 +986,7 @@ export async function fetchConversations(
   const eligibleConversations = convRows.filter((c) => {
     const req = requestsById.get(c.request_id);
     if (!req) return false;
-    if (!REQUEST_CONVERSATION_STATUSES.includes(req.status)) return false;
+    if (!isInboxVisibleRequestStatus(req.status)) return false;
     return req.pet_parent_id === userId || req.pet_friend_id === userId;
   });
 
