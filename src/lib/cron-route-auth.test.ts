@@ -35,6 +35,23 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => null,
 }));
 
+vi.mock("@/lib/profile-completion-reminders/process", () => ({
+  processProfileCompletionReminders: vi.fn(async () => ({
+    ok: true,
+    dryRun: true,
+    processed: 0,
+    sent: 0,
+    skipped: 0,
+    failed: 0,
+    failedBeforeAcceptance: 0,
+    outcomeUnknown: 0,
+    stoppedComplete: 0,
+    capped: 0,
+    unknownRole: 0,
+    preview: [],
+  })),
+}));
+
 import {
   GET as bookingReviewGet,
   POST as bookingReviewPost,
@@ -56,9 +73,14 @@ import {
   GET as weeklyMatchGet,
   POST as weeklyMatchPost,
 } from "@/app/api/cron/weekly-matchmaking/route";
+import {
+  GET as profileRemindersGet,
+  POST as profileRemindersPost,
+} from "@/app/api/cron/profile-completion-reminders/route";
 import { processDueScheduledEmails } from "@/lib/email-send";
 import { processPendingBookingReviewEmails } from "@/lib/booking-review-emails";
 import { processDueScheduledCampaigns } from "@/lib/email-campaigns/scheduled-send";
+import { processProfileCompletionReminders } from "@/lib/profile-completion-reminders/process";
 import { runWeeklyMatchmaking } from "@/lib/matchmaking/run-weekly";
 
 describe("cron/internal route authorization", () => {
@@ -71,6 +93,7 @@ describe("cron/internal route authorization", () => {
     vi.mocked(processDueScheduledEmails).mockClear();
     vi.mocked(processPendingBookingReviewEmails).mockClear();
     vi.mocked(processDueScheduledCampaigns).mockClear();
+    vi.mocked(processProfileCompletionReminders).mockClear();
     vi.mocked(runWeeklyMatchmaking).mockClear();
   });
 
@@ -145,6 +168,7 @@ describe("cron/internal route authorization", () => {
     expect(getResponse.status).toBe(200);
     expect(postResponse.status).toBe(200);
     expect(processDueScheduledEmails).toHaveBeenCalledTimes(2);
+    expect(processDueScheduledCampaigns).not.toHaveBeenCalled();
   });
 
   it("rejects unauthorized cron GET", async () => {
@@ -183,6 +207,26 @@ describe("cron/internal route authorization", () => {
     ).toBe(200);
     expect(
       (
+        await profileRemindersGet(
+          new Request("https://example.com/api/cron/profile-completion-reminders", {
+            method: "GET",
+            headers,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await profileRemindersPost(
+          new Request("https://example.com/api/cron/profile-completion-reminders", {
+            method: "POST",
+            headers,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
         await scheduledCampaignsGet(
           new Request("https://example.com/api/cron/process-scheduled-campaigns", { method: "GET", headers }),
         )
@@ -208,5 +252,6 @@ describe("cron/internal route authorization", () => {
     expect(processPendingBookingReviewEmails).toHaveBeenCalledTimes(1);
     expect(runWeeklyMatchmaking).toHaveBeenCalledTimes(1);
     expect(processDueScheduledCampaigns).toHaveBeenCalledTimes(2);
+    expect(processProfileCompletionReminders).toHaveBeenCalledTimes(2);
   });
 });

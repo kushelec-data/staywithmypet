@@ -13,6 +13,20 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const LOCALE_STORAGE_KEY = "swmp-locale";
+
+function persistBrowserLocale(user: User | null): void {
+  if (!user || typeof window === "undefined") return;
+  const locale = window.localStorage.getItem(LOCALE_STORAGE_KEY) === "et" ? "et" : "en";
+  void fetch("/api/user/locale", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ locale }),
+  }).catch((err) => {
+    console.warn("[locale] failed to persist preference after login", err);
+  });
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,9 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        persistBrowserLocale(session?.user ?? null);
+      }
     });
 
     return () => {

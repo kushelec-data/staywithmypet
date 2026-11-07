@@ -45,7 +45,7 @@ export function ctaButton(label: string, href: string): string {
 export function wrapEmail(
   bodyHtml: string,
   headline: string,
-  options?: { includeFooter?: boolean },
+  options?: { includeFooter?: boolean; preheader?: string },
 ): string {
   const logoUrl = escapeHtml(absoluteUrl("/logo.png"));
   const footer =
@@ -54,11 +54,15 @@ export function wrapEmail(
       : `<p style="margin:24px 0 0;font-size:14px;line-height:1.5;color:#666;">
                 Warm regards,<br />The Stay With My Pet Team
               </p>`;
+  const preheader = options?.preheader?.trim()
+    ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">${escapeHtml(options.preheader.trim())}${"&nbsp;&zwnj;".repeat(40)}</div>`
+    : "";
   return `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f7f5f0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  ${preheader}
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f5f0;padding:32px 16px;">
     <tr>
       <td align="center">
