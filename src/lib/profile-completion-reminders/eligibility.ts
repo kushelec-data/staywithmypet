@@ -4,6 +4,7 @@ import {
   ORGANIC_FIRST_MIN_DAYS,
   ORGANIC_SECOND_MIN_DAYS,
   isExcludedReminderEmail,
+  isReminderPilotSendAllowed,
   reminderUniqueKey,
 } from "./config";
 import type {
@@ -64,6 +65,17 @@ function unresolvedSkipReason(
   return status === "outcome_unknown" ? "outcome_unknown" : "unresolved_delivery";
 }
 
+function sendIfAllowlisted(
+  userId: string,
+  config: ReminderConfig,
+  decision: Extract<ReminderDecision, { action: "send" }>,
+): ReminderDecision {
+  if (!isReminderPilotSendAllowed(userId, config)) {
+    return { action: "skip", reason: "pilot_not_allowlisted" };
+  }
+  return decision;
+}
+
 export function decideReminderAction(input: {
   now: Date;
   config: ReminderConfig;
@@ -105,7 +117,12 @@ export function decideReminderAction(input: {
     if (cohort === "historical" && !config.historicalRolloutApproved) {
       return { action: "skip", reason: "historical_rollout_blocked" };
     }
-    return { action: "send", stage: "first", templateStage: "day_5", cohort };
+    return sendIfAllowlisted(user.userId, config, {
+      action: "send",
+      stage: "first",
+      templateStage: "day_5",
+      cohort,
+    });
   }
 
   const firstSentAtRaw = history.sequence?.firstSentAt ?? history.first?.sentAt;
@@ -117,7 +134,12 @@ export function decideReminderAction(input: {
 
   if (cohort === "organic") {
     if (days < ORGANIC_SECOND_MIN_DAYS) return { action: "skip", reason: "second_not_due" };
-    return { action: "send", stage: "second", templateStage: "day_10", cohort };
+    return sendIfAllowlisted(user.userId, config, {
+      action: "send",
+      stage: "second",
+      templateStage: "day_10",
+      cohort,
+    });
   }
 
   if (!firstSentAt) return { action: "skip", reason: "second_not_due" };
@@ -125,7 +147,12 @@ export function decideReminderAction(input: {
   if (elapsedDays < HISTORICAL_SECOND_DELAY_DAYS) {
     return { action: "skip", reason: "second_not_due" };
   }
-  return { action: "send", stage: "second", templateStage: "day_10", cohort };
+  return sendIfAllowlisted(user.userId, config, {
+    action: "send",
+    stage: "second",
+    templateStage: "day_10",
+    cohort,
+  });
 }
 
 export function uniqueKeyForDecision(userId: string, decision: ReminderDecision): string | null {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { processProfileCompletionReminders, type ReminderProcessorDeps } from "./process";
-import { readProfileReminderConfig } from "./config";
+import { PROFILE_REMINDER_PILOT_USER_IDS, readProfileReminderConfig } from "./config";
 import type { ReminderEventState, ReminderHistory, ReminderUserSnapshot } from "./types";
 import type { ReminderWriteResult } from "./store";
 
@@ -192,6 +192,8 @@ const enabledConfig = {
   organicAfter: daysAgo(10),
   dailyCap: 50,
   excludedEmails: ["info@staywithmypet.ee"],
+  pilotOnly: false,
+  pilotUserIds: [] as string[],
 };
 
 describe("profile completion reminder processor", () => {
@@ -380,7 +382,71 @@ describe("profile completion reminder processor", () => {
     expect(config.dryRun).toBe(true);
     expect(config.historicalRolloutApproved).toBe(false);
     expect(config.day10Approved).toBe(false);
+    expect(config.pilotOnly).toBe(true);
+    expect(config.pilotUserIds).toEqual([]);
     expect(config.excludedEmails).toEqual(["info@staywithmypet.ee"]);
+  });
+
+  it("sends nobody when the pilot is on and the allowlist env is empty", async () => {
+    const deps = makeDeps({
+      users: [
+        parent({
+          userId: PROFILE_REMINDER_PILOT_USER_IDS[0],
+          email: "pilot@example.com",
+          registeredAt: daysAgo(80),
+        }),
+      ],
+    });
+    const result = await processProfileCompletionReminders({
+      now: NOW,
+      config: {
+        ...enabledConfig,
+        day10Approved: false,
+        organicAfter: NOW,
+        pilotOnly: true,
+        pilotUserIds: [],
+      },
+      deps,
+    });
+    expect(result.sent).toBe(0);
+    expect(result.preview).toHaveLength(0);
+    expect(deps.claims).toHaveLength(0);
+  });
+
+  it("sends the first reminder only to the committed pilot allowlist", async () => {
+    const allowedId = PROFILE_REMINDER_PILOT_USER_IDS[0];
+    const blockedId = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff";
+    const deps = makeDeps({
+      users: [
+        parent({
+          userId: allowedId,
+          email: "pilot@example.com",
+          registeredAt: daysAgo(80),
+        }),
+        parent({
+          userId: blockedId,
+          email: "other@example.com",
+          registeredAt: daysAgo(80),
+        }),
+      ],
+    });
+    const result = await processProfileCompletionReminders({
+      now: NOW,
+      config: {
+        ...enabledConfig,
+        day10Approved: false,
+        organicAfter: NOW,
+        pilotOnly: true,
+        pilotUserIds: [allowedId, blockedId],
+      },
+      deps,
+    });
+    expect(result.sent).toBe(1);
+    expect(result.preview).toHaveLength(1);
+    expect(result.preview[0]?.userId).toBe(allowedId);
+    expect(result.preview[0]?.templateStage).toBe("day_5");
+    expect(deps.claims).toEqual([`first:${allowedId}`]);
+    expect(deps.sentKeys).toEqual([`first:${allowedId}`]);
   });
 
   it("does not enqueue the internal info address", async () => {
@@ -435,6 +501,12 @@ describe("profile reminder isolation", () => {
     expect(templates).toContain("PROFILE_REMINDER_CTA_PATH");
     expect(readFileSync(join(process.cwd(), "src/lib/profile-completion-reminders/config.ts"), "utf8")).toContain(
       "/profile/edit",
+    );
+    expect(readFileSync(join(process.cwd(), "src/lib/profile-completion-reminders/process.ts"), "utf8")).toContain(
+      "isReminderPilotSendAllowed",
+    );
+    expect(readFileSync(join(process.cwd(), "src/lib/profile-completion-reminders/eligibility.ts"), "utf8")).toContain(
+      "pilot_not_allowlisted",
     );
   });
 });

@@ -2,7 +2,11 @@ export {
   readProfileReminderConfig,
   parseExcludedReminderEmails,
   isExcludedReminderEmail,
+  parsePilotUserIds,
+  isReminderPilotSendAllowed,
+  resolvePilotSendAllowlist,
   DEFAULT_INTERNAL_REMINDER_EXCLUSIONS,
+  PROFILE_REMINDER_PILOT_USER_IDS,
   PROFILE_REMINDER_FROM,
   PROFILE_REMINDER_CTA_PATH,
 } from "./config";

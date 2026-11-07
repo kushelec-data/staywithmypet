@@ -37,7 +37,8 @@ export type ReminderSkipReason =
   | "no_smtp"
   | "missing_table"
   | "outcome_unknown"
-  | "unresolved_delivery";
+  | "unresolved_delivery"
+  | "pilot_not_allowlisted";
 
 export type ReminderConfig = {
   enabled: boolean;
@@ -47,6 +48,10 @@ export type ReminderConfig = {
   organicAfter: Date | null;
   dailyCap: number;
   excludedEmails: string[];
+  /** When true, only env IDs that also appear on the committed pilot list can be sent. Empty env list sends to nobody. */
+  pilotOnly: boolean;
+  /** Requested send IDs from PROFILE_COMPLETION_REMINDER_PILOT_USER_IDS. */
+  pilotUserIds: string[];
 };
 
 export type ReminderSequenceState = {
@@ -148,6 +153,7 @@ export type HistoricalEligibilityReport = {
   eligibleFriendEn: number;
   eligibleFriendEt: number;
   eligibleIfHistoricalApproved: ReminderRecipientPreview[];
+  eligiblePilot: ReminderRecipientPreview[];
   eligibleOrganicNow: ReminderRecipientPreview[];
   unknownRoleUsers: Array<{ userId: string; email: string | null; role: string | null }>;
 };

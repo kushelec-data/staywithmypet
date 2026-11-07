@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { decideReminderAction, utcCalendarDaysSince } from "./eligibility";
 import { reminderFirstName, reminderGreeting } from "./first-name";
 import { knownEmailRole, reminderLocaleFromMetadata, resolveReminderLocale } from "./locale";
-import { parseExcludedReminderEmails } from "./config";
+import {
+  PROFILE_REMINDER_PILOT_USER_IDS,
+  parseExcludedReminderEmails,
+  parsePilotUserIds,
+  resolvePilotSendAllowlist,
+} from "./config";
 import { isCanonicalProfileComplete } from "./completion";
 import { buildReminderUserSnapshot } from "./load-audience";
 import { summarizeReminderAudience } from "./report";
@@ -65,6 +70,8 @@ function sendingConfig(overrides: Partial<ReminderConfig> = {}): ReminderConfig 
     organicAfter: daysAgo(3),
     dailyCap: 50,
     excludedEmails: ["info@staywithmypet.ee"],
+    pilotOnly: false,
+    pilotUserIds: [],
     ...overrides,
   };
 }
@@ -277,6 +284,82 @@ describe("profile completion reminder eligibility", () => {
     expect(parseExcludedReminderEmails({})).toEqual(["info@staywithmypet.ee"]);
   });
 
+  it("fail-closes the pilot allowlist and cannot send to users outside the committed five", () => {
+    const approvedId = PROFILE_REMINDER_PILOT_USER_IDS[0];
+    const outsiderId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+    const historical = { organicAfter: NOW as Date };
+
+    expect(
+      decideReminderAction({
+        now: NOW,
+        config: sendingConfig({ ...historical, pilotOnly: true, pilotUserIds: [] }),
+        user: user({ userId: approvedId, registeredAt: daysAgo(80) }),
+        history: history(),
+      }),
+    ).toEqual({ action: "skip", reason: "pilot_not_allowlisted" });
+
+    expect(
+      decideReminderAction({
+        now: NOW,
+        config: sendingConfig({
+          ...historical,
+          pilotOnly: true,
+          pilotUserIds: [approvedId, outsiderId],
+        }),
+        user: user({ userId: approvedId, registeredAt: daysAgo(80) }),
+        history: history(),
+      }),
+    ).toMatchObject({ action: "send", stage: "first", templateStage: "day_5", cohort: "historical" });
+
+    expect(
+      decideReminderAction({
+        now: NOW,
+        config: sendingConfig({
+          ...historical,
+          pilotOnly: true,
+          pilotUserIds: [approvedId, outsiderId],
+        }),
+        user: user({ userId: outsiderId, email: "other@example.com", registeredAt: daysAgo(80) }),
+        history: history(),
+      }),
+    ).toEqual({ action: "skip", reason: "pilot_not_allowlisted" });
+
+    expect(
+      resolvePilotSendAllowlist({
+        pilotOnly: true,
+        pilotUserIds: parsePilotUserIds({
+          PROFILE_COMPLETION_REMINDER_PILOT_USER_IDS: `${approvedId},${outsiderId},not-a-uuid`,
+        }),
+      }),
+    ).toEqual([approvedId]);
+  });
+
+  it("keeps Day 10 blocked during the pilot even for an allowlisted user", () => {
+    expect(
+      decideReminderAction({
+        now: NOW,
+        config: sendingConfig({
+          organicAfter: daysAgo(20),
+          day10Approved: false,
+          pilotOnly: true,
+          pilotUserIds: [PROFILE_REMINDER_PILOT_USER_IDS[0]],
+        }),
+        user: user({ userId: PROFILE_REMINDER_PILOT_USER_IDS[0], registeredAt: daysAgo(10) }),
+        history: history({
+          sequence: {
+            userId: PROFILE_REMINDER_PILOT_USER_IDS[0],
+            status: "active",
+            cohort: "organic",
+            registeredAt: daysAgo(10).toISOString(),
+            firstSentAt: daysAgo(5).toISOString(),
+            secondSentAt: null,
+            stopReason: null,
+          },
+        }),
+      }),
+    ).toEqual({ action: "skip", reason: "day10_not_approved" });
+  });
+
   it("skips unknown roles and reports them separately", () => {
     expect(knownEmailRole(null, null)).toBeNull();
     const decision = decideReminderAction({
@@ -406,6 +489,29 @@ describe("profile completion reminder eligibility", () => {
     expect(report.incomplete60PlusDays).toBe(3);
     expect(report.eligibleIfHistoricalApproved).toHaveLength(2);
     expect(report.eligibleIfHistoricalApproved.map((row) => row.userId).sort()).toEqual(["a", "b"]);
+  });
+
+  it("keeps the full historical audience and lists committed pilot users separately", () => {
+    const report = summarizeReminderAudience({
+      now: NOW,
+      users: [
+        user({
+          userId: PROFILE_REMINDER_PILOT_USER_IDS[0],
+          registeredAt: daysAgo(70),
+          email: "pilot@example.com",
+        }),
+        user({
+          userId: "other-historical",
+          registeredAt: daysAgo(70),
+          email: "other@example.com",
+        }),
+      ],
+      historyByUser: new Map(),
+      config: sendingConfig({ organicAfter: NOW }),
+    });
+    expect(report.eligibleIfHistoricalApproved).toHaveLength(2);
+    expect(report.eligiblePilot).toHaveLength(1);
+    expect(report.eligiblePilot[0]?.userId).toBe(PROFILE_REMINDER_PILOT_USER_IDS[0]);
   });
 
   it("matches production onboarding and ignores dashboard extras", () => {

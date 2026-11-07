@@ -1,4 +1,9 @@
-import { isExcludedReminderEmail, readProfileReminderConfig } from "./config";
+import {
+  PROFILE_REMINDER_PILOT_USER_IDS,
+  approvedPilotUserIds,
+  isExcludedReminderEmail,
+  readProfileReminderConfig,
+} from "./config";
 import { ageBucket, decideReminderAction, reminderCohort, utcCalendarDaysSince } from "./eligibility";
 import { reminderFirstName } from "./first-name";
 import { loadReminderAudience } from "./load-audience";
@@ -34,6 +39,8 @@ export function summarizeReminderAudience(input: {
       organicAfter: null,
       dailyCap: 50,
       excludedEmails: ["info@staywithmypet.ee"],
+      pilotOnly: false,
+      pilotUserIds: [],
     } satisfies ReminderConfig);
   const organicConfig: ReminderConfig = {
     ...config,
@@ -206,6 +213,9 @@ export function summarizeReminderAudience(input: {
       (row) => row.role === "pet_friend" && row.locale === "et",
     ).length,
     eligibleIfHistoricalApproved,
+    eligiblePilot: eligibleIfHistoricalApproved.filter((row) =>
+      approvedPilotUserIds(PROFILE_REMINDER_PILOT_USER_IDS).includes(row.userId.toLowerCase()),
+    ),
     eligibleOrganicNow,
     unknownRoleUsers,
   };
@@ -231,6 +241,9 @@ export async function buildHistoricalEligibilityReport(now = new Date()): Promis
       enabled: true,
       dryRun: true,
       historicalRolloutApproved: true,
+      day10Approved: false,
+      pilotOnly: false,
+      pilotUserIds: [],
     },
   });
 }

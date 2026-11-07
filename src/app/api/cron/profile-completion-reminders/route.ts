@@ -12,7 +12,10 @@ export const runtime = "nodejs";
  * crons stay unchanged.
  *
  * Sending stays off until PROFILE_COMPLETION_REMINDER_ENABLED=true and
- * PROFILE_COMPLETION_REMINDER_DRY_RUN=false.
+ * PROFILE_COMPLETION_REMINDER_DRY_RUN=false. Day 10 stays off until
+ * PROFILE_COMPLETION_REMINDER_DAY10_APPROVED=true. While
+ * PROFILE_COMPLETION_REMINDER_PILOT_ONLY=true, only env allowlist IDs that
+ * also appear in PROFILE_REMINDER_PILOT_USER_IDS can be sent.
  */
 async function run(_request: Request) {
   const result = await processProfileCompletionReminders();

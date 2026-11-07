@@ -1,7 +1,11 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { readProfileReminderConfig, reminderUniqueKey } from "./config";
+import {
+  isReminderPilotSendAllowed,
+  readProfileReminderConfig,
+  reminderUniqueKey,
+} from "./config";
 import { decideReminderAction, utcCalendarDaysSince } from "./eligibility";
 import { reminderFirstName } from "./first-name";
 import { loadReminderAudience } from "./load-audience";
@@ -154,6 +158,10 @@ export async function processProfileCompletionReminders(input?: {
       continue;
     }
     if (decision.action !== "send" || !user.email || !user.emailRole) {
+      result.skipped += 1;
+      continue;
+    }
+    if (!isReminderPilotSendAllowed(user.userId, config)) {
       result.skipped += 1;
       continue;
     }
