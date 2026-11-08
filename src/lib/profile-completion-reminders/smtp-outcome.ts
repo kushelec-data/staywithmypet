@@ -1,5 +1,12 @@
+export type ReminderSmtpAcceptedMeta = {
+  messageId: string | null;
+  response: string | null;
+  acceptedCount: number;
+  rejectedCount: number;
+};
+
 export type ReminderSmtpOutcome =
-  | { outcome: "accepted" }
+  | ({ outcome: "accepted" } & ReminderSmtpAcceptedMeta)
   | {
       outcome: "failed_before_acceptance";
       reason: "no_smtp" | "rejected" | "connection";
@@ -26,6 +33,9 @@ const UNKNOWN_CODES = new Set([
   "EPIPE",
   "ECONNABORTED",
 ]);
+
+const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const SECRET_RE = /(pass(?:word)?|pwd|secret|token|api[_-]?key|authorization)\s*[=:]\s*\S+/gi;
 
 function errorCode(err: unknown): string {
   if (!err || typeof err !== "object") return "";
@@ -70,6 +80,38 @@ function addressList(raw: unknown): string[] {
     .filter(Boolean);
 }
 
+/** Strip emails, credentials, and overlong text so SMTP logs stay operational. */
+export function sanitizeSmtpLogValue(value: unknown, max = 300): string {
+  const raw = typeof value === "string" ? value : value == null ? "" : String(value);
+  return raw.replace(EMAIL_RE, "[redacted-email]").replace(SECRET_RE, "$1=[redacted]").slice(0, max);
+}
+
+export function sanitizeSmtpMessageId(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().slice(0, 200);
+  return trimmed || null;
+}
+
+export function formatAcceptedSmtpLastError(meta: ReminderSmtpAcceptedMeta): string {
+  return [
+    "smtp_accepted",
+    `messageId=${meta.messageId ?? ""}`,
+    `accepted=${meta.acceptedCount}`,
+    `rejected=${meta.rejectedCount}`,
+    `response=${meta.response ?? ""}`,
+  ]
+    .join(" ")
+    .slice(0, 500);
+}
+
+export function reminderSendShouldAbortBatch(outcome: ReminderSmtpOutcome): boolean {
+  if (outcome.outcome === "outcome_unknown") return true;
+  if (outcome.outcome === "failed_before_acceptance") {
+    return outcome.reason === "connection" || outcome.reason === "no_smtp";
+  }
+  return false;
+}
+
 /** Confirmed the SMTP server never accepted the message. Otherwise outcome is unknown. */
 export function classifySmtpFailure(err: unknown): "failed_before_acceptance" | "outcome_unknown" {
   const code = errorCode(err);
@@ -101,19 +143,27 @@ export function interpretSendMailInfo(input: {
   to: string;
   accepted?: unknown;
   rejected?: unknown;
+  messageId?: unknown;
+  response?: unknown;
 }): ReminderSmtpOutcome {
   const to = extractAddress(input.to);
   const accepted = addressList(input.accepted);
   const rejected = addressList(input.rejected);
+  const meta: ReminderSmtpAcceptedMeta = {
+    messageId: sanitizeSmtpMessageId(input.messageId),
+    response: input.response == null || input.response === "" ? null : sanitizeSmtpLogValue(input.response),
+    acceptedCount: accepted.length,
+    rejectedCount: rejected.length,
+  };
   if (accepted.some((address) => address === to || address.includes(to) || to.includes(address))) {
-    return { outcome: "accepted" };
+    return { outcome: "accepted", ...meta };
   }
-  if (accepted.length > 0) return { outcome: "accepted" };
+  if (accepted.length > 0) return { outcome: "accepted", ...meta };
   if (rejected.length > 0) {
     return {
       outcome: "failed_before_acceptance",
       reason: "rejected",
-      error: `rejected:${rejected.join(",")}`,
+      error: `rejected_count:${rejected.length}`,
     };
   }
   return { outcome: "outcome_unknown", error: "smtp_response_missing_accepted" };

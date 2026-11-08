@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { DAY5_COPY, DAY10_DRAFTS, profileReminderCopy } from "./copy";
-import { buildProfileCompletionReminderEmail, profileCompletionDeepLink } from "./templates";
+import {
+  buildProfileCompletionReminderEmail,
+  INTERNAL_TEST_BANNER,
+  markInternalTestReminder,
+  profileCompletionDeepLink,
+} from "./templates";
 import { reminderGreeting } from "./first-name";
 
 describe("profile completion reminder templates", () => {
@@ -54,6 +59,10 @@ describe("profile completion reminder templates", () => {
     expect(parentEn.html).toContain("Hi Alex!");
     expect(parentEn.html).toContain("<strong>Why complete your profile?</strong>");
     expect(parentEn.html).toContain("Complete Your Profile");
+    expect(parentEn.html).toContain('bgcolor="#d4ede4"');
+    expect(parentEn.html).toContain('role="presentation"');
+    expect(parentEn.html).toContain('bgcolor="#1a6b5c"');
+    expect(parentEn.html).toContain('href="https://www.staywithmypet.ee/profile/edit"');
     expect(parentEn.text).toContain("You've already taken the first step by joining Stay With My Pet.");
 
     const friendEt = buildProfileCompletionReminderEmail({
@@ -95,5 +104,22 @@ describe("profile completion reminder templates", () => {
     expect(rendered.subject).toBe(DAY10_DRAFTS.pet_friend.en.subject);
     expect(rendered.html).toContain(DAY10_DRAFTS.pet_friend.en.preheader);
     expect(rendered.html).toContain("https://www.staywithmypet.ee/profile/edit");
+  });
+
+  it("marks internal QA copies without changing approved customer subjects", () => {
+    const customer = buildProfileCompletionReminderEmail({
+      stage: "day_5",
+      role: "pet_parent",
+      locale: "en",
+      firstName: "Kush",
+    });
+    const internal = markInternalTestReminder(customer);
+    expect(customer.subject).toBe(DAY5_COPY.pet_parent.en.subject);
+    expect(internal.subject).toBe(`[INTERNAL TEST] ${DAY5_COPY.pet_parent.en.subject}`);
+    expect(internal.html).toContain(INTERNAL_TEST_BANNER);
+    expect(internal.html).toContain(DAY5_COPY.pet_parent.en.preheader);
+    expect(internal.html).toContain("https://www.staywithmypet.ee/profile/edit");
+    expect(internal.text.startsWith(INTERNAL_TEST_BANNER)).toBe(true);
+    expect(internal.html).not.toContain("@gmail.com");
   });
 });

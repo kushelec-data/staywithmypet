@@ -86,3 +86,16 @@ export function buildProfileCompletionReminderEmail(input: {
     text,
   };
 }
+
+export const INTERNAL_TEST_BANNER =
+  "INTERNAL TEST ONLY — rendering check. This is not a customer reminder and contains no customer personal information.";
+
+/** Marks a Day 5 copy for Kush/Gerly QA. Does not change approved customer copy. */
+export function markInternalTestReminder(template: EmailTemplate): EmailTemplate {
+  const bannerHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;"><tr><td bgcolor="#fff3cd" style="background-color:#fff3cd;padding:12px 16px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.4;color:#664d03;font-weight:700;">${escapeHtml(INTERNAL_TEST_BANNER)}</td></tr></table>`;
+  return {
+    subject: `[INTERNAL TEST] ${template.subject}`,
+    html: template.html.replace(/<body([^>]*)>/i, `<body$1>${bannerHtml}`),
+    text: `${INTERNAL_TEST_BANNER}\n\n${template.text}`,
+  };
+}

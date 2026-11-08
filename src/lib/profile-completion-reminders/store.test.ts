@@ -174,4 +174,30 @@ describe("profile reminder store claims", () => {
     expect(result).toMatchObject({ ok: false, reason: "update_failed" });
     expect([...admin.events.values()][0]?.status).toBe("outcome_unknown");
   });
+
+  it("stores sanitized SMTP acceptance metadata on the sent row", async () => {
+    const admin = createMemoryAdmin();
+    const input = claimInput(admin);
+    expect(await claimReminderSend(input)).toBe("claimed");
+    const result = await markReminderSent({
+      admin: admin as never,
+      userId: input.userId,
+      stage: "first",
+      now,
+      smtp: {
+        messageId: "<abc123@mail.spacemail.com>",
+        response: "250 2.0.0 Ok: queued as ABC",
+        acceptedCount: 1,
+        rejectedCount: 0,
+      },
+    });
+    expect(result).toEqual({ ok: true });
+    const row = [...admin.events.values()][0] as EventRow & Record<string, unknown>;
+    expect(row.status).toBe("sent");
+    expect(row.smtp_message_id).toBe("<abc123@mail.spacemail.com>");
+    expect(row.smtp_response).toBe("250 2.0.0 Ok: queued as ABC");
+    expect(row.smtp_accepted_count).toBe(1);
+    expect(row.smtp_rejected_count).toBe(0);
+    expect(row.last_error).toBeNull();
+  });
 });

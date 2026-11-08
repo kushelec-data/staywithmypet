@@ -384,7 +384,12 @@ describe("profile completion reminder processor", () => {
     expect(config.day10Approved).toBe(false);
     expect(config.pilotOnly).toBe(true);
     expect(config.pilotUserIds).toEqual([]);
-    expect(config.excludedEmails).toEqual(["info@staywithmypet.ee"]);
+    expect(config.excludedEmails).toEqual([
+      "info@staywithmypet.ee",
+      "kusheducation@gmail.com",
+      "gerlykullamaa@gmail.com",
+      "gerly.kullamaa@gmail.com",
+    ]);
   });
 
   it("sends nobody when the pilot is on and the allowlist env is empty", async () => {
@@ -461,6 +466,47 @@ describe("profile completion reminder processor", () => {
     expect(result.sent).toBe(0);
     expect(result.preview).toHaveLength(0);
     expect(deps.claims).toHaveLength(0);
+  });
+
+  it("stops the batch after an unexpected SMTP or database failure", async () => {
+    const first = parent({ userId: "parent-1", email: "one@example.com" });
+    const second = parent({ userId: "parent-2", email: "two@example.com" });
+    const timeoutDeps = makeTrackedDeps({
+      users: [first, second],
+      send: async () => ({ outcome: "outcome_unknown", error: "Connection timeout" }),
+    });
+    const timeoutResult = await processProfileCompletionReminders({
+      now: NOW,
+      config: enabledConfig,
+      deps: timeoutDeps,
+    });
+    expect(timeoutResult.sent).toBe(0);
+    expect(timeoutResult.outcomeUnknown).toBe(1);
+    expect(timeoutResult.stoppedOnFailure).toBe(true);
+    expect(timeoutResult.stopReason).toBe("smtp_outcome_unknown");
+    expect(timeoutDeps.history.has("parent-2")).toBe(false);
+
+    const dbFailDeps = makeTrackedDeps({
+      users: [first, second],
+      send: async () => ({
+        outcome: "accepted",
+        messageId: "<id@mail.spacemail.com>",
+        response: "250 Ok",
+        acceptedCount: 1,
+        rejectedCount: 0,
+      }),
+      markSent: async () => ({ ok: false, reason: "update_failed", error: "row update failed" }),
+    });
+    const dbFailResult = await processProfileCompletionReminders({
+      now: NOW,
+      config: enabledConfig,
+      deps: dbFailDeps,
+    });
+    expect(dbFailResult.sent).toBe(0);
+    expect(dbFailResult.outcomeUnknown).toBe(1);
+    expect(dbFailResult.stoppedOnFailure).toBe(true);
+    expect(dbFailResult.stopReason).toBe("database_update_failed_after_smtp_accept");
+    expect(dbFailDeps.history.has("parent-2")).toBe(false);
   });
 });
 

@@ -10,7 +10,7 @@ import type { ReminderUserSnapshot } from "./types";
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>;
 
-const PROFILE_SELECT =
+export const REMINDER_PROFILE_SELECT =
   "id, display_name, bio, location, languages, role, active_mode, role_chosen_at, created_at";
 
 async function paginateSelect(
@@ -122,13 +122,33 @@ export function buildReminderUserSnapshot(input: {
   };
 }
 
+export async function recheckReminderProfileComplete(
+  admin: AdminClient,
+  user: ReminderUserSnapshot,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from("profiles")
+    .select(REMINDER_PROFILE_SELECT)
+    .eq("id", user.userId)
+    .maybeSingle();
+  if (error) throw error;
+  return buildReminderUserSnapshot({
+    userId: user.userId,
+    email: user.email,
+    createdAt: user.registeredAt.toISOString(),
+    banned: user.banned,
+    metadata: {},
+    profile: (data as Record<string, unknown> | null) ?? null,
+  }).profileComplete;
+}
+
 export async function loadReminderAudience(): Promise<ReminderUserSnapshot[]> {
   const admin = createAdminClient();
   if (!admin) return [];
 
   const [authUsers, profileRows] = await Promise.all([
     listAuthUsers(admin),
-    paginateSelect(admin, "profiles", PROFILE_SELECT),
+    paginateSelect(admin, "profiles", REMINDER_PROFILE_SELECT),
   ]);
 
   const profiles = new Map(profileRows.map((row) => [String(row.id), row]));

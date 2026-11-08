@@ -8,10 +8,14 @@ import {
 } from "./config";
 import { decideReminderAction, utcCalendarDaysSince } from "./eligibility";
 import { reminderFirstName } from "./first-name";
-import { loadReminderAudience } from "./load-audience";
 import { resolveReminderLocale } from "./locale";
+import { loadReminderAudience, recheckReminderProfileComplete } from "./load-audience";
 import { sendProfileReminderSmtp } from "./send";
-import type { ReminderSmtpOutcome } from "./smtp-outcome";
+import {
+  reminderSendShouldAbortBatch,
+  type ReminderSmtpAcceptedMeta,
+  type ReminderSmtpOutcome,
+} from "./smtp-outcome";
 import {
   claimReminderSend,
   countRemindersSentOnUtcDay,
@@ -44,6 +48,8 @@ export type ProcessRemindersResult = {
   stoppedComplete: number;
   capped: number;
   unknownRole: number;
+  stoppedOnFailure: boolean;
+  stopReason: string | null;
   preview: ReminderRecipientPreview[];
 };
 
@@ -62,7 +68,12 @@ export type ReminderProcessorDeps = {
     emailRole: "pet_parent" | "pet_friend";
     now: Date;
   }) => Promise<"claimed" | "duplicate" | "missing_table">;
-  markSent: (userId: string, stage: "first" | "second", now: Date) => Promise<ReminderWriteResult>;
+  markSent: (
+    userId: string,
+    stage: "first" | "second",
+    now: Date,
+    smtp?: ReminderSmtpAcceptedMeta | null,
+  ) => Promise<ReminderWriteResult>;
   markFailedBeforeAcceptance: (
     userId: string,
     stage: "first" | "second",
@@ -98,13 +109,14 @@ export function createProductionReminderDeps(now: Date): ReminderProcessorDeps |
     loadHistory: (userIds) => loadReminderHistory(admin, userIds),
     sentToday: () => countRemindersSentOnUtcDay(admin, now),
     claim: (input) => claimReminderSend({ admin, ...input }),
-    markSent: (userId, stage, at) => markReminderSent({ admin, userId, stage, now: at }),
+    markSent: (userId, stage, at, smtp) =>
+      markReminderSent({ admin, userId, stage, now: at, smtp }),
     markFailedBeforeAcceptance: (userId, stage, error, at) =>
       markReminderFailedBeforeAcceptance({ admin, userId, stage, error, now: at }),
     markOutcomeUnknown: (userId, stage, error, at) =>
       markReminderOutcomeUnknown({ admin, userId, stage, error, now: at }),
     markComplete: (userId, stage, at) => markReminderSkippedComplete({ admin, userId, stage, now: at }),
-    recheckComplete: async (user) => user.profileComplete,
+    recheckComplete: (user) => recheckReminderProfileComplete(admin, user),
     send: sendProfileReminderSmtp,
   };
 }
@@ -129,6 +141,8 @@ export async function processProfileCompletionReminders(input?: {
     stoppedComplete: 0,
     capped: 0,
     unknownRole: 0,
+    stoppedOnFailure: false,
+    stopReason: null,
     preview,
   };
 
@@ -212,7 +226,17 @@ export async function processProfileCompletionReminders(input?: {
       continue;
     }
 
-    if (await deps.recheckComplete(user)) {
+    let completeOnRecheck = false;
+    try {
+      completeOnRecheck = await deps.recheckComplete(user);
+    } catch {
+      await deps.markOutcomeUnknown(user.userId, decision.stage, "eligibility_recheck_failed", now);
+      result.outcomeUnknown += 1;
+      result.stoppedOnFailure = true;
+      result.stopReason = "eligibility_recheck_failed";
+      break;
+    }
+    if (completeOnRecheck) {
       await deps.markComplete(user.userId, decision.stage, now);
       result.stoppedComplete += 1;
       continue;
@@ -233,7 +257,12 @@ export async function processProfileCompletionReminders(input?: {
     });
     result.processed += 1;
     if (sent.outcome === "accepted") {
-      const recorded = await deps.markSent(user.userId, decision.stage, now);
+      const recorded = await deps.markSent(user.userId, decision.stage, now, {
+        messageId: sent.messageId ?? null,
+        response: sent.response ?? null,
+        acceptedCount: sent.acceptedCount ?? 0,
+        rejectedCount: sent.rejectedCount ?? 0,
+      });
       if (recorded.ok) {
         sentToday += 1;
         result.sent += 1;
@@ -246,7 +275,9 @@ export async function processProfileCompletionReminders(input?: {
         now,
       );
       result.outcomeUnknown += 1;
-      continue;
+      result.stoppedOnFailure = true;
+      result.stopReason = "database_update_failed_after_smtp_accept";
+      break;
     }
     if (sent.outcome === "failed_before_acceptance") {
       await deps.markFailedBeforeAcceptance(
@@ -257,10 +288,18 @@ export async function processProfileCompletionReminders(input?: {
       );
       result.failed += 1;
       result.failedBeforeAcceptance += 1;
+      if (reminderSendShouldAbortBatch(sent)) {
+        result.stoppedOnFailure = true;
+        result.stopReason = sent.reason;
+        break;
+      }
       continue;
     }
     await deps.markOutcomeUnknown(user.userId, decision.stage, sent.error ?? "smtp_outcome_unknown", now);
     result.outcomeUnknown += 1;
+    result.stoppedOnFailure = true;
+    result.stopReason = "smtp_outcome_unknown";
+    break;
   }
 
   return result;

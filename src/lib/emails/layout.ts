@@ -37,9 +37,17 @@ export function checklist(title: string, items: string[]): string {
 <ul style="margin:0 0 16px;padding-left:20px;">${list}</ul>`;
 }
 
+/** Outlook ignores padding on `<a>`; bgcolor on a table cell is the fallback. */
 export function ctaButton(label: string, href: string): string {
   const url = escapeHtml(href);
-  return `<p style="margin:20px 0 8px;"><a href="${url}" style="display:inline-block;background:#1a6b5c;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 24px;border-radius:999px;">${escapeHtml(label)}</a></p>`;
+  const text = escapeHtml(label);
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0 8px;">
+  <tr>
+    <td bgcolor="#1a6b5c" style="background-color:#1a6b5c;border-radius:8px;">
+      <a href="${url}" target="_blank" style="display:inline-block;padding:12px 24px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">${text}</a>
+    </td>
+  </tr>
+</table>`;
 }
 
 export function wrapEmail(
@@ -68,7 +76,7 @@ export function wrapEmail(
       <td align="center">
         <table width="100%" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
           <tr>
-            <td style="background:linear-gradient(135deg,#d4ede4 0%,#f7f5f0 100%);padding:28px 32px 20px;">
+            <td bgcolor="#d4ede4" style="background-color:#d4ede4;background:linear-gradient(135deg,#d4ede4 0%,#f7f5f0 100%);padding:28px 32px 20px;">
               <img src="${logoUrl}" alt="Stay With My Pet" width="120" style="display:block;max-width:120px;height:auto;margin-bottom:16px;" />
               <p style="margin:0;font-size:13px;font-weight:600;color:#1a6b5c;letter-spacing:0.04em;text-transform:uppercase;">Stay With My Pet</p>
               <h1 style="margin:12px 0 0;font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.3;">${escapeHtml(headline)}</h1>

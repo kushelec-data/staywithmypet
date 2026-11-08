@@ -6,10 +6,37 @@ import { PROFILE_REMINDER_FROM } from "./config";
 import {
   classifySmtpFailure,
   interpretSendMailInfo,
+  sanitizeSmtpLogValue,
   type ReminderSmtpOutcome,
 } from "./smtp-outcome";
 
 export type { ReminderSmtpOutcome };
+
+function logReminderSmtp(uniqueKey: string, outcome: ReminderSmtpOutcome) {
+  if (outcome.outcome === "accepted") {
+    console.info(
+      JSON.stringify({
+        event: "profile_reminder_smtp",
+        uniqueKey,
+        outcome: outcome.outcome,
+        messageId: outcome.messageId,
+        response: outcome.response,
+        acceptedCount: outcome.acceptedCount,
+        rejectedCount: outcome.rejectedCount,
+      }),
+    );
+    return;
+  }
+  console.info(
+    JSON.stringify({
+      event: "profile_reminder_smtp",
+      uniqueKey,
+      outcome: outcome.outcome,
+      reason: outcome.outcome === "failed_before_acceptance" ? outcome.reason : undefined,
+      error: sanitizeSmtpLogValue(outcome.error),
+    }),
+  );
+}
 
 export async function sendProfileReminderSmtp(input: {
   to: string;
@@ -20,7 +47,13 @@ export async function sendProfileReminderSmtp(input: {
 }): Promise<ReminderSmtpOutcome> {
   const smtp = readSmtpConfig();
   if (!smtp) {
-    return { outcome: "failed_before_acceptance", reason: "no_smtp", error: "no_smtp" };
+    const outcome: ReminderSmtpOutcome = {
+      outcome: "failed_before_acceptance",
+      reason: "no_smtp",
+      error: "no_smtp",
+    };
+    logReminderSmtp(input.uniqueKey, outcome);
+    return outcome;
   }
 
   try {
@@ -38,17 +71,23 @@ export async function sendProfileReminderSmtp(input: {
       text: input.text,
       headers: { "X-SWMP-Reminder-Key": input.uniqueKey },
     });
-    return interpretSendMailInfo({
+    const outcome = interpretSendMailInfo({
       to: input.to,
       accepted: info.accepted,
       rejected: info.rejected,
+      messageId: info.messageId,
+      response: info.response,
     });
+    logReminderSmtp(input.uniqueKey, outcome);
+    return outcome;
   } catch (err) {
     const classified = classifySmtpFailure(err);
-    const error = err instanceof Error ? err.message : String(err);
-    if (classified === "failed_before_acceptance") {
-      return { outcome: "failed_before_acceptance", reason: "connection", error };
-    }
-    return { outcome: "outcome_unknown", error };
+    const error = sanitizeSmtpLogValue(err instanceof Error ? err.message : String(err));
+    const outcome: ReminderSmtpOutcome =
+      classified === "failed_before_acceptance"
+        ? { outcome: "failed_before_acceptance", reason: "connection", error }
+        : { outcome: "outcome_unknown", error };
+    logReminderSmtp(input.uniqueKey, outcome);
+    return outcome;
   }
 }

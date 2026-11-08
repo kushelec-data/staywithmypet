@@ -20,4 +20,9 @@ export { decideReminderAction, utcCalendarDaysSince, ageBucket } from "./eligibi
 export { reminderFirstName, reminderGreeting } from "./first-name";
 export { resolveReminderLocale, knownEmailRole, reminderLocaleFromMetadata } from "./locale";
 export { summarizeReminderAudience } from "./report";
-export { buildProfileCompletionReminderEmail, profileCompletionDeepLink } from "./templates";
+export {
+  buildProfileCompletionReminderEmail,
+  markInternalTestReminder,
+  profileCompletionDeepLink,
+  INTERNAL_TEST_BANNER,
+} from "./templates";

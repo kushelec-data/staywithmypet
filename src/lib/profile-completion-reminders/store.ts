@@ -1,6 +1,11 @@
 import { isMissingRelationError, isPostgrestError } from "@/lib/supabase-errors";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reminderUniqueKey } from "./config";
+import {
+  formatAcceptedSmtpLastError,
+  sanitizeSmtpLogValue,
+  type ReminderSmtpAcceptedMeta,
+} from "./smtp-outcome";
 import type {
   ReminderCohort,
   ReminderEmailRole,
@@ -27,7 +32,7 @@ export const RETRYABLE_REMINDER_EVENT_STATUS = "failed_before_acceptance" as con
 export const REMINDER_DELIVERY_RECONCILIATION_STEPS = [
   "Find the row in profile_completion_reminder_events by unique_key (profile_completion_reminder_{first|second}_{userId}).",
   "Compare claimed_at with SpaceMail / SMTP logs for that recipient.",
-  "If the provider accepted or delivered the message: UPDATE profile_completion_reminder_events SET status='sent', sent_at=<accepted_at>, last_error=null WHERE unique_key=<key> AND status IN ('sending','outcome_unknown'); then set profile_completion_reminder_sequences.first_sent_at or second_sent_at if still null (and exhausted after second).",
+  "If the provider accepted or delivered the message: UPDATE profile_completion_reminder_events SET status='sent', sent_at=<accepted_at>, last_error=null WHERE unique_key=<key> AND status IN ('sending','outcome_unknown'); keep smtp_message_id / smtp_response / accepted-rejected counts when present; then set profile_completion_reminder_sequences.first_sent_at or second_sent_at if still null (and exhausted after second).",
   "If the provider never accepted the message: UPDATE profile_completion_reminder_events SET status='failed_before_acceptance' WHERE unique_key=<key> AND status IN ('sending','outcome_unknown'); the next approved cron may retry that stage only.",
   "Leave outcome_unknown in place when logs are inconclusive. Cron will not resend and will not send the next reminder.",
 ] as const;
@@ -38,6 +43,23 @@ function isUniqueViolation(error: { code?: string; message?: string }): boolean 
 
 function writeError(error: { message?: string } | null): ReminderWriteResult {
   return { ok: false, reason: "update_failed", error: error?.message ?? "update_failed" };
+}
+
+function isUnknownSmtpColumnError(error: { message?: string } | null | undefined): boolean {
+  const message = error?.message ?? "";
+  return /smtp_message_id|smtp_response|smtp_accepted_count|smtp_rejected_count|schema cache/i.test(
+    message,
+  );
+}
+
+function smtpColumnPatch(smtp?: ReminderSmtpAcceptedMeta | null): Record<string, unknown> {
+  if (!smtp) return {};
+  return {
+    smtp_message_id: smtp.messageId,
+    smtp_response: smtp.response,
+    smtp_accepted_count: smtp.acceptedCount,
+    smtp_rejected_count: smtp.rejectedCount,
+  };
 }
 
 function mapSequence(row: Record<string, unknown>): ReminderSequenceState {
@@ -254,15 +276,36 @@ export async function markReminderSent(input: {
   userId: string;
   stage: ReminderStage;
   now: Date;
+  smtp?: ReminderSmtpAcceptedMeta | null;
 }): Promise<ReminderWriteResult> {
   const uniqueKey = reminderUniqueKey(input.userId, input.stage);
   const sentAt = input.now.toISOString();
-  const eventUpdate = await input.admin
+  const withColumns = {
+    status: "sent",
+    sent_at: sentAt,
+    last_error: null,
+    updated_at: sentAt,
+    ...smtpColumnPatch(input.smtp),
+  };
+  let eventUpdate = await input.admin
     .from("profile_completion_reminder_events")
-    .update({ status: "sent", sent_at: sentAt, last_error: null, updated_at: sentAt })
+    .update(withColumns)
     .eq("unique_key", uniqueKey)
     .eq("status", "sending")
     .select("id");
+  if (eventUpdate.error && isUnknownSmtpColumnError(eventUpdate.error)) {
+    eventUpdate = await input.admin
+      .from("profile_completion_reminder_events")
+      .update({
+        status: "sent",
+        sent_at: sentAt,
+        last_error: input.smtp ? formatAcceptedSmtpLastError(input.smtp) : null,
+        updated_at: sentAt,
+      })
+      .eq("unique_key", uniqueKey)
+      .eq("status", "sending")
+      .select("id");
+  }
   if (eventUpdate.error) {
     if (isPostgrestError(eventUpdate.error) && isMissingRelationError(eventUpdate.error)) {
       return { ok: false, reason: "missing_table" };
@@ -305,7 +348,7 @@ export async function markReminderFailedBeforeAcceptance(input: {
 }): Promise<ReminderWriteResult> {
   return updateSendingEvent(input, {
     status: "failed_before_acceptance",
-    last_error: input.error.slice(0, 500),
+    last_error: sanitizeSmtpLogValue(input.error, 500),
     updated_at: input.now.toISOString(),
   });
 }
@@ -319,7 +362,7 @@ export async function markReminderOutcomeUnknown(input: {
 }): Promise<ReminderWriteResult> {
   return updateSendingEvent(input, {
     status: "outcome_unknown",
-    last_error: input.error.slice(0, 500),
+    last_error: sanitizeSmtpLogValue(input.error, 500),
     updated_at: input.now.toISOString(),
   });
 }

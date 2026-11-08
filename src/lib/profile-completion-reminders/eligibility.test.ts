@@ -281,7 +281,12 @@ describe("profile completion reminder eligibility", () => {
       }),
     ).toEqual({ action: "skip", reason: "internal_address" });
 
-    expect(parseExcludedReminderEmails({})).toEqual(["info@staywithmypet.ee"]);
+    expect(parseExcludedReminderEmails({})).toEqual([
+      "info@staywithmypet.ee",
+      "kusheducation@gmail.com",
+      "gerlykullamaa@gmail.com",
+      "gerly.kullamaa@gmail.com",
+    ]);
   });
 
   it("fail-closes the pilot allowlist and cannot send to users outside the committed five", () => {

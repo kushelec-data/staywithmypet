@@ -22,7 +22,12 @@ function envInt(env: NodeJS.ProcessEnv, name: string, defaultValue: number): num
   return Math.min(1000, Math.max(1, parsed));
 }
 
-export const DEFAULT_INTERNAL_REMINDER_EXCLUSIONS = ["info@staywithmypet.ee"];
+export const DEFAULT_INTERNAL_REMINDER_EXCLUSIONS = [
+  "info@staywithmypet.ee",
+  "kusheducation@gmail.com",
+  "gerlykullamaa@gmail.com",
+  "gerly.kullamaa@gmail.com",
+];
 
 const REMINDER_USER_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

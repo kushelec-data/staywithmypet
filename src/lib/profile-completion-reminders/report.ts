@@ -1,4 +1,5 @@
 import {
+  DEFAULT_INTERNAL_REMINDER_EXCLUSIONS,
   PROFILE_REMINDER_PILOT_USER_IDS,
   approvedPilotUserIds,
   isExcludedReminderEmail,
@@ -38,7 +39,7 @@ export function summarizeReminderAudience(input: {
       day10Approved: false,
       organicAfter: null,
       dailyCap: 50,
-      excludedEmails: ["info@staywithmypet.ee"],
+      excludedEmails: [...DEFAULT_INTERNAL_REMINDER_EXCLUSIONS],
       pilotOnly: false,
       pilotUserIds: [],
     } satisfies ReminderConfig);

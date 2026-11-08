@@ -19,7 +19,14 @@ export const runtime = "nodejs";
  */
 async function run(_request: Request) {
   const result = await processProfileCompletionReminders();
-  return Response.json(result);
+  return Response.json({
+    ...result,
+    preview: result.preview.map((row) => ({
+      ...row,
+      email: "[redacted]",
+      firstName: null,
+    })),
+  });
 }
 
 export const { GET, POST } = createCronHandlers(run, { allowEmailInternalHeader: true });
