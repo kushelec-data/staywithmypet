@@ -22,10 +22,11 @@ export function buildProfileCompletionReminderEmail(input: {
   role: ReminderEmailRole;
   locale: ReminderLocale;
   firstName: string | null;
+  ctaPath?: string;
 }): EmailTemplate {
   const copy = profileReminderCopy(input.stage, input.role, input.locale);
   const greeting = reminderGreeting(input.locale, input.firstName);
-  const ctaHref = profileCompletionDeepLink();
+  const ctaHref = input.ctaPath ? absoluteUrl(input.ctaPath) : profileCompletionDeepLink();
   const siteLink = absoluteUrl("/");
 
   const parts: string[] = [paragraph(escapeHtml(greeting))];

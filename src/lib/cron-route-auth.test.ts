@@ -52,6 +52,24 @@ vi.mock("@/lib/profile-completion-reminders/process", () => ({
   })),
 }));
 
+vi.mock("@/lib/listing-profile-completion/process", () => ({
+  processListingProfileCompletion: vi.fn(async () => ({
+    ok: true,
+    campaignId: "listing_profile_completion_v1",
+    dryRun: true,
+    processed: 0,
+    sent: 0,
+    skipped: 0,
+    failed: 0,
+    failedBeforeAcceptance: 0,
+    outcomeUnknown: 0,
+    stoppedComplete: 0,
+    capped: 0,
+    unknownRole: 0,
+    preview: [],
+  })),
+}));
+
 import {
   GET as bookingReviewGet,
   POST as bookingReviewPost,
@@ -77,10 +95,15 @@ import {
   GET as profileRemindersGet,
   POST as profileRemindersPost,
 } from "@/app/api/cron/profile-completion-reminders/route";
+import {
+  GET as listingCampaignGet,
+  POST as listingCampaignPost,
+} from "@/app/api/cron/listing-profile-completion/route";
 import { processDueScheduledEmails } from "@/lib/email-send";
 import { processPendingBookingReviewEmails } from "@/lib/booking-review-emails";
 import { processDueScheduledCampaigns } from "@/lib/email-campaigns/scheduled-send";
 import { processProfileCompletionReminders } from "@/lib/profile-completion-reminders/process";
+import { processListingProfileCompletion } from "@/lib/listing-profile-completion/process";
 import { runWeeklyMatchmaking } from "@/lib/matchmaking/run-weekly";
 
 describe("cron/internal route authorization", () => {
@@ -94,6 +117,7 @@ describe("cron/internal route authorization", () => {
     vi.mocked(processPendingBookingReviewEmails).mockClear();
     vi.mocked(processDueScheduledCampaigns).mockClear();
     vi.mocked(processProfileCompletionReminders).mockClear();
+    vi.mocked(processListingProfileCompletion).mockClear();
     vi.mocked(runWeeklyMatchmaking).mockClear();
   });
 
@@ -253,5 +277,27 @@ describe("cron/internal route authorization", () => {
     expect(runWeeklyMatchmaking).toHaveBeenCalledTimes(1);
     expect(processDueScheduledCampaigns).toHaveBeenCalledTimes(2);
     expect(processProfileCompletionReminders).toHaveBeenCalledTimes(2);
+
+    expect(
+      (
+        await listingCampaignGet(
+          new Request("https://example.com/api/cron/listing-profile-completion", {
+            method: "GET",
+            headers,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await listingCampaignPost(
+          new Request("https://example.com/api/cron/listing-profile-completion", {
+            method: "POST",
+            headers,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(processListingProfileCompletion).toHaveBeenCalledTimes(2);
   });
 });

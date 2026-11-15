@@ -399,6 +399,20 @@ export function evaluateProfileRequiredFields(
   };
 }
 
+/** Friend-specific listing fields only — not the common human-profile fields. */
+export function arePetFriendListingFieldsComplete(
+  profile: EvaluateRequiredFieldsInput["profile"],
+): boolean {
+  const result = evaluateProfileRequiredFields({
+    profile,
+    activeMode: "pet_friend",
+    petIntros: [],
+  });
+  return result.fields
+    .filter((field) => PET_FRIEND_REQUIRED_FIELDS.some((def) => def.id === field.id))
+    .every((field) => field.done);
+}
+
 /** @deprecated Strict completion only — use `profileMeetsAnyMarketplaceMinimum` for listing eligibility. */
 export function isProfileMarketplaceReady(
   profile: EvaluateRequiredFieldsInput["profile"],
