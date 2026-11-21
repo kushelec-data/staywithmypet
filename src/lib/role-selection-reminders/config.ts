@@ -27,8 +27,11 @@ function envInt(env: NodeJS.ProcessEnv, name: string, defaultValue: number): num
 export const ROLE_SELECTION_REMINDER_CAMPAIGN_ID = "role_selection_reminder_v1";
 export const ROLE_SELECTION_REMINDER_FROM = "Stay With My Pet <info@staywithmypet.ee>";
 export const ROLE_SELECTION_MIN_DAYS_AFTER_REGISTRATION = 5;
+export const ROLE_SELECTION_STAGE2_DELAY_MS = 5 * 24 * 60 * 60 * 1000;
 export const ROLE_SELECTION_CTA_PATH = ROLE_ONBOARDING_PATH;
 export const ROLE_SELECTION_INTERNAL_TEST_SUBJECT_PREFIX = "[SWMP INTERNAL TEST — ROLE REMINDER 1]";
+export const ROLE_SELECTION_INTERNAL_TEST_SUBJECT_PREFIX_STAGE2 =
+  "[SWMP INTERNAL TEST — ROLE REMINDER 2]";
 
 export const DEFAULT_ROLE_SELECTION_EXCLUSIONS = [
   "info@staywithmypet.ee",
@@ -66,7 +69,24 @@ export function isExcludedRoleSelectionEmail(
   return isExcludedReminderEmail(email, excludedEmails);
 }
 
-/** Fail closed until every send flag is explicit. Reminder 2 stays off. */
+export function roleSelectionInternalTestPrefix(stage: RoleSelectionStage): string {
+  return stage === 2
+    ? ROLE_SELECTION_INTERNAL_TEST_SUBJECT_PREFIX_STAGE2
+    : ROLE_SELECTION_INTERNAL_TEST_SUBJECT_PREFIX;
+}
+
+export function roleSelectionStage2DueAt(sentAt: string | Date): Date | null {
+  const timestamp = typeof sentAt === "string" ? Date.parse(sentAt) : sentAt.getTime();
+  if (!Number.isFinite(timestamp)) return null;
+  return new Date(timestamp + ROLE_SELECTION_STAGE2_DELAY_MS);
+}
+
+export function isRoleSelectionStage2Due(sentAt: string | Date, now: Date): boolean {
+  const dueAt = roleSelectionStage2DueAt(sentAt);
+  return Boolean(dueAt && now.getTime() >= dueAt.getTime());
+}
+
+/** Fail closed until every send flag is explicit. Reminder 2 stays off unless STAGE2_APPROVED. */
 export function readRoleSelectionCampaignConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): RoleSelectionCampaignConfig {

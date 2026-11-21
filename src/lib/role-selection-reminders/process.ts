@@ -19,6 +19,8 @@ import { loadRoleSelectionAudience, recheckRoleSelected } from "./load-audience"
 import { sendRoleSelectionReminderSmtp } from "./send";
 import {
   claimRoleSelectionSend,
+  classifyRoleSelectionInactive,
+  clearRoleSelectionInactive,
   countRoleSelectionSentOnUtcDay,
   loadRoleSelectionEvents,
   markRoleSelectionFailedBeforeAcceptance,
@@ -27,7 +29,7 @@ import {
   markRoleSelectionSkippedSelected,
   type RoleSelectionWriteResult,
 } from "./store";
-import { buildRoleSelectionReminder1Email } from "./templates";
+import { buildRoleSelectionReminderEmail } from "./templates";
 import type {
   RoleSelectionCampaignConfig,
   RoleSelectionCohort,
@@ -71,6 +73,7 @@ export type RoleSelectionProcessorDeps = {
     stage: RoleSelectionStage;
     cohort: RoleSelectionCohort;
     now: Date;
+    scheduledFor?: Date;
   }) => Promise<"claimed" | "duplicate" | "missing_table">;
   markSent: (
     userId: string,
@@ -92,6 +95,8 @@ export type RoleSelectionProcessorDeps = {
   ) => Promise<RoleSelectionWriteResult>;
   markSelected: (userId: string, stage: RoleSelectionStage, now: Date) => Promise<RoleSelectionWriteResult>;
   recheckSelected: (userId: string) => Promise<boolean>;
+  classifyInactive: (userId: string, now: Date) => Promise<RoleSelectionWriteResult>;
+  clearInactive: (userId: string, now: Date) => Promise<RoleSelectionWriteResult>;
   send: (input: {
     to: string;
     subject: string;
@@ -117,6 +122,8 @@ export function createProductionRoleSelectionDeps(now: Date): RoleSelectionProce
     markSelected: (userId, stage, at) =>
       markRoleSelectionSkippedSelected({ admin, userId, stage, now: at }),
     recheckSelected: (userId) => recheckRoleSelected(admin, userId),
+    classifyInactive: (userId, at) => classifyRoleSelectionInactive({ admin, userId, now: at }),
+    clearInactive: (userId, at) => clearRoleSelectionInactive({ admin, userId, now: at }),
     send: sendRoleSelectionReminderSmtp,
   };
 }
@@ -163,19 +170,33 @@ export async function processRoleSelectionReminders(input?: {
   }
 
   let sentToday = await deps.sentToday();
+  const sendQueue: Array<{
+    user: RoleSelectionUser;
+    decision: Extract<ReturnType<typeof decideRoleSelectionAction>, { action: "send" }>;
+  }> = [];
 
   for (const user of audience) {
     const events = eventsResult.byUser.get(user.userId) ?? [];
     const decision = decideRoleSelectionAction({ now, config, user, events });
     if (decision.action === "stop") {
       result.stoppedComplete += 1;
+      await deps.clearInactive(user.userId, now);
       continue;
     }
     if (decision.action !== "send" || !user.email) {
       result.skipped += 1;
       continue;
     }
+    sendQueue.push({ user, decision });
+  }
 
+  sendQueue.sort((a, b) => a.decision.stage - b.decision.stage);
+
+  for (const { user, decision } of sendQueue) {
+    if (!user.email) {
+      result.skipped += 1;
+      continue;
+    }
     const locale = resolveReminderLocale(user.locale);
     const firstName = reminderFirstName({
       email: user.email,
@@ -210,6 +231,7 @@ export async function processRoleSelectionReminders(input?: {
       stage: decision.stage,
       cohort: decision.cohort,
       now,
+      scheduledFor: decision.dueAt ?? now,
     });
     if (claimed === "missing_table") {
       return { ...result, migrationRequired: true };
@@ -231,11 +253,12 @@ export async function processRoleSelectionReminders(input?: {
     }
     if (selectedOnRecheck) {
       await deps.markSelected(user.userId, decision.stage, now);
+      await deps.clearInactive(user.userId, now);
       result.stoppedComplete += 1;
       continue;
     }
 
-    const template = buildRoleSelectionReminder1Email(locale);
+    const template = buildRoleSelectionReminderEmail(locale, decision.stage);
     const uniqueKey = roleSelectionUniqueKey(user.userId, decision.stage, config.campaignId);
     const sent = await deps.send({
       to: user.email,
@@ -255,6 +278,9 @@ export async function processRoleSelectionReminders(input?: {
       if (recorded.ok) {
         sentToday += 1;
         result.sent += 1;
+        if (decision.stage === 2) {
+          await deps.classifyInactive(user.userId, now);
+        }
         continue;
       }
       await deps.markOutcomeUnknown(

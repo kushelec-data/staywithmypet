@@ -108,11 +108,13 @@ export async function claimRoleSelectionSend(input: {
   stage: RoleSelectionStage;
   cohort: RoleSelectionCohort;
   now: Date;
+  scheduledFor?: Date;
   campaignId?: string;
 }): Promise<"claimed" | "duplicate" | "missing_table"> {
   const campaignId = input.campaignId ?? ROLE_SELECTION_REMINDER_CAMPAIGN_ID;
   const uniqueKey = roleSelectionUniqueKey(input.userId, input.stage, campaignId);
   const at = input.now.toISOString();
+  const scheduledFor = (input.scheduledFor ?? input.now).toISOString();
 
   const retryFailed = await input.admin
     .from("role_selection_reminder_events")
@@ -150,7 +152,7 @@ export async function claimRoleSelectionSend(input: {
       status: "sending",
       locale: input.locale,
       cohort: input.cohort,
-      scheduled_for: at,
+      scheduled_for: scheduledFor,
       claimed_at: at,
       attempt_count: 1,
       updated_at: at,
@@ -330,5 +332,54 @@ async function updateSendingEvent(
   if (!Array.isArray(updated.data) || updated.data.length === 0) {
     return { ok: false, reason: "update_failed", error: "status_update_matched_no_sending_row" };
   }
+  return { ok: true };
+}
+
+function lifecycleWriteError(error: { code?: string; message?: string } | null): RoleSelectionWriteResult {
+  if (error && isPostgrestError(error) && isMissingRelationError(error)) {
+    return { ok: false, reason: "missing_table" };
+  }
+  return writeError(error);
+}
+
+export async function classifyRoleSelectionInactive(input: {
+  admin: AdminClient;
+  userId: string;
+  now: Date;
+  campaignId?: string;
+}): Promise<RoleSelectionWriteResult> {
+  const at = input.now.toISOString();
+  const campaignId = input.campaignId ?? ROLE_SELECTION_REMINDER_CAMPAIGN_ID;
+  const upserted = await input.admin.from("role_selection_lifecycle").upsert(
+    {
+      user_id: input.userId,
+      status: "inactive_role_unselected",
+      campaign_id: campaignId,
+      classified_at: at,
+      cleared_at: null,
+      updated_at: at,
+    },
+    { onConflict: "user_id" },
+  );
+  if (upserted.error) return lifecycleWriteError(upserted.error);
+  return { ok: true };
+}
+
+export async function clearRoleSelectionInactive(input: {
+  admin: AdminClient;
+  userId: string;
+  now: Date;
+}): Promise<RoleSelectionWriteResult> {
+  const at = input.now.toISOString();
+  const updated = await input.admin
+    .from("role_selection_lifecycle")
+    .update({
+      status: "cleared",
+      cleared_at: at,
+      updated_at: at,
+    })
+    .eq("user_id", input.userId)
+    .eq("status", "inactive_role_unselected");
+  if (updated.error) return lifecycleWriteError(updated.error);
   return { ok: true };
 }

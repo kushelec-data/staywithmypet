@@ -73,3 +73,65 @@ export const ROLE_SELECTION_REMINDER_1_COPY: Record<ReminderLocale, RoleSelectio
 export function roleSelectionReminder1Copy(locale: ReminderLocale): RoleSelectionCopy {
   return ROLE_SELECTION_REMINDER_1_COPY[locale] ?? ROLE_SELECTION_REMINDER_1_COPY.en;
 }
+
+export type RoleSelectionReminder2Copy = {
+  subject: string;
+  preheader: string;
+  greeting: string;
+  intro: string;
+  question: string;
+  closer: string;
+  parentTitle: string;
+  parentBody: string;
+  friendTitle: string;
+  friendBody: string;
+  cta: string;
+  membership: string;
+  tagline: string;
+  signOff: string[];
+};
+
+const ET2: RoleSelectionReminder2Copy = {
+  subject: "🐾 Üks väike samm on veel jäänud!",
+  preheader: "Oled juba liitunud! Vali oma roll ja avasta, mida Stay With My Pet sulle pakub.",
+  greeting: "Tere!",
+  intro: "Sa oled juba Stay With My Peti kogukonnaga liitunud, kuid üks väike samm on veel tegemata! 💚",
+  question:
+    "Kas soovid leida oma lemmikule usaldusväärse hoidja või hoopis ise mõne vahva neljajalgse sõbraga aega veeta?",
+  closer: "Vali endale sobiv roll ja astu samm lähemale sellele, mida otsid!",
+  parentTitle: "🐶 Loomaomanik",
+  parentBody: "leia oma lemmikule hooliv loomasõber, kellele saad ta vajadusel usaldada.",
+  friendTitle: "💚 Loomasõber",
+  friendBody: "leia võimalusi veeta aega loomadega ja tuua oma päevadesse rohkem neljajalgset rõõmu.",
+  cta: "Vali oma roll",
+  membership: "Profiili loomine ja teiste kasutajate profiilide sirvimine on tasuta!",
+  tagline: "Rohkem armastust ja vähem üksildust – nii lemmikutele kui ka inimestele! 🐾",
+  signOff: ["Soojade tervitustega", "Stay With My Pet tiim", "staywithmypet.ee"],
+};
+
+const EN2: RoleSelectionReminder2Copy = {
+  subject: "🐾 Just one small step left!",
+  preheader: "You've already joined! Choose your role and discover what Stay With My Pet has to offer.",
+  greeting: "Hi!",
+  intro: "You've already joined the Stay With My Pet community, but there's still one small step to take! 💚",
+  question:
+    "Are you looking for someone trustworthy to care for your pet, or would you love to spend time with a wonderful four-legged friend?",
+  closer: "Choose the role that suits you and take the next step towards what you're looking for!",
+  parentTitle: "🐶 Pet Parent",
+  parentBody: "find a caring Pet Friend you can trust with your beloved pet.",
+  friendTitle: "💚 Pet Friend",
+  friendBody: "discover opportunities to spend time with animals and bring more four-legged joy into your life.",
+  cta: "Choose Your Role",
+  membership: "Creating your profile and browsing other users' profiles is completely free!",
+  tagline: "More love. Less loneliness. For pets and people. 🐾",
+  signOff: ["Warm wishes,", "The Stay With My Pet Team", "staywithmypet.ee"],
+};
+
+export const ROLE_SELECTION_REMINDER_2_COPY: Record<ReminderLocale, RoleSelectionReminder2Copy> = {
+  et: ET2,
+  en: EN2,
+};
+
+export function roleSelectionReminder2Copy(locale: ReminderLocale): RoleSelectionReminder2Copy {
+  return ROLE_SELECTION_REMINDER_2_COPY[locale] ?? ROLE_SELECTION_REMINDER_2_COPY.en;
+}

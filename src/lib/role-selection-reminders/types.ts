@@ -67,8 +67,15 @@ export type RoleSelectionUser = {
   roleColumn: string | null;
 };
 
+export type RoleSelectionLifecycleStatus = "inactive_role_unselected" | "cleared" | "in_sequence";
+
 export type RoleSelectionDecision =
-  | { action: "send"; stage: RoleSelectionStage; cohort: RoleSelectionCohort }
+  | {
+      action: "send";
+      stage: RoleSelectionStage;
+      cohort: RoleSelectionCohort;
+      dueAt?: Date;
+    }
   | { action: "skip"; reason: RoleSelectionSkipReason }
   | { action: "stop"; reason: "role_selected" };
 

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ROLE_SELECTION_REMINDER_CAMPAIGN_ID, readRoleSelectionCampaignConfig } from "./config";
+import {
+  ROLE_SELECTION_REMINDER_CAMPAIGN_ID,
+  ROLE_SELECTION_STAGE2_DELAY_MS,
+  readRoleSelectionCampaignConfig,
+} from "./config";
+import { ROLE_SELECTION_REMINDER_2_COPY } from "./copy";
 import { processRoleSelectionReminders, type RoleSelectionProcessorDeps } from "./process";
 import type { RoleSelectionCampaignConfig, RoleSelectionEventState, RoleSelectionUser } from "./types";
 import type { RoleSelectionWriteResult } from "./store";
@@ -54,20 +59,31 @@ function makeDeps(input: {
   selectedOnRecheck?: Set<string>;
   send?: RoleSelectionProcessorDeps["send"];
   markSent?: RoleSelectionProcessorDeps["markSent"];
-}): RoleSelectionProcessorDeps & { claims: string[]; sentKeys: string[]; unknown: string[] } {
+  claimResult?: "claimed" | "duplicate";
+}): RoleSelectionProcessorDeps & {
+  claims: string[];
+  sentKeys: string[];
+  unknown: string[];
+  classified: string[];
+  subjects: string[];
+} {
   const claims: string[] = [];
   const sentKeys: string[] = [];
   const unknown: string[] = [];
+  const classified: string[] = [];
+  const subjects: string[] = [];
   return {
     claims,
     sentKeys,
     unknown,
+    classified,
+    subjects,
     loadAudience: async () => input.users,
     loadEvents: async () => ({ ok: true, byUser: input.events ?? new Map() }),
     sentToday: async () => input.sentToday ?? 0,
     claim: async ({ userId }) => {
       claims.push(userId);
-      return "claimed";
+      return input.claimResult ?? "claimed";
     },
     markSent:
       input.markSent ??
@@ -82,15 +98,36 @@ function makeDeps(input: {
     },
     markSelected: async () => ({ ok: true }),
     recheckSelected: async (userId) => input.selectedOnRecheck?.has(userId) ?? false,
+    classifyInactive: async (userId) => {
+      classified.push(userId);
+      return { ok: true };
+    },
+    clearInactive: async () => ({ ok: true }),
     send:
       input.send ??
-      (async () => ({
-        outcome: "accepted" as const,
-        messageId: "mid",
-        response: "250",
-        acceptedCount: 1,
-        rejectedCount: 0,
-      })),
+      (async (payload) => {
+        subjects.push(payload.subject);
+        return {
+          outcome: "accepted" as const,
+          messageId: "mid",
+          response: "250",
+          acceptedCount: 1,
+          rejectedCount: 0,
+        };
+      }),
+  };
+}
+
+function stage1SentEvent(userId: string): RoleSelectionEventState {
+  return {
+    userId,
+    uniqueKey: `${ROLE_SELECTION_REMINDER_CAMPAIGN_ID}_1_${userId}`,
+    stage: 1,
+    status: "sent",
+    skipReason: null,
+    claimedAt: NOW.toISOString(),
+    sentAt: new Date(NOW.getTime() - ROLE_SELECTION_STAGE2_DELAY_MS).toISOString(),
+    attemptCount: 1,
   };
 }
 
@@ -163,6 +200,56 @@ describe("role selection processor", () => {
     });
     expect(result.sent).toBe(0);
     expect(result.stoppedComplete).toBe(1);
+    expect(deps.sentKeys).toHaveLength(0);
+  });
+
+  it("sends Reminder 2 copy after the stage-1 delay and classifies inactive", async () => {
+    const deps = makeDeps({
+      users: [pendingUser()],
+      events: new Map([["user-1", [stage1SentEvent("user-1")]]]),
+    });
+    const result = await processRoleSelectionReminders({
+      now: NOW,
+      config: enabledConfig({ stage2Approved: true, historicalRolloutApproved: false }),
+      deps,
+    });
+    expect(result.sent).toBe(1);
+    expect(deps.subjects).toEqual([ROLE_SELECTION_REMINDER_2_COPY.en.subject]);
+    expect(deps.classified).toEqual(["user-1"]);
+  });
+
+  it("prefers Reminder 1 over Reminder 2 when the daily cap is tight", async () => {
+    const users = [
+      pendingUser({ userId: "stage-2-user", email: "two@example.com" }),
+      pendingUser({ userId: "stage-1-user", email: "one@example.com" }),
+    ];
+    const deps = makeDeps({
+      users,
+      events: new Map([["stage-2-user", [stage1SentEvent("stage-2-user")]]]),
+    });
+    const result = await processRoleSelectionReminders({
+      now: NOW,
+      config: enabledConfig({ stage2Approved: true, dailyCap: 1 }),
+      deps,
+    });
+    expect(result.sent).toBe(1);
+    expect(result.capped).toBe(1);
+    expect(deps.sentKeys).toEqual(["stage-1-user"]);
+    expect(deps.subjects[0]).not.toBe(ROLE_SELECTION_REMINDER_2_COPY.en.subject);
+  });
+
+  it("does not send again when a duplicate cron invocation cannot claim", async () => {
+    const deps = makeDeps({
+      users: [pendingUser()],
+      claimResult: "duplicate",
+    });
+    const result = await processRoleSelectionReminders({
+      now: NOW,
+      config: enabledConfig(),
+      deps,
+    });
+    expect(result.sent).toBe(0);
+    expect(result.skipped).toBe(1);
     expect(deps.sentKeys).toHaveLength(0);
   });
 

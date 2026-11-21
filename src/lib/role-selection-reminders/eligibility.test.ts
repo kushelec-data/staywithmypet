@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ROLE_SELECTION_REMINDER_CAMPAIGN_ID } from "./config";
-import { decideRoleSelectionAction } from "./eligibility";
+import { ROLE_SELECTION_REMINDER_CAMPAIGN_ID, ROLE_SELECTION_STAGE2_DELAY_MS } from "./config";
+import { decideRoleSelectionAction, deriveRoleSelectionLifecycle } from "./eligibility";
 import type {
   RoleSelectionCampaignConfig,
   RoleSelectionEventState,
@@ -48,16 +48,21 @@ function user(overrides: Partial<RoleSelectionUser> = {}): RoleSelectionUser {
   };
 }
 
-function event(status: RoleSelectionEventState["status"]): RoleSelectionEventState {
+function event(
+  status: RoleSelectionEventState["status"],
+  overrides: Partial<RoleSelectionEventState> = {},
+): RoleSelectionEventState {
+  const stage = overrides.stage ?? 1;
   return {
     userId: "user-1",
-    uniqueKey: `${ROLE_SELECTION_REMINDER_CAMPAIGN_ID}_1_user-1`,
-    stage: 1,
+    uniqueKey: `${ROLE_SELECTION_REMINDER_CAMPAIGN_ID}_${stage}_user-1`,
+    stage,
     status,
     skipReason: null,
     claimedAt: NOW.toISOString(),
     sentAt: status === "sent" ? NOW.toISOString() : null,
     attemptCount: 1,
+    ...overrides,
   };
 }
 
@@ -137,14 +142,67 @@ describe("role selection eligibility", () => {
     expect(decision).toEqual({ action: "skip", reason: "historical_rollout_blocked" });
   });
 
-  it("never sends Reminder 2 even after Reminder 1 is sent", () => {
+  it("does not send Reminder 2 until STAGE2 is approved", () => {
+    const decision = decideRoleSelectionAction({
+      now: NOW,
+      config: config({ stage2Approved: false }),
+      user: user(),
+      events: [event("sent", { sentAt: new Date(NOW.getTime() - ROLE_SELECTION_STAGE2_DELAY_MS).toISOString() })],
+    });
+    expect(decision).toEqual({ action: "skip", reason: "stage2_not_approved" });
+  });
+
+  it("does not send Reminder 2 before five full 24-hour periods", () => {
+    const sentAt = new Date(NOW.getTime() - ROLE_SELECTION_STAGE2_DELAY_MS + 1).toISOString();
     const decision = decideRoleSelectionAction({
       now: NOW,
       config: config({ stage2Approved: true }),
       user: user(),
-      events: [event("sent")],
+      events: [event("sent", { sentAt })],
     });
-    expect(decision).toEqual({ action: "skip", reason: "stage2_not_approved" });
+    expect(decision).toEqual({ action: "skip", reason: "too_early" });
+  });
+
+  it("sends Reminder 2 five 24-hour periods after stage-1 sent_at, not registration", () => {
+    const sentAt = new Date(NOW.getTime() - ROLE_SELECTION_STAGE2_DELAY_MS).toISOString();
+    const decision = decideRoleSelectionAction({
+      now: NOW,
+      config: config({ stage2Approved: true, historicalRolloutApproved: false }),
+      user: user({ registeredAt: daysAgo(20) }),
+      events: [event("sent", { sentAt })],
+    });
+    expect(decision).toMatchObject({ action: "send", stage: 2, cohort: "historical" });
+  });
+
+  it("never sends a third reminder after stage 2 is sent", () => {
+    const decision = decideRoleSelectionAction({
+      now: NOW,
+      config: config({ stage2Approved: true }),
+      user: user(),
+      events: [
+        event("sent", { sentAt: new Date(NOW.getTime() - ROLE_SELECTION_STAGE2_DELAY_MS).toISOString() }),
+        event("sent", { stage: 2, sentAt: NOW.toISOString() }),
+      ],
+    });
+    expect(decision).toEqual({ action: "skip", reason: "already_sent" });
+  });
+
+  it("stops Reminder 2 if the user selected a role after Reminder 1", () => {
+    const decision = decideRoleSelectionAction({
+      now: NOW,
+      config: config({ stage2Approved: true }),
+      user: user({ rolePending: false, roleColumn: "pet_parent" }),
+      events: [event("sent", { sentAt: new Date(NOW.getTime() - ROLE_SELECTION_STAGE2_DELAY_MS).toISOString() })],
+    });
+    expect(decision).toEqual({ action: "stop", reason: "role_selected" });
+  });
+
+  it("classifies lifecycle as inactive only after stage 2 while role is still pending", () => {
+    expect(deriveRoleSelectionLifecycle({ rolePending: true, stage2Sent: true })).toBe(
+      "inactive_role_unselected",
+    );
+    expect(deriveRoleSelectionLifecycle({ rolePending: false, stage2Sent: true })).toBe("cleared");
+    expect(deriveRoleSelectionLifecycle({ rolePending: true, stage2Sent: false })).toBe("in_sequence");
   });
 
   it("does not retry unresolved SMTP", () => {
