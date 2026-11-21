@@ -70,6 +70,24 @@ vi.mock("@/lib/listing-profile-completion/process", () => ({
   })),
 }));
 
+vi.mock("@/lib/role-selection-reminders/process", () => ({
+  processRoleSelectionReminders: vi.fn(async () => ({
+    ok: true,
+    campaignId: "role_selection_reminder_v1",
+    dryRun: true,
+    stage2Approved: false,
+    processed: 0,
+    sent: 0,
+    skipped: 0,
+    failed: 0,
+    failedBeforeAcceptance: 0,
+    outcomeUnknown: 0,
+    stoppedComplete: 0,
+    capped: 0,
+    preview: [],
+  })),
+}));
+
 import {
   GET as bookingReviewGet,
   POST as bookingReviewPost,
@@ -104,7 +122,12 @@ import { processPendingBookingReviewEmails } from "@/lib/booking-review-emails";
 import { processDueScheduledCampaigns } from "@/lib/email-campaigns/scheduled-send";
 import { processProfileCompletionReminders } from "@/lib/profile-completion-reminders/process";
 import { processListingProfileCompletion } from "@/lib/listing-profile-completion/process";
+import { processRoleSelectionReminders } from "@/lib/role-selection-reminders/process";
 import { runWeeklyMatchmaking } from "@/lib/matchmaking/run-weekly";
+import {
+  GET as roleSelectionGet,
+  POST as roleSelectionPost,
+} from "@/app/api/cron/role-selection-reminders/route";
 
 describe("cron/internal route authorization", () => {
   const envBackup = { ...process.env };
@@ -118,6 +141,7 @@ describe("cron/internal route authorization", () => {
     vi.mocked(processDueScheduledCampaigns).mockClear();
     vi.mocked(processProfileCompletionReminders).mockClear();
     vi.mocked(processListingProfileCompletion).mockClear();
+    vi.mocked(processRoleSelectionReminders).mockClear();
     vi.mocked(runWeeklyMatchmaking).mockClear();
   });
 
@@ -299,5 +323,27 @@ describe("cron/internal route authorization", () => {
       ).status,
     ).toBe(200);
     expect(processListingProfileCompletion).toHaveBeenCalledTimes(2);
+
+    expect(
+      (
+        await roleSelectionGet(
+          new Request("https://example.com/api/cron/role-selection-reminders", {
+            method: "GET",
+            headers,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await roleSelectionPost(
+          new Request("https://example.com/api/cron/role-selection-reminders", {
+            method: "POST",
+            headers,
+          }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(processRoleSelectionReminders).toHaveBeenCalledTimes(2);
   });
 });
